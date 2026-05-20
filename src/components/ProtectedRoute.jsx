@@ -12,9 +12,20 @@ export default function ProtectedRoute() {
         justifyContent: 'center',
         height: '100vh',
         background: '#0f1117',
-        color: '#6b7280'
+        color: '#94a3b8',
+        fontFamily: 'Sora, sans-serif',
       }}>
-        <div className="spinner" />
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: 32, height: 32,
+            border: '2px solid #1e293b',
+            borderTop: '2px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto 12px',
+          }} />
+          <p>Caricamento…</p>
+        </div>
       </div>
     )
   }

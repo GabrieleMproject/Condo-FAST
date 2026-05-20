@@ -1,83 +1,39 @@
 import { useAuth } from '../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
-import { Building2, LogOut, LayoutDashboard, Users, FileText, Wrench, Settings, Bell } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { useCondomini } from '../hooks/useCondomini'
 
 export default function DashboardPage() {
-  const { user, signOut } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { condomini } = useCondomini()
 
-  const handleLogout = async () => {
-    await signOut()
-    toast.success('Disconnesso')
-    navigate('/login')
-  }
-
-  const userName = user?.user_metadata?.full_name || user?.email || 'Amministratore'
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Amministratore'
+  const attivi = condomini.filter(c => c.stato === 'attivo').length
+  const unita  = condomini.reduce((s, c) => s + (c.num_unita || 0), 0)
 
   return (
-    <div className="app-layout">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          <Building2 size={24} />
-          <span>CondoAI</span>
-        </div>
+    <div style={{padding:'32px',background:'#0f172a',minHeight:'100vh',fontFamily:'Sora,sans-serif'}}>
+      <h1 style={{color:'#e2e8f0',fontSize:28,fontWeight:700,margin:'0 0 4px'}}>Dashboard</h1>
+      <p style={{color:'#64748b',fontSize:14,marginBottom:32}}>Benvenuto, {userName}</p>
 
-        <nav className="sidebar-nav">
-          {[
-            { icon: LayoutDashboard, label: 'Dashboard', active: true },
-            { icon: Building2, label: 'Condomini' },
-            { icon: Users, label: 'Condòmini' },
-            { icon: FileText, label: 'Contabilità' },
-            { icon: Wrench, label: 'Fornitori' },
-            { icon: Bell, label: 'Comunicazioni' },
-            { icon: Settings, label: 'Impostazioni' },
-          ].map(({ icon: Icon, label, active }) => (
-            <button key={label} className={`nav-item ${active ? 'nav-item--active' : ''}`}>
-              <Icon size={18} />
-              <span>{label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <button className="sidebar-logout" onClick={handleLogout}>
-          <LogOut size={16} />
-          <span>Esci</span>
-        </button>
-      </aside>
-
-      {/* Main content */}
-      <main className="main-content">
-        <header className="topbar">
-          <div>
-            <h1 className="page-title">Dashboard</h1>
-            <p className="page-subtitle">Benvenuto, {userName}</p>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:16,marginBottom:32}}>
+        {[
+          {label:'Condomini gestiti', value: condomini.length, icon:'🏢', color:'#3b82f6'},
+          {label:'Condomini attivi',  value: attivi,           icon:'✅', color:'#16a34a'},
+          {label:'Unità totali',      value: unita,            icon:'🚪', color:'#d97706'},
+          {label:'Scadenze mese',     value: '—',              icon:'📅', color:'#dc2626'},
+        ].map(k => (
+          <div key={k.label} style={{background:'#1e293b',borderRadius:14,padding:'20px',border:`1px solid #334155`,borderLeft:`4px solid ${k.color}`}}>
+            <div style={{fontSize:28,marginBottom:8}}>{k.icon}</div>
+            <div style={{color:'#e2e8f0',fontSize:26,fontWeight:700}}>{k.value}</div>
+            <div style={{color:'#64748b',fontSize:13}}>{k.label}</div>
           </div>
-        </header>
+        ))}
+      </div>
 
-        <div className="dashboard-grid">
-          {/* Stats placeholder */}
-          {[
-            { label: 'Condomini gestiti', value: '—', color: '#3b82f6' },
-            { label: 'Condòmini totali', value: '—', color: '#10b981' },
-            { label: 'Pratiche aperte', value: '—', color: '#f59e0b' },
-            { label: 'Scadenze questo mese', value: '—', color: '#ef4444' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="stat-card">
-              <div className="stat-accent" style={{ background: color }} />
-              <p className="stat-label">{label}</p>
-              <p className="stat-value">{value}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="coming-soon">
-          <Building2 size={48} opacity={0.2} />
-          <h3>Sessione 1 completata ✓</h3>
-          <p>Auth funzionante. Nelle prossime sessioni costruiremo tutte le funzionalità.</p>
-        </div>
-      </main>
+      <div style={{background:'#1e293b',borderRadius:14,padding:'32px',border:'1px solid #334155',textAlign:'center'}}>
+        <div style={{fontSize:48,marginBottom:12}}>🏢</div>
+        <h3 style={{color:'#e2e8f0',fontSize:18,fontWeight:700,marginBottom:8}}>Sessione 3 completata ✓</h3>
+        <p style={{color:'#64748b',fontSize:14}}>Anagrafica unità, proprietari e inquilini operativa.</p>
+      </div>
     </div>
   )
 }

@@ -1,362 +1,210 @@
+// src/pages/CondominiPage.jsx
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCondomini } from '../hooks/useCondomini'
 import CondominiForm from '../components/CondominiForm'
 
-const STATO_CONFIG = {
-  attivo:     { label: 'Attivo',     color: '#22c55e' },
-  archiviato: { label: 'Archiviato', color: '#6b7280' },
-  sospeso:    { label: 'Sospeso',    color: '#f59e0b' },
+const STATO_STYLE = {
+  attivo:      { bg:'#052e16', text:'#4ade80', label:'Attivo' },
+  archiviato:  { bg:'#1c1917', text:'#94a3b8', label:'Archiviato' },
 }
 
 export default function CondominiPage() {
-  const { condomini, loading, error, deleteCondominio, archiviaCondominio } = useCondomini()
+  const { condomini, loading, createCondominio, updateCondominio, deleteCondominio, archiviaCondominio } = useCondomini()
   const navigate = useNavigate()
 
-  const [search, setSearch] = useState('')
+  const [search, setSearch]       = useState('')
   const [filterStato, setFilterStato] = useState('tutti')
-  const [showForm, setShowForm] = useState(false)
-  const [editTarget, setEditTarget] = useState(null)
-  const [confirmDelete, setConfirmDelete] = useState(null)
-  const [actionLoading, setActionLoading] = useState(false)
+  const [showForm, setShowForm]   = useState(false)
+  const [editItem, setEditItem]   = useState(null)
+  const [toast, setToast]         = useState(null)
+  const [menuOpen, setMenuOpen]   = useState(null)
 
-  const filtered = useMemo(() => {
-    return condomini.filter(c => {
-      const matchSearch =
-        c.nome.toLowerCase().includes(search.toLowerCase()) ||
-        c.indirizzo.toLowerCase().includes(search.toLowerCase()) ||
-        c.citta.toLowerCase().includes(search.toLowerCase())
-      const matchStato = filterStato === 'tutti' || c.stato === filterStato
-      return matchSearch && matchStato
-    })
-  }, [condomini, search, filterStato])
+  const filtered = useMemo(() => condomini.filter(c => {
+    const matchSearch = !search ||
+      c.nome?.toLowerCase().includes(search.toLowerCase()) ||
+      c.citta?.toLowerCase().includes(search.toLowerCase()) ||
+      c.indirizzo?.toLowerCase().includes(search.toLowerCase())
+    const matchStato = filterStato === 'tutti' || c.stato === filterStato
+    return matchSearch && matchStato
+  }), [condomini, search, filterStato])
 
-  const stats = useMemo(() => ({
-    totale: condomini.length,
-    attivi: condomini.filter(c => c.stato === 'attivo').length,
-    unita: condomini.reduce((s, c) => s + (c.num_unita || 0), 0),
-  }), [condomini])
-
-  const handleEdit = (c) => {
-    setEditTarget(c)
-    setShowForm(true)
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
   }
 
-  const handleCloseForm = () => {
-    setShowForm(false)
-    setEditTarget(null)
-  }
-
-  const handleDelete = async () => {
-    if (!confirmDelete) return
-    setActionLoading(true)
+  const handleSave = async (data) => {
     try {
-      await deleteCondominio(confirmDelete.id)
-    } catch (e) {
-      alert('Errore: ' + e.message)
-    } finally {
-      setActionLoading(false)
-      setConfirmDelete(null)
-    }
+      if (editItem) await updateCondominio(editItem.id, data)
+      else await createCondominio(data)
+      setShowForm(false)
+      setEditItem(null)
+      showToast(editItem ? 'Condominio aggiornato' : 'Condominio creato')
+    } catch (err) { showToast(err.message, 'error') }
   }
 
-  const handleArchivia = async (c) => {
-    setActionLoading(true)
-    try {
-      await archiviaCondominio(c.id)
-    } catch (e) {
-      alert('Errore: ' + e.message)
-    } finally {
-      setActionLoading(false)
-    }
+  const handleDelete = async (id) => {
+    if (!confirm('Eliminare questo condominio? L\'operazione è irreversibile.')) return
+    try { await deleteCondominio(id); showToast('Condominio eliminato') }
+    catch (err) { showToast(err.message, 'error') }
+    setMenuOpen(null)
   }
+
+  const handleArchivia = async (id) => {
+    try { await archiviaCondominio(id); showToast('Condominio archiviato') }
+    catch (err) { showToast(err.message, 'error') }
+    setMenuOpen(null)
+  }
+
+  // Stats rapide
+  const totale  = condomini.length
+  const attivi  = condomini.filter(c => c.stato === 'attivo').length
+  const unita   = condomini.reduce((s, c) => s + (c.num_unita || 0), 0)
 
   return (
-    <div className="page">
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Condomini</h1>
-          <p className="page-subtitle">Gestisci il tuo portafoglio immobiliare</p>
+    <div style={S.page} onClick={() => setMenuOpen(null)}>
+      {/* Toast */}
+      {toast && (
+        <div style={{ ...S.toast, background: toast.type === 'error' ? '#7f1d1d' : '#14532d' }}>
+          {toast.msg}
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(true)}>
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-            <path d="M8 2v12M2 8h12"/>
-          </svg>
-          Nuovo Condominio
+      )}
+
+      {/* Header */}
+      <div style={S.header}>
+        <div>
+          <h1 style={S.title}>Condomini</h1>
+          <p style={S.subtitle}>Gestisci il tuo portafoglio condominiale</p>
+        </div>
+        <button style={S.btnPrimary} onClick={() => { setEditItem(null); setShowForm(true) }}>
+          + Nuovo condominio
         </button>
       </div>
 
-      {/* Stats bar */}
-      <div className="stats-bar">
-        <div className="stat-chip">
-          <span className="stat-value">{stats.totale}</span>
-          <span className="stat-label">Totali</span>
-        </div>
-        <div className="stat-divider" />
-        <div className="stat-chip">
-          <span className="stat-value" style={{ color: '#22c55e' }}>{stats.attivi}</span>
-          <span className="stat-label">Attivi</span>
-        </div>
-        <div className="stat-divider" />
-        <div className="stat-chip">
-          <span className="stat-value">{stats.unita}</span>
-          <span className="stat-label">Unità totali</span>
-        </div>
-      </div>
-
-      {/* Search + Filters */}
-      <div className="toolbar">
-        <div className="search-wrapper">
-          <svg className="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="6.5" cy="6.5" r="4.5"/>
-            <path d="M10.5 10.5l3 3"/>
-          </svg>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Cerca per nome, indirizzo, città…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {search && (
-            <button className="search-clear" onClick={() => setSearch('')}>
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 4l8 8M12 4l-8 8"/>
-              </svg>
-            </button>
-          )}
-        </div>
-        <div className="filter-tabs">
-          {['tutti', 'attivo', 'sospeso', 'archiviato'].map(stato => (
-            <button
-              key={stato}
-              className={`filter-tab ${filterStato === stato ? 'active' : ''}`}
-              onClick={() => setFilterStato(stato)}
-            >
-              {stato === 'tutti' ? 'Tutti' : STATO_CONFIG[stato]?.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="state-empty">
-          <div className="spinner" />
-          <p>Caricamento condomini…</p>
-        </div>
-      ) : error ? (
-        <div className="state-error">
-          <p>Errore nel caricamento: {error}</p>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="state-empty">
-          {search || filterStato !== 'tutti' ? (
-            <>
-              <EmptySearchIcon />
-              <p>Nessun risultato per "<strong>{search}</strong>"</p>
-              <button className="btn-ghost" onClick={() => { setSearch(''); setFilterStato('tutti') }}>
-                Azzera filtri
-              </button>
-            </>
-          ) : (
-            <>
-              <EmptyBuildingIcon />
-              <p>Nessun condominio ancora.</p>
-              <p className="hint">Aggiungi il tuo primo condominio per iniziare.</p>
-              <button className="btn-primary" onClick={() => setShowForm(true)}>
-                Aggiungi condominio
-              </button>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="condomini-grid">
-          {filtered.map(c => (
-            <CondominiCard
-              key={c.id}
-              condominio={c}
-              onView={() => navigate(`/condomini/${c.id}`)}
-              onEdit={() => handleEdit(c)}
-              onArchivia={() => handleArchivia(c)}
-              onDelete={() => setConfirmDelete(c)}
-              actionLoading={actionLoading}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Form Modal */}
-      {showForm && (
-        <CondominiForm
-          condominio={editTarget}
-          onClose={handleCloseForm}
-        />
-      )}
-
-      {/* Confirm Delete Modal */}
-      {confirmDelete && (
-        <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
-          <div className="modal-box danger" onClick={e => e.stopPropagation()}>
-            <h3>Elimina condominio</h3>
-            <p>
-              Sei sicuro di voler eliminare <strong>{confirmDelete.nome}</strong>?
-              <br />
-              <span className="text-muted">Questa azione è irreversibile.</span>
-            </p>
-            <div className="modal-actions">
-              <button className="btn-ghost" onClick={() => setConfirmDelete(null)}>
-                Annulla
-              </button>
-              <button className="btn-danger" onClick={handleDelete} disabled={actionLoading}>
-                {actionLoading ? 'Eliminazione…' : 'Elimina'}
-              </button>
+      {/* KPI */}
+      <div style={S.kpiRow}>
+        {[
+          { label:'Totale', value: totale, icon:'🏢' },
+          { label:'Attivi', value: attivi, icon:'✅' },
+          { label:'Unità totali', value: unita, icon:'🚪' },
+        ].map(k => (
+          <div key={k.label} style={S.kpiCard}>
+            <span style={{ fontSize:24 }}>{k.icon}</span>
+            <div>
+              <div style={S.kpiValue}>{k.value}</div>
+              <div style={S.kpiLabel}>{k.label}</div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  )
-}
+        ))}
+      </div>
 
-// ── Card Component ────────────────────────────────────────────
+      {/* Filtri */}
+      <div style={S.filters}>
+        <input
+          style={S.search}
+          placeholder="Cerca per nome, città, indirizzo…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <select style={S.select} value={filterStato} onChange={e => setFilterStato(e.target.value)}>
+          <option value="tutti">Tutti gli stati</option>
+          <option value="attivo">Attivi</option>
+          <option value="archiviato">Archiviati</option>
+        </select>
+      </div>
 
-function CondominiCard({ condominio: c, onView, onEdit, onArchivia, onDelete }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const statoConf = STATO_CONFIG[c.stato] || STATO_CONFIG.attivo
-
-  return (
-    <div className="condo-card" onClick={onView}>
-      <div className="condo-card-header">
-        <div className="condo-avatar">
-          {c.nome.slice(0, 2).toUpperCase()}
+      {/* Griglia */}
+      {loading ? (
+        <div style={S.empty}>Caricamento…</div>
+      ) : filtered.length === 0 ? (
+        <div style={S.empty}>
+          <p style={{ fontSize:48 }}>🏢</p>
+          <p style={{ color:'#94a3b8' }}>Nessun condominio trovato</p>
+          <button style={S.btnPrimary} onClick={() => setShowForm(true)}>+ Aggiungi il primo</button>
         </div>
-        <div className="condo-card-meta">
-          <h3 className="condo-name">{c.nome}</h3>
-          <p className="condo-address">
-            {c.indirizzo} {c.civico}, {c.cap} {c.citta} ({c.provincia})
-          </p>
-        </div>
-        <div className="condo-card-actions" onClick={e => e.stopPropagation()}>
-          <span className="stato-badge" style={{ '--stato-color': statoConf.color }}>
-            {statoConf.label}
-          </span>
-          <div className="menu-wrapper">
-            <button
-              className="menu-trigger"
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              <svg viewBox="0 0 16 16" fill="currentColor">
-                <circle cx="8" cy="3" r="1.2"/>
-                <circle cx="8" cy="8" r="1.2"/>
-                <circle cx="8" cy="13" r="1.2"/>
-              </svg>
-            </button>
-            {menuOpen && (
-              <>
-                <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />
-                <div className="dropdown-menu">
-                  <button onClick={() => { onView(); setMenuOpen(false) }}>
-                    <EyeIcon /> Visualizza
-                  </button>
-                  <button onClick={() => { onEdit(); setMenuOpen(false) }}>
-                    <EditIcon /> Modifica
-                  </button>
-                  {c.stato !== 'archiviato' && (
-                    <button onClick={() => { onArchivia(); setMenuOpen(false) }}>
-                      <ArchiveIcon /> Archivia
-                    </button>
-                  )}
-                  <button className="danger" onClick={() => { onDelete(); setMenuOpen(false) }}>
-                    <TrashIcon /> Elimina
-                  </button>
+      ) : (
+        <div style={S.grid}>
+          {filtered.map(c => {
+            const st = STATO_STYLE[c.stato] || STATO_STYLE.attivo
+            return (
+              <div key={c.id} style={S.card} onClick={() => navigate(`/condomini/${c.id}`)}>
+                {/* Card header */}
+                <div style={S.cardHeader}>
+                  <div style={S.cardIcon}>🏢</div>
+                  <div style={{ flex:1 }}>
+                    <div style={S.cardTitle}>{c.nome}</div>
+                    <div style={S.cardAddr}>{c.indirizzo} {c.civico}, {c.citta}</div>
+                  </div>
+                  {/* Menu contestuale */}
+                  <div style={{ position:'relative' }} onClick={e => e.stopPropagation()}>
+                    <button style={S.menuBtn} onClick={() => setMenuOpen(menuOpen === c.id ? null : c.id)}>⋮</button>
+                    {menuOpen === c.id && (
+                      <div style={S.dropdown}>
+                        <button style={S.ddItem} onClick={() => navigate(`/condomini/${c.id}`)}>👁 Visualizza</button>
+                        <button style={S.ddItem} onClick={() => { setEditItem(c); setShowForm(true); setMenuOpen(null) }}>✏️ Modifica</button>
+                        <button style={S.ddItem} onClick={() => handleArchivia(c.id)}>📦 Archivia</button>
+                        <button style={{ ...S.ddItem, color:'#f87171' }} onClick={() => handleDelete(c.id)}>🗑️ Elimina</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
 
-      <div className="condo-card-stats">
-        <div className="condo-stat">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M2 14V6l6-4 6 4v8"/>
-            <rect x="5" y="9" width="2.5" height="5"/>
-            <rect x="8.5" y="9" width="2.5" height="5"/>
-          </svg>
-          <span>{c.num_unita} unità</span>
-        </div>
-        <div className="condo-stat">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="1" y="4" width="6" height="10" rx="0.5"/>
-            <rect x="9" y="1" width="6" height="13" rx="0.5"/>
-          </svg>
-          <span>{c.num_scale} {c.num_scale === 1 ? 'scala' : 'scale'}</span>
-        </div>
-        {c.anno_costruzione && (
-          <div className="condo-stat">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="1" y="3" width="14" height="12" rx="1"/>
-              <path d="M5 3V1M11 3V1M1 7h14"/>
-            </svg>
-            <span>{c.anno_costruzione}</span>
-          </div>
-        )}
-        <div className="condo-stat-icons">
-          {c.presenza_ascensore && <span title="Ascensore">🛗</span>}
-          {c.presenza_giardino && <span title="Giardino">🌳</span>}
-          {c.presenza_parcheggio && <span title="Parcheggio">🅿️</span>}
-          {c.presenza_portiere && <span title="Portiere">👤</span>}
-        </div>
-      </div>
+                {/* Stats */}
+                <div style={S.cardStats}>
+                  <span style={S.stat}>🚪 {c.num_unita || 0} unità</span>
+                  <span style={S.stat}>🏗️ {c.num_scale || 1} scale</span>
+                  {c.num_piani && <span style={S.stat}>📐 {c.num_piani} piani</span>}
+                </div>
 
-      {c.fondo_cassa > 0 && (
-        <div className="condo-card-footer">
-          <span className="text-muted">Fondo cassa</span>
-          <span className="fondo-value">
-            € {c.fondo_cassa.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-          </span>
+                {/* Badge stato */}
+                <div style={{ display:'flex', justifyContent:'flex-end', marginTop:8 }}>
+                  <span style={{ background:st.bg, color:st.text, fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:20 }}>
+                    {st.label}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
         </div>
+      )}
+
+      {/* Form modal */}
+      {showForm && (
+        <CondominiForm
+          condominio={editItem}
+          onSave={handleSave}
+          onClose={() => { setShowForm(false); setEditItem(null) }}
+        />
       )}
     </div>
   )
 }
 
-// ── Small Icons ───────────────────────────────────────────────
-
-function EyeIcon() {
-  return <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z"/><circle cx="7" cy="7" r="1.5"/></svg>
-}
-function EditIcon() {
-  return <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 10L9.5 2.5a1.5 1.5 0 012 2L4 12H2v-2z"/></svg>
-}
-function ArchiveIcon() {
-  return <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="1" width="12" height="3.5" rx="0.5"/><path d="M2 4.5v7a1 1 0 001 1h8a1 1 0 001-1v-7"/><path d="M5 7h4"/></svg>
-}
-function TrashIcon() {
-  return <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 4h10M5 4V2h4v2M4 4l.7 8h4.6L10 4"/></svg>
-}
-function EmptyBuildingIcon() {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5" width="64" height="64" opacity="0.3">
-      <rect x="8" y="20" width="20" height="38" rx="1"/>
-      <rect x="36" y="8" width="20" height="50" rx="1"/>
-      <path d="M1 58h62"/>
-      <rect x="13" y="28" width="6" height="6" rx="0.5"/>
-      <rect x="13" y="40" width="6" height="6" rx="0.5"/>
-      <rect x="41" y="16" width="6" height="6" rx="0.5"/>
-      <rect x="41" y="28" width="6" height="6" rx="0.5"/>
-      <rect x="41" y="40" width="6" height="6" rx="0.5"/>
-    </svg>
-  )
-}
-function EmptySearchIcon() {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5" width="64" height="64" opacity="0.3">
-      <circle cx="26" cy="26" r="18"/>
-      <path d="M40 40l16 16"/>
-      <path d="M20 26h12M26 20v12"/>
-    </svg>
-  )
+const S = {
+  page:       { padding:'28px 32px', background:'#0f172a', minHeight:'100vh', fontFamily:'Sora, sans-serif' },
+  toast:      { position:'fixed', top:20, right:20, zIndex:2000, color:'white', padding:'12px 20px', borderRadius:10, fontSize:14, fontWeight:600, boxShadow:'0 8px 24px rgba(0,0,0,0.4)' },
+  header:     { display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24 },
+  title:      { color:'#e2e8f0', fontSize:26, fontWeight:700, margin:0 },
+  subtitle:   { color:'#64748b', fontSize:13, marginTop:4 },
+  kpiRow:     { display:'flex', gap:14, marginBottom:24 },
+  kpiCard:    { flex:1, background:'#1e293b', borderRadius:12, padding:'16px 20px', display:'flex', gap:14, alignItems:'center', border:'1px solid #334155' },
+  kpiValue:   { color:'#e2e8f0', fontSize:22, fontWeight:700 },
+  kpiLabel:   { color:'#64748b', fontSize:12 },
+  filters:    { display:'flex', gap:12, marginBottom:20 },
+  search:     { flex:1, background:'#1e293b', border:'1px solid #334155', color:'#e2e8f0', borderRadius:10, padding:'10px 16px', fontSize:14, outline:'none' },
+  select:     { background:'#1e293b', border:'1px solid #334155', color:'#e2e8f0', borderRadius:10, padding:'10px 14px', fontSize:14, outline:'none' },
+  empty:      { textAlign:'center', padding:'80px 20px', color:'#64748b' },
+  grid:       { display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:16 },
+  card:       { background:'#1e293b', borderRadius:14, padding:'18px 20px', border:'1px solid #334155', cursor:'pointer', transition:'border-color .2s, transform .15s' },
+  cardHeader: { display:'flex', gap:12, alignItems:'flex-start', marginBottom:12 },
+  cardIcon:   { fontSize:28, flexShrink:0 },
+  cardTitle:  { color:'#e2e8f0', fontSize:15, fontWeight:700, marginBottom:2 },
+  cardAddr:   { color:'#64748b', fontSize:12 },
+  cardStats:  { display:'flex', gap:12, flexWrap:'wrap' },
+  stat:       { color:'#94a3b8', fontSize:12 },
+  menuBtn:    { background:'none', border:'none', color:'#64748b', fontSize:20, cursor:'pointer', padding:'2px 8px', borderRadius:6 },
+  dropdown:   { position:'absolute', right:0, top:'100%', background:'#1e293b', border:'1px solid #334155', borderRadius:10, zIndex:100, minWidth:160, boxShadow:'0 8px 24px rgba(0,0,0,0.4)', overflow:'hidden' },
+  ddItem:     { display:'block', width:'100%', background:'none', border:'none', color:'#cbd5e1', fontSize:13, padding:'10px 16px', textAlign:'left', cursor:'pointer' },
+  btnPrimary: { background:'#2563eb', color:'white', border:'none', borderRadius:8, padding:'10px 20px', fontSize:14, fontWeight:600, cursor:'pointer' },
 }

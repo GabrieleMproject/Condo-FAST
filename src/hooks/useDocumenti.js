@@ -1,0 +1,155 @@
+import { useState, useCallback } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import { callClaude } from '../lib/claudeClient'
+
+const BUCKET = 'documenti-condominio'
+
+export function useDocumenti(condominioId) {
+  const [documenti, setDocumenti] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const fetch = useCallback(async () => {
+    if (!condominioId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const { data, error } = await supabase
+        .from('documenti_condominio')
+        .select('*')
+        .eq('condominio_id', condominioId)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      setDocumenti(data || [])
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [condominioId])
+
+  const upload = useCallback(async (file, tipo, nome, note = '') => {
+    setLoading(true)
+    setError(null)
+    try {
+      // 1. Upload file su Storage
+      const ext = file.name.split('.').pop()
+      const path = `${condominioId}/${Date.now()}_${file.name}`
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, file, { upsert: false })
+      if (uploadError) throw uploadError
+
+      // 2. Ottieni URL firmato (privato)
+      const { data: urlData } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrl(path, 60 * 60 * 24 * 365) // 1 anno
+
+      // 3. Estrai testo se PDF (via Claude API - chiamata lato client)
+      let testo_estratto = null
+      if (ext === 'pdf') {
+        testo_estratto = await estraiTestoPDF(file)
+      }
+
+      // 4. Salva record su DB
+      const { data, error: dbError } = await supabase
+        .from('documenti_condominio')
+        .insert({
+          condominio_id: condominioId,
+          tipo,
+          nome: nome || file.name,
+          url_storage: path,
+          testo_estratto,
+          note,
+        })
+        .select()
+        .single()
+      if (dbError) throw dbError
+
+      setDocumenti(prev => [data, ...prev])
+      return { data, signedUrl: urlData?.signedUrl }
+    } catch (e) {
+      setError(e.message)
+      throw e
+    } finally {
+      setLoading(false)
+    }
+  }, [condominioId])
+
+  const getSignedUrl = useCallback(async (urlStorage) => {
+    const { data } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(urlStorage, 60 * 60) // 1 ora
+    return data?.signedUrl
+  }, [])
+
+  const remove = useCallback(async (doc) => {
+    setLoading(true)
+    try {
+      // Rimuovi da storage
+      await supabase.storage.from(BUCKET).remove([doc.url_storage])
+      // Rimuovi da DB
+      const { error } = await supabase
+        .from('documenti_condominio')
+        .delete()
+        .eq('id', doc.id)
+      if (error) throw error
+      setDocumenti(prev => prev.filter(d => d.id !== doc.id))
+    } catch (e) {
+      setError(e.message)
+      throw e
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const aggiornaTesto = useCallback(async (id, testo_estratto) => {
+    const { data, error } = await supabase
+      .from('documenti_condominio')
+      .update({ testo_estratto })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    setDocumenti(prev => prev.map(d => d.id === id ? data : d))
+    return data
+  }, [])
+
+  return { documenti, loading, error, fetch, upload, remove, getSignedUrl, aggiornaTesto }
+}
+
+// Estrae testo da PDF usando FileReader + Claude API
+async function estraiTestoPDF(file) {
+  try {
+    const base64 = await fileToBase64(file)
+    const data = await callClaude({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: base64 }
+          },
+          {
+            type: 'text',
+            text: 'Estrai tutto il testo di questo documento in modo fedele e completo. Restituisci solo il testo estratto, senza commenti o formattazione aggiuntiva.'
+          }
+        ]
+      }]
+    })
+    return data.content?.[0]?.text || null
+  } catch {
+    return null
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result.split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}

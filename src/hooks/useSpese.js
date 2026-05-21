@@ -1,124 +1,205 @@
-// src/hooks/useSpese.js
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-export function useSpese(condominioId) {
-  const [spese, setSpese]           = useState([])
-  const [esercizi, setEsercizi]     = useState([])
-  const [esercizioAttivo, setEsercizioAttivo] = useState(null)
-  const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState(null)
+export function useSpese(condominioId, esercizioId) {
+  const [spese, setSpese] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  // ── Fetch esercizi ─────────────────────────────────────────────────────
-  const fetchEsercizi = useCallback(async () => {
+  const fetch = useCallback(async () => {
     if (!condominioId) return
-    const { data, error } = await supabase
-      .from('esercizi')
-      .select('*')
-      .eq('condominio_id', condominioId)
-      .order('data_inizio', { ascending: false })
-    if (error) throw error
-    setEsercizi(data || [])
-    // Seleziona automaticamente l'esercizio aperto più recente
-    const aperto = (data || []).find(e => e.stato === 'aperto')
-    if (aperto && !esercizioAttivo) setEsercizioAttivo(aperto)
-  }, [condominioId])
+    setLoading(true)
+    setError(null)
+    try {
+      let query = supabase
+        .from('spese')
+        .select(`
+          *,
+          tabelle_millesimali(id, nome),
+          ripartizioni(
+            id, unita_id, importo, millesimi_usati,
+            importo_override, note_subentro, subentro_segnalato,
+            unita(id, interno, piano)
+          )
+        `)
+        .eq('condominio_id', condominioId)
+        .order('data_spesa', { ascending: false })
 
-  // ── Fetch spese esercizio attivo ───────────────────────────────────────
-  const fetchSpese = useCallback(async () => {
-    if (!esercizioAttivo?.id) { setSpese([]); setLoading(false); return }
+      if (esercizioId) query = query.eq('esercizio_id', esercizioId)
+
+      const { data, error } = await query
+      if (error) throw error
+      setSpese(data || [])
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [condominioId, esercizioId])
+
+  const crea = useCallback(async (payload, ripartizioniCalcolate) => {
+    setLoading(true)
+    setError(null)
+    try {
+      // Setta user_id per audit log
+      await supabase.rpc('set_config', {
+        setting: 'app.current_user_id',
+        value: (await supabase.auth.getUser()).data.user?.id || ''
+      }).catch(() => {})
+
+      const { data: spesa, error: spesaError } = await supabase
+        .from('spese')
+        .insert({ ...payload, condominio_id: condominioId })
+        .select()
+        .single()
+      if (spesaError) throw spesaError
+
+      // Salva ripartizioni se fornite
+      if (ripartizioniCalcolate?.length > 0) {
+        const records = ripartizioniCalcolate.map(r => ({
+          spesa_id: spesa.id,
+          unita_id: r.unita_id,
+          importo: r.importo,
+          millesimi_usati: r.millesimi_usati || null,
+          criterio_applicato: payload.criterio,
+        }))
+        const { error: ripartErr } = await supabase.from('ripartizioni').insert(records)
+        if (ripartErr) throw ripartErr
+      }
+
+      await fetch()
+      return spesa
+    } catch (e) {
+      setError(e.message)
+      throw e
+    } finally {
+      setLoading(false)
+    }
+  }, [condominioId, fetch])
+
+  const aggiorna = useCallback(async (id, payload, ripartizioniCalcolate) => {
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('spese')
-        .select('*, tabelle_millesimali(id, nome, codice)')
-        .eq('esercizio_id', esercizioAttivo.id)
-        .order('categoria')
-        .order('created_at')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single()
       if (error) throw error
-      setSpese(data || [])
-    } catch (err) {
-      setError(err.message)
+
+      // Ricalcola ripartizioni se fornite
+      if (ripartizioniCalcolate) {
+        await supabase.from('ripartizioni').delete().eq('spesa_id', id)
+        if (ripartizioniCalcolate.length > 0) {
+          const records = ripartizioniCalcolate.map(r => ({
+            spesa_id: id,
+            unita_id: r.unita_id,
+            importo: r.importo,
+            millesimi_usati: r.millesimi_usati || null,
+            criterio_applicato: payload.criterio || data.criterio,
+          }))
+          await supabase.from('ripartizioni').insert(records)
+        }
+      }
+
+      await fetch()
+      return data
+    } catch (e) {
+      setError(e.message)
+      throw e
     } finally {
       setLoading(false)
     }
-  }, [esercizioAttivo?.id])
+  }, [fetch])
 
-  useEffect(() => { fetchEsercizi() }, [fetchEsercizi])
-  useEffect(() => { fetchSpese() },   [fetchSpese])
+  const elimina = useCallback(async (id) => {
+    setLoading(true)
+    try {
+      const { error } = await supabase.from('spese').delete().eq('id', id)
+      if (error) throw error
+      setSpese(prev => prev.filter(s => s.id !== id))
+    } catch (e) {
+      setError(e.message)
+      throw e
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  // ── Crea esercizio ─────────────────────────────────────────────────────
-  const createEsercizio = async (data) => {
-    const { data: row, error } = await supabase
-      .from('esercizi')
-      .insert([{ ...data, condominio_id: condominioId }])
-      .select().single()
-    if (error) throw error
-    await fetchEsercizi()
-
-    // Genera automaticamente le 4 rate trimestrali
-    const inizio = new Date(data.data_inizio)
-    const rate = [1, 2, 3, 4].map(n => {
-      const scad = new Date(inizio)
-      scad.setMonth(scad.getMonth() + (n - 1) * 3)
-      return {
-        esercizio_id: row.id,
-        condominio_id: condominioId,
-        numero: n,
-        scadenza: scad.toISOString().split('T')[0],
-        descrizione: `${n}ª rata trimestrale`,
-        perc_importo: 25,
-        stato: 'attesa',
-      }
-    })
-    await supabase.from('rate').insert(rate)
-    return row
-  }
-
-  // ── Crea spesa ─────────────────────────────────────────────────────────
-  const createSpesa = async (spesaData) => {
+  // Segna subentro su una ripartizione specifica
+  const segnalaSubentro = useCallback(async (ripartizioneId, importoOverride, noteSubentro) => {
     const { data, error } = await supabase
-      .from('spese')
-      .insert([{
-        ...spesaData,
-        esercizio_id: esercizioAttivo.id,
-        condominio_id: condominioId,
-      }])
-      .select().single()
+      .from('ripartizioni')
+      .update({
+        importo_override: importoOverride,
+        note_subentro: noteSubentro,
+        subentro_segnalato: true,
+      })
+      .eq('id', ripartizioneId)
+      .select()
+      .single()
     if (error) throw error
-    await fetchSpese()
+    await fetch()
     return data
-  }
+  }, [fetch])
 
-  // ── Aggiorna spesa ─────────────────────────────────────────────────────
-  const updateSpesa = async (id, updates) => {
-    const { data, error } = await supabase
-      .from('spese')
-      .update(updates).eq('id', id).select().single()
-    if (error) throw error
-    await fetchSpese()
-    return data
-  }
+  // Calcola ripartizioni lato client (senza salvarle)
+  const calcolaRipartizioni = useCallback((spesa, tabellaMill, unita) => {
+    const { importo, criterio, percentuale_millesimi = 100 } = spesa
 
-  // ── Elimina spesa ──────────────────────────────────────────────────────
-  const deleteSpesa = async (id) => {
-    const { error } = await supabase.from('spese').delete().eq('id', id)
-    if (error) throw error
-    await fetchSpese()
-  }
+    if (criterio === 'quota_fissa') {
+      const nUnita = unita.length
+      const quota = nUnita > 0 ? importo / nUnita : 0
+      return unita.map(u => ({
+        unita_id: u.id,
+        unita,
+        importo: Math.round(quota * 100) / 100,
+        millesimi_usati: null,
+      }))
+    }
 
-  // ── Totale spese esercizio ─────────────────────────────────────────────
-  const totaleEsercizio = spese.reduce((s, sp) => s + Number(sp.importo_totale), 0)
-  const totalePerCategoria = spese.reduce((acc, sp) => {
-    acc[sp.categoria] = (acc[sp.categoria] || 0) + Number(sp.importo_totale)
-    return acc
-  }, {})
+    if (criterio === 'millesimi' || criterio === 'mista') {
+      if (!tabellaMill?.millesimi_unita?.length) return []
+
+      const totaleMillesimi = tabellaMill.millesimi_unita.reduce(
+        (sum, m) => sum + parseFloat(m.valore || 0), 0
+      )
+      if (totaleMillesimi === 0) return []
+
+      const importoMillesimi = criterio === 'mista'
+        ? importo * (percentuale_millesimi / 100)
+        : importo
+      const importoFisso = importo - importoMillesimi
+      const nUnita = unita.length
+
+      return unita.map(u => {
+        const mill = tabellaMill.millesimi_unita.find(m => m.unita_id === u.id)
+        const valMill = parseFloat(mill?.valore || 0)
+        const quotaMill = totaleMillesimi > 0 ? (valMill / totaleMillesimi) * importoMillesimi : 0
+        const quotaFissa = nUnita > 0 ? importoFisso / nUnita : 0
+        return {
+          unita_id: u.id,
+          unita: u,
+          importo: Math.round((quotaMill + quotaFissa) * 100) / 100,
+          millesimi_usati: valMill,
+        }
+      })
+    }
+
+    return []
+  }, [])
+
+  // Rileva spese con subentri non gestiti per un'unità
+  const getSpesePendentiSubentro = useCallback((unitaId) => {
+    return spese.filter(s =>
+      s.ripartizioni?.some(r => r.unita_id === unitaId && r.subentro_segnalato && !r.importo_override)
+    )
+  }, [spese])
 
   return {
-    spese, esercizi, esercizioAttivo, loading, error,
-    setEsercizioAttivo,
-    fetchSpese, fetchEsercizi,
-    createEsercizio, createSpesa, updateSpesa, deleteSpesa,
-    totaleEsercizio, totalePerCategoria,
+    spese, loading, error,
+    fetch, crea, aggiorna, elimina,
+    calcolaRipartizioni, segnalaSubentro, getSpesePendentiSubentro
   }
 }

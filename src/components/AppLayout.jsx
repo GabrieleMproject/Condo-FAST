@@ -20,14 +20,15 @@ export default function AppLayout() {
 
   const initials = user?.email?.substring(0, 2).toUpperCase() || 'AU'
 
-  const ITEMS = [
-    { to: '/dashboard',   icon: '📊', label: 'Dashboard' },
-    { to: '/condomini',   icon: '🏢', label: 'Condomini' },
-    { to: '/assemblee',   icon: '📅', label: 'Assemblee',    soon: true },
-    { to: '/contabilita', icon: '💰', label: 'Contabilità',  soon: true },
-    { to: '/documenti',   icon: '📁', label: 'Documenti',    soon: true },
-    { to: '/comunicazioni', icon: '✉️', label: 'Comunicazioni', soon: true },
-  ]
+ const ITEMS = [
+  { to: '/dashboard',     icon: '📊', label: 'Dashboard' },
+  { to: '/condomini',     icon: '🏢', label: 'Condomini' },
+  { to: '/archivio',      icon: '🗂️', label: 'Archivio' },
+  { to: '/assemblee',     icon: '📅', label: 'Assemblee',     soon: true },
+  { to: '/contabilita',   icon: '💰', label: 'Contabilità',   soon: true },
+  { to: '/documenti',     icon: '🗂️', label: 'Documenti',    soon: true },
+  { to: '/comunicazioni', icon: '✉️', label: 'Comunicazioni', soon: true },
+]
 
   return (
     <div style={{display:'flex',height:'100vh',background:'#0f172a',fontFamily:'Sora,sans-serif',overflow:'hidden'}}>

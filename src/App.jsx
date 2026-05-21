@@ -1,3 +1,5 @@
+import SpesePage from './pages/SpesePage'
+import ArchivioPage from './pages/ArchivioPage'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
@@ -18,22 +20,23 @@ export default function App() {
       <AuthProvider>
         <Toaster position="top-right" />
         <Routes>
+
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-          {/* Protected */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/condomini" element={<CondominiPage />} />
-              <Route path="/condomini/:id" element={<CondominiDetailPage />} />
-              <Route path="/condomini/:condominioId/anagrafica" element={<AnagraficaPage />} />
-            </Route>
-          </Route>
-
-          {/* Default */}
+<Route element={<ProtectedRoute />}>
+  <Route element={<AppLayout />}>
+    <Route path="/dashboard" element={<DashboardPage />} />
+    <Route path="/condomini" element={<CondominiPage />} />
+    <Route path="/condomini/:id" element={<CondominiDetailPage />} />
+    <Route path="/condomini/:condominioId/anagrafica" element={<AnagraficaPage />} />
+    <Route path="/condomini/:condominioId/spese" element={<SpesePage />} />
+    <Route path="/archivio" element={<ArchivioPage />} />
+  </Route>
+</Route>
+         {/* Default */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

@@ -1,0 +1,363 @@
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
+
+/**
+ * ConfigPagantePage
+ * Per ogni unità del condominio, configura chi è responsabile del pagamento:
+ * - Proprietario (default)
+ * - Inquilino (se presente)
+ * Salva su config_pagante_unita
+ */
+export default function ConfigPagantePage() {
+  const { condominioId } = useParams();
+
+  const [unita, setUnita] = useState([]);
+  const [config, setConfig] = useState({});           // { unitaId: 'proprietario' | 'inquilino' }
+  const [originale, setOriginale] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [defaultGlobal, setDefaultGlobal] = useState('proprietario');
+
+  // ─── Caricamento ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!condominioId) return;
+    loadAll();
+  }, [condominioId]);
+
+  async function loadAll() {
+    setLoading(true);
+    try {
+      const [{ data: uni }, { data: cfg }] = await Promise.all([
+        supabase.from('unita').select(`
+          *,
+          occupanti:occupanti_unita(
+            tipo_occupante, data_inizio, data_fine,
+            persona:persone(id, nominativo, email, telefono)
+          )
+        `).eq('condominio_id', condominioId).order('numero'),
+        supabase.from('config_pagante_unita').select('*').eq('condominio_id', condominioId),
+      ]);
+
+      setUnita(uni || []);
+
+      const map = {};
+      (cfg || []).forEach(c => {
+        map[c.unita_id] = c.pagante;
+      });
+      setConfig(map);
+      setOriginale(map);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ─── Applica default a tutte ──────────────────────────────────
+  function applicaDefault() {
+    const nuovoConfig = {};
+    unita.forEach(u => {
+      nuovoConfig[u.id] = defaultGlobal;
+    });
+    setConfig(nuovoConfig);
+  }
+
+  // ─── Cambio singola unità ─────────────────────────────────────
+  function togglePagante(unitaId, valore) {
+    setConfig(prev => ({ ...prev, [unitaId]: valore }));
+  }
+
+  // ─── Salvataggio ─────────────────────────────────────────────
+  async function salva() {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const upserts = Object.entries(config).map(([unita_id, pagante]) => ({
+        condominio_id: condominioId,
+        unita_id,
+        pagante,
+        user_id: user.id,
+      }));
+
+      const { error } = await supabase
+        .from('config_pagante_unita')
+        .upsert(upserts, { onConflict: 'condominio_id,unita_id' });
+
+      if (error) throw error;
+
+      setOriginale({ ...config });
+      showToast('Configurazione salvata', 'success');
+    } catch (e) {
+      showToast('Errore: ' + e.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function showToast(msg, type) {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  function getProprietario(u) {
+    return u.occupanti?.find(o => o.tipo_occupante === 'proprietario')?.persona;
+  }
+
+  function getInquilino(u) {
+    const oggi = new Date();
+    return u.occupanti?.find(o =>
+      o.tipo_occupante === 'inquilino' &&
+      (!o.data_fine || new Date(o.data_fine) >= oggi)
+    )?.persona;
+  }
+
+  const isDirty = JSON.stringify(config) !== JSON.stringify(originale);
+  const uniteSenzaConfig = unita.filter(u => !config[u.id]).length;
+
+  if (loading) return <div style={styles.loading}>Caricamento...</div>;
+
+  return (
+    <div style={styles.page}>
+      {/* Header */}
+      <div style={styles.header}>
+        <div>
+          <h1 style={styles.title}>Configurazione Pagante</h1>
+          <p style={styles.subtitle}>
+            Definisci chi è responsabile del pagamento delle quote per ogni unità.
+          </p>
+        </div>
+        <button
+          style={{ ...styles.btnPrimary, opacity: (!isDirty || saving) ? 0.5 : 1 }}
+          onClick={salva}
+          disabled={!isDirty || saving}
+        >
+          {saving ? 'Salvataggio...' : '💾 Salva Configurazione'}
+        </button>
+      </div>
+
+      {/* Alert unità senza config */}
+      {uniteSenzaConfig > 0 && (
+        <div style={styles.alert}>
+          ℹ️ {uniteSenzaConfig} {uniteSenzaConfig === 1 ? 'unità non ha' : 'unità non hanno'} ancora una configurazione.
+          Il default è <strong>proprietario</strong>.
+        </div>
+      )}
+
+      {/* Default globale */}
+      <div style={styles.defaultBar}>
+        <span style={styles.defaultLabel}>Applica a tutte le unità:</span>
+        <select
+          style={styles.select}
+          value={defaultGlobal}
+          onChange={e => setDefaultGlobal(e.target.value)}
+        >
+          <option value="proprietario">Proprietario</option>
+          <option value="inquilino">Inquilino</option>
+        </select>
+        <button style={styles.btnSecondary} onClick={applicaDefault}>
+          Applica
+        </button>
+      </div>
+
+      {/* Legenda */}
+      <div style={styles.legend}>
+        <div style={styles.legendItem}>
+          <span style={{ ...styles.badge, background: '#2563eb20', color: '#60a5fa' }}>Proprietario</span>
+          <span>Le quote vengono addebitate al proprietario dell'unità</span>
+        </div>
+        <div style={styles.legendItem}>
+          <span style={{ ...styles.badge, background: '#8b5cf620', color: '#a78bfa' }}>Inquilino</span>
+          <span>Le quote vengono addebitate all'inquilino corrente</span>
+        </div>
+      </div>
+
+      {/* Lista unità */}
+      <div style={styles.grid}>
+        {unita.map(u => {
+          const prop = getProprietario(u);
+          const inq = getInquilino(u);
+          const pagante = config[u.id] || 'proprietario';
+          const hasInquilino = !!inq;
+
+          return (
+            <div key={u.id} style={{ ...styles.card, ...(pagante === 'inquilino' ? styles.cardInquilino : {}) }}>
+              {/* Header card */}
+              <div style={styles.cardHeader}>
+                <div style={styles.cardTitle}>
+                  <span style={styles.unitNum}>Unità {u.numero}</span>
+                  <span style={styles.unitTipo}>{u.tipo || 'appartamento'}</span>
+                  {u.piano && <span style={styles.unitTipo}>Piano {u.piano}</span>}
+                </div>
+                {/* Toggle pagante */}
+                <div style={styles.toggleGroup}>
+                  <button
+                    style={{
+                      ...styles.toggleBtn,
+                      ...(pagante === 'proprietario' ? styles.toggleActiveProp : {}),
+                    }}
+                    onClick={() => togglePagante(u.id, 'proprietario')}
+                  >
+                    Proprietario
+                  </button>
+                  <button
+                    style={{
+                      ...styles.toggleBtn,
+                      ...(pagante === 'inquilino' ? styles.toggleActiveInq : {}),
+                      opacity: hasInquilino ? 1 : 0.4,
+                      cursor: hasInquilino ? 'pointer' : 'not-allowed',
+                    }}
+                    onClick={() => hasInquilino && togglePagante(u.id, 'inquilino')}
+                    title={!hasInquilino ? 'Nessun inquilino attivo' : ''}
+                  >
+                    Inquilino
+                  </button>
+                </div>
+              </div>
+
+              {/* Info occupanti */}
+              <div style={styles.occupanti}>
+                {/* Proprietario */}
+                <div style={{ ...styles.occupanteRow, ...(pagante === 'proprietario' ? styles.occupanteActive : {}) }}>
+                  <div style={styles.occupanteIcon}>🏠</div>
+                  <div style={styles.occupanteInfo}>
+                    <span style={styles.occupanteLabel}>Proprietario</span>
+                    <span style={styles.occupanteNome}>{prop?.nominativo || '—'}</span>
+                    {prop?.email && <span style={styles.occupanteEmail}>{prop.email}</span>}
+                  </div>
+                  {pagante === 'proprietario' && (
+                    <span style={{ ...styles.badge, background: '#2563eb20', color: '#60a5fa', marginLeft: 'auto' }}>
+                      Paga
+                    </span>
+                  )}
+                </div>
+
+                {/* Inquilino */}
+                <div style={{
+                  ...styles.occupanteRow,
+                  ...(pagante === 'inquilino' ? styles.occupanteActive : {}),
+                  opacity: hasInquilino ? 1 : 0.4,
+                }}>
+                  <div style={styles.occupanteIcon}>👤</div>
+                  <div style={styles.occupanteInfo}>
+                    <span style={styles.occupanteLabel}>Inquilino</span>
+                    <span style={styles.occupanteNome}>
+                      {inq?.nominativo || <em style={{ color: '#475569' }}>Nessun inquilino attivo</em>}
+                    </span>
+                    {inq?.email && <span style={styles.occupanteEmail}>{inq.email}</span>}
+                  </div>
+                  {pagante === 'inquilino' && hasInquilino && (
+                    <span style={{ ...styles.badge, background: '#8b5cf620', color: '#a78bfa', marginLeft: 'auto' }}>
+                      Paga
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {toast && (
+        <div style={{ ...styles.toast, background: toast.type === 'error' ? '#ef4444' : '#16a34a' }}>
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const styles = {
+  page: { fontFamily: "'Sora', sans-serif", color: '#e2e8f0', padding: 24 },
+  loading: { textAlign: 'center', padding: 60, color: '#475569' },
+  header: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+    marginBottom: 20, flexWrap: 'wrap', gap: 16,
+  },
+  title: { margin: 0, fontSize: 22, fontWeight: 700, color: '#f1f5f9' },
+  subtitle: { margin: '4px 0 0', fontSize: 13, color: '#64748b' },
+  alert: {
+    background: '#2563eb10', border: '1px solid #2563eb30',
+    borderRadius: 10, padding: '10px 16px', marginBottom: 16,
+    color: '#93c5fd', fontSize: 13,
+  },
+  defaultBar: {
+    display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16,
+    background: '#1e293b', borderRadius: 10, padding: '12px 16px',
+    border: '1px solid #334155',
+  },
+  defaultLabel: { fontSize: 13, color: '#94a3b8', whiteSpace: 'nowrap' },
+  select: {
+    background: '#0f172a', border: '1px solid #334155',
+    borderRadius: 8, padding: '7px 12px', color: '#e2e8f0',
+    fontFamily: "'Sora', sans-serif", fontSize: 13, cursor: 'pointer',
+  },
+  legend: {
+    display: 'flex', gap: 20, marginBottom: 20, flexWrap: 'wrap',
+    fontSize: 12, color: '#64748b', alignItems: 'center',
+  },
+  legendItem: { display: 'flex', alignItems: 'center', gap: 8 },
+  badge: {
+    borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600,
+    whiteSpace: 'nowrap',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+    gap: 16,
+  },
+  card: {
+    background: '#1e293b', borderRadius: 14, border: '1px solid #334155',
+    overflow: 'hidden', transition: 'border-color 0.2s',
+  },
+  cardInquilino: { borderColor: '#8b5cf640' },
+  cardHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+    padding: '14px 16px', borderBottom: '1px solid #334155', gap: 12, flexWrap: 'wrap',
+  },
+  cardTitle: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  unitNum: { fontWeight: 700, color: '#f1f5f9', fontSize: 15 },
+  unitTipo: {
+    background: '#334155', color: '#94a3b8',
+    borderRadius: 20, padding: '2px 8px', fontSize: 11,
+  },
+  toggleGroup: {
+    display: 'flex', background: '#0f172a',
+    borderRadius: 8, padding: 2, border: '1px solid #334155',
+  },
+  toggleBtn: {
+    background: 'none', border: 'none', color: '#64748b',
+    padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
+    fontFamily: "'Sora', sans-serif", fontSize: 12, fontWeight: 600,
+    transition: 'all 0.2s', whiteSpace: 'nowrap',
+  },
+  toggleActiveProp: { background: '#2563eb', color: '#fff' },
+  toggleActiveInq: { background: '#8b5cf6', color: '#fff' },
+  occupanti: { padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 },
+  occupanteRow: {
+    display: 'flex', alignItems: 'flex-start', gap: 10,
+    padding: '8px 10px', borderRadius: 8, transition: 'background 0.2s',
+  },
+  occupanteActive: { background: '#0f172a' },
+  occupanteIcon: { fontSize: 18, marginTop: 1 },
+  occupanteInfo: { display: 'flex', flexDirection: 'column', gap: 1, flex: 1 },
+  occupanteLabel: { fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  occupanteNome: { fontSize: 14, fontWeight: 600, color: '#e2e8f0' },
+  occupanteEmail: { fontSize: 11, color: '#64748b' },
+  btnPrimary: {
+    background: '#2563eb', color: '#fff', border: 'none',
+    borderRadius: 8, padding: '10px 22px',
+    fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer',
+  },
+  btnSecondary: {
+    background: '#334155', color: '#94a3b8', border: 'none',
+    borderRadius: 8, padding: '7px 16px',
+    fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13, cursor: 'pointer',
+  },
+  toast: {
+    position: 'fixed', bottom: 32, right: 32,
+    padding: '12px 24px', borderRadius: 10,
+    color: '#fff', fontWeight: 600, fontSize: 14,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 9999,
+  },
+};

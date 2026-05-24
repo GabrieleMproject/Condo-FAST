@@ -19,7 +19,7 @@ export function useSpese(condominioId, esercizioId) {
           ripartizioni(
             id, unita_id, importo, millesimi_usati,
             importo_override, note_subentro, subentro_segnalato,
-            unita(id, interno, piano)
+            unita(id, numero, piano)
           )
         `)
         .eq('condominio_id', condominioId)

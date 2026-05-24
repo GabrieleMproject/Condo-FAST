@@ -1,72 +1,194 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useState } from 'react';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  LayoutDashboard,
+  Building2,
+  Users,
+  Receipt,
+  Archive,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Settings,
+  Bell,
+  Menu,
+} from 'lucide-react';
+
+const NAV_ITEMS = [
+  { path: '/dashboard',  label: 'Dashboard',   icon: LayoutDashboard },
+  { path: '/condomini',  label: 'Condomini',    icon: Building2 },
+  { path: '/anagrafica', label: 'Anagrafica',   icon: Users },
+  { path: '/spese',      label: 'Spese',        icon: Receipt },
+  { path: '/archivio',   label: 'Archivio',     icon: Archive },
+];
 
 export default function AppLayout() {
-  const { user, signOut } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const [collapsed, setCollapsed] = useState(false)
-  const [signingOut, setSigningOut] = useState(false)
-
-  const condominioMatch = location.pathname.match(/\/condomini\/([^/]+)/)
-  const condominioId = condominioMatch ? condominioMatch[1] : null
+  const [collapsed, setCollapsed] = useState(false);
+  const { user, signOut } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    setSigningOut(true)
-    try { await signOut(); navigate('/login') }
-    finally { setSigningOut(false) }
-  }
-
-  const initials = user?.email?.substring(0, 2).toUpperCase() || 'AU'
-
- const ITEMS = [
-  { to: '/dashboard',     icon: '📊', label: 'Dashboard' },
-  { to: '/condomini',     icon: '🏢', label: 'Condomini' },
-  { to: '/archivio',      icon: '🗂️', label: 'Archivio' },
-  { to: '/assemblee',     icon: '📅', label: 'Assemblee',     soon: true },
-  { to: '/contabilita',   icon: '💰', label: 'Contabilità',   soon: true },
-  { to: '/documenti',     icon: '🗂️', label: 'Documenti',    soon: true },
-  { to: '/comunicazioni', icon: '✉️', label: 'Comunicazioni', soon: true },
-]
+    await signOut();
+    navigate('/login');
+  };
 
   return (
-    <div style={{display:'flex',height:'100vh',background:'#0f172a',fontFamily:'Sora,sans-serif',overflow:'hidden'}}>
-      <aside style={{width:collapsed?64:240,background:'#1e293b',display:'flex',flexDirection:'column',borderRight:'1px solid #334155',transition:'width .25s',flexShrink:0,overflow:'hidden'}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'20px 16px',borderBottom:'1px solid #334155'}}>
-          {!collapsed && <span style={{color:'#e2e8f0',fontSize:16,fontWeight:700}}>🏢 CondoAI</span>}
-          <button style={{background:'none',border:'none',color:'#64748b',cursor:'pointer',fontSize:16}} onClick={()=>setCollapsed(!collapsed)}>
-            {collapsed?'→':'←'}
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', fontFamily: 'Sora, sans-serif' }}>
+      {/* Sidebar */}
+      <aside style={{
+        width: collapsed ? 64 : 240,
+        background: '#0f172a',
+        borderRight: '1px solid #1e293b',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'width 0.2s ease',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}>
+        {/* Logo */}
+        <div style={{
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          padding: collapsed ? '0 20px' : '0 20px',
+          borderBottom: '1px solid #1e293b',
+          gap: 10,
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <Building2 size={18} color="#fff" />
+          </div>
+          {!collapsed && (
+            <span style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 18, whiteSpace: 'nowrap' }}>
+              CondoAI
+            </span>
+          )}
+        </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+            const active = location.pathname.startsWith(path);
+            return (
+              <Link
+                key={path}
+                to={path}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: collapsed ? '10px 16px' : '10px 12px',
+                  borderRadius: 8,
+                  textDecoration: 'none',
+                  background: active ? 'rgba(37,99,235,0.15)' : 'transparent',
+                  color: active ? '#60a5fa' : '#94a3b8',
+                  fontWeight: active ? 600 : 400,
+                  fontSize: 14,
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                }}
+                onMouseEnter={e => {
+                  if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  if (!active) e.currentTarget.style.color = '#cbd5e1';
+                }}
+                onMouseLeave={e => {
+                  if (!active) e.currentTarget.style.background = 'transparent';
+                  if (!active) e.currentTarget.style.color = '#94a3b8';
+                }}
+              >
+                <Icon size={18} strokeWidth={active ? 2.5 : 1.8} style={{ flexShrink: 0 }} />
+                {!collapsed && label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Bottom: collapse + signout */}
+        <div style={{ padding: '8px', borderTop: '1px solid #1e293b', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: collapsed ? '10px 16px' : '10px 12px',
+              borderRadius: 8, border: 'none', background: 'transparent',
+              color: '#475569', cursor: 'pointer', fontSize: 14,
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              whiteSpace: 'nowrap', overflow: 'hidden',
+              width: '100%',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}
+            onMouseLeave={e => e.currentTarget.style.color = '#475569'}
+          >
+            {collapsed ? <ChevronRight size={18} /> : <><ChevronLeft size={18} /><span>Riduci</span></>}
+          </button>
+
+          <button
+            onClick={handleSignOut}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: collapsed ? '10px 16px' : '10px 12px',
+              borderRadius: 8, border: 'none', background: 'transparent',
+              color: '#475569', cursor: 'pointer', fontSize: 14,
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              whiteSpace: 'nowrap', overflow: 'hidden',
+              width: '100%',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
+            onMouseLeave={e => e.currentTarget.style.color = '#475569'}
+          >
+            <LogOut size={18} style={{ flexShrink: 0 }} />
+            {!collapsed && 'Esci'}
           </button>
         </div>
-        <nav style={{display:'flex',flexDirection:'column',gap:2,padding:'12px 8px',flex:1}}>
-          {ITEMS.map(item => item.soon ? (
-            <div key={item.to} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:8,color:'#475569',borderLeft:'3px solid transparent'}}>
-              <span style={{fontSize:16,width:20,textAlign:'center'}}>{item.icon}</span>
-              {!collapsed && <><span style={{flex:1,fontSize:13}}>{item.label}</span><span style={{fontSize:9,background:'#1e3a5f',color:'#60a5fa',padding:'2px 6px',borderRadius:10,fontWeight:700}}>Presto</span></>}
-            </div>
-          ) : (
-            <NavLink key={item.to} to={item.to}
-              style={({isActive})=>({display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:8,textDecoration:'none',fontSize:13,fontWeight:500,background:isActive?'rgba(59,130,246,0.15)':'transparent',color:isActive?'#60a5fa':'#94a3b8',borderLeft:isActive?'3px solid #3b82f6':'3px solid transparent'})}>
-              <span style={{fontSize:16,width:20,textAlign:'center'}}>{item.icon}</span>
-              {!collapsed && <span>{item.label}</span>}
-            </NavLink>
-          ))}
-          {condominioId && (
-            <NavLink to={`/condomini/${condominioId}/anagrafica`}
-              style={({isActive})=>({display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:8,textDecoration:'none',fontSize:13,fontWeight:500,background:isActive?'rgba(59,130,246,0.15)':'transparent',color:isActive?'#60a5fa':'#94a3b8',borderLeft:isActive?'3px solid #3b82f6':'3px solid transparent',marginTop:8,borderTop:'1px solid #1e293b'})}>
-              <span style={{fontSize:16,width:20,textAlign:'center'}}>👥</span>
-              {!collapsed && <span>Anagrafica</span>}
-            </NavLink>
-          )}
-        </nav>
-        <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px',borderTop:'1px solid #334155'}}>
-          <div style={{width:32,height:32,borderRadius:'50%',background:'#2563eb',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,flexShrink:0}}>{initials}</div>
-          {!collapsed && <div style={{flex:1,overflow:'hidden'}}><div style={{color:'#e2e8f0',fontSize:11,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.email}</div><div style={{color:'#64748b',fontSize:10}}>Amministratore</div></div>}
-          <button style={{background:'none',border:'none',color:'#64748b',cursor:'pointer',fontSize:16}} onClick={handleSignOut} disabled={signingOut}>🚪</button>
-        </div>
       </aside>
-      <main style={{flex:1,overflowY:'auto',background:'#0f172a'}}><Outlet /></main>
+
+      {/* Main */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Topbar */}
+        <header style={{
+          height: 64,
+          background: '#0f172a',
+          borderBottom: '1px solid #1e293b',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 24px',
+          flexShrink: 0,
+        }}>
+          <div style={{ color: '#94a3b8', fontSize: 13 }}>
+            {NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.label ?? 'CondoAI'}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', display: 'flex' }}>
+              <Bell size={18} />
+            </button>
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #1e40af, #2563eb)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 13, fontWeight: 600,
+            }}>
+              {user?.email?.[0]?.toUpperCase() ?? 'U'}
+            </div>
+          </div>
+        </header>
+
+        {/* Page content */}
+     <main style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+  <Outlet />
+</main>
+      </div>
     </div>
-  )
+  );
 }

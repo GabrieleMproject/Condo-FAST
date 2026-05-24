@@ -39,7 +39,7 @@ export default function SpesePage() {
     fetchTabelle()
     fetchDocumenti()
     // Fetch unità del condominio
-    supabase.from('unita').select('id, interno, piano, tipo').eq('condominio_id', condominioId)
+    supabase.from('unita').select('id, numero, piano, tipo').eq('condominio_id', condominioId)
       .then(({ data }) => setUnita(data || []))
     supabase.from('condomini').select('nome, indirizzo').eq('id', condominioId).single()
       .then(({ data }) => setCondominio(data))

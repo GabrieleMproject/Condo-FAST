@@ -13,7 +13,7 @@ export function useMillesimi(condominioId) {
     try {
       const { data, error } = await supabase
         .from('tabelle_millesimali')
-        .select(`*, millesimi_unita(*, unita(id, interno, piano, tipo))`)
+        .select(`*, millesimi_unita(*, unita(id, numero, piano, tipo))`)
         .eq('condominio_id', condominioId)
         .order('nome')
       if (error) throw error

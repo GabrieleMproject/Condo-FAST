@@ -1,3 +1,4 @@
+import ImpostazioniPage from './pages/ImpostazioniPage'
 import MillesimiEditor from './components/MillesimiEditor'
 import RipartizionePage from './pages/RipartizionePage'
 import ConfigPagantePage from './pages/ConfigPagantePage'
@@ -43,7 +44,8 @@ export default function App() {
     <Route path="/condomini/:condominioId/estratto-conto" element={<EstrattoContoPage />} />
     <Route path="/condomini/:condominioId/fatture" element={<FattureFornitoriPage />} />
     <Route path="/condomini/:condominioId/riconciliazioni" element={<RiconciliazioniPage />} />
-    <Route path="/condomini/:condominioId/dashboard-fin" element={<DashboardFinanziaria />} />
+  <Route path="/condomini/:condominioId/dashboard-fin" element={<DashboardFinanziaria />} />
+<Route path="/impostazioni" element={<ImpostazioniPage />} />  {/* ← qui */}
   </Route>
 </Route>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

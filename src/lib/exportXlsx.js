@@ -5,175 +5,218 @@
  * 2. Ripartizione spese
  * 3. Rate
  *
- * Dipendenza: npm install xlsx
+ * Dipendenza: npm install exceljs
  */
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
-// ─── Helper ──────────────────────────────────────────────────────────────────
-function fmtEuro(v) {
-  if (v === null || v === undefined) return '';
-  return Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+// ─── Colori tema ──────────────────────────────────────────────────────────────
+const COLOR_HEADER_BG = '1E3A5F';
+const COLOR_HEADER_FG = 'FFFFFFFF';
+const COLOR_BORDER    = '2563EB';
+const COLOR_ROW_ALT   = 'F1F5F9';
 
+// ─── Helper ───────────────────────────────────────────────────────────────────
 function fmtData(d) {
   if (!d) return '';
   return new Date(d).toLocaleDateString('it-IT');
 }
 
-// ─── Foglio 1: Anagrafica ────────────────────────────────────────────────────
-function buildFoglioAnagrafica(unita) {
-  const rows = [
-    ['N° Unità', 'Tipo', 'Piano', 'Scala', 'Superficie mq', 'Proprietario', 'Email Prop.', 'Inquilino', 'Email Inq.', 'Dal', 'Al'],
-  ];
-
-  unita.forEach(u => {
-    const prop = u.occupanti?.find(o => o.tipo_occupante === 'proprietario');
-    const inq = u.occupanti?.find(o => o.tipo_occupante === 'inquilino');
-    rows.push([
-      u.numero,
-      u.tipo,
-      u.piano ?? '',
-      u.scala ?? '',
-      u.superficie ?? '',
-      prop?.persona?.nominativo || '',
-      prop?.persona?.email || '',
-      inq?.persona?.nominativo || '',
-      inq?.persona?.email || '',
-      inq ? fmtData(inq.data_inizio) : '',
-      inq ? fmtData(inq.data_fine) : '',
-    ]);
+// ─── Stile intestazione ───────────────────────────────────────────────────────
+function styleHeader(row) {
+  row.eachCell(cell => {
+    cell.font   = { bold: true, color: { argb: COLOR_HEADER_FG } };
+    cell.fill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_HEADER_BG } };
+    cell.border = { bottom: { style: 'thin', color: { argb: COLOR_BORDER } } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });
-
-  return rows;
+  row.height = 22;
 }
 
-// ─── Foglio 2: Ripartizione Spese ────────────────────────────────────────────
-function buildFoglioRipartizione(spese, unita, ripartizioni) {
-  // Header
-  const unitaHeader = unita.map(u => `Unità ${u.numero}`);
-  const rows = [
-    ['Spesa', 'Categoria', 'Criterio', 'Data', 'Totale €', ...unitaHeader, 'Totale Ripartito €'],
+// ─── Stile riga dati ──────────────────────────────────────────────────────────
+function styleDataRow(row, idx) {
+  if (idx % 2 === 0) {
+    row.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_ROW_ALT } };
+    });
+  }
+  row.eachCell(cell => {
+    cell.alignment = { vertical: 'middle' };
+  });
+}
+
+// ─── Foglio 1: Anagrafica ─────────────────────────────────────────────────────
+function buildFoglioAnagrafica(ws, unita) {
+  ws.columns = [
+    { header: 'N° Unità',        key: 'numero',     width: 12 },
+    { header: 'Tipo',            key: 'tipo',        width: 16 },
+    { header: 'Piano',           key: 'piano',       width: 8  },
+    { header: 'Scala',           key: 'scala',       width: 8  },
+    { header: 'Superficie mq',   key: 'superficie',  width: 14 },
+    { header: 'Proprietario',    key: 'prop_nome',   width: 28 },
+    { header: 'Email Prop.',     key: 'prop_email',  width: 26 },
+    { header: 'Inquilino',       key: 'inq_nome',    width: 28 },
+    { header: 'Email Inq.',      key: 'inq_email',   width: 26 },
+    { header: 'Dal',             key: 'dal',         width: 12 },
+    { header: 'Al',              key: 'al',          width: 12 },
   ];
 
-  spese.forEach(s => {
-    const rips = ripartizioni.filter(r => r.spesa_id === s.id);
-    const importiPerUnita = unita.map(u => {
-      const r = rips.find(r => r.unita_id === u.id);
-      if (!r) return '';
-      return r.override_manuale ? (r.importo_override ?? r.importo) : r.importo;
-    });
-    const totRip = importiPerUnita.reduce((acc, v) => acc + (Number(v) || 0), 0);
+  styleHeader(ws.getRow(1));
 
-    rows.push([
-      s.descrizione,
-      s.categoria || '',
-      s.criterio_ripartizione || '',
-      fmtData(s.data_competenza),
-      s.importo,
-      ...importiPerUnita,
-      totRip,
-    ]);
+  unita.forEach((u, i) => {
+    const prop = u.occupanti?.find(o => o.tipo_occupante === 'proprietario');
+    const inq  = u.occupanti?.find(o => o.tipo_occupante === 'inquilino');
+    const row  = ws.addRow({
+      numero:     u.numero,
+      tipo:       u.tipo,
+      piano:      u.piano ?? '',
+      scala:      u.scala ?? '',
+      superficie: u.superficie ?? '',
+      prop_nome:  prop?.persona?.nominativo || '',
+      prop_email: prop?.persona?.email || '',
+      inq_nome:   inq?.persona?.nominativo || '',
+      inq_email:  inq?.persona?.email || '',
+      dal:        inq ? fmtData(inq.data_inizio) : '',
+      al:         inq ? fmtData(inq.data_fine)   : '',
+    });
+    styleDataRow(row, i);
+  });
+}
+
+// ─── Foglio 2: Ripartizione Spese ─────────────────────────────────────────────
+function buildFoglioRipartizione(ws, spese, unita, ripartizioni) {
+  // Colonne fisse + una per unità + totale ripartito
+  const colsBase = [
+    { header: 'Spesa',              key: 'descrizione',  width: 30 },
+    { header: 'Categoria',          key: 'categoria',    width: 18 },
+    { header: 'Criterio',           key: 'criterio',     width: 22 },
+    { header: 'Data',               key: 'data',         width: 12 },
+    { header: 'Totale €',           key: 'totale',       width: 14, style: { numFmt: '#,##0.00' } },
+  ];
+  const colsUnita = unita.map(u => ({
+    header: `Unità ${u.numero}`,
+    key:    `unita_${u.id}`,
+    width:  14,
+    style:  { numFmt: '#,##0.00' },
+  }));
+  const colsFine = [
+    { header: 'Totale Ripartito €', key: 'tot_rip', width: 18, style: { numFmt: '#,##0.00' } },
+  ];
+
+  ws.columns = [...colsBase, ...colsUnita, ...colsFine];
+  styleHeader(ws.getRow(1));
+
+  const totaliUnita = {};
+  unita.forEach(u => { totaliUnita[u.id] = 0; });
+  let totSpese = 0;
+  let totRipTot = 0;
+
+  spese.forEach((s, i) => {
+    const rips = ripartizioni.filter(r => r.spesa_id === s.id);
+    const rowData = {
+      descrizione: s.descrizione,
+      categoria:   s.categoria || '',
+      criterio:    s.criterio_ripartizione || '',
+      data:        fmtData(s.data_competenza),
+      totale:      s.importo,
+    };
+    let sommaRip = 0;
+    unita.forEach(u => {
+      const r = rips.find(r => r.unita_id === u.id);
+      const imp = r ? (r.override_manuale ? (r.importo_override ?? r.importo) : r.importo) : 0;
+      rowData[`unita_${u.id}`] = imp || '';
+      sommaRip += imp || 0;
+      totaliUnita[u.id] += imp || 0;
+    });
+    rowData.tot_rip = sommaRip;
+    totSpese   += s.importo || 0;
+    totRipTot  += sommaRip;
+
+    const row = ws.addRow(rowData);
+    styleDataRow(row, i);
   });
 
   // Riga totali
-  const totaliUnita = unita.map(u => {
-    return ripartizioni
-      .filter(r => r.unita_id === u.id && spese.find(s => s.id === r.spesa_id))
-      .reduce((acc, r) => acc + (r.override_manuale ? (r.importo_override ?? r.importo) : r.importo), 0);
+  const totRow = ws.addRow({
+    descrizione: 'TOTALE',
+    totale:      totSpese,
+    ...Object.fromEntries(unita.map(u => [`unita_${u.id}`, totaliUnita[u.id]])),
+    tot_rip:     totRipTot,
   });
-  const totaleGenerale = totaliUnita.reduce((a, v) => a + v, 0);
-  rows.push(['TOTALE', '', '', '', spese.reduce((a, s) => a + (s.importo || 0), 0), ...totaliUnita, totaleGenerale]);
-
-  return rows;
+  totRow.font = { bold: true };
+  totRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DBEAFE' } };
 }
 
-// ─── Foglio 3: Rate ──────────────────────────────────────────────────────────
-function buildFoglioRate(rate, unita) {
-  const rows = [
-    ['Unità', 'Proprietario', 'N° Rata', 'Scadenza', 'Importo €', 'Stato', 'Data Pagamento'],
+// ─── Foglio 3: Rate ───────────────────────────────────────────────────────────
+function buildFoglioRate(ws, rate, unita) {
+  ws.columns = [
+    { header: 'Unità',           key: 'unita',       width: 10 },
+    { header: 'Proprietario',    key: 'prop',        width: 28 },
+    { header: 'N° Rata',         key: 'n_rata',      width: 10 },
+    { header: 'Scadenza',        key: 'scadenza',    width: 14 },
+    { header: 'Importo €',       key: 'importo',     width: 14, style: { numFmt: '#,##0.00' } },
+    { header: 'Stato',           key: 'stato',       width: 14 },
+    { header: 'Data Pagamento',  key: 'data_pag',    width: 16 },
   ];
 
-  // Ordina per unità poi per data
+  styleHeader(ws.getRow(1));
+
   const rateSorted = [...(rate || [])].sort((a, b) => {
     const ua = unita.find(u => u.id === a.unita_id)?.numero || '';
     const ub = unita.find(u => u.id === b.unita_id)?.numero || '';
-    if (ua !== ub) return ua.localeCompare(ub);
+    if (ua !== ub) return String(ua).localeCompare(String(ub));
     return new Date(a.data_scadenza) - new Date(b.data_scadenza);
   });
 
-  rateSorted.forEach(r => {
-    const u = unita.find(un => un.id === r.unita_id);
+  rateSorted.forEach((r, i) => {
+    const u    = unita.find(un => un.id === r.unita_id);
     const prop = u?.occupanti?.find(o => o.tipo_occupante === 'proprietario');
-    rows.push([
-      u?.numero || '',
-      prop?.persona?.nominativo || '',
-      r.numero_rata || '',
-      fmtData(r.data_scadenza),
-      r.importo,
-      r.stato || '',
-      r.data_pagamento ? fmtData(r.data_pagamento) : '',
-    ]);
-  });
+    const row  = ws.addRow({
+      unita:    u?.numero || '',
+      prop:     prop?.persona?.nominativo || '',
+      n_rata:   r.numero_rata || '',
+      scadenza: fmtData(r.data_scadenza),
+      importo:  r.importo,
+      stato:    r.stato || '',
+      data_pag: r.data_pagamento ? fmtData(r.data_pagamento) : '',
+    });
+    styleDataRow(row, i);
 
-  return rows;
-}
-
-// ─── Stile celle intestazione ─────────────────────────────────────────────────
-function styleSheet(ws, colCount) {
-  const headerStyle = {
-    font: { bold: true, color: { rgb: 'FFFFFF' } },
-    fill: { fgColor: { rgb: '1E3A5F' } },
-    alignment: { horizontal: 'center' },
-    border: {
-      bottom: { style: 'thin', color: { rgb: '2563EB' } },
-    },
-  };
-
-  // Applica stile alla prima riga
-  for (let c = 0; c < colCount; c++) {
-    const cellRef = XLSX.utils.encode_cell({ r: 0, c });
-    if (ws[cellRef]) {
-      ws[cellRef].s = headerStyle;
+    // Colora riga in base allo stato
+    if (r.stato === 'scaduta') {
+      row.getCell('stato').font = { color: { argb: 'FFDC2626' } };
+    } else if (r.stato === 'pagata') {
+      row.getCell('stato').font = { color: { argb: 'FF16A34A' } };
     }
-  }
-
-  return ws;
+  });
 }
 
-// ─── Export principale ───────────────────────────────────────────────────────
+// ─── Export principale ────────────────────────────────────────────────────────
 export async function exportRipartizioneXlsx({ condominio, esercizio, spese, unita, ripartizioni, rate }) {
-  const wb = XLSX.utils.book_new();
+  const wb = new ExcelJS.Workbook();
+  wb.creator  = 'CondoAI';
+  wb.created  = new Date();
+  wb.modified = new Date();
 
-  // Foglio 1: Anagrafica
-  const rowsAna = buildFoglioAnagrafica(unita);
-  const wsAna = XLSX.utils.aoa_to_sheet(rowsAna);
-  wsAna['!cols'] = [
-    { wch: 10 }, { wch: 16 }, { wch: 8 }, { wch: 8 }, { wch: 14 },
-    { wch: 28 }, { wch: 26 }, { wch: 28 }, { wch: 26 }, { wch: 12 }, { wch: 12 },
-  ];
-  styleSheet(wsAna, 11);
-  XLSX.utils.book_append_sheet(wb, wsAna, 'Anagrafica');
+  // Foglio 1
+  const wsAna = wb.addWorksheet('Anagrafica');
+  buildFoglioAnagrafica(wsAna, unita);
 
-  // Foglio 2: Ripartizione
-  const rowsRip = buildFoglioRipartizione(spese, unita, ripartizioni);
-  const wsRip = XLSX.utils.aoa_to_sheet(rowsRip);
-  const ripCols = [{ wch: 30 }, { wch: 18 }, { wch: 22 }, { wch: 12 }, { wch: 14 }];
-  unita.forEach(() => ripCols.push({ wch: 14 }));
-  ripCols.push({ wch: 18 });
-  wsRip['!cols'] = ripCols;
-  styleSheet(wsRip, rowsRip[0].length);
-  XLSX.utils.book_append_sheet(wb, wsRip, 'Ripartizione Spese');
+  // Foglio 2
+  const wsRip = wb.addWorksheet('Ripartizione Spese');
+  buildFoglioRipartizione(wsRip, spese, unita, ripartizioni);
 
-  // Foglio 3: Rate
-  const rowsRate = buildFoglioRate(rate, unita);
-  const wsRate = XLSX.utils.aoa_to_sheet(rowsRate);
-  wsRate['!cols'] = [
-    { wch: 10 }, { wch: 28 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 },
-  ];
-  styleSheet(wsRate, 7);
-  XLSX.utils.book_append_sheet(wb, wsRate, 'Rate');
+  // Foglio 3
+  const wsRate = wb.addWorksheet('Rate');
+  buildFoglioRate(wsRate, rate, unita);
 
-  // Download
+  // Download via blob
+  const buffer   = await wb.xlsx.writeBuffer();
+  const blob     = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url      = URL.createObjectURL(blob);
+  const a        = document.createElement('a');
   const nomeFile = `CondoAI_${(condominio?.nome || 'Condominio').replace(/\s+/g, '_')}_${esercizio?.anno || ''}.xlsx`;
-  XLSX.writeFile(wb, nomeFile);
+  a.href         = url;
+  a.download     = nomeFile;
+  a.click();
+  URL.revokeObjectURL(url);
 }

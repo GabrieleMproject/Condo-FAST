@@ -1,0 +1,200 @@
+// src/components/PlanGate.jsx
+import { usePlan, PIANI } from '../hooks/usePlan'
+
+// ── Icone piani ───────────────────────────────────────────────────────────
+const PIANO_ICONS = {
+  base:         '⚡',
+  studio:       '🏢',
+  professional: '🚀',
+}
+
+// ── Componente UpgradePrompt ──────────────────────────────────────────────
+function UpgradePrompt({ feature, pianoMinimo, compact = false }) {
+  const info = PIANI[pianoMinimo]
+
+  if (compact) {
+    return (
+      <div style={styles.compactPrompt}>
+        <span style={styles.lockIcon}>🔒</span>
+        <span style={styles.compactText}>
+          Funzione {info?.label || pianoMinimo} — 
+          <a href="/impostazioni" style={styles.upgradeLink}> Aggiorna piano</a>
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div style={styles.upgradeBox}>
+      <div style={styles.upgradeIcon}>{PIANO_ICONS[pianoMinimo] || '🔒'}</div>
+      <h3 style={styles.upgradeTitle}>
+        Funzione disponibile nel piano {info?.label || pianoMinimo}
+      </h3>
+      <p style={styles.upgradeDesc}>
+        {getFeatureDesc(feature)}
+      </p>
+      <div style={styles.upgradeDetails}>
+        <div style={styles.upgradePrice}>
+          <span style={styles.priceLabel}>A partire da</span>
+          <span style={styles.priceValue}>{info?.canone}€<span style={styles.pricePer}>/mese</span></span>
+        </div>
+        <div style={styles.upgradeFeatures}>
+          {getUpgradeFeatures(pianoMinimo).map((f, i) => (
+            <div key={i} style={styles.upgradeFeatureItem}>
+              <span style={{ color: '#22c55e' }}>✓</span>
+              <span style={{ color: '#94a3b8', fontSize: 13 }}>{f}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <a href="/impostazioni" style={styles.upgradeBtn}>
+        Aggiorna a {info?.label} →
+      </a>
+      <p style={styles.trialNote}>Sei in trial? Attiva un piano per sbloccare tutte le funzioni.</p>
+    </div>
+  )
+}
+
+// ── Descrizioni feature ───────────────────────────────────────────────────
+function getFeatureDesc(feature) {
+  const descs = {
+    portale_condomino:  'Offri ai condomini un portale personale per visualizzare rate, documenti e comunicazioni — e pagare online.',
+    rendiconto_pdf:     'Genera automaticamente il rendiconto annuale in PDF con ripartizione spese e estratto conto.',
+    assemblee:          'Gestisci assemblee, presenze, deleghe, calcolo quorum e genera verbali con AI.',
+    multi_utente:       'Aggiungi fino a 5 collaboratori con ruoli personalizzati (admin, collaboratore, sola lettura).',
+    api_access:         'Accedi alle API CondoAI per integrare con altri software gestionali.',
+    gestione_fornitori: 'Gestisci anagrafica fornitori, contratti, scadenze e storico fatture.',
+    notifiche_auto:     'Invia automaticamente avvisi di rate scadute, solleciti e promemoria assemblea.',
+  }
+  return descs[feature] || 'Questa funzione è disponibile in un piano superiore.'
+}
+
+function getUpgradeFeatures(piano) {
+  const features = {
+    studio: [
+      'Portale condomino con pagamenti Stripe',
+      'Rendiconto annuale PDF automatico',
+      'Assemblee e verbali AI',
+      'Notifiche automatiche rate scadute',
+      '600 AI calls/mese',
+      '35 condomini inclusi',
+    ],
+    professional: [
+      'Multi-utente fino a 5 collaboratori',
+      'Gestione fornitori e contratti',
+      'Alert scadenze automatici',
+      'AI calls illimitate',
+      '70 condomini inclusi',
+      'API access + SLA dedicato',
+    ],
+  }
+  return features[piano] || []
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENTE PRINCIPALE PlanGate
+// ═══════════════════════════════════════════════════════════════════════════
+/**
+ * PlanGate — wrappa qualsiasi funzione e mostra UpgradePrompt se non disponibile.
+ *
+ * Props:
+ *   feature     {string}  — nome feature da controllare (es. 'portale_condomino')
+ *   compact     {boolean} — mostra prompt compatto inline invece del box completo
+ *   fallback    {node}    — componente alternativo (default: UpgradePrompt)
+ *   children    {node}    — contenuto da mostrare se il piano lo consente
+ */
+export default function PlanGate({ feature, compact = false, fallback, children }) {
+  const { canUse, pianoMinimoPerFeature, loading, isTrialScaduto } = usePlan()
+
+  if (loading) return null
+
+  // Trial scaduto → blocca tutto tranne funzioni base
+  if (isTrialScaduto && feature) {
+    const pianoMinimo = pianoMinimoPerFeature(feature) || 'base'
+    if (fallback) return fallback
+    return <UpgradePrompt feature={feature} pianoMinimo={pianoMinimo} compact={compact} />
+  }
+
+  if (!canUse(feature)) {
+    const pianoMinimo = pianoMinimoPerFeature(feature) || 'base'
+    if (fallback) return fallback
+    return <UpgradePrompt feature={feature} pianoMinimo={pianoMinimo} compact={compact} />
+  }
+
+  return children
+}
+
+// ── Componente badge "Piano X" da usare inline ────────────────────────────
+export function PlanBadge({ piano }) {
+  const colors = {
+    trial:        { bg: '#1e3a5f', text: '#60a5fa', border: '#2563eb' },
+    base:         { bg: '#1e3a2f', text: '#4ade80', border: '#16a34a' },
+    studio:       { bg: '#2e1f5e', text: '#a78bfa', border: '#7c3aed' },
+    professional: { bg: '#1e2f3a', text: '#38bdf8', border: '#0284c7' },
+  }
+  const c = colors[piano] || colors.base
+  return (
+    <span style={{
+      background: c.bg, color: c.text,
+      border: `1px solid ${c.border}`,
+      borderRadius: 20, padding: '2px 10px',
+      fontSize: 12, fontWeight: 600,
+    }}>
+      {PIANO_ICONS[piano] || ''} {PIANI[piano]?.label || piano}
+    </span>
+  )
+}
+
+// ── Stili ─────────────────────────────────────────────────────────────────
+const styles = {
+  upgradeBox: {
+    background: '#1e293b',
+    border: '1px solid #334155',
+    borderRadius: 16,
+    padding: '32px',
+    textAlign: 'center',
+    maxWidth: 480,
+    margin: '0 auto',
+  },
+  upgradeIcon: { fontSize: 48, marginBottom: 16 },
+  upgradeTitle: {
+    color: '#e2e8f0', fontSize: 18, fontWeight: 700,
+    margin: '0 0 10px', fontFamily: 'Sora, sans-serif',
+  },
+  upgradeDesc: {
+    color: '#94a3b8', fontSize: 14, lineHeight: 1.6,
+    margin: '0 0 24px',
+  },
+  upgradeDetails: {
+    background: '#0f172a', borderRadius: 10,
+    padding: '16px 20px', marginBottom: 24,
+    display: 'flex', gap: 24, alignItems: 'flex-start',
+    textAlign: 'left',
+  },
+  upgradePrice: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    minWidth: 80,
+  },
+  priceLabel: { color: '#64748b', fontSize: 11, marginBottom: 4 },
+  priceValue: { color: '#e2e8f0', fontSize: 28, fontWeight: 700 },
+  pricePer: { fontSize: 14, color: '#64748b' },
+  upgradeFeatures: { flex: 1, display: 'flex', flexDirection: 'column', gap: 6 },
+  upgradeFeatureItem: { display: 'flex', gap: 8, alignItems: 'center' },
+  upgradeBtn: {
+    display: 'inline-block',
+    background: '#2563eb', color: 'white',
+    borderRadius: 8, padding: '10px 24px',
+    fontSize: 14, fontWeight: 600,
+    textDecoration: 'none',
+    marginBottom: 12,
+  },
+  trialNote: { color: '#475569', fontSize: 12, margin: 0 },
+  compactPrompt: {
+    display: 'inline-flex', alignItems: 'center', gap: 6,
+    background: '#1e293b', border: '1px solid #334155',
+    borderRadius: 6, padding: '4px 10px',
+  },
+  lockIcon: { fontSize: 12 },
+  compactText: { color: '#64748b', fontSize: 12 },
+  upgradeLink: { color: '#3b82f6', textDecoration: 'none' },
+}

@@ -4,16 +4,15 @@
  * Supporta: PDF digitale, PDF scansionato, XLSX/XLS, JPG/PNG, DOCX/TXT
  *
  * Usa claudeClient.js per tutte le chiamate AI (mai fetch diretta)
- * Dipendenza: exceljs (sostituisce xlsx per sicurezza)
  */
-import ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
 import { callClaude, callClaudeVision } from './claudeClient';
 
 // ─── Leggi file come base64 ───────────────────────────────────────────────────
 export function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result.split(',')[1]);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -23,41 +22,34 @@ export function fileToBase64(file) {
 export function fileToText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result);
+    reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsText(file, 'UTF-8');
   });
 }
 
-// ─── Leggi file come ArrayBuffer ──────────────────────────────────────────────
-function fileToArrayBuffer(file) {
+// ─── Estrai testo da XLSX/XLS ─────────────────────────────────────────────────
+export function xlsxToText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload  = (e) => resolve(e.target.result);
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const lines = [];
+        wb.SheetNames.forEach(sheetName => {
+          lines.push(`=== FOGLIO: ${sheetName} ===`);
+          const ws = wb.Sheets[sheetName];
+          const csv = XLSX.utils.sheet_to_csv(ws);
+          lines.push(csv);
+        });
+        resolve(lines.join('\n'));
+      } catch (err) {
+        reject(err);
+      }
+    };
     reader.onerror = reject;
     reader.readAsArrayBuffer(file);
   });
-}
-
-// ─── Estrai testo da XLSX/XLS con ExcelJS ─────────────────────────────────────
-export async function xlsxToText(file) {
-  const buffer   = await fileToArrayBuffer(file);
-  const wb       = new ExcelJS.Workbook();
-  await wb.xlsx.load(buffer);
-
-  const lines = [];
-  wb.eachSheet(sheet => {
-    lines.push(`=== FOGLIO: ${sheet.name} ===`);
-    sheet.eachRow(row => {
-      const vals = [];
-      row.eachCell({ includeEmpty: true }, cell => {
-        vals.push(cell.text ?? '');
-      });
-      lines.push(vals.join(','));
-    });
-  });
-
-  return lines.join('\n');
 }
 
 // ─── Determina tipo file ──────────────────────────────────────────────────────
@@ -65,68 +57,49 @@ export function getTipoFile(file) {
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
 
-  if (type === 'application/pdf' || name.endsWith('.pdf'))                         return 'pdf';
+  if (type === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
   if (type.includes('spreadsheetml') || name.endsWith('.xlsx') || name.endsWith('.xls')) return 'xlsx';
-  if (type === 'text/csv' || name.endsWith('.csv'))                                return 'csv';
-  if (type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|webp|gif)$/))       return 'image';
-  if (name.endsWith('.docx') || name.endsWith('.doc'))                             return 'docx';
-  if (type === 'text/plain' || name.endsWith('.txt'))                              return 'txt';
+  if (type === 'text/csv' || name.endsWith('.csv')) return 'csv';
+  if (type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|webp|gif)$/)) return 'image';
+  if (name.endsWith('.docx') || name.endsWith('.doc')) return 'docx';
+  if (type === 'text/plain' || name.endsWith('.txt')) return 'txt';
   return 'unknown';
-}
-
-// ─── Validazione MIME type (sicurezza upload) ─────────────────────────────────
-const MIME_CONSENTITI = new Set([
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-excel',
-  'text/csv',
-  'text/plain',
-  'image/jpeg',
-  'image/png',
-]);
-
-export function validaMimeType(file) {
-  const type = file.type.toLowerCase();
-  const name = file.name.toLowerCase();
-
-  // Controllo MIME
-  if (MIME_CONSENTITI.has(type)) return true;
-
-  // Fallback su estensione per casi edge (es. browser che non rileva correttamente)
-  const estensioniOk = ['.pdf', '.xlsx', '.xls', '.csv', '.txt', '.jpg', '.jpeg', '.png'];
-  return estensioniOk.some(ext => name.endsWith(ext));
-}
-
-// ─── Helper: prepara contenuto per chiamata AI ────────────────────────────────
-async function preparaContenuto(file) {
-  const tipo = getTipoFile(file);
-
-  switch (tipo) {
-    case 'pdf':
-      return { contenuto: await fileToBase64(file), isVisual: true, mediaType: 'application/pdf' };
-
-    case 'xlsx':
-      return { contenuto: await xlsxToText(file), isVisual: false };
-
-    case 'csv':
-    case 'txt':
-      return { contenuto: await fileToText(file), isVisual: false };
-
-    case 'image':
-      return { contenuto: await fileToBase64(file), isVisual: true, mediaType: file.type || 'image/jpeg' };
-
-    default:
-      throw new Error(`Formato file non supportato: ${file.name}`);
-  }
 }
 
 // ─── ESTRATTO CONTO: Estrai movimenti bancari dal file ────────────────────────
 export async function estraiMovimentiBancari(file) {
-  if (!validaMimeType(file)) {
-    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XLSX, CSV, JPG o PNG.`);
-  }
+  const tipo = getTipoFile(file);
+  let contenuto = null;
+  let isVisual = false;
+  let mediaType = null;
 
-  const { contenuto, isVisual, mediaType } = await preparaContenuto(file);
+  switch (tipo) {
+    case 'pdf':
+      // PDF → base64, Claude vision (gestisce sia digitale che scansionato)
+      contenuto = await fileToBase64(file);
+      isVisual = true;
+      mediaType = 'application/pdf';
+      break;
+
+    case 'xlsx':
+    case 'xls':
+      contenuto = await xlsxToText(file);
+      break;
+
+    case 'csv':
+    case 'txt':
+      contenuto = await fileToText(file);
+      break;
+
+    case 'image':
+      contenuto = await fileToBase64(file);
+      isVisual = true;
+      mediaType = file.type || 'image/jpeg';
+      break;
+
+    default:
+      throw new Error(`Formato file non supportato: ${file.name}`);
+  }
 
   const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di estratti conto bancari condominiali.
 Estrai i movimenti bancari dal documento fornito e restituisci SOLO un JSON valido, senza testo aggiuntivo.
@@ -143,7 +116,7 @@ Formato JSON richiesto:
     {
       "data": "YYYY-MM-DD",
       "causale": "descrizione completa del movimento",
-      "importo": number,
+      "importo": number,  // positivo = entrata (accredito), negativo = uscita (addebito)
       "saldo": number | null,
       "tipo": "entrata" | "uscita" | "giroconto",
       "fornitore_rilevato": "nome fornitore se identificabile dalla causale" | null,
@@ -158,28 +131,54 @@ Regole importanti:
 - Gli importi in ENTRATA (accrediti, versamenti) devono essere POSITIVI
 - Le date devono essere in formato ISO YYYY-MM-DD
 - Se la data ha solo giorno e mese, usa l'anno del periodo dell'estratto conto
-- Identifica il fornitore dalla causale quando possibile
+- Identifica il fornitore dalla causale quando possibile (es. "BONIFICO A MARIO ROSSI IDRAULICA" → "Mario Rossi Idraulica")
 - Se non riesci a interpretare un movimento, includilo comunque con i dati disponibili`;
 
   const userPrompt = isVisual
     ? 'Analizza questo estratto conto bancario ed estrai tutti i movimenti nel formato JSON richiesto.'
     : `Analizza questo estratto conto bancario ed estrai tutti i movimenti nel formato JSON richiesto.\n\nContenuto del file:\n${contenuto}`;
 
-  const risposta = isVisual
-    ? await callClaudeVision(systemPrompt, userPrompt, contenuto, mediaType)
-    : await callClaude(systemPrompt, userPrompt);
+  let risposta;
+  if (isVisual) {
+    risposta = await callClaudeVision(systemPrompt, userPrompt, contenuto, mediaType);
+  } else {
+    risposta = await callClaude(systemPrompt, userPrompt);
+  }
 
+  // Parse JSON
   const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
   return JSON.parse(clean);
 }
 
 // ─── FATTURA FORNITORE: Estrai dati da fattura ────────────────────────────────
 export async function estraiFattura(file) {
-  if (!validaMimeType(file)) {
-    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, JPG, PNG o XLSX.`);
-  }
+  const tipo = getTipoFile(file);
+  let contenuto = null;
+  let isVisual = false;
+  let mediaType = null;
 
-  const { contenuto, isVisual, mediaType } = await preparaContenuto(file);
+  switch (tipo) {
+    case 'pdf':
+      contenuto = await fileToBase64(file);
+      isVisual = true;
+      mediaType = 'application/pdf';
+      break;
+    case 'image':
+      contenuto = await fileToBase64(file);
+      isVisual = true;
+      mediaType = file.type || 'image/jpeg';
+      break;
+    case 'xlsx':
+      contenuto = await xlsxToText(file);
+      break;
+    case 'csv':
+    case 'txt':
+    case 'docx':
+      contenuto = await fileToText(file);
+      break;
+    default:
+      throw new Error(`Formato non supportato: ${file.name}`);
+  }
 
   const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di fatture di fornitori condominiali.
 Estrai i dati della fattura e restituisci SOLO un JSON valido, senza testo aggiuntivo.
@@ -203,16 +202,19 @@ Formato JSON:
 Regole:
 - Se la fattura ha più righe, somma gli importi
 - La categoria deve essere quella più appropriata tra quelle elencate
-- Gli importi devono essere numeri senza simboli €
+- Gli importi devono essere numeri (senza simboli €)
 - Se un campo non è presente, usa null`;
 
   const userPrompt = isVisual
     ? 'Analizza questa fattura ed estrai i dati nel formato JSON richiesto.'
     : `Analizza questa fattura ed estrai i dati nel formato JSON richiesto.\n\n${contenuto}`;
 
-  const risposta = isVisual
-    ? await callClaudeVision(systemPrompt, userPrompt, contenuto, mediaType)
-    : await callClaude(systemPrompt, userPrompt);
+  let risposta;
+  if (isVisual) {
+    risposta = await callClaudeVision(systemPrompt, userPrompt, contenuto, mediaType);
+  } else {
+    risposta = await callClaude(systemPrompt, userPrompt);
+  }
 
   const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
   return JSON.parse(clean);
@@ -220,10 +222,6 @@ Regole:
 
 // ─── RIPARTIZIONE: Determina criterio da regolamento ─────────────────────────
 export async function determinaCriterioRipartizione({ descrizioneSpesa, categoriaSpesa, testoRegolamento, tabelleMillesimali }) {
-  // Sanitizzazione input (sicurezza AI Act)
-  const descSanitized = String(descrizioneSpesa || '').replace(/<[^>]*>/g, '').substring(0, 500);
-  const catSanitized  = String(categoriaSpesa || '').replace(/<[^>]*>/g, '').substring(0, 100);
-
   const systemPrompt = `Sei un esperto di diritto condominiale italiano. 
 Analizza la spesa descritta e determina il corretto criterio di ripartizione basandoti sul regolamento condominiale fornito e, in mancanza, sul Codice Civile italiano (artt. 1117-1139).
 
@@ -237,7 +235,7 @@ Restituisci SOLO un JSON valido:
   "note": "eventuali avvertenze o casi particolari" | null
 }`;
 
-  const userPrompt = `Spesa: "${descSanitized}" (categoria: ${catSanitized || 'non specificata'})
+  const userPrompt = `Spesa: "${descrizioneSpesa}" (categoria: ${categoriaSpesa || 'non specificata'})
 
 Tabelle millesimali disponibili: ${tabelleMillesimali?.map(t => t.nome).join(', ') || 'nessuna'}
 

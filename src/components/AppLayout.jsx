@@ -1,3 +1,4 @@
+// src/components/AppLayout.jsx
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,16 +13,59 @@ import {
   LogOut,
   Settings,
   Bell,
-  Menu,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { path: '/dashboard',  label: 'Dashboard',   icon: LayoutDashboard },
-  { path: '/condomini',  label: 'Condomini',    icon: Building2 },
-  { path: '/anagrafica', label: 'Anagrafica',   icon: Users },
-  { path: '/spese',      label: 'Spese',        icon: Receipt },
-  { path: '/archivio',   label: 'Archivio',     icon: Archive },
+  { path: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
+  { path: '/condomini',    label: 'Condomini',     icon: Building2 },
+  { path: '/anagrafica',   label: 'Anagrafica',    icon: Users },
+  { path: '/spese',        label: 'Spese',         icon: Receipt },
+  { path: '/archivio',     label: 'Archivio',      icon: Archive },
+  { path: '/impostazioni', label: 'Impostazioni',  icon: Settings },  // ← AGGIUNTO
 ];
+
+// ── Banner AI Act ────────────────────────────────────────────────────────────
+function AiBanner() {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '8px 20px',
+      background: '#0c2340',
+      borderBottom: '1px solid #1d4ed8',
+      color: '#93c5fd',
+      fontSize: 12,
+      lineHeight: 1.5,
+      flexShrink: 0,
+    }}>
+      <span>
+        🤖 <strong>CondoAI utilizza intelligenza artificiale</strong> (Anthropic Claude) per
+        alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati
+        dall'amministratore. Conforme AI Act UE 2024/1689.
+      </span>
+      <button
+        onClick={() => setDismissed(true)}
+        style={{
+          marginLeft: 16,
+          background: 'none',
+          border: 'none',
+          color: '#60a5fa',
+          cursor: 'pointer',
+          fontSize: 16,
+          lineHeight: 1,
+          flexShrink: 0,
+          padding: '0 4px',
+        }}
+        aria-label="Chiudi banner"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -52,7 +96,7 @@ export default function AppLayout() {
           height: 64,
           display: 'flex',
           alignItems: 'center',
-          padding: collapsed ? '0 20px' : '0 20px',
+          padding: '0 20px',
           borderBottom: '1px solid #1e293b',
           gap: 10,
           overflow: 'hidden',
@@ -184,10 +228,13 @@ export default function AppLayout() {
           </div>
         </header>
 
+        {/* ── Banner AI Act ── */}
+        <AiBanner />
+
         {/* Page content */}
-     <main style={{ flex: 1, overflow: 'auto', padding: 24 }}>
-  <Outlet />
-</main>
+        <main style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+          <Outlet />
+        </main>
       </div>
     </div>
   );

@@ -1,155 +1,170 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import toast from 'react-hot-toast'
-import { Building2, Mail, Lock, Eye, EyeOff, User, ArrowRight } from 'lucide-react'
+
+// src/pages/RegisterPage.jsx
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 export default function RegisterPage() {
-  const { signUp } = useAuth()
-  const navigate = useNavigate()
+  const { signUp } = useAuth();
+  const navigate = useNavigate();
 
-  const [form, setForm] = useState({ nome: '', cognome: '', email: '', password: '', confirm: '' })
-  const [showPwd, setShowPwd] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState({ nome: '', cognome: '', email: '', password: '' });
+  const [dpaAccepted, setDpaAccepted] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
+  const handleChange = e =>
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (form.password !== form.confirm) {
-      toast.error('Le password non coincidono')
-      return
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!dpaAccepted) {
+      setError('Devi accettare il Contratto di Trattamento Dati (DPA) per continuare.');
+      return;
     }
-    if (form.password.length < 8) {
-      toast.error('La password deve essere di almeno 8 caratteri')
-      return
-    }
-    setLoading(true)
-    const { error } = await signUp(form.email, form.password, {
-      nome: form.nome,
-      cognome: form.cognome,
-      full_name: `${form.nome} ${form.cognome}`,
-    })
-    setLoading(false)
-    if (error) {
-      if (error.message.includes('already registered')) {
-        toast.error('Questa email è già registrata')
-      } else {
-        toast.error(error.message)
+    setError('');
+    setLoading(true);
+    try {
+      const { error: signUpError } = await signUp(
+        form.email,
+        form.password,
+        { data: { nome: form.nome, cognome: form.cognome } }
+      );
+      if (signUpError) throw signUpError;
+
+      let clientIp = null;
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        clientIp = ipData.ip;
+      } catch { /* non bloccante */ }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').update({
+          dpa_accepted_at: new Date().toISOString(),
+          dpa_ip: clientIp,
+        }).eq('id', user.id);
       }
-      return
+
+      navigate('/login?registered=1');
+    } catch (err) {
+      setError(err.message || 'Errore durante la registrazione.');
+    } finally {
+      setLoading(false);
     }
-    toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.')
-    navigate('/login')
-  }
+  };
 
   return (
-    <div className="auth-layout">
-      <div className="auth-brand">
-        <div className="brand-content">
-          <div className="brand-logo">
-            <Building2 size={32} />
-            <span>CondoAI</span>
-          </div>
-          <h1 className="brand-headline">
-            Inizia oggi.<br />
-            Gratis per 14 giorni.
+    <div className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: '#0f172a' }}>
+      <div className="w-full max-w-md">
+
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
+            Condo<span style={{ color: '#2563eb' }}>AI</span>
           </h1>
-          <p className="brand-sub">
-            Setup in 5 minuti. Nessuna carta di credito richiesta per la prova gratuita.
-            Poi solo 199€/mese tutto incluso.
-          </p>
-          <div className="brand-pricing">
-            <div className="pricing-badge">
-              <span className="pricing-amount">199€</span>
-              <span className="pricing-period">/mese</span>
-            </div>
-            <p>Tutto incluso. Nessun costo nascosto.</p>
-          </div>
+          <p className="text-slate-400 mt-2 text-sm">30 giorni gratuiti — nessuna carta richiesta</p>
         </div>
-        <div className="brand-bg-shape" />
-      </div>
 
-      <div className="auth-form-panel">
-        <div className="auth-form-wrapper">
-          <div className="form-header">
-            <h2>Crea il tuo account</h2>
-            <p>Inizia la prova gratuita di 14 giorni</p>
-          </div>
+        <div className="rounded-xl p-8" style={{ background: '#1e293b' }}>
+          <h2 className="text-white font-semibold text-lg mb-6">Crea account</h2>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="field-row">
-              <div className="field-group">
-                <label htmlFor="nome">Nome</label>
-                <div className="input-wrapper">
-                  <User size={16} className="input-icon" />
-                  <input id="nome" type="text" placeholder="Mario" value={form.nome} onChange={set('nome')} required />
-                </div>
-              </div>
-              <div className="field-group">
-                <label htmlFor="cognome">Cognome</label>
-                <div className="input-wrapper">
-                  <User size={16} className="input-icon" />
-                  <input id="cognome" type="text" placeholder="Rossi" value={form.cognome} onChange={set('cognome')} required />
-                </div>
-              </div>
+          {error && (
+            <div className="mb-4 p-3 rounded-lg text-sm"
+              style={{ background: '#7f1d1d', color: '#fca5a5' }}>
+              {error}
             </div>
+          )}
 
-            <div className="field-group">
-              <label htmlFor="email">Email professionale</label>
-              <div className="input-wrapper">
-                <Mail size={16} className="input-icon" />
-                <input id="email" type="email" placeholder="mario@studiocondominiale.it" value={form.email} onChange={set('email')} required />
-              </div>
-            </div>
-
-            <div className="field-group">
-              <label htmlFor="password">Password</label>
-              <div className="input-wrapper">
-                <Lock size={16} className="input-icon" />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-400 text-sm mb-1">Nome</label>
                 <input
-                  id="password"
-                  type={showPwd ? 'text' : 'password'}
-                  placeholder="Minimo 8 caratteri"
-                  value={form.password}
-                  onChange={set('password')}
-                  required
+                  name="nome" value={form.nome} onChange={handleChange} required
+                  className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
+                  style={{ background: '#0f172a', border: '1px solid #334155' }}
                 />
-                <button type="button" className="pwd-toggle" onClick={() => setShowPwd(v => !v)}>
-                  {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
               </div>
-            </div>
-
-            <div className="field-group">
-              <label htmlFor="confirm">Conferma password</label>
-              <div className="input-wrapper">
-                <Lock size={16} className="input-icon" />
+              <div>
+                <label className="block text-slate-400 text-sm mb-1">Cognome</label>
                 <input
-                  id="confirm"
-                  type={showPwd ? 'text' : 'password'}
-                  placeholder="Ripeti la password"
-                  value={form.confirm}
-                  onChange={set('confirm')}
-                  required
+                  name="cognome" value={form.cognome} onChange={handleChange} required
+                  className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
+                  style={{ background: '#0f172a', border: '1px solid #334155' }}
                 />
               </div>
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? <span className="btn-spinner" /> : <>Crea account <ArrowRight size={16} /></>}
+            <div>
+              <label className="block text-slate-400 text-sm mb-1">Email</label>
+              <input
+                name="email" type="email" value={form.email} onChange={handleChange} required
+                className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
+                style={{ background: '#0f172a', border: '1px solid #334155' }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-sm mb-1">Password</label>
+              <input
+                name="password" type="password" value={form.password} onChange={handleChange}
+                required minLength={8}
+                className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
+                style={{ background: '#0f172a', border: '1px solid #334155' }}
+              />
+              <p className="text-slate-500 text-xs mt-1">Minimo 8 caratteri</p>
+            </div>
+
+            {/* ── DPA Checkbox ── */}
+            <div className="rounded-lg p-4" style={{ background: '#0f172a', border: '1px solid #334155' }}>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={dpaAccepted}
+                  onChange={e => setDpaAccepted(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded accent-blue-600 flex-shrink-0"
+                />
+                <span className="text-slate-300 text-sm leading-relaxed">
+                  Ho letto e accetto il{' '}
+                  <a href="/dpa.pdf" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                    Contratto di Trattamento Dati (DPA)
+                  </a>{' '}
+                  ai sensi dell'art. 28 GDPR. Confermo di essere l'amministratore condominiale
+                  responsabile del trattamento dei dati dei condomini gestiti tramite CondoAI.
+                </span>
+              </label>
+              {!dpaAccepted && (
+                <p className="text-slate-500 text-xs mt-2 ml-7">
+                  Obbligatorio per utilizzare il servizio
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !dpaAccepted}
+              className="w-full py-2.5 rounded-lg text-white font-medium text-sm transition-opacity"
+              style={{
+                background: dpaAccepted ? '#2563eb' : '#334155',
+                cursor: dpaAccepted ? 'pointer' : 'not-allowed',
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              {loading ? 'Registrazione in corso...' : 'Crea account gratuito'}
             </button>
-
-            <p className="terms-note">
-              Registrandoti accetti i nostri <a href="#">Termini di servizio</a> e la <a href="#">Privacy Policy</a>.
-            </p>
           </form>
 
-          <p className="auth-switch">
-            Hai già un account? <Link to="/login">Accedi</Link>
+          <p className="text-center text-slate-400 text-sm mt-6">
+            Hai già un account?{' '}
+            <Link to="/login" style={{ color: '#2563eb' }} className="hover:underline">
+              Accedi
+            </Link>
           </p>
         </div>
       </div>
     </div>
-  )
+  );
 }

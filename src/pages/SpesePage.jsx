@@ -16,6 +16,7 @@ export default function SpesePage() {
   const { condominioId } = useParams()
   const [esercizioAttivo, setEsercizioAttivo] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [fromFattura, setFromFattura] = useState(false)
   const [showEsercizioForm, setShowEsercizioForm] = useState(false)
   const [spesaInEdit, setSpesaInEdit] = useState(null)
   const [unita, setUnita] = useState([])
@@ -38,14 +39,12 @@ export default function SpesePage() {
     fetchEsercizi()
     fetchTabelle()
     fetchDocumenti()
-    // Fetch unità del condominio
     supabase.from('unita').select('id, numero, piano, tipo').eq('condominio_id', condominioId)
       .then(({ data }) => setUnita(data || []))
     supabase.from('condomini').select('nome, indirizzo').eq('id', condominioId).single()
       .then(({ data }) => setCondominio(data))
   }, [condominioId])
 
-  // Seleziona esercizio aperto di default
   useEffect(() => {
     if (esercizi.length && !esercizioAttivo) {
       const aperto = esercizi.find(e => e.stato === 'aperto') || esercizi[0]
@@ -57,7 +56,6 @@ export default function SpesePage() {
     if (esercizioAttivo) fetchSpese()
   }, [esercizioAttivo])
 
-  // Rileva subentri non gestiti
   useEffect(() => {
     const alert = spese.filter(s =>
       s.ripartizioni?.some(r => r.subentro_segnalato && !r.importo_override)
@@ -80,10 +78,27 @@ export default function SpesePage() {
     try {
       await creaSpesa({ ...payload, esercizio_id: esercizioAttivo.id }, ripartizioni)
       setShowForm(false)
+      setFromFattura(false)
       setSpesaInEdit(null)
     } catch (err) {
       alert('Errore: ' + err.message)
     }
+  }
+
+  const apriFormManuale = () => {
+    setFromFattura(false)
+    setShowForm(true)
+  }
+
+  const apriFormFattura = () => {
+    setFromFattura(true)
+    setShowForm(true)
+  }
+
+  const chiudiForm = () => {
+    setShowForm(false)
+    setFromFattura(false)
+    setSpesaInEdit(null)
   }
 
   const totaleSpese = spese.reduce((s, sp) => s + parseFloat(sp.importo || 0), 0)
@@ -189,10 +204,22 @@ export default function SpesePage() {
       )}
 
       {/* Actions */}
-      {esercizioAttivo && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+      {esercizioAttivo && !showForm && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 20 }}>
+          {/* Bottone Da fattura */}
           <button
-            onClick={() => setShowForm(true)}
+            onClick={apriFormFattura}
+            style={{
+              background: '#0f172a', color: '#94a3b8',
+              border: '1px solid #334155', borderRadius: 8,
+              padding: '10px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center', gap: 8
+            }}
+          >
+            🧾 Da fattura
+          </button>
+          <button
+            onClick={apriFormManuale}
             style={{
               background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8,
               padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
@@ -214,8 +241,9 @@ export default function SpesePage() {
             unita={unita}
             documenti={documenti}
             spesaInEdit={spesaInEdit}
+            fromFattura={fromFattura}
             onSave={handleSaveSpesa}
-            onCancel={() => { setShowForm(false); setSpesaInEdit(null) }}
+            onCancel={chiudiForm}
           />
         </div>
       )}

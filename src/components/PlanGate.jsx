@@ -58,13 +58,15 @@ function UpgradePrompt({ feature, pianoMinimo, compact = false }) {
 // ── Descrizioni feature ───────────────────────────────────────────────────
 function getFeatureDesc(feature) {
   const descs = {
-    portale_condomino:  'Offri ai condomini un portale personale per visualizzare rate, documenti e comunicazioni — e pagare online.',
-    rendiconto_pdf:     'Genera automaticamente il rendiconto annuale in PDF con ripartizione spese e estratto conto.',
-    assemblee:          'Gestisci assemblee, presenze, deleghe, calcolo quorum e genera verbali con AI.',
-    multi_utente:       'Aggiungi fino a 5 collaboratori con ruoli personalizzati (admin, collaboratore, sola lettura).',
-    api_access:         'Accedi alle API CondoAI per integrare con altri software gestionali.',
-    gestione_fornitori: 'Gestisci anagrafica fornitori, contratti, scadenze e storico fatture.',
-    notifiche_auto:     'Invia automaticamente avvisi di rate scadute, solleciti e promemoria assemblea.',
+    portale_condomino:    'Offri ai condomini un portale personale per visualizzare rate, documenti e comunicazioni — e pagare online.',
+    comunicazioni_resend: 'Invia avvisi di rata, solleciti e comunicazioni personalizzate ai condomini via email.',
+    pagamento_stripe:     'Permetti ai condomini di pagare le rate direttamente online con carta o SEPA.',
+    rendiconto_pdf:       'Genera automaticamente il rendiconto annuale in PDF con ripartizione spese e estratto conto.',
+    assemblee:            'Gestisci assemblee, presenze, deleghe, calcolo quorum e genera verbali con AI.',
+    gestione_fornitori:   'Gestisci anagrafica fornitori, contratti, scadenze e storico fatture per condominio.',
+    notifiche_auto:       'Invia automaticamente avvisi di rate scadute, solleciti e promemoria assemblea.',
+    multi_utente:         'Aggiungi fino a 5 collaboratori con ruoli personalizzati (admin, collaboratore, sola lettura).',
+    api_access:           'Accedi alle API per integrare con altri software gestionali.',
   }
   return descs[feature] || 'Questa funzione è disponibile in un piano superiore.'
 }
@@ -73,18 +75,19 @@ function getUpgradeFeatures(piano) {
   const features = {
     studio: [
       'Portale condomino con pagamenti Stripe',
+      'Comunicazioni email via Resend',
       'Rendiconto annuale PDF automatico',
       'Assemblee e verbali AI',
       'Notifiche automatiche rate scadute',
-      '600 AI calls/mese',
-      '35 condomini inclusi',
+      '500 AI calls/mese',           // ✅ concordato
+      '50 condomini inclusi',        // ✅ concordato
     ],
     professional: [
       'Multi-utente fino a 5 collaboratori',
       'Gestione fornitori e contratti',
       'Alert scadenze automatici',
       'AI calls illimitate',
-      '70 condomini inclusi',
+      'Condomini illimitati',        // ✅ concordato
       'API access + SLA dedicato',
     ],
   }

@@ -43,7 +43,13 @@ export default function DocumentiCondominio({ condominioId }) {
     e.preventDefault()
     if (!selectedFile || !form.tipo) return
     setUploading(true)
-    setUploadProgress(selectedFile.name.endsWith('.pdf') ? 'Estrazione testo PDF in corso (AI)...' : 'Caricamento...')
+    // ✅ Messaggio generico per PDF e DOCX
+    const ext = selectedFile.name.split('.').pop().toLowerCase()
+    setUploadProgress(
+      ext === 'pdf' || ext === 'docx'
+        ? 'Estrazione testo in corso (AI)...'
+        : 'Caricamento...'
+    )
     try {
       await upload(selectedFile, form.tipo, form.nome, form.note)
       setShowForm(false)
@@ -158,7 +164,6 @@ export default function DocumentiCondominio({ condominioId }) {
                   display: 'flex', alignItems: 'center', gap: 16
                 }}
               >
-                {/* Icona tipo */}
                 <div style={{
                   width: 44, height: 44, borderRadius: 10,
                   background: '#0f172a', display: 'flex', alignItems: 'center',
@@ -166,8 +171,6 @@ export default function DocumentiCondominio({ condominioId }) {
                 }}>
                   {TIPI.find(t => t.value === doc.tipo)?.icon || '📁'}
                 </div>
-
-                {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 14 }}>{doc.nome}</span>
@@ -178,18 +181,12 @@ export default function DocumentiCondominio({ condominioId }) {
                       {cat.label}
                     </span>
                     {hasTesto && (
-                      <span style={{
-                        background: '#10b98122', color: '#10b981',
-                        borderRadius: 4, padding: '2px 8px', fontSize: 11
-                      }}>
+                      <span style={{ background: '#10b98122', color: '#10b981', borderRadius: 4, padding: '2px 8px', fontSize: 11 }}>
                         ✓ Testo estratto
                       </span>
                     )}
                     {isRegolamento && !hasTesto && (
-                      <span style={{
-                        background: '#f59e0b22', color: '#f59e0b',
-                        borderRadius: 4, padding: '2px 8px', fontSize: 11
-                      }}>
+                      <span style={{ background: '#f59e0b22', color: '#f59e0b', borderRadius: 4, padding: '2px 8px', fontSize: 11 }}>
                         ⚠ Testo non estratto
                       </span>
                     )}
@@ -199,8 +196,6 @@ export default function DocumentiCondominio({ condominioId }) {
                     {doc.note && <span> · {doc.note}</span>}
                   </div>
                 </div>
-
-                {/* Azioni */}
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                   <button
                     onClick={() => handleOpen(doc)}
@@ -240,7 +235,6 @@ export default function DocumentiCondominio({ condominioId }) {
           }}>
             <h3 style={{ margin: '0 0 24px', color: '#f1f5f9', fontSize: 18 }}>Carica documento</h3>
             <form onSubmit={handleUpload}>
-              {/* Tipo */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
                   Tipo documento *
@@ -260,7 +254,6 @@ export default function DocumentiCondominio({ condominioId }) {
                 </select>
               </div>
 
-              {/* Nome */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
                   Nome documento
@@ -278,10 +271,12 @@ export default function DocumentiCondominio({ condominioId }) {
                 />
               </div>
 
-              {/* File */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
-                  File * {form.tipo === 'regolamento' && <span style={{ color: '#10b981' }}>(PDF consigliato — il testo verrà estratto per l'AI)</span>}
+                  {/* ✅ Hint aggiornato: PDF e DOCX */}
+                  File * {form.tipo === 'regolamento' && (
+                    <span style={{ color: '#10b981' }}>(PDF o DOCX consigliato — il testo verrà estratto per l'AI)</span>
+                  )}
                 </label>
                 <div
                   onClick={() => fileRef.current?.click()}
@@ -296,11 +291,11 @@ export default function DocumentiCondominio({ condominioId }) {
                     <span style={{ color: '#64748b', fontSize: 14 }}>Clicca per selezionare un file</span>
                   )}
                 </div>
+                {/* ✅ accept: .docx abilitato, .doc legacy rimosso */}
                 <input ref={fileRef} type="file" style={{ display: 'none' }} onChange={handleFile}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.png" />
+                  accept=".pdf,.docx,.xls,.xlsx,.jpg,.png,.webp,.txt" />
               </div>
 
-              {/* Note */}
               <div style={{ marginBottom: 24 }}>
                 <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
                   Note (opzionale)

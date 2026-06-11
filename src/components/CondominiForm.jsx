@@ -3,12 +3,12 @@ import { useCondomini } from '../hooks/useCondomini'
 
 const PROVINCE_IT = [
   'AG','AL','AN','AO','AQ','AR','AP','AT','AV','BA','BT','BL','BN','BG','BI','BO',
-  'BZ','BS','BR','CA','CL','CB','CI','CE','CT','CZ','CH','CO','CS','CR','KR','CN',
+  'BZ','BS','BR','CA','CL','CB','CE','CT','CZ','CH','CO','CS','CR','KR','CN',
   'EN','FM','FE','FI','FG','FC','FR','GE','GO','GR','IM','IS','SP','LT','LE','LC',
-  'LI','LO','LU','MC','MN','MS','MT','VS','ME','MI','MO','MB','NA','NO','NU','OG',
+  'LI','LO','LU','MC','MN','MS','MT','ME','MI','MO','MB','NA','NO','NU','OG',
   'OT','OR','PD','PA','PR','PV','PG','PU','PE','PC','PI','PT','PN','PZ','PO','RG',
-  'RA','RC','RE','RI','RN','RM','RO','SA','SS','SV','SI','SR','SO','TA','TE','TR',
-  'TO','OT','TP','TN','TV','TS','UD','VA','VE','VB','VC','VR','VV','VI','VT'
+  'RA','RC','RE','RI','RN','RM','RO','SA','SS','SV','SI','SR','SO','SU','TA','TE','TR',
+  'TO','TP','TN','TV','TS','UD','VA','VE','VB','VC','VR','VV','VI','VT'
 ]
 
 const EMPTY_FORM = {
@@ -81,7 +81,6 @@ export default function CondominiForm({ condominio, onClose }) {
     const e = validate()
     if (Object.keys(e).length > 0) {
       setErrors(e)
-      // Vai alla tab con l'errore
       if (e.nome || e.indirizzo || e.civico || e.cap || e.citta || e.provincia) {
         setActiveTab('anagrafica')
       }
@@ -101,7 +100,6 @@ export default function CondominiForm({ condominio, onClose }) {
         data_inizio_amministrazione: form.data_inizio_amministrazione || null,
       }
 
-      // Rimuovi campi non modificabili in update
       if (isEdit) {
         delete payload.amministratore_id
         delete payload.created_at
@@ -128,7 +126,6 @@ export default function CondominiForm({ condominio, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box form-modal" onClick={e => e.stopPropagation()}>
-        {/* Header */}
         <div className="modal-header">
           <h2>{isEdit ? 'Modifica condominio' : 'Nuovo condominio'}</h2>
           <button className="modal-close" onClick={onClose}>
@@ -138,7 +135,6 @@ export default function CondominiForm({ condominio, onClose }) {
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="form-tabs">
           {TABS.map(tab => (
             <button
@@ -151,7 +147,6 @@ export default function CondominiForm({ condominio, onClose }) {
           ))}
         </div>
 
-        {/* Tab content */}
         <div className="form-body">
           {activeTab === 'anagrafica' && (
             <div className="form-section">
@@ -345,7 +340,6 @@ export default function CondominiForm({ condominio, onClose }) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="modal-footer">
           <button className="btn-ghost" onClick={onClose}>Annulla</button>
           <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
@@ -356,8 +350,6 @@ export default function CondominiForm({ condominio, onClose }) {
     </div>
   )
 }
-
-// ── Field wrapper ─────────────────────────────────────────────
 
 function Field({ label, error, children, fullWidth, small }) {
   return (

@@ -1,12 +1,13 @@
 /**
  * fileExtractor.js
  * Estrae dati strutturati da file di vari tipi usando Claude AI.
- * Supporta: PDF digitale, PDF scansionato, XLSX/XLS, JPG/PNG, DOCX/TXT
+ * Supporta: PDF digitale, PDF scansionato, XLSX/XLS, JPG/PNG, DOCX, CSV, TXT
  *
  * Usa claudeClient.js per tutte le chiamate AI (mai fetch diretta)
- * Dipendenza: exceljs (sostituisce xlsx per sicurezza)
+ * Dipendenze: exceljs, mammoth
  */
-import ExcelJS from 'exceljs';
+import ExcelJS  from 'exceljs';
+import mammoth  from 'mammoth';
 import { callClaude, callClaudeVision } from './claudeClient';
 
 // ─── Leggi file come base64 ───────────────────────────────────────────────────
@@ -41,8 +42,8 @@ function fileToArrayBuffer(file) {
 
 // ─── Estrai testo da XLSX/XLS con ExcelJS ─────────────────────────────────────
 export async function xlsxToText(file) {
-  const buffer   = await fileToArrayBuffer(file);
-  const wb       = new ExcelJS.Workbook();
+  const buffer = await fileToArrayBuffer(file);
+  const wb     = new ExcelJS.Workbook();
   await wb.xlsx.load(buffer);
 
   const lines = [];
@@ -50,9 +51,7 @@ export async function xlsxToText(file) {
     lines.push(`=== FOGLIO: ${sheet.name} ===`);
     sheet.eachRow(row => {
       const vals = [];
-      row.eachCell({ includeEmpty: true }, cell => {
-        vals.push(cell.text ?? '');
-      });
+      row.eachCell({ includeEmpty: true }, cell => vals.push(cell.text ?? ''));
       lines.push(vals.join(','));
     });
   });
@@ -60,17 +59,28 @@ export async function xlsxToText(file) {
   return lines.join('\n');
 }
 
+// ─── Estrai testo da DOCX via mammoth ────────────────────────────────────────
+export async function docxToText(file) {
+  const buffer         = await fileToArrayBuffer(file);
+  const { value: text } = await mammoth.extractRawText({ arrayBuffer: buffer });
+  return text;
+}
+
 // ─── Determina tipo file ──────────────────────────────────────────────────────
 export function getTipoFile(file) {
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
 
-  if (type === 'application/pdf' || name.endsWith('.pdf'))                         return 'pdf';
+  if (type === 'application/pdf' || name.endsWith('.pdf'))                                return 'pdf';
   if (type.includes('spreadsheetml') || name.endsWith('.xlsx') || name.endsWith('.xls')) return 'xlsx';
-  if (type === 'text/csv' || name.endsWith('.csv'))                                return 'csv';
-  if (type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|webp|gif)$/))       return 'image';
-  if (name.endsWith('.docx') || name.endsWith('.doc'))                             return 'docx';
-  if (type === 'text/plain' || name.endsWith('.txt'))                              return 'txt';
+  if (type === 'text/csv'  || name.endsWith('.csv'))                                     return 'csv';
+  if (type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|webp|gif)$/))             return 'image';
+  if (
+    type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    name.endsWith('.docx')
+  )                                                                                       return 'docx';
+  // .doc legacy NON supportato (decisione di progetto — solo .docx)
+  if (type === 'text/plain' || name.endsWith('.txt'))                                    return 'txt';
   return 'unknown';
 }
 
@@ -79,21 +89,22 @@ const MIME_CONSENTITI = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // ✅ .docx
   'text/csv',
   'text/plain',
   'image/jpeg',
   'image/png',
+  'image/webp',
 ]);
 
 export function validaMimeType(file) {
   const type = file.type.toLowerCase();
   const name = file.name.toLowerCase();
 
-  // Controllo MIME
   if (MIME_CONSENTITI.has(type)) return true;
 
-  // Fallback su estensione per casi edge (es. browser che non rileva correttamente)
-  const estensioniOk = ['.pdf', '.xlsx', '.xls', '.csv', '.txt', '.jpg', '.jpeg', '.png'];
+  // Fallback su estensione (alcuni browser non rilevano correttamente il MIME)
+  const estensioniOk = ['.pdf', '.xlsx', '.xls', '.docx', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp'];
   return estensioniOk.some(ext => name.endsWith(ext));
 }
 
@@ -107,6 +118,9 @@ async function preparaContenuto(file) {
 
     case 'xlsx':
       return { contenuto: await xlsxToText(file), isVisual: false };
+
+    case 'docx':
+      return { contenuto: await docxToText(file), isVisual: false };  // ✅ nuovo
 
     case 'csv':
     case 'txt':
@@ -123,7 +137,7 @@ async function preparaContenuto(file) {
 // ─── ESTRATTO CONTO: Estrai movimenti bancari dal file ────────────────────────
 export async function estraiMovimentiBancari(file) {
   if (!validaMimeType(file)) {
-    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XLSX, CSV, JPG o PNG.`);
+    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XLSX, DOCX, CSV, JPG o PNG.`);
   }
 
   const { contenuto, isVisual, mediaType } = await preparaContenuto(file);
@@ -176,7 +190,7 @@ Regole importanti:
 // ─── FATTURA FORNITORE: Estrai dati da fattura ────────────────────────────────
 export async function estraiFattura(file) {
   if (!validaMimeType(file)) {
-    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, JPG, PNG o XLSX.`);
+    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, DOCX, JPG, PNG o XLSX.`);
   }
 
   const { contenuto, isVisual, mediaType } = await preparaContenuto(file);
@@ -220,9 +234,8 @@ Regole:
 
 // ─── RIPARTIZIONE: Determina criterio da regolamento ─────────────────────────
 export async function determinaCriterioRipartizione({ descrizioneSpesa, categoriaSpesa, testoRegolamento, tabelleMillesimali }) {
-  // Sanitizzazione input (sicurezza AI Act)
   const descSanitized = String(descrizioneSpesa || '').replace(/<[^>]*>/g, '').substring(0, 500);
-  const catSanitized  = String(categoriaSpesa || '').replace(/<[^>]*>/g, '').substring(0, 100);
+  const catSanitized  = String(categoriaSpesa  || '').replace(/<[^>]*>/g, '').substring(0, 100);
 
   const systemPrompt = `Sei un esperto di diritto condominiale italiano. 
 Analizza la spesa descritta e determina il corretto criterio di ripartizione basandoti sul regolamento condominiale fornito e, in mancanza, sul Codice Civile italiano (artt. 1117-1139).
@@ -244,6 +257,6 @@ Tabelle millesimali disponibili: ${tabelleMillesimali?.map(t => t.nome).join(', 
 ${testoRegolamento ? `Regolamento condominiale:\n${testoRegolamento.substring(0, 3000)}` : 'Nessun regolamento disponibile. Usa il Codice Civile.'}`;
 
   const risposta = await callClaude(systemPrompt, userPrompt);
-  const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
+  const clean    = risposta.replace(/```json\n?|\n?```/g, '').trim();
   return JSON.parse(clean);
 }

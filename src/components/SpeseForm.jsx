@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { callClaude } from '../lib/claudeClient'
+import { useState, useEffect, useRef } from 'react'
+import { callClaude, callClaudeVision } from '../lib/claudeClient'
 
 const CATEGORIE = [
   { value: 'ordinaria', label: 'Ordinaria' },
@@ -17,7 +17,17 @@ const inputStyle = {
 }
 const labelStyle = { display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }
 
-export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel }) {
+// Converte file in base64
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result.split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false }) {
   const [form, setForm] = useState({
     esercizio_id: esercizioId,
     condominio_id: condominioId,
@@ -43,13 +53,17 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
 
+  // Stato import fattura
+  const [loadingFattura, setLoadingFattura] = useState(false)
+  const [fatturaImportata, setFatturaImportata] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [errFattura, setErrFattura] = useState(null)
+  const fileInputRef = useRef()
+
   useEffect(() => {
-    if (spesaInEdit) {
-      setForm({ ...spesaInEdit })
-    }
+    if (spesaInEdit) setForm({ ...spesaInEdit })
   }, [spesaInEdit])
 
-  // Ricalcola ripartizioni live al cambio criterio/tabella/importo
   useEffect(() => {
     if (!form.importo || !unita?.length) return
     calcolaRipartizioni()
@@ -64,20 +78,14 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
     if (form.criterio === 'quota_fissa') {
       const quota = importo / unita.length
       setRipartizioni(unita.map(u => ({
-        unita_id: u.id,
-        interno: u.interno,
-        piano: u.piano,
-        importo: Math.round(quota * 100) / 100,
-        millesimi: null,
+        unita_id: u.id, interno: u.interno, piano: u.piano,
+        importo: Math.round(quota * 100) / 100, millesimi: null,
       })))
       return
     }
 
     const tabella = tabelle.find(t => t.id === form.tabella_millesimale_id)
-    if (!tabella?.millesimi_unita?.length) {
-      setRipartizioni([])
-      return
-    }
+    if (!tabella?.millesimi_unita?.length) { setRipartizioni([]); return }
 
     const totMill = tabella.millesimi_unita.reduce((s, m) => s + parseFloat(m.valore || 0), 0)
     if (!totMill) return
@@ -93,14 +101,110 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
       const qMill = (vMill / totMill) * importoMill
       const qFissa = unita.length > 0 ? importoFisso / unita.length : 0
       return {
-        unita_id: u.id,
-        interno: u.interno,
-        piano: u.piano,
+        unita_id: u.id, interno: u.interno, piano: u.piano,
         importo: Math.round((qMill + qFissa) * 100) / 100,
         millesimi: vMill,
       }
     }))
   }
+
+  // ─── Import da fattura ────────────────────────────────────────────────────
+
+  const elaboraFattura = async (file) => {
+    if (!file) return
+
+    const MIME_CONSENTITI = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+    if (!MIME_CONSENTITI.includes(file.type)) {
+      setErrFattura('Formato non supportato. Usa PDF, JPG, PNG o WEBP.')
+      return
+    }
+
+    setLoadingFattura(true)
+    setErrFattura(null)
+
+    try {
+      const base64 = await fileToBase64(file)
+      const mediaType = file.type
+
+      const prompt = `Analizza questa fattura/documento e estrai le informazioni rilevanti.
+Rispondi SOLO con un oggetto JSON valido, nessun testo prima o dopo:
+{
+  "descrizione": "descrizione della spesa (es. Manutenzione ascensore, Pulizia scale, ...)",
+  "importo": numero (solo cifra, senza simbolo €),
+  "data_spesa": "YYYY-MM-DD (data fattura o data documento)",
+  "fornitore": "nome fornitore/azienda",
+  "numero_fattura": "numero fattura se presente, altrimenti null",
+  "categoria": "ordinaria|straordinaria|manutenzione|utenze|assicurazione|altro",
+  "tipo_lavoro": "ordinario|straordinario",
+  "note": "eventuali note utili estratte dal documento, null se nessuna"
+}`
+
+      const isPdf = file.type === 'application/pdf'
+
+      let messageContent
+      if (isPdf) {
+        messageContent = [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: base64 }
+          },
+          { type: 'text', text: prompt }
+        ]
+      } else {
+        messageContent = [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data: base64 }
+          },
+          { type: 'text', text: prompt }
+        ]
+      }
+
+      const data = await callClaudeVision({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: messageContent }]
+      })
+
+      const text = data.content?.[0]?.text || '{}'
+      const clean = text.replace(/```json|```/g, '').trim()
+      const estratto = JSON.parse(clean)
+
+      // Pre-compila il form con i dati estratti
+      setForm(f => ({
+        ...f,
+        descrizione: estratto.descrizione || f.descrizione,
+        importo: estratto.importo ? String(estratto.importo) : f.importo,
+        data_spesa: estratto.data_spesa || f.data_spesa,
+        fornitore: estratto.fornitore || f.fornitore,
+        numero_fattura: estratto.numero_fattura || f.numero_fattura,
+        categoria: estratto.categoria || f.categoria,
+        tipo_lavoro: estratto.tipo_lavoro || f.tipo_lavoro,
+        note: estratto.note || f.note,
+      }))
+
+      setFatturaImportata(true)
+    } catch (e) {
+      console.error('Errore estrazione fattura:', e)
+      setErrFattura('Impossibile estrarre i dati. Verifica il file e riprova.')
+    } finally {
+      setLoadingFattura(false)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) elaboraFattura(file)
+  }
+
+  const handleFileInput = (e) => {
+    const file = e.target.files?.[0]
+    if (file) elaboraFattura(file)
+  }
+
+  // ─── AI suggerimento criterio ─────────────────────────────────────────────
 
   const chiediAI = async () => {
     if (!form.descrizione.trim()) {
@@ -143,11 +247,9 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
     } catch (e) {
       console.error('AI error:', e)
       setAiSuggerimento({
-        criterio: 'millesimi',
-        tabella_consigliata: null,
+        criterio: 'millesimi', tabella_consigliata: null,
         motivazione: 'Impossibile ottenere il suggerimento. Verifica la connessione.',
-        fonti: [],
-        confidenza: 'bassa'
+        fonti: [], confidenza: 'bassa'
       })
       setShowAiModal(true)
     } finally {
@@ -200,9 +302,7 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
     }
   }
 
-  const confidenzaColore = {
-    alta: '#10b981', media: '#f59e0b', bassa: '#ef4444'
-  }
+  const confidenzaColore = { alta: '#10b981', media: '#f59e0b', bassa: '#ef4444' }
 
   return (
     <div style={{ background: '#1e293b', borderRadius: 16, padding: 28, border: '1px solid #334155' }}>
@@ -210,6 +310,87 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
         {spesaInEdit ? 'Modifica spesa' : 'Nuova spesa'}
       </h3>
 
+      {/* ── Drop zone import fattura ── */}
+      {!spesaInEdit && (
+        <div style={{ marginBottom: 24 }}>
+          {/* Zona drag & drop */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => !loadingFattura && fileInputRef.current?.click()}
+            style={{
+              border: `2px dashed ${dragOver ? '#7c3aed' : fatturaImportata ? '#10b981' : '#334155'}`,
+              borderRadius: 10,
+              padding: '20px 24px',
+              textAlign: 'center',
+              cursor: loadingFattura ? 'not-allowed' : 'pointer',
+              background: dragOver ? '#7c3aed11' : fatturaImportata ? '#10b98111' : '#0f172a',
+              transition: 'all 0.2s',
+            }}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              style={{ display: 'none' }}
+              onChange={handleFileInput}
+            />
+            {loadingFattura ? (
+              <div>
+                <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
+                <div style={{ color: '#94a3b8', fontSize: 14 }}>Estrazione dati in corso...</div>
+              </div>
+            ) : fatturaImportata ? (
+              <div>
+                <div style={{ fontSize: 24, marginBottom: 8 }}>✅</div>
+                <div style={{ color: '#10b981', fontSize: 14, fontWeight: 600 }}>Dati estratti dalla fattura</div>
+                <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
+                  Verifica e modifica i campi pre-compilati qui sotto
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setFatturaImportata(false); fileInputRef.current?.click() }}
+                  style={{
+                    marginTop: 8, background: 'transparent', color: '#64748b',
+                    border: '1px solid #334155', borderRadius: 6, padding: '4px 12px',
+                    fontSize: 12, cursor: 'pointer', fontFamily: 'Sora, sans-serif'
+                  }}
+                >
+                  Carica altra fattura
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🧾</div>
+                <div style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>
+                  Trascina la fattura qui oppure clicca per selezionarla
+                </div>
+                <div style={{ color: '#475569', fontSize: 12, marginTop: 4 }}>
+                  PDF, JPG, PNG, WEBP · L'AI compilerà automaticamente i campi
+                </div>
+              </div>
+            )}
+          </div>
+
+          {errFattura && (
+            <div style={{
+              marginTop: 8, background: '#ef444422', border: '1px solid #ef444444',
+              borderRadius: 6, padding: '8px 12px', color: '#ef4444', fontSize: 13
+            }}>
+              ⚠️ {errFattura}
+            </div>
+          )}
+
+          {/* Divisore */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20 }}>
+            <div style={{ flex: 1, height: 1, background: '#334155' }} />
+            <span style={{ color: '#475569', fontSize: 12 }}>oppure compila manualmente</span>
+            <div style={{ flex: 1, height: 1, background: '#334155' }} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Campi form ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* Descrizione */}
         <div style={{ gridColumn: '1/-1' }}>
@@ -432,7 +613,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
             background: '#1e293b', borderRadius: 16, padding: 32, maxWidth: 540,
             width: '100%', border: '1px solid #7c3aed66'
           }}>
-            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
               <span style={{ fontSize: 28 }}>🤖</span>
               <div>
@@ -443,7 +623,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
               </div>
             </div>
 
-            {/* Spesa analizzata */}
             <div style={{
               background: '#0f172a', borderRadius: 8, padding: '10px 14px',
               marginBottom: 16, fontSize: 13, color: '#94a3b8'
@@ -452,7 +631,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
               {form.importo && <span> · €{parseFloat(form.importo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>}
             </div>
 
-            {/* Criterio suggerito */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>Criterio suggerito</div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -476,7 +654,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
               </div>
             </div>
 
-            {/* Motivazione */}
             <div style={{
               background: '#0f172a', borderRadius: 8, padding: '14px 16px',
               marginBottom: 16, borderLeft: '3px solid #7c3aed'
@@ -487,7 +664,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
               </p>
             </div>
 
-            {/* Fonti + confidenza */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {aiSuggerimento.fonti?.map((f, i) => (
@@ -506,13 +682,9 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
               </span>
             </div>
 
-            {/* Azioni */}
             <div style={{ display: 'flex', gap: 12 }}>
               <button
-                onClick={() => {
-                  setShowAiModal(false)
-                  setField('criterio_override', true)
-                }}
+                onClick={() => { setShowAiModal(false); setField('criterio_override', true) }}
                 style={{
                   flex: 1, background: 'transparent', color: '#94a3b8',
                   border: '1px solid #334155', borderRadius: 8,

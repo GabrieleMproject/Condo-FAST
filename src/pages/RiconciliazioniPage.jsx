@@ -93,7 +93,8 @@ ${JSON.stringify(fatNonRic.map(f => ({
 Abbina i movimenti alle fatture.`;
 
       setProgressoAI('Elaborazione suggerimenti...');
-      const risposta = await callClaude(systemPrompt, userPrompt, { max_tokens: 2048 });
+const risposta = await callClaude(userPrompt, { system: systemPrompt, maxTokens: 2048, funzione: 'riconcilia_uscite', condominio_id: condominioId });     
+funzione: 'riconcilia_uscite', condominio_id: condominioId });
       const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
       const suggerimenti = JSON.parse(clean);
 

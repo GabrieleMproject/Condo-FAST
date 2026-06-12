@@ -20,6 +20,7 @@ import DashboardPage from './pages/DashboardPage'
 import CondominiPage from './pages/CondominiPage'
 import CondominiDetailPage from './pages/CondominiDetailPage'
 import AnagraficaPage from './pages/AnagraficaPage'
+import RiconciliazioniIncassiPage from './pages/RiconciliazioniIncassiPage'
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
     <Route path="/condomini/:condominioId/estratto-conto" element={<EstrattoContoPage />} />
     <Route path="/condomini/:condominioId/fatture" element={<FattureFornitoriPage />} />
     <Route path="/condomini/:condominioId/riconciliazioni" element={<RiconciliazioniPage />} />
+<Route path="/condomini/:condominioId/riconciliazioni-incassi" element={<RiconciliazioniIncassiPage />} />
   <Route path="/condomini/:condominioId/dashboard-fin" element={<DashboardFinanziaria />} />
 <Route path="/impostazioni" element={<ImpostazioniPage />} />  {/* ← qui */}
   </Route>

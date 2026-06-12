@@ -1,8 +1,9 @@
 // src/components/RateGridTab.jsx
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
-import { CreditCard, X, CheckCircle2 } from 'lucide-react'
+import { CreditCard, X, CheckCircle2, Coins } from 'lucide-react'
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -10,22 +11,26 @@ const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFract
 function deriveStato(importo, pagato) {
   if (pagato <= 0.001) return 'non_pagata'
   if (pagato < importo - 0.01) return 'parziale'
+  if (pagato > importo + 0.01) return 'sovra_pagata'
   return 'pagata'
 }
 
 function cellInfo(cell, rata) {
-  if (!cell) return { color: '#475569', bg: 'transparent', label: '—', importo: 0, pagato: 0, missing: true }
+  if (!cell) return { color: '#475569', bg: 'transparent', label: '—', importo: 0, pagato: 0, credito: 0, missing: true }
   const importo = parseFloat(cell.importo || 0)
   const pagato = parseFloat(cell.importo_pagato || 0)
-  const overdue = cell.stato !== 'pagata' && rata?.data_scadenza && new Date(rata.data_scadenza) < new Date()
+  const credito = round2(pagato - importo)
+  const overdue = cell.stato !== 'pagata' && cell.stato !== 'sovra_pagata' && rata?.data_scadenza && new Date(rata.data_scadenza) < new Date()
   let color = '#64748b', label = 'Non pagata'
   if (cell.stato === 'pagata') { color = '#10b981'; label = 'Pagata' }
+  else if (cell.stato === 'sovra_pagata') { color = '#38bdf8'; label = 'Sovra-versata' }
   else if (cell.stato === 'parziale') { color = '#f59e0b'; label = 'Parziale' }
   else if (overdue) { color = '#ef4444'; label = 'Scaduta' }
-  return { color, bg: color + '22', importo, pagato, label, overdue, missing: false }
+  return { color, bg: color + '22', importo, pagato, credito, label, overdue, missing: false }
 }
 
 export default function RateGridTab({ condominioId }) {
+  const navigate = useNavigate()
   const [esercizi, setEsercizi] = useState([])
   const [esercizio, setEsercizio] = useState(null)
   const [rate, setRate] = useState([])           // colonne
@@ -116,6 +121,16 @@ export default function RateGridTab({ condominioId }) {
 
   return (
     <div>
+      {/* Azione: riconciliazione incassi */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <button
+          onClick={() => navigate(`/condomini/${condominioId}/riconciliazioni-incassi`)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg, #16a34a, #2563eb)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' }}
+        >
+          <Coins size={15} /> Riconcilia incassi
+        </button>
+      </div>
+
       {/* Selettore esercizio */}
       {esercizi.length > 1 && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -188,7 +203,10 @@ export default function RateGridTab({ condominioId }) {
                             <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{info.missing ? '—' : eur(info.importo)}</span>
                             {!info.missing && (
                               <span style={{ color: info.color, fontSize: 10, marginTop: 2 }}>
-                                {info.label}{info.pagato > 0 && info.label !== 'Pagata' ? ` · ${eur(info.pagato)}` : ''}
+                                {info.label}
+                                {info.label === 'Sovra-versata'
+                                  ? ` · credito ${eur(info.credito)}`
+                                  : (info.pagato > 0 && info.label !== 'Pagata' ? ` · ${eur(info.pagato)}` : '')}
                               </span>
                             )}
                           </button>

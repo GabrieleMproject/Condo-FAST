@@ -179,9 +179,10 @@ Regole importanti:
     ? 'Analizza questo estratto conto bancario ed estrai tutti i movimenti nel formato JSON richiesto.'
     : `Analizza questo estratto conto bancario ed estrai tutti i movimenti nel formato JSON richiesto.\n\nContenuto del file:\n${contenuto}`;
 
+  // ✅ firma corretta: testo → system in opts; vision → system accorpato al prompt (il client vision non inoltra system)
   const risposta = isVisual
-    ? await callClaudeVision(systemPrompt, userPrompt, contenuto, mediaType)
-    : await callClaude(systemPrompt, userPrompt);
+    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 4000 })
+    : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 });
 
   const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
   return JSON.parse(clean);
@@ -224,9 +225,10 @@ Regole:
     ? 'Analizza questa fattura ed estrai i dati nel formato JSON richiesto.'
     : `Analizza questa fattura ed estrai i dati nel formato JSON richiesto.\n\n${contenuto}`;
 
+  // ✅ firma corretta
   const risposta = isVisual
-    ? await callClaudeVision(systemPrompt, userPrompt, contenuto, mediaType)
-    : await callClaude(systemPrompt, userPrompt);
+    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 2000 })
+    : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 });
 
   const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
   return JSON.parse(clean);
@@ -256,7 +258,8 @@ Tabelle millesimali disponibili: ${tabelleMillesimali?.map(t => t.nome).join(', 
 
 ${testoRegolamento ? `Regolamento condominiale:\n${testoRegolamento.substring(0, 3000)}` : 'Nessun regolamento disponibile. Usa il Codice Civile.'}`;
 
-  const risposta = await callClaude(systemPrompt, userPrompt);
+  // ✅ firma corretta
+  const risposta = await callClaude(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500 });
   const clean    = risposta.replace(/```json\n?|\n?```/g, '').trim();
   return JSON.parse(clean);
 }

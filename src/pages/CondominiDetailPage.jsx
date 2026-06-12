@@ -12,7 +12,7 @@ import {
   MoveVertical, Trees, ParkingCircle, UserCheck,
   FileText, FolderClock, LayoutGrid, CreditCard,
   ArrowLeft, Receipt, Users,
-  CheckCircle2, Clock, AlertCircle, Circle,
+  CheckCircle2,
   ChevronRight, Building2,
 } from 'lucide-react'
 
@@ -35,203 +35,40 @@ const DOTAZIONI = (c) => [
 
 const TABS = [
   { id: 'panoramica', label: 'Panoramica', icon: LayoutGrid },
-  { id: 'preventivo', label: 'Preventivo', icon: ClipboardList },  // ← nuovo
+  { id: 'preventivo', label: 'Preventivo', icon: ClipboardList },
   { id: 'rate',       label: 'Rate',       icon: CreditCard },
+  { id: 'finanze',    label: 'Finanze',    icon: Wallet },        // ← nuovo: accesso pagine finanziarie
   { id: 'documenti',  label: 'Documenti',  icon: FileText },
   { id: 'storico',    label: 'Storico',    icon: FolderClock },
 ]
 
-// ── Colori / icone stato rata ────────────────────────────────
-const RATA_STATO = {
-  pagata:   { color: '#10b981', bg: '#10b98118', Icon: CheckCircle2, label: 'Pagata' },
-  scaduta:  { color: '#ef4444', bg: '#ef444418', Icon: AlertCircle,  label: 'Scaduta' },
-  in_attesa:{ color: '#f59e0b', bg: '#f59e0b18', Icon: Clock,        label: 'In attesa' },
-  aperta:   { color: '#64748b', bg: '#64748b18', Icon: Circle,       label: 'Aperta' },
-}
+// ── Tab Finanze: scorciatoie verso le pagine finanziarie (route già esistenti) ──
+const FIN_LINKS = (id) => [
+  { label: 'Estratto conto',         desc: 'Importa e gestisci i movimenti bancari', icon: Wallet,     to: `/condomini/${id}/estratto-conto` },
+  { label: 'Fatture fornitori',      desc: 'Carica e gestisci le fatture',            icon: Receipt,    to: `/condomini/${id}/fatture` },
+  { label: 'Riconciliazione uscite', desc: 'Abbina uscite ↔ fatture fornitori',       icon: ArrowUpDown, to: `/condomini/${id}/riconciliazioni` },
+  { label: 'Riconciliazione incassi',desc: 'Abbina entrate ↔ rate dei condòmini',     icon: CreditCard, to: `/condomini/${id}/riconciliazioni-incassi` },
+  { label: 'Ripartizione',           desc: 'Ripartizione spese per millesimi',        icon: LayoutGrid, to: `/condomini/${id}/ripartizione` },
+  { label: 'Config. pagante',        desc: 'Chi paga per ogni unità',                 icon: UserCheck,  to: `/condomini/${id}/config-pagante` },
+  { label: 'Millesimi',              desc: 'Tabelle e valori millesimali',            icon: Layers,     to: `/condomini/${id}/millesimi` },
+  { label: 'Dashboard finanziaria',  desc: 'Quadro economico generale',               icon: Building2,  to: `/condomini/${id}/dashboard-fin` },
+]
 
-// ── Tab Rate ─────────────────────────────────────────────────
-function RateTab({ condominioId }) {
-  const [esercizi, setEsercizi] = useState([])
-  const [esercizioAttivo, setEsercizioAttivo] = useState(null)
-  const [rate, setRate] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [aggiornando, setAggiornando] = useState(null)
-
-  useEffect(() => {
-    supabase
-      .from('esercizi')
-      .select('*')
-      .eq('condominio_id', condominioId)
-      .order('anno', { ascending: false })
-      .then(({ data }) => {
-        setEsercizi(data || [])
-        const aperto = data?.find(e => e.stato === 'aperto') || data?.[0]
-        setEsercizioAttivo(aperto || null)
-      })
-  }, [condominioId])
-
-  useEffect(() => {
-    if (!esercizioAttivo) { setLoading(false); return }
-    setLoading(true)
-    supabase
-      .from('rate')
-      .select('*')
-      .eq('esercizio_id', esercizioAttivo.id)
-      .order('scadenza', { ascending: true })
-      .then(({ data }) => { setRate(data || []); setLoading(false) })
-  }, [esercizioAttivo])
-
-  const segnaComePagata = async (rataId) => {
-    setAggiornando(rataId)
-    await supabase
-      .from('rate')
-      .update({ stato: 'pagata', data_pagamento: new Date().toISOString().split('T')[0] })
-      .eq('id', rataId)
-    setRate(prev => prev.map(r => r.id === rataId
-      ? { ...r, stato: 'pagata', data_pagamento: new Date().toISOString().split('T')[0] }
-      : r
-    ))
-    setAggiornando(null)
-  }
-
-  const totPagato  = rate.filter(r => r.stato === 'pagata').reduce((s, r) => s + parseFloat(r.importo || 0), 0)
-  const totDovuto  = rate.reduce((s, r) => s + parseFloat(r.importo || 0), 0)
-  const nScadute   = rate.filter(r => r.stato === 'scaduta').length
-
-  if (!esercizioAttivo && !loading) return (
-    <div style={{ textAlign: 'center', padding: 48 }}>
-      <CreditCard size={36} color="#334155" style={{ marginBottom: 12 }} />
-      <p style={{ color: '#64748b', margin: 0 }}>Nessun esercizio contabile creato</p>
-      <p style={{ color: '#475569', fontSize: 13, marginTop: 6 }}>Crea un esercizio dalla sezione Spese per generare le rate</p>
-    </div>
-  )
-
+function FinanzeTab({ condominioId }) {
+  const navigate = useNavigate()
   return (
-    <div>
-      {/* Selezione esercizio */}
-      {esercizi.length > 1 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          {esercizi.map(es => (
-            <button
-              key={es.id}
-              onClick={() => setEsercizioAttivo(es)}
-              style={{
-                padding: '6px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
-                border: `1px solid ${esercizioAttivo?.id === es.id ? '#2563eb' : '#334155'}`,
-                background: esercizioAttivo?.id === es.id ? 'rgba(37,99,235,0.15)' : 'transparent',
-                color: esercizioAttivo?.id === es.id ? '#60a5fa' : '#64748b',
-                fontFamily: 'Sora, sans-serif', fontWeight: esercizioAttivo?.id === es.id ? 600 : 400,
-              }}
-            >
-              {es.anno}
-              <span style={{
-                marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 4,
-                background: es.stato === 'aperto' ? '#10b98122' : '#64748b22',
-                color: es.stato === 'aperto' ? '#10b981' : '#64748b',
-              }}>{es.stato}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* KPI rate */}
-      {!loading && rate.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
-          {[
-            { label: 'Totale dovuto',  value: `€${totDovuto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`,  color: '#60a5fa' },
-            { label: 'Totale pagato',  value: `€${totPagato.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`,  color: '#10b981' },
-            { label: 'Rate scadute',   value: nScadute, color: nScadute > 0 ? '#ef4444' : '#64748b' },
-          ].map(k => (
-            <div key={k.label} style={{
-              background: '#1e293b', borderRadius: 10, padding: '14px 18px',
-              border: `1px solid ${k.color}33`,
-            }}>
-              <div style={{ color: '#64748b', fontSize: 12, marginBottom: 4 }}>{k.label}</div>
-              <div style={{ color: k.color, fontSize: 20, fontWeight: 700 }}>{k.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Lista rate */}
-      {loading ? (
-        <div style={{ color: '#64748b', textAlign: 'center', padding: 32 }}>Caricamento rate...</div>
-      ) : rate.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 40 }}>
-          <CreditCard size={32} color="#334155" style={{ marginBottom: 10 }} />
-          <p style={{ color: '#64748b', margin: 0 }}>Nessuna rata per questo esercizio</p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {rate.map(r => {
-            const stato = RATA_STATO[r.stato] || RATA_STATO.aperta
-            const { Icon } = stato
-            const scaduta = r.stato !== 'pagata' && new Date(r.scadenza) < new Date()
-            const statoEffettivo = scaduta && r.stato !== 'pagata' ? RATA_STATO.scaduta : stato
-            return (
-              <div key={r.id} style={{
-                background: '#1e293b', borderRadius: 10, padding: '14px 18px',
-                border: `1px solid ${statoEffettivo.color}33`,
-                display: 'flex', alignItems: 'center', gap: 14,
-              }}>
-                {/* Stato icon */}
-                <div style={{
-                  width: 36, height: 36, borderRadius: 8,
-                  background: statoEffettivo.bg,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <statoEffettivo.Icon size={18} color={statoEffettivo.color} />
-                </div>
-
-                {/* Info */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14 }}>
-                    {r.descrizione || `Rata ${r.numero_rata ?? ''}`}
-                  </div>
-                  <div style={{ color: '#64748b', fontSize: 12, marginTop: 2, display: 'flex', gap: 10 }}>
-                    <span>Scadenza: {new Date(r.scadenza).toLocaleDateString('it-IT')}</span>
-                    {r.data_pagamento && (
-                      <span>· Pagata il {new Date(r.data_pagamento).toLocaleDateString('it-IT')}</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Importo */}
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ color: statoEffettivo.color, fontSize: 16, fontWeight: 700 }}>
-                    €{parseFloat(r.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-                  </div>
-                  <div style={{
-                    fontSize: 11, marginTop: 3,
-                    color: statoEffettivo.color,
-                    background: statoEffettivo.bg,
-                    padding: '2px 8px', borderRadius: 4, display: 'inline-block',
-                  }}>
-                    {statoEffettivo.label}
-                  </div>
-                </div>
-
-                {/* Azione */}
-                {r.stato !== 'pagata' && (
-                  <button
-                    onClick={() => segnaComePagata(r.id)}
-                    disabled={aggiornando === r.id}
-                    style={{
-                      background: aggiornando === r.id ? '#1e3a6e' : 'rgba(37,99,235,0.15)',
-                      color: '#60a5fa', border: '1px solid rgba(37,99,235,0.3)',
-                      borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600,
-                      cursor: aggiornando === r.id ? 'not-allowed' : 'pointer',
-                      fontFamily: 'Sora, sans-serif', whiteSpace: 'nowrap', flexShrink: 0,
-                    }}
-                  >
-                    {aggiornando === r.id ? '...' : '✓ Segna pagata'}
-                  </button>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 14 }}>
+      {FIN_LINKS(condominioId).map(({ label, desc, icon: Icon, to }) => (
+        <button key={to} onClick={() => navigate(to)} style={S.finCard}>
+          <div style={S.finIconWrap}>
+            <Icon size={20} color="#60a5fa" strokeWidth={1.8} />
+          </div>
+          <div style={{ textAlign: 'left', minWidth: 0 }}>
+            <div style={S.finLabel}>{label}</div>
+            <div style={S.finDesc}>{desc}</div>
+          </div>
+        </button>
+      ))}
     </div>
   )
 }
@@ -418,9 +255,11 @@ export default function CondominiDetailPage() {
           </>
         )}
 
-	{activeTab === 'preventivo' && <PreventivoSection condominioId={c.id} />}
+        {activeTab === 'preventivo' && <PreventivoSection condominioId={c.id} />}
 
         {activeTab === 'rate' && <RateGridTab condominioId={c.id} />}
+
+        {activeTab === 'finanze' && <FinanzeTab condominioId={c.id} />}
 
         {activeTab === 'documenti' && <DocumentiCondominio condominioId={c.id} />}
 
@@ -448,7 +287,7 @@ const S = {
   kpiIconWrap: { width: 36, height: 36, borderRadius: 8, background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   kpiValue:    { color: '#e2e8f0', fontSize: 18, fontWeight: 700 },
   kpiLabel:    { color: '#64748b', fontSize: 11 },
-  tabBar:      { display: 'flex', gap: 2, borderBottom: '1px solid #334155', marginBottom: 20 },
+  tabBar:      { display: 'flex', gap: 2, borderBottom: '1px solid #334155', marginBottom: 20, flexWrap: 'wrap' },
   tabBtn:      { padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', borderRadius: '8px 8px 0 0', fontFamily: 'Sora, sans-serif', transition: 'all 0.15s', display: 'flex', alignItems: 'center' },
   tabContent:  {},
   section:     { background: '#1e293b', borderRadius: 12, padding: '20px 24px', marginBottom: 14, border: '1px solid #334155' },
@@ -461,4 +300,9 @@ const S = {
   btnPrimary:  { background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center' },
   btnSuccess:  { background: '#059669', color: 'white', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center' },
   btnSecondary:{ background: 'transparent', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, padding: '9px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center' },
+  // ── Tab Finanze ──
+  finCard:     { background: '#1e293b', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'center', border: '1px solid #334155', cursor: 'pointer', fontFamily: 'Sora, sans-serif', textAlign: 'left', transition: 'border-color 0.15s' },
+  finIconWrap: { width: 40, height: 40, borderRadius: 10, background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  finLabel:    { color: '#e2e8f0', fontSize: 14, fontWeight: 600 },
+  finDesc:     { color: '#64748b', fontSize: 12, marginTop: 2 },
 }

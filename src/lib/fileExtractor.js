@@ -160,7 +160,8 @@ Formato JSON richiesto:
       "importo": number,
       "saldo": number | null,
       "tipo": "entrata" | "uscita" | "giroconto",
-      "fornitore_rilevato": "nome fornitore se identificabile dalla causale" | null,
+      "fornitore_rilevato": "nome fornitore se identificabile dalla causale (tipico delle USCITE)" | null,
+      "pagante_rilevato": "nome del condòmino/pagante se identificabile dalla causale (tipico delle ENTRATE)" | null,
       "riferimento_esterno": "numero assegno/bonifico se presente" | null
     }
   ],
@@ -172,7 +173,9 @@ Regole importanti:
 - Gli importi in ENTRATA (accrediti, versamenti) devono essere POSITIVI
 - Le date devono essere in formato ISO YYYY-MM-DD
 - Se la data ha solo giorno e mese, usa l'anno del periodo dell'estratto conto
-- Identifica il fornitore dalla causale quando possibile
+- Per le USCITE: identifica il fornitore dalla causale quando possibile → "fornitore_rilevato"
+- Per le ENTRATE (accrediti/bonifici dei condòmini): identifica il nominativo del PAGANTE dalla causale quando possibile → "pagante_rilevato". Esempio: "BONIFICO DA MARIO ROSSI - RATA CONDOMINIO" → pagante_rilevato: "Mario Rossi". Estrai solo nome e cognome della persona, senza la parte descrittiva.
+- "fornitore_rilevato" e "pagante_rilevato" sono mutuamente alternativi: un movimento avrà valorizzato l'uno (uscite) o l'altro (entrate), non entrambi
 - Se non riesci a interpretare un movimento, includilo comunque con i dati disponibili`;
 
   const userPrompt = isVisual

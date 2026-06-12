@@ -22,6 +22,17 @@ function sanitizeInput(text, maxLength = 40000) {
     .trim();
 }
 
+// ── Helper: estrae un messaggio leggibile dall'errore del proxy ───────────
+// Anthropic inoltra { error: { type, message } }; il proxy può inviare { error: "stringa" }.
+// Senza questa normalizzazione, `new Error(oggetto)` produrrebbe "[object Object]".
+function estraiMessaggioErrore(err, status) {
+  const e = err?.error;
+  if (typeof e === 'string') return e;
+  if (e && typeof e === 'object') return e.message || JSON.stringify(e);
+  if (typeof err?.message === 'string') return err.message;
+  return `Edge Function error ${status}`;
+}
+
 // ── Helper: log su ai_call_log (best-effort) ──────────────────────────────
 async function logAiCall({ funzione, condominio_id, inputTokens, outputTokens }) {
   try {
@@ -59,7 +70,7 @@ async function callEdge(body) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Edge Function error ${res.status}`);
+    throw new Error(estraiMessaggioErrore(err, res.status));
   }
 
   return res.json();

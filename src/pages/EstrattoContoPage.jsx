@@ -66,6 +66,7 @@ export default function EstrattoContoPage() {
         saldo: m.saldo ?? null,
         tipo: m.tipo || (m.importo >= 0 ? 'entrata' : 'uscita'),
         fornitore_rilevato: m.fornitore_rilevato ?? null,
+        pagante_rilevato: m.pagante_rilevato ?? null,   // ✅ S8b: ora si salva (entrate)
         riferimento_esterno: m.riferimento_esterno ?? null,
         fonte_import: tipo,
         ai_processed: true,
@@ -191,6 +192,9 @@ export default function EstrattoContoPage() {
                   {m.fornitore_rilevato && (
                     <div style={styles.movFornitore}>🏢 {m.fornitore_rilevato}</div>
                   )}
+                  {m.pagante_rilevato && (
+                    <div style={styles.movPagante}>👤 {m.pagante_rilevato}</div>
+                  )}
                   <div style={styles.movMeta}>
                     {new Date(m.data_movimento).toLocaleDateString('it-IT')}
                     {m.riferimento_esterno && ` · Rif: ${m.riferimento_esterno}`}
@@ -264,6 +268,7 @@ const styles = {
   },
   movCausale: { fontSize: 14, color: '#e2e8f0', fontWeight: 500, wordBreak: 'break-word' },
   movFornitore: { fontSize: 12, color: '#60a5fa', marginTop: 2 },
+  movPagante: { fontSize: 12, color: '#34d399', marginTop: 2 },
   movMeta: { fontSize: 11, color: '#64748b', marginTop: 3, display: 'flex', alignItems: 'center', gap: 8 },
   ricBadge: {
     background: '#16a34a20', color: '#16a34a',

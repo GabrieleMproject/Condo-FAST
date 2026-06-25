@@ -147,7 +147,7 @@ export default function RateGridTab({ condominioId }) {
         {[
           { label: 'Totale dovuto', value: eur(totaleDovuto), color: '#60a5fa' },
           { label: 'Totale incassato', value: eur(totalePagato), color: '#10b981' },
-          { label: 'Residuo', value: eur(totaleDovuto - totalePagato), color: (totaleDovuto - totalePagato) > 0.01 ? '#f59e0b' : '#10b981' },
+       { label: 'Residuo', value: eur(Math.max(0, totaleDovuto - totalePagato)), color: (totaleDovuto - totalePagato) > 0.01 ? '#f59e0b' : '#10b981' },
         ].map((k) => (
           <div key={k.label} style={{ background: '#1e293b', borderRadius: 10, padding: '14px 18px', border: `1px solid ${k.color}33` }}>
             <div style={{ color: '#64748b', fontSize: 12, marginBottom: 4 }}>{k.label}</div>

@@ -17,6 +17,12 @@ function calcolaStato(pagato, dovuto) {
   return 'sovra_pagata';
 }
 
+// Gli occupanti sono annidati sotto unita (rate_unita → unita → occupanti_unita).
+// PostgREST non ha FK diretta rate_unita↔occupanti_unita: l'embed va passato per unita.
+function estraiOccupanti(cella) {
+  return cella?.unita?.occupanti || [];
+}
+
 const STATI_APERTI = ['non_pagata', 'parziale'];
 
 export default function RiconciliazioniIncassiPage() {
@@ -37,9 +43,9 @@ export default function RiconciliazioniIncassiPage() {
   async function loadAll() {
     setLoading(true);
     const [
-      { data: ent },
-      { data: celle },
-      { data: abb },
+      entRes,
+      celleRes,
+      abbRes,
     ] = await Promise.all([
       supabase
         .from('estratto_conto')
@@ -53,8 +59,10 @@ export default function RiconciliazioniIncassiPage() {
         .select(`
           id, importo, importo_pagato, stato,
           rata:rate(numero_rata, data_scadenza, descrizione, esercizio_id),
-          unita:unita(numero, tipo, scala, piano),
-          occupanti:occupanti_unita(ruolo, attivo, persona:persone(nome, cognome))
+          unita:unita(
+            numero, tipo, scala, piano,
+            occupanti:occupanti_unita(ruolo, attivo, persona:persone(nome, cognome))
+          )
         `)
         .eq('condominio_id', condominioId)
         .in('stato', STATI_APERTI),
@@ -67,17 +75,23 @@ export default function RiconciliazioniIncassiPage() {
           cella:rate_unita(
             id, importo, importo_pagato, stato,
             rata:rate(numero_rata, data_scadenza),
-            unita:unita(numero, tipo, scala, piano),
-            occupanti:occupanti_unita(ruolo, attivo, persona:persone(nome, cognome))
+            unita:unita(
+              numero, tipo, scala, piano,
+              occupanti:occupanti_unita(ruolo, attivo, persona:persone(nome, cognome))
+            )
           )
         `)
         .eq('condominio_id', condominioId)
         .order('created_at', { ascending: false }),
     ]);
 
-    setEntrate(ent || []);
-    setCelleAperte(celle || []);
-    setAbbinamenti(abb || []);
+    if (entRes.error)  console.error('entrate:', entRes.error);
+    if (celleRes.error) console.error('celle:', celleRes.error);
+    if (abbRes.error)  console.error('abbinamenti:', abbRes.error);
+
+    setEntrate(entRes.data || []);
+    setCelleAperte(celleRes.data || []);
+    setAbbinamenti(abbRes.data || []);
     setLoading(false);
   }
 
@@ -135,7 +149,7 @@ Includi solo abbinamenti con confidence_score >= 30. Non abbinare due volte la s
         importo_dovuto: c.importo,
         gia_pagato:     c.importo_pagato,
         residuo:        r2(c.importo - c.importo_pagato),
-        paganti: (c.occupanti || [])
+        paganti: estraiOccupanti(c)
           .filter(o => o.attivo && o.persona)
           .map(o => `${o.persona.nome} ${o.persona.cognome} (${o.ruolo})`),
       }));
@@ -340,7 +354,7 @@ function AbbinamentoIncassoCard({ ab, onConferma, onRifiuta }) {
   const unitaLabel = cella?.unita
     ? `${cella.unita.numero}${cella.unita.scala ? ' sc.' + cella.unita.scala : ''}${cella.unita.piano != null ? ' p.' + cella.unita.piano : ''}`
     : '—';
-  const paganti = (cella?.occupanti || [])
+  const paganti = estraiOccupanti(cella)
     .filter(o => o.attivo && o.persona)
     .map(o => `${o.persona.nome} ${o.persona.cognome}`)
     .join(', ');

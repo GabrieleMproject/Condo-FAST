@@ -97,7 +97,7 @@ export default function EstrattoContoPage() {
   const movFiltrati = filtroTipo ? movimenti.filter(m => m.tipo === filtroTipo) : movimenti;
   const totaleEntrate = movimenti.filter(m => m.tipo === 'entrata').reduce((a, m) => a + m.importo, 0);
   const totaleUscite = movimenti.filter(m => m.tipo === 'uscita').reduce((a, m) => a + Math.abs(m.importo), 0);
-  const nonRiconciliati = movimenti.filter(m => !m.riconciliato && m.tipo === 'uscita').length;
+  const nonRiconciliati = movimenti.filter(m => !m.riconciliato).length;
 
   return (
     <div style={styles.page}>
@@ -231,8 +231,9 @@ const styles = {
   kpiCard: { flex: '1 1 140px', background: '#1e293b', borderRadius: 12, padding: '16px 20px', border: '1px solid #334155' },
   kpiVal: { fontSize: 20, fontWeight: 700 },
   kpiLabel: { fontSize: 11, color: '#64748b', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  dropZone: {
-    border: '2px dashed #334155', borderRadius: 16, padding: '36px 20px',
+dropZone: {
+    borderWidth: '2px', borderStyle: 'dashed', borderColor: '#334155',
+    borderRadius: 16, padding: '36px 20px',
     textAlign: 'center', marginBottom: 20, transition: 'all 0.2s',
     background: '#1e293b10',
   },

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { callClaude, callClaudeVision } from '../lib/claudeClient'
+import { callClaude } from '../lib/claudeClient'
+import { estraiFattura } from '../lib/fileExtractor'
 
 const CATEGORIE = [
   { value: 'ordinaria', label: 'Ordinaria' },
@@ -16,16 +17,6 @@ const inputStyle = {
   fontSize: 14, fontFamily: 'Sora, sans-serif', boxSizing: 'border-box'
 }
 const labelStyle = { display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }
-
-// Converte file in base64
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result.split(',')[1])
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
 
 export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false }) {
   const [form, setForm] = useState({
@@ -47,6 +38,9 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
   })
 
   const [ripartizioni, setRipartizioni] = useState([])
+  // Importi manuali: { [unita_id]: stringa } — modificabili dall'utente
+  const [importiManuali, setImportiManuali] = useState({})
+
   const [showAiModal, setShowAiModal] = useState(false)
   const [loadingAi, setLoadingAi] = useState(false)
   const [aiSuggerimento, setAiSuggerimento] = useState(null)
@@ -61,15 +55,43 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
   const fileInputRef = useRef()
 
   useEffect(() => {
-    if (spesaInEdit) setForm({ ...spesaInEdit })
+    if (spesaInEdit) {
+      setForm({ ...spesaInEdit })
+      // Pre-popola gli importi manuali se la spesa in edit è manuale
+      if (spesaInEdit.criterio === 'manuale' && Array.isArray(spesaInEdit.ripartizioni)) {
+        const init = {}
+        spesaInEdit.ripartizioni.forEach(r => {
+          init[r.unita_id] = String(r.importo_override ?? r.importo ?? '')
+        })
+        setImportiManuali(init)
+      }
+    }
   }, [spesaInEdit])
 
   useEffect(() => {
+    if (form.criterio === 'manuale') { calcolaManuale(); return }
     if (!form.importo || !unita?.length) return
     calcolaRipartizioni()
-  }, [form.importo, form.criterio, form.tabella_millesimale_id, form.percentuale_millesimi])
+  }, [form.importo, form.criterio, form.tabella_millesimale_id, form.percentuale_millesimi, importiManuali])
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  // ─── Ripartizione MANUALE ──────────────────────────────────────────────────
+  const calcolaManuale = () => {
+    setRipartizioni(unita.map(u => {
+      const val = parseFloat(importiManuali[u.id])
+      return {
+        unita_id: u.id, interno: u.interno, piano: u.piano,
+        importo: Number.isFinite(val) ? Math.round(val * 100) / 100 : 0,
+        millesimi: null,
+        override_manuale: true,
+        importo_override: Number.isFinite(val) ? Math.round(val * 100) / 100 : 0,
+      }
+    }))
+  }
+
+  const setImportoManuale = (unitaId, v) =>
+    setImportiManuali(m => ({ ...m, [unitaId]: v }))
 
   const calcolaRipartizioni = () => {
     const importo = parseFloat(form.importo)
@@ -108,78 +130,26 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
     }))
   }
 
-  // ─── Import da fattura ────────────────────────────────────────────────────
-
+  // ─── Import da fattura (via estraiFattura — fix #10) ────────────────────────
   const elaboraFattura = async (file) => {
     if (!file) return
-
-    const MIME_CONSENTITI = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
-    if (!MIME_CONSENTITI.includes(file.type)) {
-      setErrFattura('Formato non supportato. Usa PDF, JPG, PNG o WEBP.')
-      return
-    }
-
     setLoadingFattura(true)
     setErrFattura(null)
-
     try {
-      const base64 = await fileToBase64(file)
-      const mediaType = file.type
+      const estratto = await estraiFattura(file)
 
-      const prompt = `Analizza questa fattura/documento e estrai le informazioni rilevanti.
-Rispondi SOLO con un oggetto JSON valido, nessun testo prima o dopo:
-{
-  "descrizione": "descrizione della spesa (es. Manutenzione ascensore, Pulizia scale, ...)",
-  "importo": numero (solo cifra, senza simbolo €),
-  "data_spesa": "YYYY-MM-DD (data fattura o data documento)",
-  "fornitore": "nome fornitore/azienda",
-  "numero_fattura": "numero fattura se presente, altrimenti null",
-  "categoria": "ordinaria|straordinaria|manutenzione|utenze|assicurazione|altro",
-  "tipo_lavoro": "ordinario|straordinario",
-  "note": "eventuali note utili estratte dal documento, null se nessuna"
-}`
+      // Mappa categoria fattura → categoria spesa (set ristretto del form)
+      const CAT_VALIDE = CATEGORIE.map(c => c.value)
+      const catSpesa = CAT_VALIDE.includes(estratto.categoria) ? estratto.categoria : 'altro'
 
-      const isPdf = file.type === 'application/pdf'
-
-      let messageContent
-      if (isPdf) {
-        messageContent = [
-          {
-            type: 'document',
-            source: { type: 'base64', media_type: 'application/pdf', data: base64 }
-          },
-          { type: 'text', text: prompt }
-        ]
-      } else {
-        messageContent = [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: base64 }
-          },
-          { type: 'text', text: prompt }
-        ]
-      }
-
-      const data = await callClaudeVision({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 800,
-        messages: [{ role: 'user', content: messageContent }]
-      })
-
-      const text = data.content?.[0]?.text || '{}'
-      const clean = text.replace(/```json|```/g, '').trim()
-      const estratto = JSON.parse(clean)
-
-      // Pre-compila il form con i dati estratti
       setForm(f => ({
         ...f,
         descrizione: estratto.descrizione || f.descrizione,
-        importo: estratto.importo ? String(estratto.importo) : f.importo,
-        data_spesa: estratto.data_spesa || f.data_spesa,
+        importo: estratto.importo_totale != null ? String(estratto.importo_totale) : f.importo,
+        data_spesa: estratto.data_fattura || f.data_spesa,
         fornitore: estratto.fornitore || f.fornitore,
         numero_fattura: estratto.numero_fattura || f.numero_fattura,
-        categoria: estratto.categoria || f.categoria,
-        tipo_lavoro: estratto.tipo_lavoro || f.tipo_lavoro,
+        categoria: catSpesa,
         note: estratto.note || f.note,
       }))
 
@@ -204,8 +174,7 @@ Rispondi SOLO con un oggetto JSON valido, nessun testo prima o dopo:
     if (file) elaboraFattura(file)
   }
 
-  // ─── AI suggerimento criterio ─────────────────────────────────────────────
-
+  // ─── AI suggerimento criterio (firma canonica) ──────────────────────────────
   const chiediAI = async () => {
     if (!form.descrizione.trim()) {
       setErrors({ descrizione: 'Inserisci la descrizione prima di chiedere all\'AI' })
@@ -216,31 +185,31 @@ Rispondi SOLO con un oggetto JSON valido, nessun testo prima o dopo:
       const regolamento = documenti?.find(d => d.tipo === 'regolamento' && d.testo_estratto)
       const nomiTabelle = tabelle.map(t => t.nome).join(', ')
 
-      const prompt = `Sei un esperto di diritto condominiale italiano. Devi suggerire il criterio di ripartizione per una spesa condominiale.
+      const systemPrompt = 'Sei un esperto di diritto condominiale italiano. Suggerisci il criterio di ripartizione per una spesa condominiale. Rispondi SOLO con un JSON valido, nessun testo prima o dopo.'
 
-SPESA: "${form.descrizione}"
+      const prompt = `SPESA: "${form.descrizione}"
 IMPORTO: €${form.importo || 'non specificato'}
 TIPO LAVORO: ${form.tipo_lavoro}
 TABELLE MILLESIMALI DISPONIBILI: ${nomiTabelle || 'nessuna'}
 ${regolamento ? `\nREGOLAMENTO CONDOMINIALE:\n${regolamento.testo_estratto.slice(0, 3000)}` : ''}
 
-Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
+Formato JSON:
 {
   "criterio": "millesimi" | "quota_fissa" | "mista",
   "tabella_consigliata": "nome della tabella o null",
   "percentuale_millesimi": numero tra 0 e 100 (solo per criterio mista),
   "motivazione": "spiegazione in italiano, max 3 frasi, cita articoli di legge o regolamento se pertinenti",
-  "fonti": ["Regolamento condominiale", "Art. 1123 c.c.", ...],
+  "fonti": ["Regolamento condominiale", "Art. 1123 c.c."],
   "confidenza": "alta" | "media" | "bassa"
 }`
 
-      const data = await callClaude({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
+      const risposta = await callClaude(prompt, {
+        system: systemPrompt,
+        funzione: 'criterio_spesa',
+        condominio_id: condominioId,
+        maxTokens: 1000,
       })
-      const text = data.content?.[0]?.text || '{}'
-      const clean = text.replace(/```json|```/g, '').trim()
+      const clean = risposta.replace(/```json|```/g, '').trim()
       const sug = JSON.parse(clean)
       setAiSuggerimento(sug)
       setShowAiModal(true)
@@ -271,12 +240,21 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
     setShowAiModal(false)
   }
 
+  // ─── Validazione ────────────────────────────────────────────────────────────
+  const totaleRipartito = ripartizioni.reduce((s, r) => s + (r.importo || 0), 0)
+  const scartoManuale = form.criterio === 'manuale'
+    ? Math.round((totaleRipartito - (parseFloat(form.importo) || 0)) * 100) / 100
+    : 0
+
   const validate = () => {
     const e = {}
     if (!form.descrizione.trim()) e.descrizione = 'Campo obbligatorio'
     if (!form.importo || parseFloat(form.importo) <= 0) e.importo = 'Inserisci un importo valido'
     if (!form.data_spesa) e.data_spesa = 'Campo obbligatorio'
-    if (form.criterio !== 'quota_fissa' && !form.tabella_millesimale_id) e.tabella = 'Seleziona una tabella millesimale'
+    if (form.criterio !== 'quota_fissa' && form.criterio !== 'manuale' && !form.tabella_millesimale_id)
+      e.tabella = 'Seleziona una tabella millesimale'
+    if (form.criterio === 'manuale' && Math.abs(scartoManuale) > 0.01)
+      e.manuale = `La somma degli importi (€${totaleRipartito.toFixed(2)}) deve corrispondere al totale (€${(parseFloat(form.importo) || 0).toFixed(2)}). Scarto: €${scartoManuale.toFixed(2)}`
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -295,6 +273,9 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
         unita_id: r.unita_id,
         importo: r.importo,
         millesimi_usati: r.millesimi || null,
+        ...(form.criterio === 'manuale'
+          ? { override_manuale: true, importo_override: r.importo_override ?? r.importo }
+          : {}),
       }))
       await onSave(payload, ripartDaSalvare)
     } finally {
@@ -303,6 +284,7 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
   }
 
   const confidenzaColore = { alta: '#10b981', media: '#f59e0b', bassa: '#ef4444' }
+  const isManuale = form.criterio === 'manuale'
 
   return (
     <div style={{ background: '#1e293b', borderRadius: 16, padding: 28, border: '1px solid #334155' }}>
@@ -313,7 +295,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
       {/* ── Drop zone import fattura ── */}
       {!spesaInEdit && (
         <div style={{ marginBottom: 24 }}>
-          {/* Zona drag & drop */}
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
@@ -332,7 +313,7 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.csv,.txt"
               style={{ display: 'none' }}
               onChange={handleFileInput}
             />
@@ -366,7 +347,7 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
                   Trascina la fattura qui oppure clicca per selezionarla
                 </div>
                 <div style={{ color: '#475569', fontSize: 12, marginTop: 4 }}>
-                  PDF, JPG, PNG, WEBP · L'AI compilerà automaticamente i campi
+                  PDF, immagine, DOCX, Excel · L'AI compilerà automaticamente i campi
                 </div>
               </div>
             )}
@@ -381,7 +362,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
             </div>
           )}
 
-          {/* Divisore */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20 }}>
             <div style={{ flex: 1, height: 1, background: '#334155' }} />
             <span style={{ color: '#475569', fontSize: 12 }}>oppure compila manualmente</span>
@@ -392,7 +372,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
 
       {/* ── Campi form ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        {/* Descrizione */}
         <div style={{ gridColumn: '1/-1' }}>
           <label style={labelStyle}>Descrizione *</label>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -422,7 +401,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
           {errors.descrizione && <span style={{ color: '#ef4444', fontSize: 12 }}>{errors.descrizione}</span>}
         </div>
 
-        {/* Importo */}
         <div>
           <label style={labelStyle}>Importo (€) *</label>
           <input
@@ -435,7 +413,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
           {errors.importo && <span style={{ color: '#ef4444', fontSize: 12 }}>{errors.importo}</span>}
         </div>
 
-        {/* Data */}
         <div>
           <label style={labelStyle}>Data spesa *</label>
           <input
@@ -446,7 +423,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
           />
         </div>
 
-        {/* Categoria */}
         <div>
           <label style={labelStyle}>Categoria</label>
           <select style={inputStyle} value={form.categoria} onChange={e => setField('categoria', e.target.value)}>
@@ -454,7 +430,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
           </select>
         </div>
 
-        {/* Tipo lavoro */}
         <div>
           <label style={labelStyle}>Tipo lavoro</label>
           <select style={inputStyle} value={form.tipo_lavoro} onChange={e => setField('tipo_lavoro', e.target.value)}>
@@ -463,18 +438,17 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
           </select>
         </div>
 
-        {/* Criterio ripartizione */}
         <div>
           <label style={labelStyle}>Criterio ripartizione</label>
           <select style={inputStyle} value={form.criterio} onChange={e => setField('criterio', e.target.value)}>
             <option value="millesimi">Millesimi</option>
             <option value="quota_fissa">Quota fissa (parti uguali)</option>
             <option value="mista">Mista (millesimi + quota fissa)</option>
+            <option value="manuale">Manuale (importi per unità)</option>
           </select>
         </div>
 
-        {/* Tabella millesimale */}
-        {form.criterio !== 'quota_fissa' && (
+        {form.criterio !== 'quota_fissa' && form.criterio !== 'manuale' && (
           <div>
             <label style={labelStyle}>Tabella millesimale *</label>
             <select
@@ -491,7 +465,6 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
           </div>
         )}
 
-        {/* Percentuale millesimi (solo per mista) */}
         {form.criterio === 'mista' && (
           <div>
             <label style={labelStyle}>% a millesimi</label>
@@ -505,21 +478,18 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
           </div>
         )}
 
-        {/* Fornitore */}
         <div>
           <label style={labelStyle}>Fornitore</label>
           <input style={inputStyle} placeholder="Es. Rossi Ascensori Srl"
             value={form.fornitore} onChange={e => setField('fornitore', e.target.value)} />
         </div>
 
-        {/* N. Fattura */}
         <div>
           <label style={labelStyle}>N. Fattura</label>
           <input style={inputStyle} placeholder="Es. 2024/0042"
             value={form.numero_fattura} onChange={e => setField('numero_fattura', e.target.value)} />
         </div>
 
-        {/* Note */}
         <div style={{ gridColumn: '1/-1' }}>
           <label style={labelStyle}>Note</label>
           <textarea
@@ -531,8 +501,71 @@ Rispondi SOLO con un JSON valido (nessun testo prima o dopo) in questo formato:
         </div>
       </div>
 
-      {/* Anteprima ripartizioni */}
-      {ripartizioni.length > 0 && (
+      {/* ── Griglia MANUALE editabile ── */}
+      {isManuale && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
+            Importi per unità ({unita.length}) — inserisci manualmente la quota di ciascuna unità
+          </div>
+          <div style={{
+            background: '#0f172a', borderRadius: 8, border: '1px solid #334155',
+            maxHeight: 260, overflowY: 'auto'
+          }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: '#1e293b' }}>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b' }}>Interno</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b' }}>Piano</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b', width: 160 }}>Importo €</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unita.map((u, i) => (
+                  <tr key={u.id} style={{ borderTop: i > 0 ? '1px solid #1e293b' : 'none' }}>
+                    <td style={{ padding: '7px 12px', color: '#f1f5f9' }}>{u.interno || u.numero || '—'}</td>
+                    <td style={{ padding: '7px 12px', color: '#94a3b8' }}>{u.piano ?? '—'}</td>
+                    <td style={{ padding: '6px 12px', textAlign: 'right' }}>
+                      <input
+                        type="number" step="0.01" min="0"
+                        style={{ ...inputStyle, padding: '6px 10px', textAlign: 'right', maxWidth: 140 }}
+                        placeholder="0.00"
+                        value={importiManuali[u.id] ?? ''}
+                        onChange={e => setImportoManuale(u.id, e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: '1px solid #334155' }}>
+                  <td colSpan={2} style={{ padding: '8px 12px', color: '#94a3b8', fontSize: 12 }}>
+                    Totale ripartito
+                  </td>
+                  <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700,
+                    color: Math.abs(scartoManuale) > 0.01 ? '#ef4444' : '#10b981' }}>
+                    €{totaleRipartito.toFixed(2)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {Math.abs(scartoManuale) > 0.01 ? (
+            <div style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>
+              Scarto rispetto al totale (€{(parseFloat(form.importo) || 0).toFixed(2)}): €{scartoManuale.toFixed(2)}
+            </div>
+          ) : (
+            (parseFloat(form.importo) > 0) && (
+              <div style={{ color: '#10b981', fontSize: 12, marginTop: 8 }}>
+                ✓ La somma corrisponde al totale
+              </div>
+            )
+          )}
+          {errors.manuale && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 6 }}>{errors.manuale}</div>}
+        </div>
+      )}
+
+      {/* Anteprima ripartizioni (criteri automatici) */}
+      {!isManuale && ripartizioni.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
             Anteprima ripartizione ({ripartizioni.length} unità)

@@ -18,7 +18,8 @@ export function useSpese(condominioId, esercizioId) {
           tabelle_millesimali(id, nome),
           ripartizioni(
             id, unita_id, importo, millesimi_usati,
-            importo_override, note_subentro, subentro_segnalato,
+            importo_override, override_manuale, note_override,
+            note_subentro, subentro_segnalato, criterio_applicato,
             unita(id, numero, piano)
           )
         `)
@@ -37,6 +38,24 @@ export function useSpese(condominioId, esercizioId) {
     }
   }, [condominioId, esercizioId])
 
+  // ── Helper: mappa un oggetto ripartizione (calcolato o manuale) → record DB
+  const mapRipartizione = (r, spesaId, criterioFallback) => {
+    const rec = {
+      spesa_id: spesaId,
+      unita_id: r.unita_id,
+      importo: r.importo,
+      millesimi_usati: r.millesimi_usati ?? null,
+      criterio_applicato: r.criterio_applicato ?? criterioFallback,
+    }
+    // Campi ripartizione manuale: inoltrati solo se presenti
+    if (r.override_manuale) {
+      rec.override_manuale = true
+      rec.importo_override = r.importo_override ?? r.importo
+      if (r.note_override != null) rec.note_override = r.note_override
+    }
+    return rec
+  }
+
   const crea = useCallback(async (payload, ripartizioniCalcolate) => {
     setLoading(true)
     setError(null)
@@ -54,15 +73,8 @@ export function useSpese(condominioId, esercizioId) {
         .single()
       if (spesaError) throw spesaError
 
-      // Salva ripartizioni se fornite
       if (ripartizioniCalcolate?.length > 0) {
-        const records = ripartizioniCalcolate.map(r => ({
-          spesa_id: spesa.id,
-          unita_id: r.unita_id,
-          importo: r.importo,
-          millesimi_usati: r.millesimi_usati || null,
-          criterio_applicato: payload.criterio,
-        }))
+        const records = ripartizioniCalcolate.map(r => mapRipartizione(r, spesa.id, payload.criterio))
         const { error: ripartErr } = await supabase.from('ripartizioni').insert(records)
         if (ripartErr) throw ripartErr
       }
@@ -88,17 +100,10 @@ export function useSpese(condominioId, esercizioId) {
         .single()
       if (error) throw error
 
-      // Ricalcola ripartizioni se fornite
       if (ripartizioniCalcolate) {
         await supabase.from('ripartizioni').delete().eq('spesa_id', id)
         if (ripartizioniCalcolate.length > 0) {
-          const records = ripartizioniCalcolate.map(r => ({
-            spesa_id: id,
-            unita_id: r.unita_id,
-            importo: r.importo,
-            millesimi_usati: r.millesimi_usati || null,
-            criterio_applicato: payload.criterio || data.criterio,
-          }))
+          const records = ripartizioniCalcolate.map(r => mapRipartizione(r, id, payload.criterio || data.criterio))
           await supabase.from('ripartizioni').insert(records)
         }
       }
@@ -127,7 +132,6 @@ export function useSpese(condominioId, esercizioId) {
     }
   }, [])
 
-  // Segna subentro su una ripartizione specifica
   const segnalaSubentro = useCallback(async (ripartizioneId, importoOverride, noteSubentro) => {
     const { data, error } = await supabase
       .from('ripartizioni')
@@ -144,7 +148,6 @@ export function useSpese(condominioId, esercizioId) {
     return data
   }, [fetch])
 
-  // Calcola ripartizioni lato client (senza salvarle)
   const calcolaRipartizioni = useCallback((spesa, tabellaMill, unita) => {
     const { importo, criterio, percentuale_millesimi = 100 } = spesa
 
@@ -190,7 +193,6 @@ export function useSpese(condominioId, esercizioId) {
     return []
   }, [])
 
-  // Rileva spese con subentri non gestiti per un'unità
   const getSpesePendentiSubentro = useCallback((unitaId) => {
     return spese.filter(s =>
       s.ripartizioni?.some(r => r.unita_id === unitaId && r.subentro_segnalato && !r.importo_override)

@@ -1,5 +1,5 @@
 // src/pages/ImpostazioniPage.jsx
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePlan, PIANI } from '../hooks/usePlan'
 import { PlanBadge } from '../components/PlanGate'
 import { supabase } from '../lib/supabaseClient'
@@ -35,6 +35,29 @@ async function apriPortaleStripe(customerId) {
   else throw new Error(data.error || 'Errore apertura portale')
 }
 
+// ── Logo → data-URL PNG ridimensionato (max 400px) ────────────────────────
+function fileToResizedDataUrl(file, maxW = 400) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width)
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/png'))   // PNG: preserva trasparenza del logo
+      }
+      img.onerror = reject
+      img.src = reader.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 export default function ImpostazioniPage() {
   const { user } = useAuth()
@@ -50,6 +73,74 @@ export default function ImpostazioniPage() {
   const [loadingCheckout, setLoadingCheckout] = useState(null)
   const [loadingPortale, setLoadingPortale]   = useState(false)
   const [error, setError]                     = useState(null)
+
+  // ── Branding studio ───────────────────────────────────────────────────
+  const logoInputRef = useRef()
+  const [branding, setBranding] = useState({
+    studio_nome: '', studio_indirizzo: '', studio_contatti: '', logo_base64: '',
+  })
+  const [savingBranding, setSavingBranding] = useState(false)
+  const [brandingSaved, setBrandingSaved]   = useState(false)
+  const [brandingErr, setBrandingErr]       = useState(null)
+
+  useEffect(() => {
+    if (!user?.id) return
+    let attivo = true
+    ;(async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('studio_nome, studio_indirizzo, studio_contatti, logo_base64')
+        .eq('id', user.id)
+        .single()
+      if (attivo && data) {
+        setBranding({
+          studio_nome:      data.studio_nome || '',
+          studio_indirizzo: data.studio_indirizzo || '',
+          studio_contatti:  data.studio_contatti || '',
+          logo_base64:      data.logo_base64 || '',
+        })
+      }
+    })()
+    return () => { attivo = false }
+  }, [user?.id])
+
+  async function onLogoSelected(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      setBrandingErr('Logo: usa PNG, JPG o WEBP.'); return
+    }
+    try {
+      const dataUrl = await fileToResizedDataUrl(file, 400)
+      setBranding(b => ({ ...b, logo_base64: dataUrl }))
+      setBrandingErr(null)
+    } catch {
+      setBrandingErr('Impossibile elaborare il logo.')
+    }
+  }
+
+  async function salvaBranding() {
+    setBrandingErr(null); setSavingBranding(true)
+    try {
+      const { error: e } = await supabase
+        .from('profiles')
+        .update({
+          studio_nome:      branding.studio_nome || null,
+          studio_indirizzo: branding.studio_indirizzo || null,
+          studio_contatti:  branding.studio_contatti || null,
+          logo_base64:      branding.logo_base64 || null,
+        })
+        .eq('id', user.id)
+      if (e) throw e
+      setBrandingSaved(true)
+      setTimeout(() => setBrandingSaved(false), 2500)
+    } catch (e) {
+      setBrandingErr(e.message)
+    } finally {
+      setSavingBranding(false)
+    }
+  }
 
   // ── Avvia upgrade ─────────────────────────────────────────────────────
   const handleUpgrade = async (targetPiano) => {
@@ -81,11 +172,6 @@ export default function ImpostazioniPage() {
   const giorniTrialRimasti = trialEndsAt
     ? Math.max(0, Math.ceil((new Date(trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)))
     : 0
-
-  // ── Piani da mostrare per upgrade ────────────────────────────────────
-  const pianiUpgrade = Object.entries(PIANI).filter(([key]) =>
-    key !== 'trial' && key !== piano
-  )
 
   return (
     <div style={styles.page}>
@@ -196,6 +282,88 @@ export default function ImpostazioniPage() {
                   {loadingPortale ? 'Caricamento…' : '⚙️ Gestisci fatturazione e metodo pagamento'}
                 </button>
               )}
+            </div>
+          </div>
+        </section>
+
+        {/* ── STUDIO / BRANDING ────────────────────────────────────── */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>Studio / Branding documenti</h2>
+          <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
+            Logo e intestazione usati su consuntivi e documenti esportati (PDF/XLS).
+          </p>
+
+          <div style={styles.brandingCard}>
+            <div style={styles.brandingGrid}>
+              {/* Logo */}
+              <div>
+                <label style={styles.brandingLabel}>Logo studio</label>
+                <div style={styles.logoBox}>
+                  {branding.logo_base64
+                    ? <img src={branding.logo_base64} alt="Logo studio" style={styles.logoImg} />
+                    : <span style={{ color: '#475569', fontSize: 12 }}>Nessun logo</span>}
+                </div>
+                <input
+                  ref={logoInputRef} type="file" accept=".png,.jpg,.jpeg,.webp"
+                  style={{ display: 'none' }} onChange={onLogoSelected}
+                />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button style={styles.brandingBtnGhost} onClick={() => logoInputRef.current?.click()}>
+                    {branding.logo_base64 ? 'Cambia logo' : 'Carica logo'}
+                  </button>
+                  {branding.logo_base64 && (
+                    <button
+                      style={styles.brandingBtnGhost}
+                      onClick={() => setBranding(b => ({ ...b, logo_base64: '' }))}
+                    >
+                      Rimuovi
+                    </button>
+                  )}
+                </div>
+                <div style={{ color: '#475569', fontSize: 11, marginTop: 6 }}>
+                  PNG/JPG/WEBP · ridimensionato a 400px
+                </div>
+              </div>
+
+              {/* Campi testuali */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label style={styles.brandingLabel}>Nome studio / amministratore</label>
+                  <input
+                    style={styles.brandingInput}
+                    placeholder="Es. Amministrazione Gemelli di Rag. Andrea Gemelli"
+                    value={branding.studio_nome}
+                    onChange={e => setBranding(b => ({ ...b, studio_nome: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label style={styles.brandingLabel}>Indirizzo</label>
+                  <input
+                    style={styles.brandingInput}
+                    placeholder="Es. Via Canturina n° 88 – 22100 Como (CO)"
+                    value={branding.studio_indirizzo}
+                    onChange={e => setBranding(b => ({ ...b, studio_indirizzo: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label style={styles.brandingLabel}>Contatti (tel / email / PEC / P.IVA)</label>
+                  <textarea
+                    style={{ ...styles.brandingInput, minHeight: 80, resize: 'vertical' }}
+                    placeholder={'Mobile: +39 333 1861413\ne-mail: info@...\nPEC: ...\nP.IVA: ...'}
+                    value={branding.studio_contatti}
+                    onChange={e => setBranding(b => ({ ...b, studio_contatti: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {brandingErr && <div style={{ ...styles.errorBox, marginTop: 16, marginBottom: 0 }}>{brandingErr}</div>}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
+              {brandingSaved && <span style={{ color: '#4ade80', fontSize: 13 }}>✓ Salvato</span>}
+              <button style={styles.brandingBtnSave} onClick={salvaBranding} disabled={savingBranding}>
+                {savingBranding ? 'Salvataggio…' : 'Salva branding'}
+              </button>
             </div>
           </div>
         </section>
@@ -353,6 +521,28 @@ const styles = {
   btnPortale: {
     background: 'transparent', border: '1px solid #334155', color: '#94a3b8',
     borderRadius: 8, padding: '10px 18px', fontSize: 14, cursor: 'pointer',
+  },
+  // ── Branding ──
+  brandingCard: { background: '#1e293b', border: '1px solid #334155', borderRadius: 16, padding: 24 },
+  brandingGrid: { display: 'grid', gridTemplateColumns: '200px 1fr', gap: 24, alignItems: 'start' },
+  brandingLabel: { display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 },
+  brandingInput: {
+    width: '100%', background: '#0f172a', color: '#f1f5f9',
+    border: '1px solid #334155', borderRadius: 8, padding: '10px 12px',
+    fontSize: 14, fontFamily: 'Sora, sans-serif', boxSizing: 'border-box',
+  },
+  logoBox: {
+    width: '100%', height: 110, background: '#0f172a', border: '1px solid #334155',
+    borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  logoImg: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
+  brandingBtnGhost: {
+    background: 'transparent', border: '1px solid #334155', color: '#94a3b8',
+    borderRadius: 8, padding: '7px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
+  },
+  brandingBtnSave: {
+    background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8,
+    padding: '10px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
   },
   pianiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 },
   pianoOption: {

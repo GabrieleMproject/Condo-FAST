@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiFattura, getTipoFile } from '../lib/fileExtractor';
@@ -11,6 +11,18 @@ const STATI = {
 };
 
 const CATEGORIE = ['manutenzione', 'pulizie', 'utenze', 'assicurazione', 'amministrazione', 'altro'];
+
+// ─── Badge ritenuta/F24 DERIVATO (D1=1A) — non in DB ──────────────────────
+// ritenuta IS NULL              → nessun badge
+// stato != 'pagata'             → "Ritenuta · non pagata"
+// stato='pagata' & f24 mancante → "In attesa F24"
+// stato='pagata' & f24 presente → "Ritenuta completa"
+function badgeRitenuta(f) {
+  if (f.ritenuta_acconto == null) return null;
+  if (f.stato !== 'pagata') return { label: 'Ritenuta · non pagata', color: '#f59e0b', bg: '#f59e0b20' };
+  if (!f.f24_url)           return { label: 'In attesa F24',         color: '#ef4444', bg: '#ef444420' };
+  return { label: 'Ritenuta completa', color: '#16a34a', bg: '#16a34a20' };
+}
 
 export default function FattureFornitoriPage() {
   const { condominioId } = useParams();
@@ -25,6 +37,11 @@ export default function FattureFornitoriPage() {
   const [filtroStato, setFiltroStato]     = useState('');
   const [dragOver, setDragOver]           = useState(false);
   const [spese, setSpese]                 = useState([]);
+
+  // F24 upload
+  const f24InputRef            = useRef();
+  const [f24TargetId, setF24TargetId] = useState(null);
+  const [f24Busy, setF24Busy]  = useState(false);
 
   useEffect(() => {
     if (condominioId) { loadFatture(); loadSpese(); }
@@ -46,7 +63,7 @@ export default function FattureFornitoriPage() {
       .from('spese')
       .select('id, descrizione, importo')
       .eq('condominio_id', condominioId)
-      .order('data_competenza', { ascending: false })
+      .order('data_spesa', { ascending: false })   // ✅ bug #9: era 'data_competenza' (colonna inesistente)
       .limit(50);
     setSpese(data || []);
   }
@@ -68,7 +85,6 @@ export default function FattureFornitoriPage() {
       setUploadProgress('Estrazione dati fattura con AI...');
       const datiAI = await estraiFattura(file);
 
-      // ✅ Upload su Storage per PDF e DOCX (entrambi vanno archiviati)
       let fileUrl = null;
       if (tipo === 'pdf' || tipo === 'docx') {
         setUploadProgress('Caricamento file su storage...');
@@ -99,7 +115,7 @@ export default function FattureFornitoriPage() {
         descrizione:     datiAI.descrizione || '',
         categoria:       datiAI.categoria || 'altro',
         stato:           'attesa',
-        pdf_url:         fileUrl,          // rinominato concettualmente: ora può essere anche .docx
+        pdf_url:         fileUrl,
         ai_dati_estratti: datiAI,
       });
 
@@ -116,19 +132,66 @@ export default function FattureFornitoriPage() {
     }
   }
 
+  // ─── Upload quietanza F24 (path canonico §3) ─────────────────
+  function pickF24(fatturaId) {
+    setF24TargetId(fatturaId);
+    f24InputRef.current?.click();
+  }
+
+  async function onF24Selected(e) {
+    const file = e.target.files?.[0];
+    const id   = f24TargetId;
+    e.target.value = '';
+    setF24TargetId(null);
+    if (!file || !id) return;
+
+    const MIME = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    if (!MIME.includes(file.type)) {
+      setErroreUpload('F24: usa PDF, JPG, PNG o WEBP.');
+      return;
+    }
+
+    setF24Busy(true);
+    setErroreUpload('');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      // path CANONICO: ${uid}/${condominioId}/f24_${idFattura}_${file.name}
+      const path = `${user.id}/${condominioId}/f24_${id}_${file.name}`;
+      const { error: se } = await supabase.storage
+        .from('fatture')
+        .upload(path, file, { contentType: file.type, upsert: true });
+      if (se) throw se;
+
+      const { data: urlData } = supabase.storage.from('fatture').getPublicUrl(path);
+
+      const { error: ue } = await supabase
+        .from('fatture_fornitori')
+        .update({ f24_url: urlData?.publicUrl || path, f24_caricato_at: new Date().toISOString() })
+        .eq('id', id);
+      if (ue) throw ue;
+
+      await loadFatture();
+    } catch (err) {
+      setErroreUpload('Errore upload F24: ' + err.message);
+    } finally {
+      setF24Busy(false);
+    }
+  }
+
   // ─── Modifica inline ─────────────────────────────────────────
   function startEdit(f) {
     setEditingId(f.id);
     setEditData({
-      fornitore:      f.fornitore,
-      numero_fattura: f.numero_fattura || '',
-      data_fattura:   f.data_fattura,
-      data_scadenza:  f.data_scadenza || '',
-      importo_totale: f.importo_totale,
-      categoria:      f.categoria,
-      stato:          f.stato,
-      descrizione:    f.descrizione || '',
-      spesa_id:       f.spesa_id || '',
+      fornitore:        f.fornitore,
+      numero_fattura:   f.numero_fattura || '',
+      data_fattura:     f.data_fattura,
+      data_scadenza:    f.data_scadenza || '',
+      importo_totale:   f.importo_totale,
+      categoria:        f.categoria,
+      stato:            f.stato,
+      descrizione:      f.descrizione || '',
+      spesa_id:         f.spesa_id || '',
+      ritenuta_acconto: f.ritenuta_acconto ?? '',
     });
   }
 
@@ -137,6 +200,11 @@ export default function FattureFornitoriPage() {
     if (!update.data_scadenza)  delete update.data_scadenza;
     if (!update.numero_fattura) delete update.numero_fattura;
     if (!update.spesa_id) update.spesa_id = null;
+    // ritenuta: '' → null, altrimenti numero
+    update.ritenuta_acconto =
+      (update.ritenuta_acconto === '' || update.ritenuta_acconto == null)
+        ? null
+        : parseFloat(update.ritenuta_acconto);
 
     await supabase.from('fatture_fornitori').update(update).eq('id', id);
     setEditingId(null);
@@ -152,10 +220,23 @@ export default function FattureFornitoriPage() {
   // ─── KPI ────────────────────────────────────────────────────
   const totaleAttesa   = fatture.filter(f => f.stato === 'attesa').reduce((a, f) => a + (f.importo_totale || 0), 0);
   const totalePagato   = fatture.filter(f => f.stato === 'pagata').reduce((a, f) => a + (f.importo_totale || 0), 0);
-  const fattureFiltrate = filtroStato ? fatture.filter(f => f.stato === filtroStato) : fatture;
+  const attesaF24      = fatture.filter(f => f.ritenuta_acconto != null && f.stato === 'pagata' && !f.f24_url);
+
+  const fattureFiltrate =
+    filtroStato === '__f24'
+      ? attesaF24
+      : filtroStato
+      ? fatture.filter(f => f.stato === filtroStato)
+      : fatture;
 
   return (
     <div style={styles.page}>
+      {/* input nascosto per quietanza F24 */}
+      <input
+        ref={f24InputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+        style={{ display: 'none' }} onChange={onF24Selected}
+      />
+
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>Fatture Fornitori</h1>
@@ -166,10 +247,10 @@ export default function FattureFornitoriPage() {
       {/* KPI */}
       <div style={styles.kpiRow}>
         {[
-          { label: 'Fatture totali',   value: fatture.length,                                                                              color: '#2563eb' },
-          { label: 'Da pagare',        value: `€ ${totaleAttesa.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`,                  color: '#f59e0b' },
-          { label: 'Pagate',           value: `€ ${totalePagato.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`,                  color: '#16a34a' },
-          { label: 'Non riconciliate', value: fatture.filter(f => !f.riconciliata).length,                                                color: '#8b5cf6' },
+          { label: 'Fatture totali',   value: fatture.length,                                                                color: '#2563eb' },
+          { label: 'Da pagare',        value: `€ ${totaleAttesa.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`,    color: '#f59e0b' },
+          { label: 'Pagate',           value: `€ ${totalePagato.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`,    color: '#16a34a' },
+          { label: 'In attesa F24',    value: attesaF24.length,                                                              color: '#ef4444' },
         ].map(k => (
           <div key={k.label} style={styles.kpiCard}>
             <div style={{ ...styles.kpiVal, color: k.color }}>{k.value}</div>
@@ -185,7 +266,6 @@ export default function FattureFornitoriPage() {
         onDragLeave={() => setDragOver(false)}
         onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
       >
-        {/* ✅ accept aggiornato: .docx abilitato, .doc legacy rimosso */}
         <input
           type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp,.xlsx,.xls,.txt"
           style={{ display: 'none' }} id="fattura-upload"
@@ -197,7 +277,6 @@ export default function FattureFornitoriPage() {
           <div style={{ fontSize: 15, fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>
             {uploading ? uploadProgress : 'Trascina una fattura qui'}
           </div>
-          {/* ✅ Descrizione formati aggiornata */}
           <div style={{ fontSize: 12, color: '#64748b' }}>
             {uploading ? '' : 'PDF, DOCX, immagine, Excel, TXT — l\'AI estrarrà i dati automaticamente'}
           </div>
@@ -217,6 +296,11 @@ export default function FattureFornitoriPage() {
               {v.label}
             </button>
           ))}
+          <button
+            style={{ ...styles.tBtn, ...(filtroStato === '__f24' ? { background: '#ef444420', color: '#ef4444' } : {}) }}
+            onClick={() => setFiltroStato('__f24')}>
+            In attesa F24{attesaF24.length ? ` (${attesaF24.length})` : ''}
+          </button>
         </div>
       </div>
 
@@ -224,12 +308,13 @@ export default function FattureFornitoriPage() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#475569' }}>Caricamento...</div>
       ) : fattureFiltrate.length === 0 ? (
-        <div style={styles.empty}><div style={{ fontSize: 40, marginBottom: 12 }}>🧾</div><p>Nessuna fattura. Carica la prima.</p></div>
+        <div style={styles.empty}><div style={{ fontSize: 40, marginBottom: 12 }}>🧾</div><p>Nessuna fattura.</p></div>
       ) : (
         <div style={styles.lista}>
           {fattureFiltrate.map(f => {
             const isEditing = editingId === f.id;
             const stato     = STATI[f.stato] || STATI.attesa;
+            const bRit      = badgeRitenuta(f);
 
             return (
               <div key={f.id} style={styles.card}>
@@ -247,6 +332,7 @@ export default function FattureFornitoriPage() {
                       <div style={styles.cardTop}>
                         <span style={styles.fornitore}>{f.fornitore}</span>
                         <span style={{ ...styles.statoBadge, background: stato.bg, color: stato.color }}>{stato.label}</span>
+                        {bRit && <span style={{ ...styles.statoBadge, background: bRit.bg, color: bRit.color }}>{bRit.label}</span>}
                         {f.numero_fattura && <span style={styles.numFattura}>N. {f.numero_fattura}</span>}
                       </div>
                       <div style={styles.cardDesc}>{f.descrizione}</div>
@@ -256,6 +342,16 @@ export default function FattureFornitoriPage() {
                         <span style={styles.catBadge}>{f.categoria}</span>
                         {f.spesa_id && <span style={styles.spesaColleg}>🔗 Collegata a spesa</span>}
                         {f.pdf_url && <a href={f.pdf_url} target="_blank" rel="noreferrer" style={styles.pdfLink}>📄 File</a>}
+                        {f.ritenuta_acconto != null && (
+                          <span>R.A.: € {Number(f.ritenuta_acconto).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+                        )}
+                        {f.ritenuta_acconto != null && f.stato === 'pagata' && (
+                          f.f24_url
+                            ? <a href={f.f24_url} target="_blank" rel="noreferrer" style={styles.pdfLink}>📎 F24</a>
+                            : <button style={styles.f24Btn} disabled={f24Busy} onClick={() => pickF24(f.id)}>
+                                {f24Busy ? '…' : '⬆️ Carica F24'}
+                              </button>
+                        )}
                       </div>
                     </div>
                     <div style={styles.cardRight}>
@@ -282,15 +378,16 @@ function EditFattura({ data, onChange, onSave, onCancel, spese }) {
   return (
     <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
       {[
-        { label: 'Fornitore',       field: 'fornitore',      type: 'text'   },
-        { label: 'N° Fattura',      field: 'numero_fattura', type: 'text'   },
-        { label: 'Data Fattura',    field: 'data_fattura',   type: 'date'   },
-        { label: 'Data Scadenza',   field: 'data_scadenza',  type: 'date'   },
-        { label: 'Importo Totale €',field: 'importo_totale', type: 'number' },
+        { label: 'Fornitore',          field: 'fornitore',        type: 'text'   },
+        { label: 'N° Fattura',         field: 'numero_fattura',   type: 'text'   },
+        { label: 'Data Fattura',       field: 'data_fattura',     type: 'date'   },
+        { label: 'Data Scadenza',      field: 'data_scadenza',    type: 'date'   },
+        { label: 'Importo Totale €',   field: 'importo_totale',   type: 'number' },
+        { label: 'Ritenuta d\'acconto €', field: 'ritenuta_acconto', type: 'number' },
       ].map(({ label, field, type }) => (
         <div key={field}>
           <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>{label}</label>
-          <input type={type} value={data[field] || ''} onChange={e => upd(field, e.target.value)}
+          <input type={type} step={type === 'number' ? '0.01' : undefined} value={data[field] ?? ''} onChange={e => upd(field, e.target.value)}
             style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 7, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, boxSizing: 'border-box' }} />
         </div>
       ))}
@@ -349,6 +446,7 @@ const styles = {
   catBadge:    { background: '#334155', color: '#94a3b8', borderRadius: 20, padding: '2px 8px', fontSize: 11 },
   spesaColleg: { color: '#60a5fa' },
   pdfLink:     { color: '#60a5fa', textDecoration: 'none', fontSize: 12 },
+  f24Btn:      { background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: 6, padding: '2px 10px', fontSize: 11, cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600 },
   cardRight:   { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 },
   importo:     { fontSize: 18, fontWeight: 700, color: '#f1f5f9' },
   iva:         { fontSize: 11, color: '#64748b' },

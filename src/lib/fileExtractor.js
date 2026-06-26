@@ -114,13 +114,16 @@ async function preparaContenuto(file) {
 
   switch (tipo) {
     case 'pdf':
-      return { contenuto: await fileToBase64(file), isVisual: true, mediaType: 'application/pdf' };
+      // ⚠️ Il proxy attuale gestisce SOLO immagini sul path vision (media_type image/*).
+      // L'estrazione PDF richiede un path 'document' lato claude-proxy (da aggiungere + redeploy).
+      // Finché non c'è, evitiamo il blocco image con media_type application/pdf (che Anthropic rifiuta).
+      throw new Error('PDF_VISION_NON_SUPPORTATO');
 
     case 'xlsx':
       return { contenuto: await xlsxToText(file), isVisual: false };
 
     case 'docx':
-      return { contenuto: await docxToText(file), isVisual: false };  // ✅ nuovo
+      return { contenuto: await docxToText(file), isVisual: false };
 
     case 'csv':
     case 'txt':

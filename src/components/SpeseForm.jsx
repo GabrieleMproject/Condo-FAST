@@ -130,7 +130,7 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
     }))
   }
 
-  // ─── Import da fattura (via estraiFattura — fix #10) ────────────────────────
+ // ─── Import da fattura (via estraiFattura — fix #10) ────────────────────────
   const elaboraFattura = async (file) => {
     if (!file) return
     setLoadingFattura(true)
@@ -154,14 +154,13 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
       }))
 
       setFatturaImportata(true)
-  } catch (e) {
+    } catch (e) {
       console.error('Errore estrazione fattura:', e)
-      setErrFattura(
-        e.message === 'PDF_VISION_NON_SUPPORTATO'
-          ? 'Estrazione da PDF non ancora attiva (richiede aggiornamento del proxy). Per ora carica la fattura come immagine (JPG/PNG/WEBP) oppure compila i campi manualmente.'
-          : 'Impossibile estrarre i dati. Verifica il file e riprova.'
-      )
+      setErrFattura('Impossibile estrarre i dati. Verifica il file e riprova.')
     } finally {
+      setLoadingFattura(false)
+    }
+  }
 
   const handleDrop = (e) => {
     e.preventDefault()

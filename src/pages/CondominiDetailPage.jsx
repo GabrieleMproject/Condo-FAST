@@ -1,4 +1,6 @@
 // src/pages/CondominiDetailPage.jsx
+import ConsuntivoTab from '../components/ConsuntivoTab'
+import { FileBarChart } from 'lucide-react'   // se non già importato un'icona; in alternativa riusa Wallet/FileText
 import RateGridTab from '../components/RateGridTab'
 import PreventivoSection from '../components/PreventivoSection'
 import SaldiInizialiTab from '../components/SaldiInizialiTab'
@@ -38,6 +40,7 @@ const TABS = [
   { id: 'panoramica', label: 'Panoramica', icon: LayoutGrid },
   { id: 'preventivo', label: 'Preventivo', icon: ClipboardList },
 { id: 'saldi',      label: 'Saldi iniziali', icon: Wallet },
+{ id: 'consuntivo', label: 'Consuntivo', icon: FileBarChart },
   { id: 'rate',       label: 'Rate',       icon: CreditCard },
   { id: 'finanze',    label: 'Finanze',    icon: Wallet },        // ← nuovo: accesso pagine finanziarie
   { id: 'documenti',  label: 'Documenti',  icon: FileText },
@@ -267,7 +270,7 @@ export default function CondominiDetailPage() {
         {activeTab === 'documenti' && <DocumentiCondominio condominioId={c.id} />}
 
         {activeTab === 'storico' && <StoricoTab condominioId={c.id} />}
-
+{activeTab === 'consuntivo' && <ConsuntivoTab condominioId={c.id} />}
       </div>
     </div>
   )

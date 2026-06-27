@@ -272,3 +272,48 @@ ${testoRegolamento ? `Regolamento condominiale:\n${testoRegolamento.substring(0,
   const clean    = risposta.replace(/```json\n?|\n?```/g, '').trim();
   return JSON.parse(clean);
 }
+// ─── CONSUNTIVO ANNO PRECEDENTE: estrai saldi di chiusura per riporto ─────────
+export async function estraiSaldiConsuntivo(file) {
+  if (!validaMimeType(file)) {
+    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, immagine, XLSX, DOCX, CSV o TXT.`);
+  }
+
+  const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
+
+  const systemPrompt = `Sei un esperto contabile italiano. Analizzi un CONSUNTIVO/rendiconto condominiale annuale e ne estrai i SALDI DI CHIUSURA, da riportare come saldi iniziali dell'anno successivo.
+Restituisci SOLO un JSON valido, senza testo prima o dopo.
+
+Formato JSON:
+{
+  "anno": number | null,
+  "saldo_cassa_finale": number | null,
+  "saldi_unita": [
+    {
+      "numero": "numero/identificativo colonna dell'unità nel riparto, se presente" | null,
+      "nominativo": "nome del condòmino come riportato nel prospetto di riparto",
+      "saldo": number
+    }
+  ],
+  "note": "eventuali osservazioni" | null
+}
+
+Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
+- saldo POSITIVO (senza segno) = CREDITO del condòmino verso il condominio
+- saldo NEGATIVO = DEBITO del condòmino verso il condominio (deve ancora versare)
+- Tipicamente la riga "SALDO" del riparto per unità riporta esattamente questi segni: copiali fedelmente.
+- "saldo_cassa_finale" = saldo del conto corrente bancario al 31/12 (sezione di verifica/controllo cassa).
+- Estrai UNA riga per ciascun condòmino presente nel prospetto di riparto per unità.`;
+
+  const userPrompt = (isVisual || isPdf)
+    ? 'Analizza questo consuntivo condominiale ed estrai i saldi di chiusura nel formato JSON richiesto.'
+    : `Analizza questo consuntivo condominiale ed estrai i saldi di chiusura nel formato JSON richiesto.\n\nContenuto del file:\n${contenuto}`;
+
+  const risposta = isVisual
+    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 })
+    : isPdf
+    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 })
+    : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 });
+
+  const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
+  return JSON.parse(clean);
+}

@@ -1,14 +1,14 @@
 /**
  * fileExtractor.js
  * Estrae dati strutturati da file di vari tipi usando Claude AI.
- * Supporta: PDF digitale, PDF scansionato, XLSX/XLS, JPG/PNG, DOCX, CSV, TXT
+ * Supporta: PDF (blocco document), XLSX/XLS, JPG/PNG (vision), DOCX, CSV, TXT
  *
  * Usa claudeClient.js per tutte le chiamate AI (mai fetch diretta)
  * Dipendenze: exceljs, mammoth
  */
 import ExcelJS  from 'exceljs';
 import mammoth  from 'mammoth';
-import { callClaude, callClaudeVision } from './claudeClient';
+import { callClaude, callClaudeVision, callClaudeDocument } from './claudeClient';
 
 // ─── Leggi file come base64 ───────────────────────────────────────────────────
 export function fileToBase64(file) {
@@ -114,10 +114,9 @@ async function preparaContenuto(file) {
 
   switch (tipo) {
     case 'pdf':
-      // ⚠️ Il proxy attuale gestisce SOLO immagini sul path vision (media_type image/*).
-      // L'estrazione PDF richiede un path 'document' lato claude-proxy (da aggiungere + redeploy).
-      // Finché non c'è, evitiamo il blocco image con media_type application/pdf (che Anthropic rifiuta).
-      throw new Error('PDF_VISION_NON_SUPPORTATO');
+      // ✅ Path document attivo nel proxy: inviamo il PDF come base64 grezzo,
+      // il proxy costruisce il blocco { type:'document', media_type:'application/pdf' }.
+      return { contenuto: await fileToBase64(file), isPdf: true, mediaType: 'application/pdf' };
 
     case 'xlsx':
       return { contenuto: await xlsxToText(file), isVisual: false };
@@ -143,7 +142,7 @@ export async function estraiMovimentiBancari(file) {
     throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XLSX, DOCX, CSV, JPG o PNG.`);
   }
 
-  const { contenuto, isVisual, mediaType } = await preparaContenuto(file);
+  const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
 
   const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di estratti conto bancari condominiali.
 Estrai i movimenti bancari dal documento fornito e restituisci SOLO un JSON valido, senza testo aggiuntivo.
@@ -181,13 +180,17 @@ Regole importanti:
 - "fornitore_rilevato" e "pagante_rilevato" sono mutuamente alternativi: un movimento avrà valorizzato l'uno (uscite) o l'altro (entrate), non entrambi
 - Se non riesci a interpretare un movimento, includilo comunque con i dati disponibili`;
 
-  const userPrompt = isVisual
+  // PDF e immagini: il contenuto sta nel blocco file → userPrompt "corto".
+  const userPrompt = (isVisual || isPdf)
     ? 'Analizza questo estratto conto bancario ed estrai tutti i movimenti nel formato JSON richiesto.'
     : `Analizza questo estratto conto bancario ed estrai tutti i movimenti nel formato JSON richiesto.\n\nContenuto del file:\n${contenuto}`;
 
-  // ✅ firma corretta: testo → system in opts; vision → system accorpato al prompt (il client vision non inoltra system)
+  // vision → system accorpato al prompt (il client vision non inoltra system)
+  // document/text → system in opts
   const risposta = isVisual
     ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 4000 })
+    : isPdf
+    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 })
     : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 });
 
   const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
@@ -200,7 +203,7 @@ export async function estraiFattura(file) {
     throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, DOCX, JPG, PNG o XLSX.`);
   }
 
-  const { contenuto, isVisual, mediaType } = await preparaContenuto(file);
+  const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
 
   const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di fatture di fornitori condominiali.
 Estrai i dati della fattura e restituisci SOLO un JSON valido, senza testo aggiuntivo.
@@ -227,13 +230,14 @@ Regole:
 - Gli importi devono essere numeri senza simboli €
 - Se un campo non è presente, usa null`;
 
-  const userPrompt = isVisual
+  const userPrompt = (isVisual || isPdf)
     ? 'Analizza questa fattura ed estrai i dati nel formato JSON richiesto.'
     : `Analizza questa fattura ed estrai i dati nel formato JSON richiesto.\n\n${contenuto}`;
 
-  // ✅ firma corretta
   const risposta = isVisual
     ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 2000 })
+    : isPdf
+    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 })
     : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 });
 
   const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
@@ -264,7 +268,6 @@ Tabelle millesimali disponibili: ${tabelleMillesimali?.map(t => t.nome).join(', 
 
 ${testoRegolamento ? `Regolamento condominiale:\n${testoRegolamento.substring(0, 3000)}` : 'Nessun regolamento disponibile. Usa il Codice Civile.'}`;
 
-  // ✅ firma corretta
   const risposta = await callClaude(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500 });
   const clean    = risposta.replace(/```json\n?|\n?```/g, '').trim();
   return JSON.parse(clean);

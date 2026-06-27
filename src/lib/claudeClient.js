@@ -140,6 +140,7 @@ export async function callClaudeWithHistory(messages, opts = {}) {
  * @param {string} base64Image   - base64 puro (senza prefisso data:...)
  * @param {string} mediaType     - es. 'image/jpeg'
  * @param {object} [opts]
+ * NB: il path vision NON inoltra `system` → il chiamante accorpa system+user nel prompt.
  */
 export async function callClaudeVision(prompt, base64Image, mediaType, opts = {}) {
   const { funzione, condominio_id, maxTokens = 1000 } = opts;
@@ -150,6 +151,48 @@ export async function callClaudeVision(prompt, base64Image, mediaType, opts = {}
     image:     base64Image,
     mediaType,
     maxTokens,
+  });
+
+  logAiCall({
+    funzione,
+    condominio_id,
+    inputTokens:  data.usage?.input_tokens,
+    outputTokens: data.usage?.output_tokens,
+  });
+
+  const block = data.content?.find(b => b.type === 'text');
+  return block?.text ?? '';
+}
+
+// ── callClaudeDocument ────────────────────────────────────────────────────
+/**
+ * Estrazione da PDF (e altri documenti) via blocco `document` del proxy.
+ * A differenza di callClaudeVision, QUESTO inoltra `system` (il path document
+ * lo supporta nativamente lato proxy), come callClaude testo.
+ *
+ * @param {string} prompt
+ * @param {string} base64Document - base64 puro del PDF (senza prefisso data:...)
+ * @param {object} [opts]
+ * @param {string} [opts.system]
+ * @param {string} [opts.mediaType] - default 'application/pdf'
+ * @param {string} [opts.funzione]
+ * @param {string} [opts.condominio_id]
+ * @param {number} [opts.maxTokens]
+ * @throws {RateLimitError} se il rate limit è raggiunto
+ */
+export async function callClaudeDocument(prompt, base64Document, opts = {}) {
+  const {
+    funzione, condominio_id, maxTokens = 1000, system,
+    mediaType = 'application/pdf',
+  } = opts;
+
+  const data = await callEdge({
+    type:      'document',
+    prompt:    sanitizeInput(prompt),
+    document:  base64Document,   // ⚠️ NON sanitizzare: base64 grezzo
+    mediaType,
+    maxTokens,
+    system:    system ? sanitizeInput(system, 4000) : undefined,
   });
 
   logAiCall({

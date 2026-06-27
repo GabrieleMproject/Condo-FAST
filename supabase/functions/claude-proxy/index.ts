@@ -119,6 +119,16 @@ serve(async (req) => {
           { type: 'text', text: body.prompt },
         ],
       }]
+    } else if (body.type === 'document') {
+      // PDF (e altri documenti) via blocco document — Anthropic legge il file nativamente.
+      // media_type default 'application/pdf'. Il system, se presente, va in anthropicPayload.system (sotto).
+      messages = [{
+        role: 'user',
+        content: [
+          { type: 'document', source: { type: 'base64', media_type: body.mediaType ?? 'application/pdf', data: body.document } },
+          { type: 'text', text: body.prompt },
+        ],
+      }]
     } else if (body.type === 'history') {
       messages = body.messages
     } else {

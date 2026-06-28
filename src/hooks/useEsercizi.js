@@ -35,7 +35,7 @@ export function useEsercizi(condominioId) {
         .select(`*, rate(*)`)
         .single()
       if (error) throw error
-      // Le rate vengono generate automaticamente dal trigger Postgres
+      // Le rate NON vengono generate qui: nascono dal preventivo (trigger auto-rate rimosso in S8a).
       setEsercizi(prev => [data, ...prev])
       return data
     } catch (e) {

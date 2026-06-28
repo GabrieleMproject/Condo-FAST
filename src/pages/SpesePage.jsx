@@ -12,28 +12,31 @@ const CATEGORIE_COLORI = {
   utenze: '#06b6d4', assicurazione: '#10b981', altro: '#6b7280'
 }
 
+const annoCorrente = () => new Date().getFullYear()
+const esercizioVuoto = () => {
+  const a = annoCorrente()
+  return { anno: a, data_inizio: `${a}-01-01`, data_fine: `${a}-12-31`, stato: 'aperto', note: '' }
+}
+
 export default function SpesePage() {
   const { condominioId } = useParams()
   const [esercizioAttivo, setEsercizioAttivo] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [fromFattura, setFromFattura] = useState(false)
   const [showEsercizioForm, setShowEsercizioForm] = useState(false)
+  const [esercizioEditId, setEsercizioEditId] = useState(null) // null = creazione, id = modifica
+  const [esercizioErr, setEsercizioErr] = useState('')
   const [spesaInEdit, setSpesaInEdit] = useState(null)
   const [unita, setUnita] = useState([])
   const [condominio, setCondominio] = useState(null)
   const [subentriAlert, setSubentriAlert] = useState([])
 
-  const { esercizi, loading: loadEsercizi, fetch: fetchEsercizi, crea: creaEsercizio } = useEsercizi(condominioId)
+  const { esercizi, loading: loadEsercizi, fetch: fetchEsercizi, crea: creaEsercizio, aggiorna: aggiornaEsercizio } = useEsercizi(condominioId)
   const { spese, loading: loadSpese, fetch: fetchSpese, crea: creaSpesa, elimina, segnalaSubentro } = useSpese(condominioId, esercizioAttivo?.id)
   const { tabelle, fetch: fetchTabelle } = useMillesimi(condominioId)
   const { documenti, fetch: fetchDocumenti } = useDocumenti(condominioId)
 
-  const [nuovoEsercizio, setNuovoEsercizio] = useState({
-    anno: new Date().getFullYear(),
-    data_inizio: `${new Date().getFullYear()}-01-01`,
-    data_fine: `${new Date().getFullYear()}-12-31`,
-    stato: 'aperto', note: ''
-  })
+  const [nuovoEsercizio, setNuovoEsercizio] = useState(esercizioVuoto())
 
   useEffect(() => {
     fetchEsercizi()
@@ -63,14 +66,54 @@ export default function SpesePage() {
     setSubentriAlert(alert)
   }, [spese])
 
-  const handleCreaEsercizio = async (e) => {
+  // ── apertura modal esercizio ───────────────────────────────
+  const apriCreaEsercizio = () => {
+    setEsercizioEditId(null)
+    setEsercizioErr('')
+    setNuovoEsercizio(esercizioVuoto())
+    setShowEsercizioForm(true)
+  }
+
+  const apriModificaEsercizio = (es) => {
+    setEsercizioEditId(es.id)
+    setEsercizioErr('')
+    setNuovoEsercizio({
+      anno: es.anno,
+      data_inizio: es.data_inizio || `${es.anno}-01-01`,
+      data_fine: es.data_fine || `${es.anno}-12-31`,
+      stato: es.stato || 'aperto',
+      note: es.note || ''
+    })
+    setShowEsercizioForm(true)
+  }
+
+  const chiudiEsercizioForm = () => {
+    setShowEsercizioForm(false)
+    setEsercizioEditId(null)
+    setEsercizioErr('')
+  }
+
+  const handleSalvaEsercizio = async (e) => {
     e.preventDefault()
+    setEsercizioErr('')
+    // validazione date periodo amministrativo
+    if (!nuovoEsercizio.data_inizio || !nuovoEsercizio.data_fine) {
+      setEsercizioErr('Inserisci data inizio e data fine del periodo'); return
+    }
+    if (nuovoEsercizio.data_fine <= nuovoEsercizio.data_inizio) {
+      setEsercizioErr('La data fine deve essere successiva alla data inizio'); return
+    }
     try {
-      const esercizio = await creaEsercizio(nuovoEsercizio)
-      setEsercizioAttivo(esercizio)
-      setShowEsercizioForm(false)
+      if (esercizioEditId) {
+        const aggiornato = await aggiornaEsercizio(esercizioEditId, nuovoEsercizio)
+        if (esercizioAttivo?.id === esercizioEditId) setEsercizioAttivo(aggiornato)
+      } else {
+        const creato = await creaEsercizio(nuovoEsercizio)
+        setEsercizioAttivo(creato)
+      }
+      chiudiEsercizioForm()
     } catch (err) {
-      alert('Errore: ' + err.message)
+      setEsercizioErr(err.message)
     }
   }
 
@@ -102,6 +145,12 @@ export default function SpesePage() {
   }
 
   const totaleSpese = spese.reduce((s, sp) => s + parseFloat(sp.importo || 0), 0)
+
+  const fmtPeriodo = (es) => {
+    if (!es?.data_inizio || !es?.data_fine) return null
+    const d = (s) => new Date(s).toLocaleDateString('it-IT')
+    return `${d(es.data_inizio)} → ${d(es.data_fine)}`
+  }
 
   const inputStyle = {
     width: '100%', background: '#0f172a', color: '#f1f5f9',
@@ -150,29 +199,49 @@ export default function SpesePage() {
         <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>Esercizio:</span>
         <div style={{ display: 'flex', gap: 8, flex: 1, flexWrap: 'wrap' }}>
           {esercizi.map(es => (
-            <button
+            <div
               key={es.id}
-              onClick={() => setEsercizioAttivo(es)}
               style={{
                 background: esercizioAttivo?.id === es.id ? '#2563eb' : '#0f172a',
                 color: esercizioAttivo?.id === es.id ? '#fff' : '#94a3b8',
                 border: `1px solid ${esercizioAttivo?.id === es.id ? '#2563eb' : '#334155'}`,
-                borderRadius: 8, padding: '7px 14px', fontSize: 13, cursor: 'pointer',
+                borderRadius: 8, padding: '7px 10px 7px 14px', fontSize: 13,
                 fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center', gap: 6
               }}
             >
-              {es.anno}
-              <span style={{
-                fontSize: 10, padding: '1px 6px', borderRadius: 4,
-                background: es.stato === 'aperto' ? '#10b98133' : '#6b728033',
-                color: es.stato === 'aperto' ? '#10b981' : '#9ca3af'
-              }}>
-                {es.stato}
-              </span>
-            </button>
+              <button
+                onClick={() => setEsercizioAttivo(es)}
+                title={fmtPeriodo(es) || ''}
+                style={{
+                  background: 'transparent', border: 'none', color: 'inherit',
+                  fontFamily: 'Sora, sans-serif', fontSize: 13, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6, padding: 0
+                }}
+              >
+                {es.anno}
+                <span style={{
+                  fontSize: 10, padding: '1px 6px', borderRadius: 4,
+                  background: es.stato === 'aperto' ? '#10b98133' : '#6b728033',
+                  color: es.stato === 'aperto' ? '#10b981' : '#9ca3af'
+                }}>
+                  {es.stato}
+                </span>
+              </button>
+              <button
+                onClick={() => apriModificaEsercizio(es)}
+                title="Modifica periodo / dati esercizio"
+                style={{
+                  background: 'transparent', border: 'none',
+                  color: esercizioAttivo?.id === es.id ? '#dbeafe' : '#64748b',
+                  cursor: 'pointer', fontSize: 13, padding: '0 2px', lineHeight: 1
+                }}
+              >
+                ✎
+              </button>
+            </div>
           ))}
           <button
-            onClick={() => setShowEsercizioForm(true)}
+            onClick={apriCreaEsercizio}
             style={{
               background: 'transparent', color: '#64748b', border: '1px dashed #334155',
               borderRadius: 8, padding: '7px 14px', fontSize: 13, cursor: 'pointer',
@@ -200,6 +269,13 @@ export default function SpesePage() {
               <div style={{ color: kpi.color, fontSize: 22, fontWeight: 700 }}>{kpi.value}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Periodo esercizio attivo */}
+      {esercizioAttivo && fmtPeriodo(esercizioAttivo) && (
+        <div style={{ color: '#64748b', fontSize: 13, marginBottom: 20, marginTop: -8 }}>
+          Periodo amministrativo: <span style={{ color: '#94a3b8' }}>{fmtPeriodo(esercizioAttivo)}</span>
         </div>
       )}
 
@@ -334,7 +410,7 @@ export default function SpesePage() {
         </div>
       )}
 
-      {/* Modal nuovo esercizio */}
+      {/* Modal esercizio (create / edit) */}
       {showEsercizioForm && (
         <div style={{
           position: 'fixed', inset: 0, background: '#00000088', zIndex: 1000,
@@ -344,18 +420,25 @@ export default function SpesePage() {
             background: '#1e293b', borderRadius: 16, padding: 32, maxWidth: 480,
             width: '100%', border: '1px solid #334155'
           }}>
-            <h3 style={{ margin: '0 0 24px', color: '#f1f5f9' }}>Nuovo esercizio contabile</h3>
-            <form onSubmit={handleCreaEsercizio}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+            <h3 style={{ margin: '0 0 24px', color: '#f1f5f9' }}>
+              {esercizioEditId ? 'Modifica esercizio contabile' : 'Nuovo esercizio contabile'}
+            </h3>
+            <form onSubmit={handleSalvaEsercizio}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                 <div style={{ gridColumn: '1/-1' }}>
                   <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>Anno</label>
                   <input type="number" style={inputStyle}
                     value={nuovoEsercizio.anno}
-                    onChange={e => setNuovoEsercizio(f => ({
-                      ...f, anno: parseInt(e.target.value),
-                      data_inizio: `${e.target.value}-01-01`,
-                      data_fine: `${e.target.value}-12-31`
-                    }))} />
+                    onChange={e => {
+                      const a = e.target.value
+                      setNuovoEsercizio(f => ({
+                        ...f, anno: parseInt(a) || f.anno,
+                        // se l'utente non ha ancora toccato le date, le riallineo all'anno solare;
+                        // in modifica lasciamo che l'utente cambi l'anno senza sovrascrivere date già custom
+                        data_inizio: esercizioEditId ? f.data_inizio : `${a}-01-01`,
+                        data_fine: esercizioEditId ? f.data_fine : `${a}-12-31`
+                      }))
+                    }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>Data inizio</label>
@@ -369,19 +452,39 @@ export default function SpesePage() {
                     value={nuovoEsercizio.data_fine}
                     onChange={e => setNuovoEsercizio(f => ({ ...f, data_fine: e.target.value }))} />
                 </div>
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>Stato</label>
+                  <select style={inputStyle}
+                    value={nuovoEsercizio.stato}
+                    onChange={e => setNuovoEsercizio(f => ({ ...f, stato: e.target.value }))}>
+                    <option value="aperto">aperto</option>
+                    <option value="chiuso">chiuso</option>
+                  </select>
+                </div>
               </div>
-              <div style={{ background: '#0f172a', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#64748b' }}>
-                ℹ️ Le 4 rate trimestrali verranno generate automaticamente
+
+              <div style={{ background: '#0f172a', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#64748b' }}>
+                ℹ️ Il periodo amministrativo può non coincidere con l'anno solare (es. 1/7 → 30/6). Le rate si generano dal preventivo, non automaticamente.
               </div>
+
+              {esercizioErr && (
+                <div style={{
+                  background: '#ef444415', border: '1px solid #ef444440', borderRadius: 8,
+                  padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#ef4444'
+                }}>
+                  {esercizioErr}
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowEsercizioForm(false)} style={{
+                <button type="button" onClick={chiudiEsercizioForm} style={{
                   background: 'transparent', color: '#94a3b8', border: '1px solid #334155',
                   borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontFamily: 'Sora, sans-serif'
                 }}>Annulla</button>
                 <button type="submit" style={{
                   background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8,
                   padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif'
-                }}>Crea esercizio</button>
+                }}>{esercizioEditId ? 'Salva modifiche' : 'Crea esercizio'}</button>
               </div>
             </form>
           </div>

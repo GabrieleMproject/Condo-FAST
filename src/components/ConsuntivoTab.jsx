@@ -143,8 +143,9 @@ export default function ConsuntivoTab({ condominioId }) {
                 ['Saldo cassa iniziale', eur(data.cassa.saldoInizCassa)],
                 ['Entrate periodo', eur(data.cassa.entrate)],
                 ['Uscite periodo', '−' + eur(data.cassa.uscite)],
-                ['Saldo cassa finale', eur(data.cassa.saldoFinaleCassa)],
-                ['Pareggio (arrotondamenti)', eur(data.cassa.pareggio)],
+['Saldo cassa finale', eur(data.cassa.saldoFinaleCassa)],
+                ['Risultato di competenza (versato − spese)', sgn(data.cassa.saldoCompetenza)],
+                ['Quadratura competenza ↔ cassa', sgn(data.cassa.scartoQuadratura)],
               ]} />
             <p style={st.note}>Il fondo di riserva non è gestito automaticamente; va riportato a mano se presente.</p>
           </Card>

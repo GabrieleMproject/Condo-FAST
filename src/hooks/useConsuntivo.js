@@ -180,11 +180,15 @@ export function useConsuntivo(condominioId, esercizioId) {
         .reduce((a, m) => a + Math.abs(num(m.importo)), 0))
       const uscite = round2((ec || []).filter(m => (m.tipo === 'uscita') || (m.tipo == null && num(m.importo) < 0))
         .reduce((a, m) => a + Math.abs(num(m.importo)), 0))
-      const saldoInizCassa = num(es.saldo_iniziale_cassa)
+ 
+const saldoInizCassa = num(es.saldo_iniziale_cassa)
       const saldoFinaleCassa = round2(saldoInizCassa + entrate - uscite)
-      // Pareggio: competenza (spese vs versato) ~ cassa
+      // Risultato di competenza: quanto incassato dai condòmini meno spese di competenza
       const saldoCompetenza = round2(totRiparto.versato - totSpese)
-      const pareggio = round2((totRiparto.versato - totSpese) - (saldoFinaleCassa - saldoInizCassa - (entrate - uscite)))
+      // Quadratura competenza ↔ cassa (art. 1130-bis): variazione di cassa vs risultato di competenza.
+      // ≈ 0 se incassi/pagamenti del periodo coincidono coi movimenti bancari riconciliati.
+      const variazioneCassa = round2(saldoFinaleCassa - saldoInizCassa)
+      const scartoQuadratura = round2(variazioneCassa - saldoCompetenza)
 
       // E) fatture
       const fattureRows = (fatture || []).map(f => ({
@@ -230,7 +234,7 @@ export function useConsuntivo(condominioId, esercizioId) {
         // C
         riparto: { unitaRows, tot: totRiparto },
         // D
-        cassa: { entrate, uscite, saldoInizCassa, saldoFinaleCassa, saldoCompetenza, pareggio },
+       cassa: { entrate, uscite, saldoInizCassa, saldoFinaleCassa, saldoCompetenza, variazioneCassa, scartoQuadratura },
         // E
         fatture: { rows: fattureRows, tot: fattureTot },
         // confronto

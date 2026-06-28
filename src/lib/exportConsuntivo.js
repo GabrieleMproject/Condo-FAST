@@ -124,9 +124,9 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
         ['Saldo cassa iniziale', eur(d.saldoInizCassa)],
         ['Totale entrate periodo', eur(d.entrate)],
         ['Totale uscite periodo', '−' + eur(d.uscite)],
-        ['Saldo cassa finale', eur(d.saldoFinaleCassa)],
-        ['Saldo competenza (versato − spese)', sgn(d.saldoCompetenza)],
-        ['A − B = differenza / pareggio (arrotondamenti)', eur(d.pareggio)],
+    ['Saldo cassa finale', eur(d.saldoFinaleCassa)],
+        ['Risultato di competenza (versato − spese)', sgn(d.saldoCompetenza)],
+        ['Quadratura competenza ↔ cassa', sgn(d.scartoQuadratura)],
       ],
       columnStyles: { 1: { halign: 'right' } },
       didParseCell: (x) => { if (x.row.index === 3 || x.row.index === 5) { x.cell.styles.fontStyle = 'bold' } } })

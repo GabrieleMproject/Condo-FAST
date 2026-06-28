@@ -15,6 +15,8 @@ export default function RipartizionePage() {
   const [ripartizioni, setRipartizioni] = useState([]);
   const [tabelle, setTabelle] = useState([]);
   const [millesimi, setMillesimi] = useState([]);
+  const [rate, setRate] = useState([]);     // colonne rate (per export XLSX foglio Rate)
+  const [cells, setCells] = useState([]);   // rate_unita (per export XLSX foglio Rate)
   const [loading, setLoading] = useState(false);
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [viewMode, setViewMode] = useState('tabella'); // 'tabella' | 'unita'
@@ -48,8 +50,9 @@ export default function RipartizionePage() {
         { data: rip },
         { data: tab },
         { data: mil },
+        { data: rt },
       ] = await Promise.all([
-        supabase.from('spese').select('*').eq('esercizio_id', esercizioId).order('data_competenza'),
+        supabase.from('spese').select('*').eq('esercizio_id', esercizioId).order('data_spesa'),
         supabase.from('unita').select(`
           *,
           occupanti:occupanti_unita(
@@ -59,17 +62,30 @@ export default function RipartizionePage() {
           )
         `).eq('condominio_id', condominioId).order('numero'),
         supabase.from('ripartizioni').select(`
-          *, spesa:spese(id, descrizione, importo, criterio_ripartizione, tabella_millesimale_id, categoria)
+          *, spesa:spese(id, descrizione, importo, criterio, tabella_millesimale_id, categoria)
         `).eq('condominio_id', condominioId),
         supabase.from('tabelle_millesimali').select('*').eq('condominio_id', condominioId),
         supabase.from('millesimi_unita').select('*').eq('condominio_id', condominioId),
+        supabase.from('rate').select('*').eq('esercizio_id', esercizioId).order('numero_rata'),
       ]);
+
+      // celle rate_unita: scoped alle rate di questo esercizio
+      const rateList = rt || [];
+      let cellList = [];
+      if (rateList.length) {
+        const { data: cellData } = await supabase
+          .from('rate_unita').select('*')
+          .in('rata_id', rateList.map(r => r.id));
+        cellList = cellData || [];
+      }
 
       setSpese(sp || []);
       setUnita(uni || []);
       setRipartizioni(rip || []);
       setTabelle(tab || []);
       setMillesimi(mil || []);
+      setRate(rateList);
+      setCells(cellList);
     } finally {
       setLoading(false);
     }
@@ -111,17 +127,29 @@ export default function RipartizionePage() {
   const totaleSpese = speseFiltrate.reduce((acc, s) => acc + (s.importo || 0), 0);
   const speseNonRipartite = speseFiltrate.filter(s => !ripMap[s.id] || ripMap[s.id].length === 0);
 
-  // ─── Helper: nome proprietario unità ─────────────────────────
+  // ─── Helper: nome proprietario unità (stringa, per display) ──
   function getProprietario(u) {
     const occ = u.occupanti?.find(o => o.tipo_occupante === 'proprietario');
     return occ?.persona?.nominativo || '—';
+  }
+
+  // ─── Helper: proprietario come oggetto occupante (per export) ─
+  // exportRipartizioneXlsx legge prop.persona?.nominativo nel foglio Rate.
+  function getProprietarioOcc(u) {
+    return u.occupanti?.find(o => o.tipo_occupante === 'proprietario') || null;
   }
 
   // ─── Export ──────────────────────────────────────────────────
   async function handleExportXlsx() {
     setExporting(true);
     try {
-      await exportRipartizioneXlsx({ condominio, esercizio: esercizi.find(e => e.id === esercizioId), spese, unita, ripartizioni, tabelle, millesimi });
+      await exportRipartizioneXlsx({
+        condominio,
+        esercizio: esercizi.find(e => e.id === esercizioId),
+        spese, unita, ripartizioni,
+        rate, cells,
+        getProprietario: getProprietarioOcc,
+      });
     } finally {
       setExporting(false);
     }
@@ -152,7 +180,7 @@ export default function RipartizionePage() {
             onChange={e => setEsercizioId(e.target.value)}
           >
             {esercizi.map(e => (
-              <option key={e.id} value={e.id}>{e.anno} — {e.descrizione || 'Esercizio'}</option>
+              <option key={e.id} value={e.id}>{e.anno} — {e.note || 'Esercizio'}</option>
             ))}
           </select>
           <button style={styles.btnSecondary} onClick={handleExportXlsx} disabled={exporting}>
@@ -237,8 +265,8 @@ function TabellaPerSpesa({ spese, unita, ripMap, tabelle }) {
               <div style={styles.spesaInfo}>
                 <span style={styles.spesaTitolo}>{spesa.descrizione}</span>
                 <span style={styles.spesaCategoria}>{spesa.categoria}</span>
-                {spesa.criterio_ripartizione && (
-                  <span style={styles.spesaCriterio}>{spesa.criterio_ripartizione}</span>
+                {spesa.criterio && (
+                  <span style={styles.spesaCriterio}>{spesa.criterio}</span>
                 )}
               </div>
               <div style={styles.spesaImporti}>
@@ -272,7 +300,7 @@ function TabellaPerSpesa({ spese, unita, ripMap, tabelle }) {
                     return (
                       <tr key={r.id}>
                         <td style={styles.innerTd}>{u?.numero || '—'} {u?.tipo ? `(${u.tipo})` : ''}</td>
-                        <td style={styles.innerTd}>{r.millesimi ?? '—'}</td>
+                        <td style={styles.innerTd}>{r.millesimi_usati ?? '—'}</td>
                         <td style={{ ...styles.innerTd, fontWeight: 600 }}>
                           € {(imp || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                           {r.override_manuale && <span style={styles.overrideBadge}>override</span>}

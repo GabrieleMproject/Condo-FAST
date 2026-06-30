@@ -89,7 +89,7 @@ export default function RateGridTab({ condominioId }) {
     return proposte;
   }, [esercizio, rate, cells, unita, getProprietario]);
 
-  async function handleSollecitaRata(u, prop) {
+  async function handleSollecitaRata(u, prop, silenzioso = false) {
     if (!prop || !prop.email) return;
     setInviandoSollecito(true);
     try {
@@ -146,9 +146,15 @@ L'Amministratore`;
         tipo: 'sollecito',
       });
 
-      alert(`Sollecito inviato con successo a ${prop.email}`);
+      if (!silenzioso) {
+        alert(`Sollecito inviato con successo a ${prop.email}`);
+      }
     } catch (err) {
-      alert("Errore durante l'invio del sollecito: " + err.message);
+      if (!silenzioso) {
+        alert("Errore durante l'invio del sollecito: " + err.message);
+      } else {
+        console.error("Errore invio sollecito:", err.message);
+      }
     } finally {
       setInviandoSollecito(false);
     }
@@ -397,7 +403,7 @@ L'Amministratore`;
 }
 
 // ── Editor cella (modale) ────────────────────────────────────
-function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave }) {
+function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave, onSollecita, inviandoSollecito }) {
   const [importo, setImporto] = useState(cell.importo ?? 0)
   const [pagato, setPagato] = useState(cell.importo_pagato ?? 0)
   const [data, setData] = useState(cell.data_pagamento || '')
@@ -478,7 +484,7 @@ function ProposteSollecitoModal({ proposte, onSollecita, onClose, inviando }) {
                 disabled={inviando}
                 style={{ ...st.btnPrimary, flex: 'none', padding: '6px 12px', fontSize: 11, background: '#ef4444', width: 'auto' }} 
                 onClick={async () => {
-                  await onSollecita(p.unita, p.proprietario);
+                  await onSollecita(p.unita, p.proprietario, true);
                   alert('Sollecito inviato con successo!');
                 }}
               >
@@ -496,7 +502,7 @@ function ProposteSollecitoModal({ proposte, onSollecita, onClose, inviando }) {
             onClick={async () => {
               if (confirm(`Inviare il sollecito a tutte le ${proposte.length} unità consigliate?`)) {
                 for (const p of proposte) {
-                  await onSollecita(p.unita, p.proprietario);
+                  await onSollecita(p.unita, p.proprietario, true);
                 }
                 alert('Tutti i solleciti sono stati inviati!');
                 onClose();

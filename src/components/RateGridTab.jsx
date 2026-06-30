@@ -43,7 +43,7 @@ export default function RateGridTab({ condominioId }) {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)    // { cell, rata, unita }
 
-  const { unita, getProprietario } = useUnita(condominioId)
+  const { unita, getProprietario, fetchUnita } = useUnita(condominioId)
 
   // Rileva le rate scadute da oltre 10 giorni
   const rateScaduteDa10Giorni = useMemo(() => {
@@ -387,6 +387,7 @@ L'Amministratore`;
           onSave={(patch) => salvaCella(editing.cell, patch)}
           onSollecita={handleSollecitaRata}
           inviandoSollecito={inviandoSollecito}
+          fetchUnita={fetchUnita}
         />
       )}
 
@@ -403,11 +404,37 @@ L'Amministratore`;
 }
 
 // ── Editor cella (modale) ────────────────────────────────────
-function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave, onSollecita, inviandoSollecito }) {
+function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave, onSollecita, inviandoSollecito, fetchUnita }) {
   const [importo, setImporto] = useState(cell.importo ?? 0)
   const [pagato, setPagato] = useState(cell.importo_pagato ?? 0)
   const [data, setData] = useState(cell.data_pagamento || '')
   const p = getProprietario(unita)
+
+  // Stati per la modifica anagrafica proprietario
+  const [showAnagrafica, setShowAnagrafica] = useState(false)
+  const [nome, setNome] = useState(p?.nome || '')
+  const [cognome, setCognome] = useState(p?.cognome || '')
+  const [email, setEmail] = useState(p?.email || '')
+  const [telefono, setTelefono] = useState(p?.telefono || '')
+  const [salvandoAnagrafica, setSalvandoAnagrafica] = useState(false)
+
+  const handleSalvaAnagrafica = async () => {
+    if (!p) return;
+    setSalvandoAnagrafica(true);
+    try {
+      const { error } = await supabase
+        .from('persone')
+        .update({ nome, cognome, email, telefono })
+        .eq('id', p.id);
+      if (error) throw error;
+      alert('Anagrafica salvata con successo!');
+      if (fetchUnita) await fetchUnita();
+    } catch (err) {
+      alert("Errore durante il salvataggio dell'anagrafica: " + err.message);
+    } finally {
+      setSalvandoAnagrafica(false);
+    }
+  };
 
   const segnaPagata = () => onSave({
     importo_pagato: parseFloat(importo) || 0,
@@ -452,6 +479,45 @@ function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave, onSol
             {inviandoSollecito ? 'Invio sollecito...' : '📧 Invia Sollecito Rata'}
           </button>
         )}
+
+        <div style={{ marginTop: 16, borderTop: '1px solid #334155', paddingTop: 12 }}>
+          <button 
+            type="button" 
+            onClick={() => setShowAnagrafica(!showAnagrafica)} 
+            style={{ ...st.btnGhost, color: '#60a5fa', borderColor: 'transparent', padding: '4px 0', fontSize: 12, justifyContent: 'flex-start', width: '100%', display: 'flex', alignItems: 'center' }}
+          >
+            {showAnagrafica ? '▼ Nascondi Anagrafica' : '▶ Modifica Anagrafica Proprietario'}
+          </button>
+
+          {showAnagrafica && p && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8, textAlign: 'left' }}>
+              <div>
+                <label style={st.fieldLabel}>Nome</label>
+                <input style={st.input} type="text" value={nome} onChange={(e) => setNome(e.target.value)} />
+              </div>
+              <div>
+                <label style={st.fieldLabel}>Cognome</label>
+                <input style={st.input} type="text" value={cognome} onChange={(e) => setCognome(e.target.value)} />
+              </div>
+              <div>
+                <label style={st.fieldLabel}>Email</label>
+                <input style={st.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div>
+                <label style={st.fieldLabel}>Telefono</label>
+                <input style={st.input} type="text" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+              </div>
+              <button 
+                type="button"
+                disabled={salvandoAnagrafica}
+                onClick={handleSalvaAnagrafica} 
+                style={{ ...st.btnPrimary, background: '#10b981', marginTop: 6 }}
+              >
+                {salvandoAnagrafica ? 'Salvataggio...' : 'Salva Anagrafica'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -11,6 +11,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import DocumentiCondominio from '../components/DocumentiCondominio'
 import ComunicazioniTab from '../components/ComunicazioniTab'
+import AnagraficaCondominioTab from '../components/AnagraficaCondominioTab'
 import {
   DoorOpen, Layers, ArrowUpDown, Wallet, ClipboardList, CalendarDays,
   MoveVertical, Trees, ParkingCircle, UserCheck,
@@ -40,6 +41,7 @@ const DOTAZIONI = (c) => [
 
 const TABS = [
   { id: 'panoramica', label: 'Panoramica', icon: LayoutGrid },
+  { id: 'anagrafica', label: 'Anagrafica', icon: Users },
   { id: 'preventivo', label: 'Preventivo', icon: ClipboardList },
   { id: 'saldi',      label: 'Saldi iniziali', icon: Wallet },
   { id: 'consuntivo', label: 'Consuntivo', icon: FileBarChart },
@@ -263,8 +265,9 @@ export default function CondominiDetailPage() {
           </>
         )}
 
+        {activeTab === 'anagrafica' && <AnagraficaCondominioTab condominioId={c.id} />}
         {activeTab === 'preventivo' && <PreventivoSection condominioId={c.id} />}
-{activeTab === 'saldi' && <SaldiInizialiTab condominioId={c.id} />}
+        {activeTab === 'saldi' && <SaldiInizialiTab condominioId={c.id} />}
 
         {activeTab === 'rate' && <RateGridTab condominioId={c.id} />}
 

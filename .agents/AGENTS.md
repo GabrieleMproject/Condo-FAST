@@ -157,6 +157,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Solleciti Rapidi da Griglia Rate**: Integrati solleciti rapidi con 1 clic direttamente nella modale cella rata (dettaglio pagamento quota) e introdotte le "Proposte di Sollecito Consigliate" (con banner e modale riassuntiva) per le rate scadute da oltre 10 giorni (principio "Propone → conferma").
 - **Aggiornamento Simultaneo Anagrafica da Rate**: Abilitata la modifica dei dati anagrafici dei condòmini direttamente dalla modale delle rate (`CellEditor`) con allineamento istantaneo del DB (`persone`) e della griglia rate.
 - **Tab Anagrafica locale nel Condominio**: Aggiunto un tab dedicato alla gestione anagrafica esclusiva del condominio corrente (`AnagraficaCondominioTab.jsx`) con filtri per ruolo e modale di modifica rapida.
+- **Anagrafica Globale Multi-Condominio**: Riconfigurata la pagina `/anagrafica` della sidebar globale per implementare una visione complessiva di tutti i condomini (ad accordion) integrata con una barra di ricerca superiore per l'individuazione e l'editing istantaneo di qualsiasi condomino del sistema.
 
 ### 2. Bug e Vulnerabilità Risolti
 - **Vulnerabilità getPublicUrl**: Sostituita l'esposizione degli URL pubblici completi con signed URL a tempo (scadenza a 15 minuti) autogenerati al momento del click del link "📄 File" o "📎 F24".

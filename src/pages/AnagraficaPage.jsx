@@ -1,13 +1,15 @@
 // src/pages/AnagraficaPage.jsx
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useUnita } from '../hooks/useUnita'
 import { usePersone } from '../hooks/usePersone'
 import AnagraficaImport from '../components/AnagraficaImport'
 import UnitaForm from '../components/UnitaForm'
 import PersonaForm from '../components/PersonaForm'
+import { supabase } from '../lib/supabaseClient'
+import { Search, Edit, X, Building2, ChevronDown, ChevronUp, Mail, Phone, Home, UserCog } from 'lucide-react'
 
-// ── Badge tipo unità ──────────────────────────────────────────────────────
+// ── Badge tipo unità (per visualizzazione condominio singolo) ──────────────
 const TIPO_COLORS = {
   appartamento: { bg: '#1d3557', text: '#60a5fa', label: 'Appartamento' },
   box:          { bg: '#1a2e1a', text: '#4ade80', label: 'Box' },
@@ -34,7 +36,7 @@ function PersonaChip({ persona, ruolo }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <span>{RUOLO_ICON[ruolo]}</span>
-      <div>
+      <div style={{ textAlign: 'left' }}>
         <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 500 }}>
           {persona.cognome} {persona.nome}
         </div>
@@ -45,9 +47,10 @@ function PersonaChip({ persona, ruolo }) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────
 export default function AnagraficaPage() {
   const { condominioId } = useParams()
+
+  // Hook per condominio singolo (retrocompatibilità)
   const { unita, loading: loadingUnita, fetchUnita, createUnita, updateUnita, deleteUnita, getProprietario, getInquilino } = useUnita(condominioId)
   const { importPersone, assegnaPersona, createPersona } = usePersone()
 
@@ -60,7 +63,141 @@ export default function AnagraficaPage() {
   const [expandedRow, setExpandedRow] = useState(null)
   const [toast, setToast]             = useState(null)
 
-  // ── Filtro/ricerca ────────────────────────────────────────────────────
+  // ── STATI MODALITÀ GLOBALE MULTI-CONDOMINIO ──────────────────────────────
+  const [condomini, setCondomini] = useState([])
+  const [persone, setPersone] = useState([])
+  const [loadingGlobal, setLoadingGlobal] = useState(false)
+  const [searchGlobal, setSearchGlobal] = useState('')
+  const [condominiEspansi, setCondominiEspansi] = useState({})
+  
+  // Modale editing anagrafica globale
+  const [editingPersona, setEditingPersona] = useState(null)
+  const [editNome, setEditNome] = useState('')
+  const [editCognome, setEditCognome] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editTelefono, setEditTelefono] = useState('')
+  const [editIndirizzo, setEditIndirizzo] = useState('')
+  const [editCitta, setEditCitta] = useState('')
+  const [salvandoAnagrafica, setSalvandoAnagrafica] = useState(false)
+
+  // Caricamento dati per vista globale
+  const caricaDatiGlobali = async () => {
+    setLoadingGlobal(true)
+    try {
+      const { data: condData, error: condErr } = await supabase
+        .from('condomini')
+        .select('id, nome, indirizzo, citta')
+        .order('nome', { ascending: true })
+      if (condErr) throw condErr
+      setCondomini(condData || [])
+
+      const { data: persData, error: persErr } = await supabase
+        .from('persone')
+        .select(`
+          id, nome, cognome, email, telefono, indirizzo, citta,
+          occupanti_unita (
+            ruolo, attivo,
+            unita (id, numero, scala, condominio_id, condomini (nome))
+          )
+        `)
+        .order('cognome', { ascending: true })
+      if (persErr) throw persErr
+
+      const personeMappate = (persData || []).map(p => {
+        const occupazioni = p.occupanti_unita?.filter(o => o.attivo) || []
+        const unitaDettagli = occupazioni.map(o => {
+          const condoNome = o.unita?.condomini?.nome || 'Condominio'
+          return {
+            condominioId: o.unita?.condominio_id,
+            condominioNome: condoNome,
+            unitaNumero: o.unita?.numero,
+            unitaScala: o.unita?.scala,
+            ruolo: o.ruolo === 'proprietario' ? 'Proprietario' : 'Inquilino'
+          }
+        })
+
+        return {
+          ...p,
+          unitaDettagli,
+          isProprietario: occupazioni.some(o => o.ruolo === 'proprietario'),
+          isInquilino: occupazioni.some(o => o.ruolo === 'inquilino')
+        }
+      })
+      setPersone(personeMappate)
+    } catch (err) {
+      console.error('Errore caricamento dati globali:', err.message)
+    } finally {
+      setLoadingGlobal(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!condominioId) {
+      caricaDatiGlobali()
+    }
+  }, [condominioId])
+
+  // Filtro ricerca globale
+  const personeFiltrateGlobali = useMemo(() => {
+    if (!searchGlobal) return []
+    return persone.filter(p => {
+      const matchText = 
+        `${p.nome} ${p.cognome}`.toLowerCase().includes(searchGlobal.toLowerCase()) ||
+        `${p.cognome} ${p.nome}`.toLowerCase().includes(searchGlobal.toLowerCase()) ||
+        (p.email || '').toLowerCase().includes(searchGlobal.toLowerCase()) ||
+        (p.telefono || '').toLowerCase().includes(searchGlobal.toLowerCase()) ||
+        p.unitaDettagli.some(ud => ud.condominioNome.toLowerCase().includes(searchGlobal.toLowerCase()))
+      return matchText
+    })
+  }, [persone, searchGlobal])
+
+  const toggleCondominio = (cid) => {
+    setCondominiEspansi(prev => ({ ...prev, [cid]: !prev[cid] }))
+  }
+
+  const getPersoneCondominio = (cid) => {
+    return persone.filter(p => p.unitaDettagli.some(ud => ud.condominioId === cid))
+  }
+
+  const apriModificaGlobale = (p) => {
+    setEditingPersona(p)
+    setEditNome(p.nome || '')
+    setEditCognome(p.cognome || '')
+    setEditEmail(p.email || '')
+    setEditTelefono(p.telefono || '')
+    setEditIndirizzo(p.indirizzo || '')
+    setEditCitta(p.citta || '')
+  }
+
+  const handleSalvaAnagraficaGlobale = async (e) => {
+    e.preventDefault()
+    if (!editingPersona) return
+    setSalvandoAnagrafica(true)
+    try {
+      const { error } = await supabase
+        .from('persone')
+        .update({
+          nome: editNome,
+          cognome: editCognome,
+          email: editEmail,
+          telefono: editTelefono,
+          indirizzo: editIndirizzo,
+          citta: editCitta
+        })
+        .eq('id', editingPersona.id)
+
+      if (error) throw error
+      alert('Dati salvati con successo!')
+      setEditingPersona(null)
+      await caricaDatiGlobali()
+    } catch (err) {
+      alert('Errore durante il salvataggio: ' + err.message)
+    } finally {
+      setSalvandoAnagrafica(false)
+    }
+  }
+
+  // ── Filtro/ricerca condominio singolo ──────────────────────────────────
   const filtered = useMemo(() => {
     return unita.filter(u => {
       const prop = getProprietario(u)
@@ -80,7 +217,6 @@ export default function AnagraficaPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  // ── Import handler ────────────────────────────────────────────────────
   const handleImport = async (rows) => {
     const result = await importPersone(rows)
     await fetchUnita()
@@ -88,7 +224,6 @@ export default function AnagraficaPage() {
     return result
   }
 
-  // ── Salva unità ───────────────────────────────────────────────────────
   const handleSaveUnita = async (data) => {
     try {
       if (editUnita) await updateUnita(editUnita.id, data)
@@ -101,7 +236,6 @@ export default function AnagraficaPage() {
     }
   }
 
-  // ── Salva persona + assegna ───────────────────────────────────────────
   const handleSavePersona = async (data) => {
     try {
       const persona = await createPersona(data)
@@ -117,170 +251,415 @@ export default function AnagraficaPage() {
   }
 
   // ════════════════════════════════════════════════════════════════════════
-  // RENDER
+  // RENDER DETTAGLIO CONDOMINIO SINGOLO
+  // ════════════════════════════════════════════════════════════════════════
+  if (condominioId) {
+    return (
+      <div style={styles.page}>
+        {toast && (
+          <div style={{ ...styles.toast, background: toast.type === 'error' ? '#7f1d1d' : '#14532d' }}>
+            {toast.msg}
+          </div>
+        )}
+
+        <div style={styles.header}>
+          <div>
+            <div style={styles.breadcrumb}>
+              <Link to="/condomini" style={styles.breadLink}>Condomini</Link>
+              <span style={{ color: '#475569' }}> / </span>
+              <span style={{ color: '#94a3b8' }}>Anagrafica</span>
+            </div>
+            <h1 style={styles.title}>Anagrafica Unità</h1>
+            <p style={styles.subtitle}>{unita.length} unità totali · {filtered.length} visualizzate</p>
+          </div>
+          <div style={styles.headerActions}>
+            <button style={styles.btnSecondary} onClick={() => setShowImport(true)}>
+              📂 Importa file
+            </button>
+            <button style={styles.btnPrimary} onClick={() => { setEditUnita(null); setShowUnitaForm(true) }}>
+              + Nuova unità
+            </button>
+          </div>
+        </div>
+
+        <div style={styles.filters}>
+          <input
+            style={styles.search}
+            placeholder="Cerca per unità, proprietario, inquilino, email…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <select style={styles.select} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+            <option value="tutti">Tutti i tipi</option>
+            {Object.entries(TIPO_COLORS).map(([k, v]) => (
+              <option key={k} value={k}>{v.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {loadingUnita ? (
+          <div style={styles.loading}>Caricamento…</div>
+        ) : filtered.length === 0 ? (
+          <div style={styles.empty}>
+            <p style={{ fontSize: 48, marginBottom: 8 }}>🏢</p>
+            <p style={{ color: '#94a3b8' }}>Nessuna unità trovata</p>
+            <p style={{ color: '#475569', fontSize: 13 }}>Aggiungi unità manualmente o importa un file</p>
+          </div>
+        ) : (
+          <div style={styles.tableWrap}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  {['Unità','Tipo','Piano / Scala','Proprietario','Inquilino','mq','Millesimi',''].map(h => (
+                    <th key={h} style={styles.th}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(u => {
+                  const prop = getProprietario(u)
+                  const inq  = getInquilino(u)
+                  const isExpanded = expandedRow === u.id
+                  return [
+                    <tr key={u.id} style={styles.tr} onClick={() => setExpandedRow(isExpanded ? null : u.id)}>
+                      <td style={{ ...styles.td, fontWeight: 700, color: '#e2e8f0', textAlign: 'left' }}>
+                        {u.numero}
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'left' }}><TipoBadge tipo={u.tipo} /></td>
+                      <td style={{ ...styles.td, color: '#94a3b8', textAlign: 'left' }}>
+                        {u.piano != null ? `Piano ${u.piano}` : '—'}
+                        {u.scala ? ` · Sc.${u.scala}` : ''}
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'left' }}><PersonaChip persona={prop} ruolo="proprietario" /></td>
+                      <td style={{ ...styles.td, textAlign: 'left' }}><PersonaChip persona={inq}  ruolo="inquilino" /></td>
+                      <td style={{ ...styles.td, color: '#94a3b8', textAlign: 'left' }}>{u.mq ? `${u.mq} m²` : '—'}</td>
+                      <td style={{ ...styles.td, color: '#94a3b8', textAlign: 'left' }}>{u.millesimi || '—'}</td>
+                      <td style={styles.td}>
+                        <div style={styles.rowActions} onClick={e => e.stopPropagation()}>
+                          <button style={styles.iconBtn} title="Modifica" onClick={() => { setEditUnita(u); setShowUnitaForm(true) }}>✏️</button>
+                          <button style={styles.iconBtn} title="Aggiungi proprietario" onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'proprietario' })}>🏠</button>
+                          <button style={styles.iconBtn} title="Aggiungi inquilino"   onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'inquilino' })}>🔑</button>
+                          <button style={{ ...styles.iconBtn, color: '#ef4444' }} title="Elimina" onClick={() => deleteUnita(u.id)}>🗑️</button>
+                        </div>
+                      </td>
+                    </tr>,
+
+                    isExpanded && (
+                      <tr key={`${u.id}-expanded`} style={{ background: '#0f172a' }}>
+                        <td colSpan={8} style={{ padding: '0 16px 16px' }}>
+                          <div style={styles.expandedGrid}>
+                            {[
+                              { label: 'Proprietario', persona: prop, ruolo: 'proprietario' },
+                              { label: 'Inquilino',     persona: inq,  ruolo: 'inquilino' },
+                            ].map(({ label, persona, ruolo }) => (
+                              <div key={ruolo} style={styles.expandedCard}>
+                                <div style={styles.expandedTitle}>{RUOLO_ICON[ruolo]} {label}</div>
+                                {persona ? (
+                                  <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.8, textAlign: 'left' }}>
+                                    <div><b>Nome:</b> {persona.cognome} {persona.nome}</div>
+                                    <div><b>Email:</b> {persona.email || '—'}</div>
+                                    <div><b>Tel:</b> {persona.telefono || '—'}</div>
+                                    <div><b>Indirizzo:</b> {persona.indirizzo || '—'} {persona.citta || ''}</div>
+                                  </div>
+                                ) : (
+                                  <button style={styles.addPersonaBtn}
+                                    onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo })}>
+                                    + Aggiungi {label.toLowerCase()}
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            {u.note && (
+                              <div style={{ ...styles.expandedCard, gridColumn: '1/-1' }}>
+                                <div style={styles.expandedTitle}>📝 Note</div>
+                                <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'left' }}>{u.note}</div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  ]
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {showImport && (
+          <AnagraficaImport onImport={handleImport} onClose={() => setShowImport(false)} />
+        )}
+        {showUnitaForm && (
+          <UnitaForm
+            unita={editUnita}
+            condominioId={condominioId}
+            onSave={handleSaveUnita}
+            onClose={() => { setShowUnitaForm(false); setEditUnita(null) }}
+          />
+        )}
+        {showPersonaForm && (
+          <PersonaForm
+            ruolo={showPersonaForm.ruolo}
+            onSave={handleSavePersona}
+            onClose={() => setShowPersonaForm(null)}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // RENDER MULTI-CONDOMINIO GLOBALE
   // ════════════════════════════════════════════════════════════════════════
   return (
     <div style={styles.page}>
-
-      {/* ── Toast ── */}
-      {toast && (
-        <div style={{ ...styles.toast, background: toast.type === 'error' ? '#7f1d1d' : '#14532d' }}>
-          {toast.msg}
-        </div>
-      )}
-
-      {/* ── Header ── */}
+      {/* Header */}
       <div style={styles.header}>
         <div>
-          <div style={styles.breadcrumb}>
-            <Link to="/condomini" style={styles.breadLink}>Condomini</Link>
-            <span style={{ color: '#475569' }}> / </span>
-            <span style={{ color: '#94a3b8' }}>Anagrafica</span>
-          </div>
-          <h1 style={styles.title}>Anagrafica Unità</h1>
-          <p style={styles.subtitle}>{unita.length} unità totali · {filtered.length} visualizzate</p>
-        </div>
-        <div style={styles.headerActions}>
-          <button style={styles.btnSecondary} onClick={() => setShowImport(true)}>
-            📂 Importa file
-          </button>
-          <button style={styles.btnPrimary} onClick={() => { setEditUnita(null); setShowUnitaForm(true) }}>
-            + Nuova unità
-          </button>
+          <h1 style={styles.title}>Anagrafica Condomini e Residenti</h1>
+          <p style={styles.subtitle}>Gestisci la situazione anagrafica di tutti i condomini e cerca rapidamente i contatti.</p>
         </div>
       </div>
 
-      {/* ── Filtri ── */}
-      <div style={styles.filters}>
+      {/* Barra di ricerca superiore */}
+      <div style={styles.searchBarWrap}>
+        <Search size={20} color="#64748b" style={{ marginLeft: 14 }} />
         <input
-          style={styles.search}
-          placeholder="Cerca per unità, proprietario, inquilino, email…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+          type="text"
+          placeholder="Cerca condòmino per nome, cognome, email o condominio in tutto il sistema..."
+          value={searchGlobal}
+          onChange={(e) => setSearchGlobal(e.target.value)}
+          style={styles.searchBarInput}
         />
-        <select style={styles.select} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
-          <option value="tutti">Tutti i tipi</option>
-          {Object.entries(TIPO_COLORS).map(([k, v]) => (
-            <option key={k} value={k}>{v.label}</option>
-          ))}
-        </select>
       </div>
 
-      {/* ── Tabella ── */}
-      {loadingUnita ? (
-        <div style={styles.loading}>Caricamento…</div>
-      ) : filtered.length === 0 ? (
-        <div style={styles.empty}>
-          <p style={{ fontSize: 48, marginBottom: 8 }}>🏢</p>
-          <p style={{ color: '#94a3b8' }}>Nessuna unità trovata</p>
-          <p style={{ color: '#475569', fontSize: 13 }}>Aggiungi unità manualmente o importa un file</p>
-        </div>
-      ) : (
-        <div style={styles.tableWrap}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                {['Unità','Tipo','Piano / Scala','Proprietario','Inquilino','mq','Millesimi',''].map(h => (
-                  <th key={h} style={styles.th}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(u => {
-                const prop = getProprietario(u)
-                const inq  = getInquilino(u)
-                const isExpanded = expandedRow === u.id
-                return [
-                  <tr key={u.id} style={styles.tr} onClick={() => setExpandedRow(isExpanded ? null : u.id)}>
-                    <td style={{ ...styles.td, fontWeight: 700, color: '#e2e8f0' }}>
-                      {u.numero}
-                    </td>
-                    <td style={styles.td}><TipoBadge tipo={u.tipo} /></td>
-                    <td style={{ ...styles.td, color: '#94a3b8' }}>
-                      {u.piano != null ? `Piano ${u.piano}` : '—'}
-                      {u.scala ? ` · Sc.${u.scala}` : ''}
-                    </td>
-                    <td style={styles.td}><PersonaChip persona={prop} ruolo="proprietario" /></td>
-                    <td style={styles.td}><PersonaChip persona={inq}  ruolo="inquilino" /></td>
-                    <td style={{ ...styles.td, color: '#94a3b8' }}>{u.mq ? `${u.mq} m²` : '—'}</td>
-                    <td style={{ ...styles.td, color: '#94a3b8' }}>{u.millesimi || '—'}</td>
-                    <td style={styles.td}>
-                      <div style={styles.rowActions} onClick={e => e.stopPropagation()}>
-                        <button style={styles.iconBtn} title="Modifica" onClick={() => { setEditUnita(u); setShowUnitaForm(true) }}>✏️</button>
-                        <button style={styles.iconBtn} title="Aggiungi proprietario" onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'proprietario' })}>🏠</button>
-                        <button style={styles.iconBtn} title="Aggiungi inquilino"   onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'inquilino' })}>🔑</button>
-                        <button style={{ ...styles.iconBtn, color: '#ef4444' }} title="Elimina" onClick={() => deleteUnita(u.id)}>🗑️</button>
-                      </div>
-                    </td>
-                  </tr>,
-
-                  // ── Riga espansa (dettaglio contatti) ──
-                  isExpanded && (
-                    <tr key={`${u.id}-expanded`} style={{ background: '#0f172a' }}>
-                      <td colSpan={8} style={{ padding: '0 16px 16px' }}>
-                        <div style={styles.expandedGrid}>
-                          {[
-                            { label: 'Proprietario', persona: prop, ruolo: 'proprietario' },
-                            { label: 'Inquilino',     persona: inq,  ruolo: 'inquilino' },
-                          ].map(({ label, persona, ruolo }) => (
-                            <div key={ruolo} style={styles.expandedCard}>
-                              <div style={styles.expandedTitle}>{RUOLO_ICON[ruolo]} {label}</div>
-                              {persona ? (
-                                <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.8 }}>
-                                  <div><b>Nome:</b> {persona.cognome} {persona.nome}</div>
-                                  <div><b>Email:</b> {persona.email || '—'}</div>
-                                  <div><b>Tel:</b> {persona.telefono || '—'}</div>
-                                  <div><b>Indirizzo:</b> {persona.indirizzo || '—'} {persona.citta || ''}</div>
-                                </div>
-                              ) : (
-                                <button style={styles.addPersonaBtn}
-                                  onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo })}>
-                                  + Aggiungi {label.toLowerCase()}
-                                </button>
-                              )}
+      {loadingGlobal ? (
+        <div style={styles.loading}>Caricamento anagrafiche condomini...</div>
+      ) : searchGlobal ? (
+        /* VISTA FILTRATA: RISULTATI DI RICERCA GLOBALI */
+        <div style={styles.resultsSec}>
+          <h3 style={styles.resultsTitle}>Risultati della ricerca ({personeFiltrateGlobali.length})</h3>
+          
+          {personeFiltrateGlobali.length === 0 ? (
+            <div style={styles.empty}>
+              <Search size={32} color="#475569" style={{ marginBottom: 8 }} />
+              <p style={{ color: '#94a3b8', margin: 0 }}>Nessun condòmino trovato per "{searchGlobal}"</p>
+            </div>
+          ) : (
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Condòmino</th>
+                    <th style={styles.th}>Contatti</th>
+                    <th style={styles.th}>Condominio ed Unità</th>
+                    <th style={styles.th}>Residenza</th>
+                    <th style={{ ...styles.th, textAlign: 'center' }}>Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {personeFiltrateGlobali.map(p => {
+                    const iniziali = `${p.nome?.[0] || ''}${p.cognome?.[0] || ''}`.toUpperCase()
+                    return (
+                      <tr key={p.id} style={styles.tr}>
+                        <td style={styles.td}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={styles.avatar}>{iniziali}</div>
+                            <div style={{ textAlign: 'left' }}>
+                              <div style={{ color: '#f1f5f9', fontWeight: 600 }}>{p.cognome} {p.nome}</div>
+                              <div style={{ color: '#64748b', fontSize: 11 }}>ID: {p.id.slice(0, 8)}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={styles.td}>
+                          <div style={styles.contactItem}><Mail size={12} color="#64748b" /> {p.email || '—'}</div>
+                          <div style={{ ...styles.contactItem, marginTop: 4 }}><Phone size={12} color="#64748b" /> {p.telefono || '—'}</div>
+                        </td>
+                        <td style={styles.td}>
+                          {p.unitaDettagli.map((ud, i) => (
+                            <div key={i} style={{ marginBottom: i > 0 ? 6 : 0, textAlign: 'left' }}>
+                              <div style={{ color: '#60a5fa', fontWeight: 600, fontSize: 13 }}>{ud.condominioNome}</div>
+                              <div style={{ color: '#94a3b8', fontSize: 12 }}>{ud.ruolo} • Unità {ud.unitaNumero}{ud.unitaScala ? ` Scala ${ud.unitaScala}` : ''}</div>
                             </div>
                           ))}
-                          {u.note && (
-                            <div style={{ ...styles.expandedCard, gridColumn: '1/-1' }}>
-                              <div style={styles.expandedTitle}>📝 Note</div>
-                              <div style={{ color: '#94a3b8', fontSize: 13 }}>{u.note}</div>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                ]
-              })}
-            </tbody>
-          </table>
+                          {p.unitaDettagli.length === 0 && <span style={{ color: '#475569', fontStyle: 'italic' }}>Nessuna associazione</span>}
+                        </td>
+                        <td style={styles.td}>
+                          <div style={{ color: '#cbd5e1', fontSize: 13, textAlign: 'left' }}>{p.indirizzo || '—'}</div>
+                          {p.citta && <div style={{ color: '#64748b', fontSize: 11, marginTop: 2, textAlign: 'left' }}>{p.citta}</div>}
+                        </td>
+                        <td style={{ ...styles.td, textAlign: 'center' }}>
+                          <button onClick={() => apriModificaGlobale(p)} style={styles.btnEdit} title="Modifica Anagrafica">
+                            ✏️ Modifica
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* VISTA ORDINARIA: ACCORDION PER CONDOMINIO */
+        <div style={styles.condominiList}>
+          {condomini.map(c => {
+            const isEspanso = condominiEspansi[c.id]
+            const residenti = getPersoneCondominio(c.id)
+
+            return (
+              <div key={c.id} style={styles.condoCard}>
+                <div style={styles.condoCardHead} onClick={() => toggleCondominio(c.id)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={styles.condoIcon}>
+                      <Building2 size={18} color="#60a5fa" />
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={styles.condoNome}>{c.nome}</div>
+                      <div style={styles.condoIndirizzo}>{c.indirizzo} • {c.citta}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <span style={styles.residentiCountBadge}>{residenti.length} residenti</span>
+                    {isEspanso ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
+                  </div>
+                </div>
+
+                {isEspanso && (
+                  <div style={styles.condoCardBody}>
+                    {residenti.length === 0 ? (
+                      <div style={{ padding: '20px 0', color: '#64748b', fontSize: 13 }}>
+                        Nessun condomino o inquilino associato alle unità di questo condominio.
+                      </div>
+                    ) : (
+                      <div style={styles.tableWrap}>
+                        <table style={styles.table}>
+                          <thead>
+                            <tr>
+                              <th style={styles.th}>Condòmino</th>
+                              <th style={styles.th}>Contatti</th>
+                              <th style={styles.th}>Ruolo ed Unità</th>
+                              <th style={styles.th}>Residenza</th>
+                              <th style={{ ...styles.th, textAlign: 'center' }}>Azioni</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {residenti.map(p => {
+                              const iniziali = `${p.nome?.[0] || ''}${p.cognome?.[0] || ''}`.toUpperCase()
+                              // Filtra le unità associate specificamente a questo condominio
+                              const unitaCondo = p.unitaDettagli.filter(ud => ud.condominioId === c.id)
+
+                              return (
+                                <tr key={p.id} style={styles.tr}>
+                                  <td style={styles.td}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                      <div style={styles.avatar}>{iniziali}</div>
+                                      <div style={{ textAlign: 'left' }}>
+                                        <div style={{ color: '#e2e8f0', fontWeight: 600 }}>{p.cognome} {p.nome}</div>
+                                        <div style={{ color: '#64748b', fontSize: 11 }}>ID: {p.id.slice(0, 8)}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={styles.td}>
+                                    <div style={styles.contactItem}><Mail size={12} color="#64748b" /> {p.email || '—'}</div>
+                                    <div style={{ ...styles.contactItem, marginTop: 4 }}><Phone size={12} color="#64748b" /> {p.telefono || '—'}</div>
+                                  </td>
+                                  <td style={styles.td}>
+                                    {unitaCondo.map((uc, idx) => (
+                                      <div key={idx} style={{ marginBottom: idx > 0 ? 4 : 0, textAlign: 'left' }}>
+                                        <span style={{ color: uc.ruolo === 'Proprietario' ? '#60a5fa' : '#34d399', fontWeight: 600, fontSize: 12 }}>
+                                          {uc.ruolo}
+                                        </span>
+                                        <span style={{ color: '#cbd5e1', fontSize: 12 }}> • Unità {uc.unitaNumero}{uc.unitaScala ? ` (Scala ${uc.unitaScala})` : ''}</span>
+                                      </div>
+                                    ))}
+                                  </td>
+                                  <td style={styles.td}>
+                                    <div style={{ color: '#cbd5e1', fontSize: 13, textAlign: 'left' }}>{p.indirizzo || '—'}</div>
+                                    {p.citta && <div style={{ color: '#64748b', fontSize: 11, marginTop: 2, textAlign: 'left' }}>{p.citta}</div>}
+                                  </td>
+                                  <td style={{ ...styles.td, textAlign: 'center' }}>
+                                    <button onClick={() => apriModificaGlobale(p)} style={styles.btnEdit} title="Modifica Anagrafica">
+                                      ✏️ Modifica
+                                    </button>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {/* ── Modali ── */}
-      {showImport && (
-        <AnagraficaImport onImport={handleImport} onClose={() => setShowImport(false)} />
-      )}
-      {showUnitaForm && (
-        <UnitaForm
-          unita={editUnita}
-          condominioId={condominioId}
-          onSave={handleSaveUnita}
-          onClose={() => { setShowUnitaForm(false); setEditUnita(null) }}
-        />
-      )}
-      {showPersonaForm && (
-        <PersonaForm
-          ruolo={showPersonaForm.ruolo}
-          onSave={handleSavePersona}
-          onClose={() => setShowPersonaForm(null)}
-        />
+      {/* Modale Modifica Anagrafica Globale */}
+      {editingPersona && (
+        <div style={styles.overlay} onClick={() => setEditingPersona(null)}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <div style={styles.modalHead}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <UserCog size={18} color="#60a5fa" />
+                <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>Modifica Anagrafica Condòmino</span>
+              </div>
+              <button style={styles.btnClose} onClick={() => setEditingPersona(null)}><X size={16} /></button>
+            </div>
+            
+            <form onSubmit={handleSalvaAnagraficaGlobale}>
+              <div style={styles.modalBody}>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Nome</label>
+                    <input style={styles.input} type="text" required value={editNome} onChange={e => setEditNome(e.target.value)} />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Cognome</label>
+                    <input style={styles.input} type="text" required value={editCognome} onChange={e => setEditCognome(e.target.value)} />
+                  </div>
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Email</label>
+                  <input style={styles.input} type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Telefono</label>
+                  <input style={styles.input} type="text" value={editTelefono} onChange={e => setEditTelefono(e.target.value)} />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Indirizzo di Residenza</label>
+                  <input style={styles.input} type="text" value={editIndirizzo} onChange={e => setEditIndirizzo(e.target.value)} />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Città</label>
+                  <input style={styles.input} type="text" value={editCitta} onChange={e => setEditCitta(e.target.value)} />
+                </div>
+              </div>
+
+              <div style={styles.modalFooter}>
+                <button type="button" style={styles.btnCancel} onClick={() => setEditingPersona(null)}>Annulla</button>
+                <button type="submit" disabled={salvandoAnagrafica} style={styles.btnSave}>
+                  {salvandoAnagrafica ? 'Salvataggio...' : 'Salva Modifiche'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────
+// ── STILI COMPLETI ────────────────────────────────────────────────────────
 const styles = {
   page: { padding: '28px 32px', background: '#0f172a', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
   toast: {
@@ -288,11 +667,11 @@ const styles = {
     color: 'white', padding: '12px 20px', borderRadius: 10,
     fontSize: 14, fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
   },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
   breadcrumb: { fontSize: 13, marginBottom: 6 },
   breadLink: { color: '#3b82f6', textDecoration: 'none' },
-  title: { color: '#e2e8f0', fontSize: 26, fontWeight: 700, margin: 0 },
-  subtitle: { color: '#64748b', fontSize: 13, marginTop: 4 },
+  title: { color: '#e2e8f0', fontSize: 26, fontWeight: 700, margin: 0, textAlign: 'left' },
+  subtitle: { color: '#64748b', fontSize: 13, marginTop: 4, textAlign: 'left' },
   headerActions: { display: 'flex', gap: 10 },
   filters: { display: 'flex', gap: 12, marginBottom: 20 },
   search: {
@@ -304,19 +683,20 @@ const styles = {
     borderRadius: 10, padding: '10px 14px', fontSize: 14, outline: 'none',
   },
   loading: { color: '#64748b', textAlign: 'center', padding: '60px' },
-  empty: { textAlign: 'center', padding: '80px 20px', color: '#64748b' },
-  tableWrap: { overflowX: 'auto', borderRadius: 12, border: '1px solid #1e293b' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
+  empty: { textAlign: 'center', padding: '60px 20px', color: '#64748b', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  tableWrap: { overflowX: 'auto', borderRadius: 12, border: '1px solid #334155', background: '#1e293b' },
+  table: { width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 },
   th: {
-    background: '#1e293b', color: '#64748b', padding: '10px 16px',
+    background: '#0f172a', color: '#64748b', padding: '12px 16px',
     textAlign: 'left', fontWeight: 600, textTransform: 'uppercase',
     letterSpacing: '0.05em', fontSize: 11, whiteSpace: 'nowrap',
+    borderBottom: '1px solid #334155'
   },
   tr: {
-    borderBottom: '1px solid #1e293b', cursor: 'pointer',
+    borderBottom: '1px solid #1e293b',
     transition: 'background .15s',
   },
-  td: { padding: '12px 16px', verticalAlign: 'middle' },
+  td: { padding: '12px 16px', verticalAlign: 'middle', borderBottom: '1px solid #1e293b' },
   rowActions: { display: 'flex', gap: 2 },
   iconBtn: {
     background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px',
@@ -343,4 +723,35 @@ const styles = {
     background: 'transparent', color: '#94a3b8', border: '1px solid #334155',
     borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer',
   },
+
+  // Stili globali
+  searchBarWrap: { display: 'flex', alignItems: 'center', background: '#1e293b', border: '1px solid #334155', borderRadius: 12, marginBottom: 20 },
+  searchBarInput: { background: 'transparent', border: 'none', padding: '14px 16px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%' },
+  resultsSec: { marginTop: 10 },
+  resultsTitle: { color: '#cbd5e1', fontSize: 15, fontWeight: 600, marginBottom: 12, textAlign: 'left' },
+  avatar: { width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  contactItem: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#e2e8f0' },
+  btnEdit: { background: 'rgba(255,255,255,0.05)', border: '1px solid #334155', borderRadius: 6, padding: '6px 12px', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontWeight: 600 },
+  
+  condominiList: { display: 'flex', flexDirection: 'column', gap: 14 },
+  condoCard: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' },
+  condoCardHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', cursor: 'pointer', hover: { background: '#24324f' } },
+  condoIcon: { width: 38, height: 38, borderRadius: 10, background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  condoNome: { color: '#f1f5f9', fontWeight: 700, fontSize: 16 },
+  condoIndirizzo: { color: '#64748b', fontSize: 12, marginTop: 2 },
+  residentiCountBadge: { background: 'rgba(96,165,250,0.15)', color: '#60a5fa', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20 },
+  condoCardBody: { padding: '0 24px 24px 24px', borderTop: '1px solid #33415515', paddingTop: 16 },
+
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 },
+  modal: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 22, width: 440, maxWidth: '90vw', fontFamily: 'Sora, sans-serif' },
+  modalHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  btnClose: { background: 'transparent', color: '#64748b', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+  modalBody: { display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 },
+  formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
+  formGroup: { display: 'flex', flexDirection: 'column', gap: 6 },
+  label: { color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  input: { width: '100%', boxSizing: 'border-box', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '9px 10px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
+  modalFooter: { display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid #334155', paddingTop: 14 },
+  btnCancel: { background: 'transparent', border: '1px solid #334155', borderRadius: 8, padding: '9px 20px', color: '#94a3b8', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: 13 },
+  btnSave: { background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
 }

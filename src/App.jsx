@@ -36,6 +36,7 @@ export default function App() {
   <Route element={<AppLayout />}>
     <Route path="/dashboard" element={<DashboardPage />} />
     <Route path="/condomini" element={<CondominiPage />} />
+    <Route path="/anagrafica" element={<AnagraficaPage />} />
     <Route path="/condomini/:id" element={<CondominiDetailPage />} />
     <Route path="/condomini/:condominioId/anagrafica" element={<AnagraficaPage />} />
     <Route path="/condomini/:condominioId/spese" element={<SpesePage />} />

@@ -75,8 +75,9 @@ export default function FattureFornitoriPage() {
       window.open(urlOPath, '_blank');
       return;
     }
+    let newWindow = null;
     try {
-      const newWindow = window.open('about:blank', '_blank');
+      newWindow = window.open('about:blank', '_blank');
       if (!newWindow) {
         alert('Abilita i popup per visualizzare il file.');
         return;
@@ -95,8 +96,15 @@ export default function FattureFornitoriPage() {
         alert('Impossibile generare l\'URL per il file.');
       }
     } catch (err) {
+      if (newWindow) newWindow.close();
       alert('Errore durante la generazione del link firmato: ' + err.message);
     }
+  }
+
+  function formattaData(dataStr) {
+    if (!dataStr) return '';
+    const d = new Date(dataStr);
+    return isNaN(d.getTime()) ? dataStr : d.toLocaleDateString('it-IT');
   }
 
   // ─── Upload fattura ──────────────────────────────────────────
@@ -117,7 +125,7 @@ export default function FattureFornitoriPage() {
       const datiAI = await estraiFattura(file);
 
       let fileUrl = null;
-      if (tipo === 'pdf' || tipo === 'docx') {
+      if (tipo !== 'unknown') {
         setUploadProgress('Caricamento file su storage...');
         const { data: { user } } = await supabase.auth.getUser();
         const path = `${user.id}/${condominioId}/${Date.now()}_${file.name}`;
@@ -234,14 +242,42 @@ export default function FattureFornitoriPage() {
         ? null
         : parseFloat(update.ritenuta_acconto);
 
-    await supabase.from('fatture_fornitori').update(update).eq('id', id);
+    const { error } = await supabase.from('fatture_fornitori').update(update).eq('id', id);
+    if (error) {
+      alert('Errore durante il salvataggio: ' + error.message);
+      return;
+    }
     setEditingId(null);
     await loadFatture();
   }
 
   async function eliminaFattura(id) {
     if (!confirm('Eliminare questa fattura?')) return;
-    await supabase.from('fatture_fornitori').delete().eq('id', id);
+    
+    // Trova la fattura localmente per recuperare i path dei file
+    const f = fatture.find(x => x.id === id);
+    if (f) {
+      const pathsToRemove = [];
+      if (f.pdf_url && !f.pdf_url.startsWith('http://') && !f.pdf_url.startsWith('https://')) {
+        pathsToRemove.push(f.pdf_url);
+      }
+      if (f.f24_url && !f.f24_url.startsWith('http://') && !f.f24_url.startsWith('https://')) {
+        pathsToRemove.push(f.f24_url);
+      }
+      if (pathsToRemove.length > 0) {
+        try {
+          await supabase.storage.from('fatture').remove(pathsToRemove);
+        } catch (storageErr) {
+          console.error('Errore rimozione file da storage:', storageErr);
+        }
+      }
+    }
+
+    const { error } = await supabase.from('fatture_fornitori').delete().eq('id', id);
+    if (error) {
+      alert('Errore durante l\'eliminazione: ' + error.message);
+      return;
+    }
     setFatture(prev => prev.filter(f => f.id !== id));
   }
 
@@ -365,8 +401,8 @@ export default function FattureFornitoriPage() {
                       </div>
                       <div style={styles.cardDesc}>{f.descrizione}</div>
                       <div style={styles.cardMeta}>
-                        <span>📅 {new Date(f.data_fattura).toLocaleDateString('it-IT')}</span>
-                        {f.data_scadenza && <span>⏰ Scad: {new Date(f.data_scadenza).toLocaleDateString('it-IT')}</span>}
+                        <span>📅 {formattaData(f.data_fattura)}</span>
+                        {f.data_scadenza && <span>⏰ Scad: {formattaData(f.data_scadenza)}</span>}
                         <span style={styles.catBadge}>{f.categoria}</span>
                         {f.spesa_id && <span style={styles.spesaColleg}>🔗 Collegata a spesa</span>}
                         {f.pdf_url && (

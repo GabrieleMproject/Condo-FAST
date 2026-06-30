@@ -154,6 +154,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Retrocompatibilità allegati**: Implementato il fallback per gli URL storici/di test completi (inizianti per `http`/`https`) memorizzati in `pdf_url` o `f24_url`, consentendo la loro apertura diretta, mentre per i nuovi record viene salvato e gestito unicamente il path relativo del bucket Supabase Storage.
 - **Architettura Comunicazioni (Resend)**: Creata la tabella `comunicazioni` con granularità a singolo destinatario (1 record per persona) per tracciare lo stato dell'invio in modo atomico. Configurato l'invio con `reply_to` impostato sull'email reale dell'amministratore, bypassando le limitazioni di Resend sui domini non verificati.
 - **Conguaglio Dinamico in Solleciti**: Implementato il calcolo automatico della situazione finanziaria dell'unità del condomino (dovuto, pagato, insoluto, importo scaduto) da inserire nel template del sollecito rata.
+- **Solleciti Rapidi da Griglia Rate**: Integrati solleciti rapidi con 1 clic direttamente nella modale cella rata (dettaglio pagamento quota) e introdotte le "Proposte di Sollecito Consigliate" (con banner e modale riassuntiva) per le rate scadute da oltre 10 giorni (principio "Propone → conferma").
 
 ### 2. Bug e Vulnerabilità Risolti
 - **Vulnerabilità getPublicUrl**: Sostituita l'esposizione degli URL pubblici completi con signed URL a tempo (scadenza a 15 minuti) autogenerati al momento del click del link "📄 File" o "📎 F24".

@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
-import { CreditCard, X, CheckCircle2, Coins } from 'lucide-react'
+import { useComunicazioni } from '../hooks/useComunicazioni'
+import { CreditCard, X, CheckCircle2, Coins, Mail } from 'lucide-react'
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -31,6 +32,10 @@ function cellInfo(cell, rata) {
 
 export default function RateGridTab({ condominioId }) {
   const navigate = useNavigate()
+  const { inviaComunicazione } = useComunicazioni()
+  const [inviandoSollecito, setInviandoSollecito] = useState(false)
+  const [showProposteModal, setShowProposteModal] = useState(false)
+
   const [esercizi, setEsercizi] = useState([])
   const [esercizio, setEsercizio] = useState(null)
   const [rate, setRate] = useState([])           // colonne
@@ -39,6 +44,115 @@ export default function RateGridTab({ condominioId }) {
   const [editing, setEditing] = useState(null)    // { cell, rata, unita }
 
   const { unita, getProprietario } = useUnita(condominioId)
+
+  // Rileva le rate scadute da oltre 10 giorni
+  const rateScaduteDa10Giorni = useMemo(() => {
+    if (!esercizio || rate.length === 0 || cells.length === 0) return [];
+    
+    const rateScaduteIds = rate
+      .filter(r => {
+        if (!r.data_scadenza) return false;
+        const diffMs = new Date() - new Date(r.data_scadenza);
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+        return diffDays >= 10;
+      })
+      .map(r => r.id);
+
+    if (rateScaduteIds.length === 0) return [];
+
+    const proposte = [];
+    unita.forEach(u => {
+      const p = getProprietario(u);
+      if (!p || !p.email) return;
+
+      const rateUnitaInsolute = cells.filter(c => 
+        c.unita_id === u.id && 
+        rateScaduteIds.includes(c.rata_id) && 
+        c.stato !== 'pagata' && 
+        c.stato !== 'sovra_pagata'
+      );
+
+      if (rateUnitaInsolute.length > 0) {
+        const importoInsoluto = rateUnitaInsolute.reduce((s, c) => s + (parseFloat(c.importo || 0) - parseFloat(c.importo_pagato || 0)), 0);
+        proposte.push({
+          unita: u,
+          proprietario: p,
+          rateCoinvolte: rateUnitaInsolute.map(c => {
+            const r = rate.find(x => x.id === c.rata_id);
+            return r ? (r.descrizione || `Rata ${r.numero_rata}`) : 'Rata';
+          }).join(', '),
+          importoInsoluto,
+        });
+      }
+    });
+
+    return proposte;
+  }, [esercizio, rate, cells, unita, getProprietario]);
+
+  async function handleSollecitaRata(u, prop) {
+    if (!prop || !prop.email) return;
+    setInviandoSollecito(true);
+    try {
+      if (!esercizio) throw new Error("Nessun esercizio selezionato o aperto.");
+
+      // Carica rate dell'esercizio
+      const { data: rateData } = await supabase
+        .from('rate')
+        .select('id, data_scadenza, descrizione')
+        .eq('esercizio_id', esercizio.id);
+      
+      const rateIds = (rateData || []).map(r => r.id);
+
+      // Carica rate_unita
+      const { data: rateUnitaData } = await supabase
+        .from('rate_unita')
+        .select('*')
+        .eq('unita_id', u.id)
+        .in('rata_id', rateIds);
+
+      const rateUnitaList = rateUnitaData || [];
+      const dovuto = rateUnitaList.reduce((s, r) => s + parseFloat(r.importo || 0), 0);
+      const pagato = rateUnitaList.reduce((s, r) => s + parseFloat(r.importo_pagato || 0), 0);
+      const insoluto = dovuto - pagato;
+
+      const rateScadute = rateUnitaList.filter(ru => {
+        const rata = (rateData || []).find(r => r.id === ru.rata_id);
+        const scaduta = rata?.data_scadenza && new Date(rata.data_scadenza) < new Date();
+        return scaduta && ru.stato !== 'pagata' && ru.stato !== 'sovra_pagata';
+      });
+
+      const importoScaduto = rateScadute.reduce((s, r) => s + (parseFloat(r.importo || 0) - parseFloat(r.importo_pagato || 0)), 0);
+
+      const nomeDest = `${prop.nome} ${prop.cognome}`;
+      const alignmentText = u.scala ? `scala ${u.scala}` : '';
+      const testo = `Gentile <strong>${nomeDest}</strong>,<br/><br/>
+Le inviamo la presente comunicazione in merito all'esercizio condominiale <strong>${esercizio.anno}</strong> (Unità: ${u.numero} ${alignmentText}).<br/><br/>
+Dalle nostre scritture contabili risulta la seguente <strong>quadratura finanziaria aggiornata</strong> per le sue quote:<br/>
+<ul>
+  <li>Totale dovuto per l'esercizio: <strong>€ ${dovuto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong></li>
+  <li>Totale da lei versato ad oggi: <strong>€ ${pagato.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong></li>
+  <li>Saldo insoluto residuo: <strong>€ ${insoluto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong></li>
+</ul>
+Di questo saldo insoluto, l'importo attualmente <span style="color:#ef4444; font-weight:bold;">in ritardo / già scaduto</span> è pari a: <strong>€ ${importoScaduto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong>.<br/><br/>
+La invitiamo a provvedere al saldo delle quote insolute a mezzo bonifico bancario.<br/><br/>
+Cordiali saluti,<br/>
+L'Amministratore`;
+
+      await inviaComunicazione({
+        condominioId,
+        destinatari: [{ email: prop.email, nome: nomeDest }],
+        oggetto: `Sollecito pagamento rate Esercizio ${esercizio.anno} - Unità ${u.numero}`,
+        messaggio: testo,
+        tipo: 'sollecito',
+      });
+
+      alert(`Sollecito inviato con successo a ${prop.email}`);
+    } catch (err) {
+      alert("Errore durante l'invio del sollecito: " + err.message);
+    } finally {
+      setInviandoSollecito(false);
+    }
+  }
 
   useEffect(() => {
     supabase.from('esercizi').select('*').eq('condominio_id', condominioId)
@@ -156,6 +270,23 @@ export default function RateGridTab({ condominioId }) {
         ))}
       </div>
 
+      {rateScaduteDa10Giorni.length > 0 && (
+        <div style={st.bannerProposte}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 20 }}>📢</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 14 }}>Solleciti Consigliati</div>
+              <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
+                Rilevate {rateScaduteDa10Giorni.length} unità con rate scadute da oltre 10 giorni.
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setShowProposteModal(true)} style={st.btnProposte}>
+            Visualizza Proposte ({rateScaduteDa10Giorni.length})
+          </button>
+        </div>
+      )}
+
       {rate.length === 0 ? (
         <div style={st.empty}>
           <CreditCard size={32} color="#334155" style={{ marginBottom: 10 }} />
@@ -248,6 +379,17 @@ export default function RateGridTab({ condominioId }) {
           getProprietario={getProprietario}
           onClose={() => setEditing(null)}
           onSave={(patch) => salvaCella(editing.cell, patch)}
+          onSollecita={handleSollecitaRata}
+          inviandoSollecito={inviandoSollecito}
+        />
+      )}
+
+      {showProposteModal && (
+        <ProposteSollecitoModal
+          proposte={rateScaduteDa10Giorni}
+          onClose={() => setShowProposteModal(false)}
+          onSollecita={handleSollecitaRata}
+          inviando={inviandoSollecito}
         />
       )}
     </div>
@@ -293,9 +435,80 @@ function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave }) {
           <button style={st.btnGhost} onClick={segnaPagata}><CheckCircle2 size={15} style={{ marginRight: 6 }} />Segna pagata</button>
           <button style={st.btnPrimary} onClick={() => onSave({ importo, importo_pagato: pagato, data_pagamento: data })}>Salva</button>
         </div>
+
+        {((parseFloat(importo) || 0) > (parseFloat(pagato) || 0)) && p?.email && (
+          <button 
+            type="button" 
+            disabled={inviandoSollecito}
+            style={{ ...st.btnPrimary, background: '#ef4444', marginTop: 10, width: '100%' }} 
+            onClick={() => onSollecita(unita, p).then(() => onClose())}
+          >
+            {inviandoSollecito ? 'Invio sollecito...' : '📧 Invia Sollecito Rata'}
+          </button>
+        )}
       </div>
     </div>
   )
+}
+
+// ── Modale Proposte Solleciti (Scaduti da > 10 giorni) ─────────
+function ProposteSollecitoModal({ proposte, onSollecita, onClose, inviando }) {
+  return (
+    <div style={st.overlay} onClick={onClose}>
+      <div style={{ ...st.modal, width: 500, maxWidth: '95vw' }} onClick={e => e.stopPropagation()}>
+        <div style={st.modalHead}>
+          <div>
+            <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>Solleciti Consigliati (Scadenza &gt; 10 giorni)</div>
+            <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
+              Le rate di queste unità risultano insolute da oltre 10 giorni.
+            </div>
+          </div>
+          <button style={st.btnIcon} onClick={onClose}><X size={16} /></button>
+        </div>
+
+        <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, margin: '14px 0' }}>
+          {proposte.map(p => (
+            <div key={p.unita.id} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 13 }}>Unità {p.unita.numero} - {p.proprietario.cognome} {p.proprietario.nome}</div>
+                <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>Rate: {p.rateCoinvolte}</div>
+                <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 700, marginTop: 4 }}>Scaduto: € {p.importoInsoluto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</div>
+              </div>
+              <button 
+                disabled={inviando}
+                style={{ ...st.btnPrimary, flex: 'none', padding: '6px 12px', fontSize: 11, background: '#ef4444', width: 'auto' }} 
+                onClick={async () => {
+                  await onSollecita(p.unita, p.proprietario);
+                  alert('Sollecito inviato con successo!');
+                }}
+              >
+                Invia
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+          <button style={st.btnCancel} onClick={onClose}>Chiudi</button>
+          <button 
+            disabled={inviando}
+            style={{ ...st.btnPrimary, background: '#ef4444', width: 'auto' }} 
+            onClick={async () => {
+              if (confirm(`Inviare il sollecito a tutte le ${proposte.length} unità consigliate?`)) {
+                for (const p of proposte) {
+                  await onSollecita(p.unita, p.proprietario);
+                }
+                alert('Tutti i solleciti sono stati inviati!');
+                onClose();
+              }
+            }}
+          >
+            {inviando ? 'Invio in corso...' : 'Invia a tutti'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const st = {
@@ -317,4 +530,7 @@ const st = {
   btnIcon: { background: 'transparent', color: '#64748b', border: '1px solid #334155', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   esBtn: (active) => ({ padding: '6px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: `1px solid ${active ? '#2563eb' : '#334155'}`, background: active ? 'rgba(37,99,235,0.15)' : 'transparent', color: active ? '#60a5fa' : '#64748b', fontFamily: 'Sora, sans-serif', fontWeight: active ? 600 : 400 }),
   esTag: (aperto) => ({ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 4, background: aperto ? '#10b98122' : '#64748b22', color: aperto ? '#10b981' : '#64748b' }),
+  bannerProposte: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f59e0b15', border: '1px solid #f59e0b40', borderRadius: 12, padding: '14px 20px', marginBottom: 16, flexWrap: 'wrap', gap: 12 },
+  btnProposte: { background: '#f59e0b', color: '#0f172a', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
+  btnCancel: { background: 'transparent', border: '1px solid #334155', borderRadius: 8, padding: '8px 20px', color: '#94a3b8', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: 13 },
 }

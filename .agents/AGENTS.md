@@ -155,6 +155,8 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Architettura Comunicazioni (Resend)**: Creata la tabella `comunicazioni` con granularità a singolo destinatario (1 record per persona) per tracciare lo stato dell'invio in modo atomico. Configurato l'invio con `reply_to` impostato sull'email reale dell'amministratore, bypassando le limitazioni di Resend sui domini non verificati.
 - **Conguaglio Dinamico in Solleciti**: Implementato il calcolo automatico della situazione finanziaria dell'unità del condomino (dovuto, pagato, insoluto, importo scaduto) da inserire nel template del sollecito rata.
 - **Solleciti Rapidi da Griglia Rate**: Integrati solleciti rapidi con 1 clic direttamente nella modale cella rata (dettaglio pagamento quota) e introdotte le "Proposte di Sollecito Consigliate" (con banner e modale riassuntiva) per le rate scadute da oltre 10 giorni (principio "Propone → conferma").
+- **Aggiornamento Simultaneo Anagrafica da Rate**: Abilitata la modifica dei dati anagrafici dei condòmini direttamente dalla modale delle rate (`CellEditor`) con allineamento istantaneo del DB (`persone`) e della griglia rate.
+- **Tab Anagrafica locale nel Condominio**: Aggiunto un tab dedicato alla gestione anagrafica esclusiva del condominio corrente (`AnagraficaCondominioTab.jsx`) con filtri per ruolo e modale di modifica rapida.
 
 ### 2. Bug e Vulnerabilità Risolti
 - **Vulnerabilità getPublicUrl**: Sostituita l'esposizione degli URL pubblici completi con signed URL a tempo (scadenza a 15 minuti) autogenerati al momento del click del link "📄 File" o "📎 F24".
@@ -162,6 +164,9 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Mancato upload immagini fatture**: Corretto il bug per cui solo i PDF e DOCX venivano caricati fisicamente su storage (le immagini venivano analizzate dall'AI ma non salvate).
 - **Leak popup vuoto**: Risolto il potenziale leak di popup vuoti in caso di eccezioni di rete durante la generazione del signed URL.
 - **Crash rendering date**: Introdotto l'helper `formattaData` per evitare crash fatali nel rendering in caso di date non valide o malformate estratte dall'AI.
+- **Crash CellEditor destructuring**: Corretto un crash fatale in `CellEditor` dovuto a props mancanti nel destructuring del componente.
+- **Rate a zero dovuto in solleciti**: Risolto un bug logico per cui le rate con dovuto a zero (es: box non partecipanti) venivano considerate "scadute" ed incluse erroneamente tra le proposte di sollecito.
+- **Alert seriali invio massivo**: Eliminata la cascata di alert sincroni bloccanti durante gli invii massivi dei solleciti dalla modale di riepilogo.
 
 ### 3. Fatti Verificati sul Database
 - **Campi pdf_url e f24_url**: Nel database la tabella `fatture_fornitori` accetta e memorizza indifferente URL assoluti completi o path relativi nel bucket.

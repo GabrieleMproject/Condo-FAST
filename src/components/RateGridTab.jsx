@@ -10,6 +10,7 @@ const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 function deriveStato(importo, pagato) {
+  if (importo <= 0.001) return pagato > 0.01 ? 'sovra_pagata' : 'pagata'
   if (pagato <= 0.001) return 'non_pagata'
   if (pagato < importo - 0.01) return 'parziale'
   if (pagato > importo + 0.01) return 'sovra_pagata'
@@ -69,7 +70,8 @@ export default function RateGridTab({ condominioId }) {
         c.unita_id === u.id && 
         rateScaduteIds.includes(c.rata_id) && 
         c.stato !== 'pagata' && 
-        c.stato !== 'sovra_pagata'
+        c.stato !== 'sovra_pagata' &&
+        parseFloat(c.importo || 0) > 0.001
       );
 
       if (rateUnitaInsolute.length > 0) {
@@ -155,6 +157,7 @@ L'Amministratore`;
       } else {
         console.error("Errore invio sollecito:", err.message);
       }
+      throw err;
     } finally {
       setInviandoSollecito(false);
     }
@@ -550,8 +553,12 @@ function ProposteSollecitoModal({ proposte, onSollecita, onClose, inviando }) {
                 disabled={inviando}
                 style={{ ...st.btnPrimary, flex: 'none', padding: '6px 12px', fontSize: 11, background: '#ef4444', width: 'auto' }} 
                 onClick={async () => {
-                  await onSollecita(p.unita, p.proprietario, true);
-                  alert('Sollecito inviato con successo!');
+                  try {
+                    await onSollecita(p.unita, p.proprietario, true);
+                    alert('Sollecito inviato con successo!');
+                  } catch (err) {
+                    alert("Invio fallito: " + err.message);
+                  }
                 }}
               >
                 Invia
@@ -567,10 +574,19 @@ function ProposteSollecitoModal({ proposte, onSollecita, onClose, inviando }) {
             style={{ ...st.btnPrimary, background: '#ef4444', width: 'auto' }} 
             onClick={async () => {
               if (confirm(`Inviare il sollecito a tutte le ${proposte.length} unità consigliate?`)) {
+                let falliti = 0;
                 for (const p of proposte) {
-                  await onSollecita(p.unita, p.proprietario, true);
+                  try {
+                    await onSollecita(p.unita, p.proprietario, true);
+                  } catch (err) {
+                    falliti++;
+                  }
                 }
-                alert('Tutti i solleciti sono stati inviati!');
+                if (falliti > 0) {
+                  alert(`Invio completato. Alcuni invii sono falliti (${falliti} unità).`);
+                } else {
+                  alert('Tutti i solleciti sono stati inviati!');
+                }
                 onClose();
               }
             }}

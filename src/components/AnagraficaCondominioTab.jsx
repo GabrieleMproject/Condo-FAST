@@ -68,6 +68,7 @@ export default function AnagraficaCondominioTab({ condominioId }) {
     return persone.filter(p => {
       const matchSearch = 
         `${p.nome} ${p.cognome}`.toLowerCase().includes(search.toLowerCase()) ||
+        `${p.cognome} ${p.nome}`.toLowerCase().includes(search.toLowerCase()) ||
         (p.email || '').toLowerCase().includes(search.toLowerCase()) ||
         (p.unitaNomi || '').toLowerCase().includes(search.toLowerCase())
 

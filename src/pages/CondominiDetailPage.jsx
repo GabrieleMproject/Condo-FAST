@@ -10,6 +10,7 @@ import { useAuditLog } from '../hooks/useAuditLog'
 import { useMemo, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import DocumentiCondominio from '../components/DocumentiCondominio'
+import ComunicazioniTab from '../components/ComunicazioniTab'
 import {
   DoorOpen, Layers, ArrowUpDown, Wallet, ClipboardList, CalendarDays,
   MoveVertical, Trees, ParkingCircle, UserCheck,
@@ -17,6 +18,7 @@ import {
   ArrowLeft, Receipt, Users,
   CheckCircle2,
   ChevronRight, Building2,
+  Mail,
 } from 'lucide-react'
 
 // ── Icone KPI ────────────────────────────────────────────────
@@ -39,9 +41,10 @@ const DOTAZIONI = (c) => [
 const TABS = [
   { id: 'panoramica', label: 'Panoramica', icon: LayoutGrid },
   { id: 'preventivo', label: 'Preventivo', icon: ClipboardList },
-{ id: 'saldi',      label: 'Saldi iniziali', icon: Wallet },
-{ id: 'consuntivo', label: 'Consuntivo', icon: FileBarChart },
+  { id: 'saldi',      label: 'Saldi iniziali', icon: Wallet },
+  { id: 'consuntivo', label: 'Consuntivo', icon: FileBarChart },
   { id: 'rate',       label: 'Rate',       icon: CreditCard },
+  { id: 'comunicazioni', label: 'Comunicazioni', icon: Mail },
   { id: 'finanze',    label: 'Finanze',    icon: Wallet },        // ← nuovo: accesso pagine finanziarie
   { id: 'documenti',  label: 'Documenti',  icon: FileText },
   { id: 'storico',    label: 'Storico',    icon: FolderClock },
@@ -264,6 +267,8 @@ export default function CondominiDetailPage() {
 {activeTab === 'saldi' && <SaldiInizialiTab condominioId={c.id} />}
 
         {activeTab === 'rate' && <RateGridTab condominioId={c.id} />}
+
+        {activeTab === 'comunicazioni' && <ComunicazioniTab condominioId={c.id} />}
 
         {activeTab === 'finanze' && <FinanzeTab condominioId={c.id} />}
 

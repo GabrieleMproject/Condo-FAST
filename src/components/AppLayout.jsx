@@ -13,6 +13,7 @@ import {
   LogOut,
   Settings,
   Bell,
+  Send,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { path: '/condomini',    label: 'Condomini',             icon: Building2 },
   { path: '/anagrafica',   label: 'Anagrafica',            icon: Users },
   { path: '/spese',        label: 'Spese',                 icon: Receipt },
+  { path: '/comunicazioni', label: 'Comunicazioni',        icon: Send },
   { path: '/archivio',     label: 'Storico operazioni',    icon: Archive }, // ✅ rinominato
   { path: '/impostazioni', label: 'Impostazioni',          icon: Settings },
 ];

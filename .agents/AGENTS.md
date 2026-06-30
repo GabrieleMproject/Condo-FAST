@@ -149,13 +149,19 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ## Storico Decisioni e Fatti Verificati della Sessione S11 (30 Giugno 2026)
 
-### 1. Decisioni sulla Sicurezza
+### 1. Decisioni sulla Sicurezza e Architettura
 - **Signed URL temporanei**: Rimosso l'uso di `getPublicUrl` per le fatture e gli F24 caricati in `FattureFornitoriPage.jsx` per evitare l'esposizione pubblica o non autorizzata di documenti sensibili (GDPR / Privacy).
 - **Retrocompatibilità allegati**: Implementato il fallback per gli URL storici/di test completi (inizianti per `http`/`https`) memorizzati in `pdf_url` o `f24_url`, consentendo la loro apertura diretta, mentre per i nuovi record viene salvato e gestito unicamente il path relativo del bucket Supabase Storage.
+- **Architettura Comunicazioni (Resend)**: Creata la tabella `comunicazioni` con granularità a singolo destinatario (1 record per persona) per tracciare lo stato dell'invio in modo atomico. Configurato l'invio con `reply_to` impostato sull'email reale dell'amministratore, bypassando le limitazioni di Resend sui domini non verificati.
+- **Conguaglio Dinamico in Solleciti**: Implementato il calcolo automatico della situazione finanziaria dell'unità del condomino (dovuto, pagato, insoluto, importo scaduto) da inserire nel template del sollecito rata.
 
 ### 2. Bug e Vulnerabilità Risolti
 - **Vulnerabilità getPublicUrl**: Sostituita l'esposizione degli URL pubblici completi con signed URL a tempo (scadenza a 15 minuti) autogenerati al momento del click del link "📄 File" o "📎 F24".
 - **Gestione blocco popup**: Risolto il problema del blocco popup del browser causato dalla generazione asincrona del link firmato effettuando l'apertura sincrona preliminare di un tab vuoto (`about:blank`) poi reindirizzato.
+- **Mancato upload immagini fatture**: Corretto il bug per cui solo i PDF e DOCX venivano caricati fisicamente su storage (le immagini venivano analizzate dall'AI ma non salvate).
+- **Leak popup vuoto**: Risolto il potenziale leak di popup vuoti in caso di eccezioni di rete durante la generazione del signed URL.
+- **Crash rendering date**: Introdotto l'helper `formattaData` per evitare crash fatali nel rendering in caso di date non valide o malformate estratte dall'AI.
 
 ### 3. Fatti Verificati sul Database
-- **Campi pdf_url e f24_url**: Nel database la tabella `fatture_fornitori` accetta e memorizza indifferentemente URL assoluti completi o path relativi nel bucket.
+- **Campi pdf_url e f24_url**: Nel database la tabella `fatture_fornitori` accetta e memorizza indifferente URL assoluti completi o path relativi nel bucket.
+- **Tabella comunicazioni**: La nuova tabella `comunicazioni` è protetta da RLS basate su `amministratore_id` e `user_owns_condominio(condominio_id)`.

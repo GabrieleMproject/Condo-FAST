@@ -121,3 +121,26 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - Utility: `src/lib/nomeFile.js`
 - SQL: `sql/nome_script.sql`
 - Edge Functions: `supabase/functions/nome-funzione/index.ts`
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S10 (30 Giugno 2026)
+
+### 1. Decisioni sul Workflow Agentico
+- **Orchestrazione a 5 ruoli** (Bug Triager, Bug Fixer, Security Auditor, Knowledge Keeper, Regression Tester) concordata.
+- **Bug Triager** abilitato per scansione automatica a fine sessione.
+- **Normativa GDPR / Privacy**: integrata checklist pre-produzione multi-tenant e 6 regole operative per la minimizzazione dei dati personali e dei segreti.
+- **Confronto preventivo**: confermata convenzione per cui `differenza = preventivo - consuntivo` e un valore positivo indica un risparmio per il condominio.
+- **Coerenza Nomi Sezioni**: concordato l'adeguamento delle sezioni A→E tra lo skill `condoai` e il codice (UI e PDF).
+
+### 2. Bug Risolti
+- **Formula calcolo arretrati (useConsuntivo.js)**: gli arretrati del piano rateale ora sottraggono correttamente l'eventuale credito iniziale pregresso dell'unità, evitando importi falsati per chi aveva pagato in eccedenza nell'anno precedente.
+- **Banner modello (ConsuntivoTab.jsx)**: risolto bug per cui il banner mostrava sempre "profilo amministratore" anche se `template` era nullo, a causa di un controllo errato `template === undefined` (il hook inizializza a `null`). Ora rileva correttamente l'assenza del template.
+- **Segno meno nei calcoli (UI e PDF)**: sostituito il carattere speciale en-dash `−` con il meno standard `-` per evitare disallineamenti di rendering del font e garantire che la formattazione dei conguagli negativi (rossi) avvenga in modo affidabile tramite `String(raw).includes('-')`.
+- **Dettaglio Spese Ordinarie/Straordinarie in UI**: allineata la UI al PDF, mostrando separatamente i totali parziali delle spese ordinarie e straordinarie nella sezione A del consuntivo.
+
+### 3. Fatti Verificati sul Database
+- **Tabella `unita`**: non ha la colonna `interno` (usa `scala` come campo di testo) e usa `mq` per la superficie.
+- **Tabella `occupanti_unita`**: non ha `tipo` né `data_inizio` (usa `ruolo` come testo, `attivo` come boolean, e `persona_id`).
+- **Tabella `millesimi_unita` e `rate`**: non hanno la colonna `created_at` o ne demandano la gestione interamente al database. Lo script `sql/seed_e2e_consuntivo.sql` è stato corretto per rimuovere questi campi ed è stato eseguito con successo per il collaudo E2E.
+- **Autenticazione**: l'UUID dell'amministratore per il seed è stato validato con successo contro `auth.users`.

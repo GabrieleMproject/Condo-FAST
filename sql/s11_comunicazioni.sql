@@ -26,11 +26,12 @@ CREATE POLICY user_select_comunicazioni ON public.comunicazioni
         (condominio_id IS NOT NULL AND user_owns_condominio(condominio_id))
     );
 
--- Policy INSERT: l'amministratore può inserire solo se stesso come amministratore_id
+-- Policy INSERT: l'amministratore può inserire solo se stesso come amministratore_id e se possiede il condominio
 CREATE POLICY user_insert_comunicazioni ON public.comunicazioni
     FOR INSERT TO authenticated
     WITH CHECK (
-        amministratore_id = auth.uid()
+        amministratore_id = auth.uid() AND
+        (condominio_id IS NULL OR user_owns_condominio(condominio_id))
     );
 
 -- Policy UPDATE/DELETE: solo l'amministratore proprietario della comunicazione può modificare/eliminare

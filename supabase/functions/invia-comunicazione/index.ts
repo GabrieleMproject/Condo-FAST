@@ -39,7 +39,23 @@ serve(async (req) => {
       })
     }
 
-    const { condominio_id, destinatari, oggetto, messaggio, tipo, admin_email } = await req.json()
+    const { condominio_id, destinatari, oggetto, messaggio, tipo } = await req.json()
+
+    // Validazione RLS: verifica che l'utente gestisca il condominio prima di procedere all'invio
+    if (condominio_id) {
+      const { data: condo, error: condoErr } = await supabase
+        .from('condomini')
+        .select('id')
+        .eq('id', condominio_id)
+        .maybeSingle()
+
+      if (condoErr || !condo) {
+        return new Response(JSON.stringify({ error: 'Accesso non autorizzato a questo condominio o condominio inesistente' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
 
     // Validazione campi obbligatori
     if (!destinatari || !Array.isArray(destinatari) || destinatari.length === 0 || !oggetto || !messaggio || !tipo) {
@@ -72,11 +88,11 @@ serve(async (req) => {
             'Authorization': `Bearer ${resendApiKey}`,
           },
           body: JSON.stringify({
-            from: 'CondoAI Amministratore <onboarding@resends.dev>',
+            from: 'CondoAI Amministratore <onboarding@resend.dev>', // Corretto typo resends -> resend
             to: [dest.email],
             subject: oggetto,
             html: messaggio,
-            reply_to: admin_email || user.email,
+            reply_to: user.email, // Estratto direttamente da JWT user.email per evitare spoofing
           }),
         })
 

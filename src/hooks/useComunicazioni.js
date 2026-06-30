@@ -36,10 +36,6 @@ export function useComunicazioni() {
     setLoading(true)
     setError(null)
     try {
-      // Ottieni l'utente corrente per la sua email (da usare come reply_to)
-      const { data: { user } } = await supabase.auth.getUser()
-      const adminEmail = user?.email || ''
-
       const { data, error: invokeErr } = await supabase.functions.invoke('invia-comunicazione', {
         body: {
           condominio_id: condominioId,
@@ -47,7 +43,6 @@ export function useComunicazioni() {
           oggetto,
           messaggio,
           tipo,
-          admin_email: adminEmail,
         },
       })
 

@@ -89,35 +89,51 @@ export default function ComunicazioniTab({ condominioId }) {
     }
   };
 
-  // Quando cambia il tipo o il destinatario (per sollecito rata), autocompila il testo
-  useEffect(() => {
-    if (tipo === 'sollecito' && destinatariSelezionati.length === 1) {
-      caricaECompilaSollecito(destinatariSelezionati[0]);
-    } else if (tipo === 'sollecito' && destinatariSelezionati.length !== 1) {
-      // Se sono multipli, compila con un testo generico
-      setOggetto('Sollecito pagamento rate condominiali');
-      setMessaggio(`Gentile Condòmino,<br/><br/>Le ricordiamo che sono scaduti i termini per il pagamento delle rate condominiali dell'esercizio corrente.<br/><br/>La invitiamo a verificare la sua situazione finanziaria all'interno della griglia rate o a contattare l'amministrazione per regolarizzare il saldo il prima possibile.<br/><br/>Cordiali saluti,<br/>L'Amministratore`);
-    } else if (tipo === 'avviso') {
+  // Quando cambia il tipo, inizializza con i template base
+  const handleTipoChange = (nuovoTipo) => {
+    setTipo(nuovoTipo);
+    if (nuovoTipo === 'avviso') {
       setOggetto('Avviso ai Condòmini');
       setMessaggio(`Gentile Condòmino,<br/><br/>Si comunica che in data [Inserire Data] alle ore [Inserire Ora] si terrà l'assemblea condominiale presso [Inserire Luogo].<br/><br/>Ordine del giorno:<br/>1. Approvazione rendiconto<br/>2. Varie ed eventuali<br/><br/>Cordiali saluti,<br/>L'Amministratore`);
+    } else if (nuovoTipo === 'sollecito') {
+      if (destinatariSelezionati.length === 1) {
+        caricaECompilaSollecito(destinatariSelezionati[0]);
+      } else {
+        setOggetto('Sollecito pagamento rate condominiali');
+        setMessaggio(`Gentile Condòmino,<br/><br/>Le ricordiamo che sono scaduti i termini per il pagamento delle rate condominiali dell'esercizio corrente.<br/><br/>La invitiamo a verificare la sua situazione finanziaria all'interno della griglia rate o a contattare l'amministrazione per regolarizzare il saldo il prima possibile.<br/><br/>Cordiali saluti,<br/>L'Amministratore`);
+      }
     } else {
+      // generale
       setOggetto('');
       setMessaggio('');
     }
-  }, [tipo, destinatariSelezionati]);
+  };
+
+  // Rileva cambi nei destinatari solo per aggiornare il sollecito
+  useEffect(() => {
+    if (tipo === 'sollecito') {
+      if (destinatariSelezionati.length === 1) {
+        caricaECompilaSollecito(destinatariSelezionati[0]);
+      } else {
+        setOggetto('Sollecito pagamento rate condominiali');
+        setMessaggio(`Gentile Condòmino,<br/><br/>Le ricordiamo che sono scaduti i termini per il pagamento delle rate condominiali dell'esercizio corrente.<br/><br/>La invitiamo a verificare la sua situazione finanziaria all'interno della griglia rate o a contattare l'amministrazione per regolarizzare il saldo il prima possibile.<br/><br/>Cordiali saluti,<br/>L'Amministratore`);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destinatariSelezionati]);
 
   // Carica i dati delle rate e compila il sollecito con il conguaglio finanziario
   async function caricaECompilaSollecito(dest) {
     try {
-      // 1. Esercizio aperto
-      const { data: esData } = await supabase
+      // 1. Esercizio aperto (usa maybeSingle per evitare eccezioni)
+      const { data: esData, error: esErr } = await supabase
         .from('esercizi')
         .select('id, anno')
         .eq('condominio_id', condominioId)
         .eq('stato', 'aperto')
-        .single();
+        .maybeSingle();
 
-      if (!esData) {
+      if (esErr || !esData) {
         setOggetto('Sollecito pagamento rate');
         setMessaggio(`Gentile ${dest.nome},<br/><br/>Le inviamo la presente per sollecitare il pagamento delle rate scadute. Non risultano esercizi attualmente aperti per il condominio.`);
         return;
@@ -153,11 +169,12 @@ export default function ComunicazioniTab({ condominioId }) {
         .in('unita_id', unitaIds)
         .in('rata_id', rateIds);
 
-      const dovuto = rateUnitaData.reduce((s, r) => s + parseFloat(r.importo || 0), 0);
-      const pagato = rateUnitaData.reduce((s, r) => s + parseFloat(r.importo_pagato || 0), 0);
+      const rateUnitaList = rateUnitaData || [];
+      const dovuto = rateUnitaList.reduce((s, r) => s + parseFloat(r.importo || 0), 0);
+      const pagato = rateUnitaList.reduce((s, r) => s + parseFloat(r.importo_pagato || 0), 0);
       const insoluto = dovuto - pagato;
 
-      const rateScadute = rateUnitaData.filter(ru => {
+      const rateScadute = rateUnitaList.filter(ru => {
         const rata = rateData.find(r => r.id === ru.rata_id);
         const scaduta = rata?.data_scadenza && new Date(rata.data_scadenza) < new Date();
         return scaduta && ru.stato !== 'pagata' && ru.stato !== 'sovra_pagata';
@@ -305,7 +322,7 @@ L'Amministratore`;
                   <div style={styles.formCol}>
                     <div style={styles.formGroup}>
                       <label style={styles.label}>Tipo Comunicazione</label>
-                      <select value={tipo} onChange={e => setTipo(e.target.value)} style={styles.select}>
+                      <select value={tipo} onChange={e => handleTipoChange(e.target.value)} style={styles.select}>
                         <option value="generale">Generale (Testo Libero)</option>
                         <option value="avviso">Avviso / Convocazione Assemblea</option>
                         <option value="sollecito">Sollecito Rata (Conguagliato)</option>

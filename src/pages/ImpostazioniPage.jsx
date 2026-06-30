@@ -67,6 +67,7 @@ export default function ImpostazioniPage() {
     isStripeAttivo, stripeStatus,
     condominiCount, condominiInclusi, condominiExtra, costoExtraMese,
     aiCallsCount, aiCallsLimit, aiCallsRimanenti,
+    updateBranding,
     refresh,
   } = usePlan()
 
@@ -84,25 +85,15 @@ export default function ImpostazioniPage() {
   const [brandingErr, setBrandingErr]       = useState(null)
 
   useEffect(() => {
-    if (!user?.id) return
-    let attivo = true
-    ;(async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('studio_nome, studio_indirizzo, studio_contatti, logo_base64')
-        .eq('id', user.id)
-        .single()
-      if (attivo && data) {
-        setBranding({
-          studio_nome:      data.studio_nome || '',
-          studio_indirizzo: data.studio_indirizzo || '',
-          studio_contatti:  data.studio_contatti || '',
-          logo_base64:      data.logo_base64 || '',
-        })
-      }
-    })()
-    return () => { attivo = false }
-  }, [user?.id])
+    if (profile) {
+      setBranding({
+        studio_nome:      profile.studio_nome || '',
+        studio_indirizzo: profile.studio_indirizzo || '',
+        studio_contatti:  profile.studio_contatti || '',
+        logo_base64:      profile.logo_base64 || '',
+      })
+    }
+  }, [profile])
 
   async function onLogoSelected(e) {
     const file = e.target.files?.[0]
@@ -123,16 +114,8 @@ export default function ImpostazioniPage() {
   async function salvaBranding() {
     setBrandingErr(null); setSavingBranding(true)
     try {
-      const { error: e } = await supabase
-        .from('profiles')
-        .update({
-          studio_nome:      branding.studio_nome || null,
-          studio_indirizzo: branding.studio_indirizzo || null,
-          studio_contatti:  branding.studio_contatti || null,
-          logo_base64:      branding.logo_base64 || null,
-        })
-        .eq('id', user.id)
-      if (e) throw e
+      const res = await updateBranding(branding)
+      if (res.error) throw res.error
       setBrandingSaved(true)
       setTimeout(() => setBrandingSaved(false), 2500)
     } catch (e) {
@@ -225,7 +208,7 @@ export default function ImpostazioniPage() {
                 <span style={styles.kpiLabel}>Condomini</span>
                 <span style={styles.kpiValue}>
                   {condominiCount}
-                  <span style={styles.kpiSub}>/ {condominiInclusi} inclusi</span>
+                  <span style={styles.kpiSub}>/ {condominiInclusi === null ? '∞' : condominiInclusi} inclusi</span>
                 </span>
                 {condominiExtra > 0 && (
                   <span style={styles.kpiExtra}>+{condominiExtra} extra (+{costoExtraMese}€/mese)</span>

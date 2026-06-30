@@ -1,5 +1,5 @@
 // src/hooks/usePlan.js
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -80,7 +80,9 @@ const FEATURE_GATES = {
   api_access:          ['professional'],             // futuro
 }
 
-export function usePlan() {
+const PlanContext = createContext(null)
+
+export function PlanProvider({ children }) {
   const { user } = useAuth()
   const [profile, setProfile]               = useState(null)
   const [condominiCount, setCondominiCount] = useState(0)
@@ -89,12 +91,18 @@ export function usePlan() {
 
   // ── Carica profilo + conteggi ─────────────────────────────────────────
   const loadPlan = useCallback(async () => {
-    if (!user) return
+    if (!user) {
+      setProfile(null)
+      setCondominiCount(0)
+      setAiCallsCount(0)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const { data: prof } = await supabase
         .from('profiles')
-        .select('piano, stripe_customer_id, stripe_subscription_id, stripe_status, trial_ends_at')
+        .select('piano, stripe_customer_id, stripe_subscription_id, stripe_status, trial_ends_at, studio_nome, studio_indirizzo, studio_contatti, logo_base64')
         .eq('id', user.id)
         .single()
 
@@ -108,10 +116,9 @@ export function usePlan() {
 
       setCondominiCount(condCount || 0)
 
-      // Conteggio AI calls mese corrente
-      const inizioMese = new Date()
-      inizioMese.setDate(1)
-      inizioMese.setHours(0, 0, 0, 0)
+      // Conteggio AI calls mese corrente (in UTC)
+      const ora = new Date()
+      const inizioMese = new Date(Date.UTC(ora.getUTCFullYear(), ora.getUTCMonth(), 1, 0, 0, 0, 0))
 
       const { count: aiCount } = await supabase
         .from('ai_call_log')
@@ -126,6 +133,28 @@ export function usePlan() {
   }, [user])
 
   useEffect(() => { loadPlan() }, [loadPlan])
+
+  // ── Aggiorna Branding ──────────────────────────────────────────────────
+  const updateBranding = useCallback(async (brandingData) => {
+    if (!user) return { error: new Error('Utente non autenticato') }
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          studio_nome:      brandingData.studio_nome || null,
+          studio_indirizzo: brandingData.studio_indirizzo || null,
+          studio_contatti:  brandingData.studio_contatti || null,
+          logo_base64:      brandingData.logo_base64 || null,
+        })
+        .eq('id', user.id)
+
+      if (error) throw error
+      await loadPlan()
+      return { success: true }
+    } catch (err) {
+      return { error: err }
+    }
+  }, [user, loadPlan])
 
   // ── Piano attivo ──────────────────────────────────────────────────────
   const piano  = profile?.piano || 'trial'
@@ -142,7 +171,7 @@ export function usePlan() {
   const isStripeAttivo = ['active', 'trialing'].includes(profile?.stripe_status)
 
   // ── Condomini ─────────────────────────────────────────────────────────
-  const condominiInclusi = limiti.condomini_inclusi  // null = illimitati (Professional)
+  const condominiInclusi = limiti.condomini_inclusi
   const condominiExtra   = condominiInclusi === null
     ? 0
     : Math.max(0, condominiCount - condominiInclusi)
@@ -156,16 +185,10 @@ export function usePlan() {
 
   // ── canUse(feature) ───────────────────────────────────────────────────
   const canUse = useCallback((feature) => {
-    // Feature senza gate → sempre disponibile
     const pianiAbilitati = FEATURE_GATES[feature]
     if (!pianiAbilitati) return true
-
-    // Trial attivo → accesso Studio completo
     if (isTrialActive) return pianiAbilitati.includes('studio')
-
-    // Piano scaduto/Stripe inattivo → blocca tutto
     if (!isStripeAttivo && piano !== 'trial') return false
-
     return pianiAbilitati.includes(piano)
   }, [piano, isTrialActive, isStripeAttivo])
 
@@ -182,7 +205,7 @@ export function usePlan() {
     return piani[0]
   }, [])
 
-  return {
+  const value = {
     loading,
     piano,
     limiti,
@@ -210,6 +233,17 @@ export function usePlan() {
     canUse,
     canUseAI,
     pianoMinimoPerFeature,
+    updateBranding,
     refresh: loadPlan,
   }
+
+  return React.createElement(PlanContext.Provider, { value }, children)
+}
+
+export function usePlan() {
+  const context = useContext(PlanContext)
+  if (!context) {
+    throw new Error('usePlan deve essere usato all\'interno di PlanProvider')
+  }
+  return context
 }

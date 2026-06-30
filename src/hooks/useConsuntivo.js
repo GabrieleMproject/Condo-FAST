@@ -164,7 +164,8 @@ export function useConsuntivo(condominioId, esercizioId) {
         const saldoIniz = round2(u.saldoIniz)
         // SALDO/conguaglio = saldo iniziale + versato − dovuto (>0 credito, <0 debito)
         const conguaglio = round2(saldoIniz + versato - dovuto)
-        const arretrati = round2(Math.max(0, u.dovutoPiano - versato))
+        // arretrati reali: dovuto piano - versato - eventuale credito pregresso (saldoIniz > 0)
+        const arretrati = round2(Math.max(0, u.dovutoPiano - versato - Math.max(0, saldoIniz)))
         return { unita_id: uid, dovuto, versato, saldoIniz, conguaglio, arretrati }
       })
       const totRiparto = {
@@ -180,8 +181,8 @@ export function useConsuntivo(condominioId, esercizioId) {
         .reduce((a, m) => a + Math.abs(num(m.importo)), 0))
       const uscite = round2((ec || []).filter(m => (m.tipo === 'uscita') || (m.tipo == null && num(m.importo) < 0))
         .reduce((a, m) => a + Math.abs(num(m.importo)), 0))
- 
-const saldoInizCassa = num(es.saldo_iniziale_cassa)
+
+      const saldoInizCassa = num(es.saldo_iniziale_cassa)
       const saldoFinaleCassa = round2(saldoInizCassa + entrate - uscite)
       // Risultato di competenza: quanto incassato dai condòmini meno spese di competenza
       const saldoCompetenza = round2(totRiparto.versato - totSpese)
@@ -234,7 +235,7 @@ const saldoInizCassa = num(es.saldo_iniziale_cassa)
         // C
         riparto: { unitaRows, tot: totRiparto },
         // D
-       cassa: { entrate, uscite, saldoInizCassa, saldoFinaleCassa, saldoCompetenza, variazioneCassa, scartoQuadratura },
+        cassa: { entrate, uscite, saldoInizCassa, saldoFinaleCassa, saldoCompetenza, variazioneCassa, scartoQuadratura },
         // E
         fatture: { rows: fattureRows, tot: fattureTot },
         // confronto

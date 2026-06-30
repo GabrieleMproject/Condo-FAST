@@ -8,7 +8,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 const eur = (v) => '€ ' + Number(v || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const sgn = (v) => (Number(v) < 0 ? '−' : '') + '€ ' + Math.abs(Number(v || 0)).toLocaleString('it-IT', { minimumFractionDigits: 2 })
+const sgn = (v) => (Number(v) < 0 ? '-' : '') + '€ ' + Math.abs(Number(v || 0)).toLocaleString('it-IT', { minimumFractionDigits: 2 })
 
 const HEAD = { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 }
 const BODY = { font: 'helvetica', fontSize: 8, cellPadding: 2.2, textColor: [20, 20, 20], lineColor: [200, 200, 200] }
@@ -109,7 +109,7 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
       columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' } },
       didParseCell: (d) => {
         if (d.section === 'body' && d.row.index === body.length - 1) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.fillColor = [219, 234, 254] }
-        if (d.section === 'body' && d.column.index === 6) { const raw = d.cell.raw || ''; if (String(raw).includes('−')) d.cell.styles.textColor = [220, 38, 38]; else if (String(raw) !== '€ 0,00') d.cell.styles.textColor = [22, 163, 74] }
+        if (d.section === 'body' && d.column.index === 6) { const raw = d.cell.raw || ''; if (String(raw).includes('-')) d.cell.styles.textColor = [220, 38, 38]; else if (String(raw) !== '€ 0,00') d.cell.styles.textColor = [22, 163, 74] }
       } })
     doc.setFontSize(7.5); doc.setTextColor(120, 120, 120)
     doc.text('(*) Saldo negativo = debito verso il Condominio; positivo = credito a favore del condomino.', 14, doc.lastAutoTable.finalY + 5)
@@ -123,8 +123,8 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
       body: [
         ['Saldo cassa iniziale', eur(d.saldoInizCassa)],
         ['Totale entrate periodo', eur(d.entrate)],
-        ['Totale uscite periodo', '−' + eur(d.uscite)],
-    ['Saldo cassa finale', eur(d.saldoFinaleCassa)],
+        ['Totale uscite periodo', d.uscite > 0 ? ('-' + eur(d.uscite)) : eur(0)],
+        ['Saldo cassa finale', sgn(d.saldoFinaleCassa)],
         ['Risultato di competenza (versato − spese)', sgn(d.saldoCompetenza)],
         ['Quadratura competenza ↔ cassa', sgn(d.scartoQuadratura)],
       ],

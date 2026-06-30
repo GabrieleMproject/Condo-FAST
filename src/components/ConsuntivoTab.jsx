@@ -9,7 +9,7 @@ import { exportConsuntivoPdf } from '../lib/exportConsuntivo'
 import { FileText, Upload, Download, RefreshCw, CheckCircle2 } from 'lucide-react'
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const sgn = (n) => (Number(n) < 0 ? '−' : '') + '€ ' + Math.abs(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })
+const sgn = (n) => (Number(n) < 0 ? '-' : '') + '€ ' + Math.abs(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })
 
 export default function ConsuntivoTab({ condominioId }) {
   const [condominio, setCondominio] = useState(null)
@@ -58,12 +58,17 @@ export default function ConsuntivoTab({ condominioId }) {
     }
   }
 
-  function scaricaPdf() {
+  async function scaricaPdf() {
     if (!data) return
-    exportConsuntivoPdf({
-      condominio, consuntivo: data, template, unita, getProprietario,
-      getMillesimiUnita, getTotaleTabella, tabellaMillId,
-    })
+    try {
+      await exportConsuntivoPdf({
+        condominio, consuntivo: data, template, unita, getProprietario,
+        getMillesimiUnita, getTotaleTabella, tabellaMillId,
+      })
+    } catch (err) {
+      setTplMsg('Errore generazione PDF: ' + err.message)
+      setTimeout(() => setTplMsg(''), 5000)
+    }
   }
 
   if (!esercizioId) return <div style={st.empty}>Nessun esercizio contabile.</div>
@@ -103,7 +108,7 @@ export default function ConsuntivoTab({ condominioId }) {
           {/* Banner template */}
           <div style={st.tplBanner}>
             <FileText size={15} color="#60a5fa" />
-            <span>Modello attivo: <b>{template === undefined ? '—' : 'profilo amministratore'}</b> · le sezioni seguono la presentazione del tuo consuntivo di riferimento.</span>
+            <span>Modello attivo: <b>{template == null ? '—' : (template.nome || 'profilo amministratore')}</b> · le sezioni seguono la presentazione del tuo consuntivo di riferimento.</span>
           </div>
 
           {/* A/B competenza */}
@@ -118,7 +123,11 @@ export default function ConsuntivoTab({ condominioId }) {
                     return tot ? [template?.etichette_categorie?.[k] || k.toUpperCase(), v.straordinaria > 0 ? 'straordinaria' : 'ordinaria', eur(tot)] : null
                   }).filter(Boolean),
               ]}
-              foot={[['TOTALE CONSUNTIVO', '', eur(data.competenza.totSpese)]]} alignRight={[2]} />
+              foot={[
+                ['Totale ordinario', '', eur(data.competenza.totOrd)],
+                ['Totale straordinario', '', eur(data.competenza.totStr)],
+                ['TOTALE CONSUNTIVO', '', eur(data.competenza.totSpese)],
+              ]} alignRight={[2]} />
           </Card>
 
           {/* C riparto */}
@@ -142,8 +151,8 @@ export default function ConsuntivoTab({ condominioId }) {
               rows={[
                 ['Saldo cassa iniziale', eur(data.cassa.saldoInizCassa)],
                 ['Entrate periodo', eur(data.cassa.entrate)],
-                ['Uscite periodo', '−' + eur(data.cassa.uscite)],
-['Saldo cassa finale', eur(data.cassa.saldoFinaleCassa)],
+                ['Uscite periodo', data.cassa.uscite > 0 ? ('-' + eur(data.cassa.uscite)) : eur(0)],
+                ['Saldo cassa finale', sgn(data.cassa.saldoFinaleCassa)],
                 ['Risultato di competenza (versato − spese)', sgn(data.cassa.saldoCompetenza)],
                 ['Quadratura competenza ↔ cassa', sgn(data.cassa.scartoQuadratura)],
               ]} />
@@ -168,6 +177,31 @@ export default function ConsuntivoTab({ condominioId }) {
                 foot={[['TOTALE', eur(data.confronto.tot.preventivo), eur(data.confronto.tot.consuntivo), sgn(data.confronto.tot.differenza)]]} />
             </Card>
           )}
+
+          {/* Nota sintetica (art. 1130-bis c.c.) */}
+          <Card title="Nota sintetica esplicativa (art. 1130-bis c.c.)">
+            <p style={{ ...st.note, fontSize: 13, color: '#cbd5e1', lineHeight: 1.6 }}>
+              {(() => {
+                const diff = data.confronto.tot.differenza
+                const saldo = data.cassa.saldoFinaleCassa
+                const quadr = data.cassa.scartoQuadratura
+                return (
+                  <>
+                    L'esercizio chiude con un totale spese di competenza pari a {eur(data.competenza.totSpese)}
+                    {data.competenza.totStr > 0 && <>, di cui {eur(data.competenza.totStr)} per gestione straordinaria</>}.
+                    {' '}Rispetto al preventivo di {eur(data.confronto.tot.preventivo)}, si registra
+                    {diff >= 0
+                      ? <> un <b style={{ color: '#10b981' }}>avanzo di {eur(Math.abs(diff))}</b> (speso meno del previsto)</>
+                      : <> un <b style={{ color: '#ef4444' }}>disavanzo di {eur(Math.abs(diff))}</b> (speso più del previsto)</>}.
+                    {' '}Il saldo di cassa finale ammonta a {sgn(saldo)}.
+                    {Math.abs(quadr) < 0.01
+                      ? <> La quadratura competenza-cassa è <b style={{ color: '#10b981' }}>verificata</b> (scarto nullo).</>
+                      : <> Lo scarto di quadratura competenza-cassa è pari a {sgn(quadr)}, dovuto a movimenti non ancora riconciliati.</>}
+                  </>
+                )
+              })()}
+            </p>
+          </Card>
         </div>
       )}
     </div>
@@ -191,7 +225,7 @@ function Table({ head, rows, foot = [], alignRight = [], congCol = -1 }) {
           {rows.map((r, ri) => (
             <tr key={ri}>{r.map((c, ci) => {
               let color = '#e2e8f0'
-              if (ci === congCol) color = String(c).includes('−') ? '#ef4444' : (c !== '€ 0,00' ? '#10b981' : '#e2e8f0')
+              if (ci === congCol) color = String(c).includes('-') ? '#ef4444' : (c !== '€ 0,00' ? '#10b981' : '#e2e8f0')
               return <td key={ci} style={{ ...st.td, textAlign: alignRight.includes(ci) ? 'right' : 'left', color }}>{c}</td>
             })}</tr>
           ))}

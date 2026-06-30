@@ -142,8 +142,8 @@ export default function AnagraficaPage() {
     if (!searchGlobal) return []
     return persone.filter(p => {
       const matchText = 
-        `${p.nome} ${p.cognome}`.toLowerCase().includes(searchGlobal.toLowerCase()) ||
-        `${p.cognome} ${p.nome}`.toLowerCase().includes(searchGlobal.toLowerCase()) ||
+        `${p.nome || ''} ${p.cognome || ''}`.toLowerCase().includes(searchGlobal.toLowerCase()) ||
+        `${p.cognome || ''} ${p.nome || ''}`.toLowerCase().includes(searchGlobal.toLowerCase()) ||
         (p.email || '').toLowerCase().includes(searchGlobal.toLowerCase()) ||
         (p.telefono || '').toLowerCase().includes(searchGlobal.toLowerCase()) ||
         p.unitaDettagli.some(ud => ud.condominioNome.toLowerCase().includes(searchGlobal.toLowerCase()))
@@ -735,7 +735,7 @@ const styles = {
   
   condominiList: { display: 'flex', flexDirection: 'column', gap: 14 },
   condoCard: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' },
-  condoCardHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', cursor: 'pointer', hover: { background: '#24324f' } },
+  condoCardHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', cursor: 'pointer' },
   condoIcon: { width: 38, height: 38, borderRadius: 10, background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   condoNome: { color: '#f1f5f9', fontWeight: 700, fontSize: 16 },
   condoIndirizzo: { color: '#64748b', fontSize: 12, marginTop: 2 },

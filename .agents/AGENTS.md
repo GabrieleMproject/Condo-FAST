@@ -172,3 +172,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 3. Fatti Verificati sul Database
 - **Campi pdf_url e f24_url**: Nel database la tabella `fatture_fornitori` accetta e memorizza indifferente URL assoluti completi o path relativi nel bucket.
 - **Tabella comunicazioni**: La nuova tabella `comunicazioni` è protetta da RLS basate su `amministratore_id` e `user_owns_condominio(condominio_id)`.
+- **Profilo Amministratore (Top-Right Drawer)**: Implementato un Drawer laterale a comparsa da destra per ospitare tutte le informazioni dell'amministratore (piano attivo, consumi AI, dettagli account e branding studio).
+- **Gestione Stato Condiviso (React Context)**: Implementata la condivisione dello stato globale del piano/profilo tramite il nuovo `PlanProvider` in `usePlan.js` (risolvendo il disallineamento del branding tra Drawer e pagina Impostazioni, ed eliminando le query duplicate su Supabase al caricamento dell'app).
+- **Rimozione JSX da file .js**: Risolto errore di build Vite/Rolldown escludendo la sintassi JSX all'interno di `usePlan.js` tramite l'utilizzo diretto di `React.createElement`.
+- **Allineamento Timezone UTC per AI log**: Risolto potenziale bug di conteggio basato sulla timezone locale impostando la query gte su timestamp UTC di inizio mese.

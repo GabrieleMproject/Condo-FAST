@@ -144,3 +144,18 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Tabella `occupanti_unita`**: non ha `tipo` né `data_inizio` (usa `ruolo` come testo, `attivo` come boolean, e `persona_id`).
 - **Tabella `millesimi_unita` e `rate`**: non hanno la colonna `created_at` o ne demandano la gestione interamente al database. Lo script `sql/seed_e2e_consuntivo.sql` è stato corretto per rimuovere questi campi ed è stato eseguito con successo per il collaudo E2E.
 - **Autenticazione**: l'UUID dell'amministratore per il seed è stato validato con successo contro `auth.users`.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S11 (30 Giugno 2026)
+
+### 1. Decisioni sulla Sicurezza
+- **Signed URL temporanei**: Rimosso l'uso di `getPublicUrl` per le fatture e gli F24 caricati in `FattureFornitoriPage.jsx` per evitare l'esposizione pubblica o non autorizzata di documenti sensibili (GDPR / Privacy).
+- **Retrocompatibilità allegati**: Implementato il fallback per gli URL storici/di test completi (inizianti per `http`/`https`) memorizzati in `pdf_url` o `f24_url`, consentendo la loro apertura diretta, mentre per i nuovi record viene salvato e gestito unicamente il path relativo del bucket Supabase Storage.
+
+### 2. Bug e Vulnerabilità Risolti
+- **Vulnerabilità getPublicUrl**: Sostituita l'esposizione degli URL pubblici completi con signed URL a tempo (scadenza a 15 minuti) autogenerati al momento del click del link "📄 File" o "📎 F24".
+- **Gestione blocco popup**: Risolto il problema del blocco popup del browser causato dalla generazione asincrona del link firmato effettuando l'apertura sincrona preliminare di un tab vuoto (`about:blank`) poi reindirizzato.
+
+### 3. Fatti Verificati sul Database
+- **Campi pdf_url e f24_url**: Nel database la tabella `fatture_fornitori` accetta e memorizza indifferentemente URL assoluti completi o path relativi nel bucket.

@@ -68,6 +68,37 @@ export default function FattureFornitoriPage() {
     setSpese(data || []);
   }
 
+  // ─── Visualizzazione file sicura con Signed URL ──────────────
+  async function visualizzaFile(urlOPath, bucket) {
+    if (!urlOPath) return;
+    if (urlOPath.startsWith('http://') || urlOPath.startsWith('https://')) {
+      window.open(urlOPath, '_blank');
+      return;
+    }
+    try {
+      const newWindow = window.open('about:blank', '_blank');
+      if (!newWindow) {
+        alert('Abilita i popup per visualizzare il file.');
+        return;
+      }
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(urlOPath, 900); // 15 minuti
+      if (error) {
+        newWindow.close();
+        throw error;
+      }
+      if (data?.signedUrl) {
+        newWindow.location.href = data.signedUrl;
+      } else {
+        newWindow.close();
+        alert('Impossibile generare l\'URL per il file.');
+      }
+    } catch (err) {
+      alert('Errore durante la generazione del link firmato: ' + err.message);
+    }
+  }
+
   // ─── Upload fattura ──────────────────────────────────────────
   async function handleFile(file) {
     if (!file) return;
@@ -94,8 +125,7 @@ export default function FattureFornitoriPage() {
           .from('fatture')
           .upload(path, file, { contentType: file.type });
         if (!storageErr && storageData) {
-          const { data: urlData } = supabase.storage.from('fatture').getPublicUrl(path);
-          fileUrl = urlData?.publicUrl || null;
+          fileUrl = path;
         }
       }
 
@@ -162,11 +192,9 @@ export default function FattureFornitoriPage() {
         .upload(path, file, { contentType: file.type, upsert: true });
       if (se) throw se;
 
-      const { data: urlData } = supabase.storage.from('fatture').getPublicUrl(path);
-
       const { error: ue } = await supabase
         .from('fatture_fornitori')
-        .update({ f24_url: urlData?.publicUrl || path, f24_caricato_at: new Date().toISOString() })
+        .update({ f24_url: path, f24_caricato_at: new Date().toISOString() })
         .eq('id', id);
       if (ue) throw ue;
 
@@ -341,13 +369,25 @@ export default function FattureFornitoriPage() {
                         {f.data_scadenza && <span>⏰ Scad: {new Date(f.data_scadenza).toLocaleDateString('it-IT')}</span>}
                         <span style={styles.catBadge}>{f.categoria}</span>
                         {f.spesa_id && <span style={styles.spesaColleg}>🔗 Collegata a spesa</span>}
-                        {f.pdf_url && <a href={f.pdf_url} target="_blank" rel="noreferrer" style={styles.pdfLink}>📄 File</a>}
+                        {f.pdf_url && (
+                          <button
+                            onClick={() => visualizzaFile(f.pdf_url, 'fatture')}
+                            style={{ ...styles.pdfLink, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+                          >
+                            📄 File
+                          </button>
+                        )}
                         {f.ritenuta_acconto != null && (
                           <span>R.A.: € {Number(f.ritenuta_acconto).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
                         )}
                         {f.ritenuta_acconto != null && f.stato === 'pagata' && (
                           f.f24_url
-                            ? <a href={f.f24_url} target="_blank" rel="noreferrer" style={styles.pdfLink}>📎 F24</a>
+                            ? <button
+                                onClick={() => visualizzaFile(f.f24_url, 'fatture')}
+                                style={{ ...styles.pdfLink, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+                              >
+                                📎 F24
+                              </button>
                             : <button style={styles.f24Btn} disabled={f24Busy} onClick={() => pickF24(f.id)}>
                                 {f24Busy ? '…' : '⬆️ Carica F24'}
                               </button>

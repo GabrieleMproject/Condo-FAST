@@ -159,8 +159,10 @@ export default function MillesimiEditor({ condominioId: propId }) {
     const tabelleSbilanciate = tabelle.filter(t => Math.abs(sommaPer(t.id) - 1000) > 0.01);
     if (tabelleSbilanciate.length > 0) {
       const nomi = tabelleSbilanciate.map(t => `"${t.nome}" (somma: ${sommaPer(t.id).toFixed(2)} ‰)`).join(', ');
-      showToast(`Impossibile salvare: le seguenti tabelle non sommano a 1000: ${nomi}`, 'error');
-      return;
+      const prosegui = window.confirm(
+        `Attenzione: le seguenti tabelle non sommano ancora a 1000:\n${nomi}\n\nVuoi salvare comunque i valori parziali?`
+      );
+      if (!prosegui) return;
     }
 
     setSaving(true);
@@ -557,6 +559,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
             {saving ? 'Salvataggio...' : '💾 Salva Millesimi'}
           </button>
         </div>
+      </div>
 
       {/* Modale Importazione da File */}
       {showImportModal && (
@@ -660,7 +663,6 @@ export default function MillesimiEditor({ condominioId: propId }) {
           </div>
         </div>
       )}
-      </div>
 
       {/* Form nuova tabella */}
       {showNuovaTabella && (

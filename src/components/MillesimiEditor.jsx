@@ -279,10 +279,11 @@ export default function MillesimiEditor({ condominioId: propId }) {
     setSaving(true);
     try {
       if (tabelle.length === 0) {
-        await supabase.from('tabelle_millesimali').insert({
+        const { error: errTab } = await supabase.from('tabelle_millesimali').insert({
           condominio_id: condominioId,
           nome: 'Proprietà generale',
         });
+        if (errTab) throw new Error('Impossibile creare la tabella default: ' + errTab.message);
       }
       const num = `Int. ${unita.length + 1}`;
       const { error } = await supabase

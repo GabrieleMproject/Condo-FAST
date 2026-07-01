@@ -302,3 +302,12 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Firme Canoniche AI in `SpeseForm.jsx`:** Corretto l'ordine invertito degli argomenti in `callClaudeDocument(prompt, base64, opts)`, convertito il Blob scaricato da Supabase in base64 tramite `fileToBase64`, e corretta la chiamata a `callClaude` rimuovendo l'argomento array vuoto che invalidava il parametro `maxTokens`.
 - **Ordinamento su Colonna Reale (`DashboardFinanziaria.jsx`):** Corretto errore difensivo rilevato dal Bug Triager sulla query delle spese, sostituendo la colonna inesistente `.order('data_competenza', ...)` con `.order('data_spesa', ...)`.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S22 (1 Luglio 2026 - Risoluzione Persistenza e Creazione Unità in Anagrafica)
+
+### 1. Decisioni sul Workflow e Anagrafica
+- **Creazione Automatica Unità Mancanti su Importazione (`AnagraficaCondominioTab.jsx`, `AnagraficaPage.jsx`):** Quando si importa un file di anagrafica (Excel/Word/PDF) con l'elenco delle persone e delle relative unità immobiliari (es. Interno 1, A1, Box 2), se l'unità non è ancora censita nel database del condominio, il sistema ora **crea automaticamente l'unità su Supabase** prima di importare la persona, determinando il tipo (appartamento, box, cantina, negozio, ufficio) dalla dicitura. In questo modo le unità del file vengono sempre create e salvate nel condominio e i residenti vengono abbinati istantaneamente senza che vadano persi i collegamenti (`unita_id`).
+- **Sanitizzazione Pre-salvataggio e Sicurezza Tipi (`useUnita.js`):** Aggiunto l'helper `cleanUnitaPayload` in `createUnita` e `updateUnita`. Rimuove preventivamente campi non appartenenti allo schema di `unita` (come `millesimi`, che risiedono su `millesimi_unita`) e converte in modo sicuro `piano` e `mq` in numeri interi o decimali, eliminando qualsiasi rischio di errore `400 Bad Request` da parte di PostgREST durante la creazione o modifica manuale delle unità.
+
+

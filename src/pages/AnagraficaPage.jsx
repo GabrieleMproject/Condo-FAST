@@ -218,19 +218,54 @@ export default function AnagraficaPage() {
   }
 
   const handleImport = async (rows) => {
-    const mappedRows = rows.map(r => {
+    let unitaCondoList = [...(unita || [])]
+    if (unitaCondoList.length === 0 && condominioId) {
+      const { data: uData } = await supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condominioId)
+      if (uData) unitaCondoList = uData
+    }
+
+    const mappedRows = []
+    for (const r of rows) {
       let unita_id = r.unita_id || null
-      const strUnita = String(r.unita || '').trim().toLowerCase()
-      if (!unita_id && strUnita && unita && unita.length > 0) {
-        const match = unita.find(u => {
+      const strUnita = String(r.unita || '').trim()
+      const strUnitaLower = strUnita.toLowerCase()
+
+      if (!unita_id && strUnita && unitaCondoList) {
+        const match = unitaCondoList.find(u => {
           const num = String(u.numero || '').trim().toLowerCase()
           const cleanNum = num.replace(/^0+/, '') || '0'
-          const cleanStr = strUnita.replace(/^0+/, '') || '0'
+          const cleanStr = strUnitaLower.replace(/^0+/, '') || '0'
           const scalaNum = `${String(u.scala || '').trim().toLowerCase()} ${num}`.trim()
           const isNumEqual = !isNaN(cleanNum) && !isNaN(cleanStr) && Number(cleanNum) === Number(cleanStr)
-          return num === strUnita || cleanNum === cleanStr || isNumEqual || scalaNum === strUnita || strUnita === `int. ${num}` || strUnita === `int ${num}` || strUnita === `interno ${num}` || strUnita.endsWith(` ${num}`)
+          return num === strUnitaLower || cleanNum === cleanStr || isNumEqual || scalaNum === strUnitaLower || strUnitaLower === `int. ${num}` || strUnitaLower === `int ${num}` || strUnitaLower === `interno ${num}` || strUnitaLower.endsWith(` ${num}`)
         })
-        if (match) unita_id = match.id
+        if (match) {
+          unita_id = match.id
+        } else if (condominioId) {
+          // Creazione automatica unità mancante su quel condominio
+          const cleanNumero = strUnita.replace(/^(unita|unità|app\.|appartamento|int\.|interno|n\.|num\.)\s*/i, '').trim() || strUnita
+          let tipoUnita = 'appartamento'
+          if (strUnitaLower.includes('box') || strUnitaLower.includes('garage')) tipoUnita = 'box'
+          else if (strUnitaLower.includes('cantina')) tipoUnita = 'cantina'
+          else if (strUnitaLower.includes('negozio')) tipoUnita = 'negozio'
+          else if (strUnitaLower.includes('ufficio')) tipoUnita = 'ufficio'
+
+          const { data: newU, error: errU } = await supabase
+            .from('unita')
+            .insert([{
+              condominio_id: condominioId,
+              numero: cleanNumero,
+              tipo: tipoUnita,
+              scala: r.scala ? String(r.scala).trim() : null
+            }])
+            .select()
+            .single()
+
+          if (!errU && newU) {
+            unita_id = newU.id
+            unitaCondoList.push(newU)
+          }
+        }
       }
 
       let ruolo = String(r.ruolo || '').trim().toLowerCase()
@@ -238,12 +273,12 @@ export default function AnagraficaPage() {
         ruolo = unita_id ? 'proprietario' : ''
       }
 
-      return {
+      mappedRows.push({
         ...r,
         unita_id,
         ruolo
-      }
-    })
+      })
+    }
 
     const result = await importPersone(mappedRows)
     await fetchUnita()

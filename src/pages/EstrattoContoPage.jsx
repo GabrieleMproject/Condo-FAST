@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiMovimentiBancari, getTipoFile } from '../lib/fileExtractor';
+import { useDocumenti } from '../hooks/useDocumenti';
 
 const TIPI_ACCETTATI = '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png';
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—');
 
 export default function EstrattoContoPage() {
   const { condominioId } = useParams();
+  const { documenti, fetch: fetchDocumenti, upload: uploadDoc, remove: removeDoc } = useDocumenti(condominioId);
 
   const [movimenti, setMovimenti] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,9 +19,55 @@ export default function EstrattoContoPage() {
   const [filtroTipo, setFiltroTipo] = useState('');
   const [dragOver, setDragOver] = useState(false);
 
+  const docEstratto = documenti.find(d => d.tipo === 'estratto_conto');
+
+  function parseDateEstratto(doc) {
+    if (!doc || !doc.note) return { dal: null, al: null };
+    try {
+      const parsed = JSON.parse(doc.note);
+      if (parsed && typeof parsed === 'object') {
+        return { dal: parsed.dal || null, al: parsed.al || null };
+      }
+    } catch {
+      // ignore
+    }
+    return { dal: null, al: null };
+  }
+
+  async function visualizzaDocumento(urlStorage) {
+    if (!urlStorage) return;
+    let newWindow = null;
+    try {
+      newWindow = window.open('about:blank', '_blank');
+      if (!newWindow) {
+        alert('Abilita i popup per visualizzare il file.');
+        return;
+      }
+      const { data, error } = await supabase.storage
+        .from('documenti-condominio')
+        .createSignedUrl(urlStorage, 900); // 15 minuti
+      if (error) {
+        newWindow.close();
+        throw error;
+      }
+      if (data?.signedUrl) {
+        newWindow.location.href = data.signedUrl;
+      } else {
+        newWindow.close();
+        alert('Impossibile generare il link per la visualizzazione del documento.');
+      }
+    } catch (e) {
+      if (newWindow) newWindow.close();
+      alert('Errore visualizzazione file: ' + e.message);
+    }
+  }
+
   useEffect(() => {
-    if (condominioId) loadMovimenti();
-  }, [condominioId]);
+    if (condominioId) {
+      loadMovimenti();
+      fetchDocumenti();
+    }
+  }, [condominioId, fetchDocumenti]);
 
   async function loadMovimenti() {
     setLoading(true);
@@ -77,9 +125,48 @@ export default function EstrattoContoPage() {
       const { error } = await supabase.from('estratto_conto').insert(records);
       if (error) throw error;
 
-      setUploadProgress(`✅ ${records.length} movimenti importati con successo`);
+      // Calcolo date min e max dei nuovi movimenti estratti
+      const dateValide = records
+        .map(r => r.data_movimento)
+        .filter(d => d && !isNaN(new Date(d).getTime()))
+        .map(d => new Date(d).getTime());
+
+      let nuovoDal = null;
+      let nuovoAl = null;
+      if (dateValide.length > 0) {
+        nuovoDal = new Date(Math.min(...dateValide)).toISOString().split('T')[0];
+        nuovoAl = new Date(Math.max(...dateValide)).toISOString().split('T')[0];
+      }
+
+      // Logica di gestione sostituzione / conservazione del file estratto conto
+      let msgSupplementare = '';
+      const { dal: vecchioDal, al: vecchioAl } = parseDateEstratto(docEstratto);
+
+      const isSostituzione =
+        !docEstratto ||
+        (!vecchioDal || !vecchioAl || !nuovoDal || !nuovoAl) ||
+        (new Date(nuovoDal) <= new Date(vecchioDal) && new Date(nuovoAl) >= new Date(vecchioAl));
+
+      if (isSostituzione) {
+        setUploadProgress('Salvataggio file estratto conto...');
+        if (docEstratto) {
+          try { await removeDoc(docEstratto); } catch { /* ignore if already deleted */ }
+        }
+        const noteJson = JSON.stringify({ dal: nuovoDal, al: nuovoAl });
+        await uploadDoc(file, 'estratto_conto', file.name.replace(/\.[^.]+$/, ''), noteJson);
+        if (docEstratto) {
+          msgSupplementare = ' (File principale sostituito con versione più aggiornata)';
+        } else {
+          msgSupplementare = ' (File salvato come estratto conto principale)';
+        }
+      } else {
+        msgSupplementare = ` (File scaricabile non sostituito: copre periodo parziale ${formattaData(nuovoDal)}–${formattaData(nuovoAl)})`;
+      }
+
+      setUploadProgress(`✅ ${records.length} movimenti importati${msgSupplementare}`);
       await loadMovimenti();
-      setTimeout(() => setUploadProgress(''), 4000);
+      await fetchDocumenti();
+      setTimeout(() => setUploadProgress(''), 5000);
     } catch (e) {
       setErroreUpload('Errore estrazione: ' + e.message);
       setUploadProgress('');
@@ -112,7 +199,25 @@ export default function EstrattoContoPage() {
     <div style={styles.page}>
       <div style={styles.header}>
         <div>
-          <h1 style={styles.title}>Estratto Conto</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <h1 style={styles.title}>Estratto Conto</h1>
+            {docEstratto && (
+              <div style={styles.docBadgeContainer}>
+                <span style={styles.docDateBadge}>
+                  📅 ESTRATTO CONTO {parseDateEstratto(docEstratto).dal && parseDateEstratto(docEstratto).al
+                    ? `(${formattaData(parseDateEstratto(docEstratto).dal)} – ${formattaData(parseDateEstratto(docEstratto).al)})`
+                    : ''}
+                </span>
+                <button
+                  style={styles.docOpenBtn}
+                  onClick={() => visualizzaDocumento(docEstratto.url_storage)}
+                  title="Visualizza o scarica il file originale dell'estratto conto"
+                >
+                  📄 Scarica File
+                </button>
+              </div>
+            )}
+          </div>
           <p style={styles.subtitle}>Importa movimenti bancari da PDF, Excel o immagine</p>
         </div>
       </div>
@@ -291,5 +396,19 @@ dropZone: {
     background: 'none', border: 'none', color: '#475569', cursor: 'pointer',
     fontSize: 14, padding: '2px 4px', marginTop: 4, opacity: 0.6,
     transition: 'opacity 0.2s',
+  },
+  docBadgeContainer: {
+    display: 'inline-flex', alignItems: 'center', gap: 10,
+    background: '#1e293b', border: '1px solid #38bdf850',
+    borderRadius: 8, padding: '4px 12px',
+  },
+  docDateBadge: {
+    fontSize: 13, color: '#38bdf8', fontWeight: 600,
+  },
+  docOpenBtn: {
+    background: '#0284c7', color: '#fff', border: 'none',
+    borderRadius: 6, padding: '4px 10px', fontSize: 12,
+    fontWeight: 600, cursor: 'pointer', fontFamily: "'Sora', sans-serif",
+    transition: 'background 0.2s',
   },
 };

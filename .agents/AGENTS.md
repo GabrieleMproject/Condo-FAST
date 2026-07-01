@@ -227,5 +227,14 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Gestione Errori su Scritture DB Multiple:** Avvolti i blocchi di aggiornamento di stato e abbinamento in `RiconciliazioniPage.jsx` e `RiconciliazioniIncassiPage.jsx` all'interno di costrutti `try/catch` con verifica puntuale di `.error` per prevenire stati parziali o disallineati sul DB in caso di fallimenti di rete o RLS.
 - **Validazione Ripartizioni Vuote (`SpeseForm.jsx`):** Introdotto il controllo `ripartizioni.length === 0` nel validatore del form per impedire il salvataggio su Supabase di spese prive di quote ripartite nel caso di tabelle millesimali vuote o a zero. Aggiunta inoltre la dipendenza `unita` all'hook di ricalcolo automatico.
 - **Riapertura Modale da History Router (`SpesePage.jsx`):** Implementata la pulizia immediata dello stato del router tramite `window.history.replaceState({}, '')` al consumo di `prefillSpesa`, evitando la riapertura involontaria della modale di creazione spesa al cambio di esercizio contabile.
-- **Abilitazione Tasto Modifica Spesa:** Aggiunto il pulsante "✏️ Modifica" alle card delle spese nella lista, collegando correttamente `setSpesaInEdit` e la funzione `aggiornaSpesa` importata dall'hook `useSpese`.
 - **Formattazione Date Sicura:** Esteso l'utilizzo di helper protetti per le date (`formattaData` e `dataIt`) in tutti i nuovi componenti e modali per prevenire crash di rendering in presenza di date nulle o malformate dal database.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S17 (1 Luglio 2026)
+
+### 1. Gestione Documentale ed Estratto Conto
+- **Conservazione e Download Estratto Conto (Opzione 1):** Implementato il salvataggio fisico del file estratto conto caricato su Supabase Storage nel bucket `documenti-condominio` sotto il tipo speciale `'estratto_conto'` in `documenti_condominio`. Questo garantisce sicurezza e conformità GDPR grazie ai Signed URL temporanei (15 minuti) autogenerati al click su "📄 Scarica File", senza necessità di alterare lo schema del database.
+- **Badge Periodo e Apertura Sicura in Testata:** Aggiunto un badge dedicato accanto all'intestazione `<h1>` di `EstrattoContoPage.jsx` che mostra le date di copertura del file (es. `📅 ESTRATTO CONTO (01/01/2026 – 30/06/2026)`). L'apertura del documento utilizza il pattern anti-popup blocker (`window.open('about:blank', '_blank')` sincrono) allineato a S11.
+- **Logica di Sostituzione Selettiva ("Completo e Più Aggiornato"):** Implementato l'algoritmo automatico di confronto date durante l'upload in `handleFile`. Se viene caricato un file il cui periodo include o parte da una data precedente o uguale a quello attuale ED arriva a una data successiva (`nuovoDal <= attualeDal && nuovoAl >= attualeAl`), il vecchio documento viene rimosso da Storage/DB e sostituito. Se invece si carica un'integrazione parziale (es. singolo mese in corso d'anno), i nuovi movimenti bancari vengono aggiunti al DB e alla griglia, ma il file generale scaricabile non viene sovrascritto, avvisando l'utente.
+

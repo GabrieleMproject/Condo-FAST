@@ -1,7 +1,39 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiTabelleMillesimali } from '../lib/fileExtractor';
+
+const parsePiano = (val) => {
+  if (val === undefined || val === null || val === '') return null;
+  const str = String(val).trim().toLowerCase();
+  if (/\b(?:terra|t|pt|rialzato)\b/.test(str) || str === 't' || str === 'pt') return 0;
+  if (/\b(?:seminterrato|s\.?\s*1|s1|interrato)\b/.test(str) || str === '-1' || str === 's1') return -1;
+  if (/\b(?:primo|i)\b/.test(str) || str === '1' || str === '1°' || str === '1^') return 1;
+  if (/\b(?:secondo|ii)\b/.test(str) || str === '2' || str === '2°' || str === '2^') return 2;
+  if (/\b(?:terzo|iii)\b/.test(str) || str === '3' || str === '3°' || str === '3^') return 3;
+  if (/\b(?:quarto|iv)\b/.test(str) || str === '4' || str === '4°' || str === '4^') return 4;
+  if (/\b(?:quinto|v)\b/.test(str) || str === '5' || str === '5°' || str === '5^') return 5;
+  if (/\b(?:sesto|vi)\b/.test(str) || str === '6' || str === '6°' || str === '6^') return 6;
+  if (/\b(?:settimo|vii)\b/.test(str) || str === '7' || str === '7°' || str === '7^') return 7;
+  if (/\b(?:ottavo|viii)\b/.test(str) || str === '8' || str === '8°' || str === '8^') return 8;
+  if (/\b(?:nono|ix)\b/.test(str) || str === '9' || str === '9°' || str === '9^') return 9;
+  if (/\b(?:attico|mansarda)\b/.test(str)) return 9;
+  const p = Number(str.replace(/,/g, '.').replace(/[^0-9.-]/g, ''));
+  return isNaN(p) ? null : p;
+};
+
+const parseTipo = (dest, strU) => {
+  const str = `${String(dest || '')} ${String(strU || '')}`.trim().toLowerCase();
+  if (str.includes('box') || str.includes('garage') || str.includes('autorimessa')) return 'box';
+  if (str.includes('posto') || str.includes('parcheggio') || str.includes('stallo')) return 'posto_auto';
+  if (str.includes('cantina')) return 'cantina';
+  if (str.includes('soffitta') || str.includes('solaio') || str.includes('sottotetto') || str.includes('mansarda')) return 'soffitta';
+  if (str.includes('magazzino') || str.includes('deposito') || str.includes('locale tecnico')) return 'magazzino';
+  if (str.includes('negozio') || str.includes('commerciale') || str.includes('bottega')) return 'negozio';
+  if (str.includes('ufficio') || str.includes('studio')) return 'ufficio';
+  if (str.includes('appartamento') || str.includes('alloggio') || str.includes('abitazione') || str.includes('a/2') || str.includes('a/3')) return 'appartamento';
+  return 'appartamento';
+};
 
 /**
  * MillesimiEditor
@@ -13,6 +45,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
   const condominioId = propId || paramId;
   const [tabelle, setTabelle] = useState([]);
   const [unita, setUnita] = useState([]);
+  const [originaliUnita, setOriginaliUnita] = useState([]);
   const [valori, setValori] = useState({});       // { `${unitaId}_${tabellaId}`: numeric }
   const [originali, setOriginali] = useState({});  // snapshot per dirty check
   const [loading, setLoading] = useState(true);
@@ -46,6 +79,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
       const unitaList = uni || [];
       setTabelle(tabelleList);
       setUnita(unitaList);
+      setOriginaliUnita(JSON.parse(JSON.stringify(unitaList)));
 
       let milList = [];
       if (tabelleList.length > 0) {
@@ -88,7 +122,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
   function handleChange(unitaId, tabellaId, raw) {
     const key = `${unitaId}_${tabellaId}`;
     // Permetti stringa vuota e numeri con virgola
-    const normalized = raw.replace(',', '.');
+    const normalized = String(raw).replace(/,/g, '.');
     setValori(prev => ({ ...prev, [key]: normalized }));
 
     // Valida in tempo reale la somma
@@ -122,10 +156,10 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
   // ─── Salvataggio ────────────────────────────────────────────
   async function salva() {
-    // Controlla errori
-    const hasErrors = Object.values(errors).some(e => e !== null);
-    if (hasErrors) {
-      showToast('Correggi gli errori prima di salvare', 'error');
+    const tabelleSbilanciate = tabelle.filter(t => Math.abs(sommaPer(t.id) - 1000) > 0.01);
+    if (tabelleSbilanciate.length > 0) {
+      const nomi = tabelleSbilanciate.map(t => `"${t.nome}" (somma: ${sommaPer(t.id).toFixed(2)} ‰)`).join(', ');
+      showToast(`Impossibile salvare: le seguenti tabelle non sommano a 1000: ${nomi}`, 'error');
       return;
     }
 
@@ -138,9 +172,11 @@ export default function MillesimiEditor({ condominioId: propId }) {
           condominio_id: condominioId,
           numero: u.numero || '1',
           scala: u.scala || null,
-          piano: (u.piano === 0 || u.piano === '0') ? 0 : (u.piano || null),
+          piano: u.piano !== undefined && u.piano !== null && u.piano !== ''
+            ? (isNaN(Number(u.piano)) ? parsePiano(u.piano) : Number(u.piano))
+            : null,
           tipo: u.tipo || 'appartamento',
-          mq: parseFloat(String(u.mq || '').replace(',', '.')) || null
+          mq: u.mq !== undefined && u.mq !== null && u.mq !== '' ? (parseFloat(String(u.mq).replace(/,/g, '.').replace(/[^0-9.-]/g, '')) || null) : null
         }));
         const { error: errUnita } = await supabase.from('unita').upsert(unitaToSave);
         if (errUnita) {
@@ -154,7 +190,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
       unita.forEach(u => {
         tabelle.forEach(t => {
           const key = `${u.id}_${t.id}`;
-          const valore = parseFloat(valori[key] || 0);
+          const valore = parseFloat(String(valori[key] ?? 0).replace(/,/g, '.')) || 0;
           if (!isNaN(valore)) {
             upserts.push({
               unita_id: u.id,
@@ -165,13 +201,14 @@ export default function MillesimiEditor({ condominioId: propId }) {
         });
       });
 
-      const { error } = await supabase
-        .from('millesimi_unita')
-        .upsert(upserts, { onConflict: 'tabella_id,unita_id' });
+      if (upserts.length > 0) {
+        const { error } = await supabase
+          .from('millesimi_unita')
+          .upsert(upserts, { onConflict: 'tabella_id,unita_id' });
+        if (error) throw error;
+      }
 
-      if (error) throw error;
-
-      setOriginali({ ...valori });
+      await loadAll();
       showToast('Millesimi salvati con successo', 'success');
     } catch (e) {
       showToast('Errore durante il salvataggio: ' + e.message, 'error');
@@ -183,6 +220,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
   // ─── Nuova tabella millesimale ───────────────────────────────
   async function creaTabella() {
     if (!nuovaTabella.trim()) return;
+    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse. Vuoi continuare?')) return;
     try {
       const { error } = await supabase.from('tabelle_millesimali').insert({
         condominio_id: condominioId,
@@ -200,6 +238,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
   // ─── Elimina tabella millesimale ─────────────────────────────
   async function eliminaTabella(t) {
+    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse. Vuoi continuare?')) return;
     if (!window.confirm(`Sei sicuro di voler eliminare la tabella "${t.nome}"? All'eliminazione verranno rimossi anche i relativi millesimi.`)) return;
     try {
       const { error } = await supabase.from('tabelle_millesimali').delete().eq('id', t.id);
@@ -234,8 +273,15 @@ export default function MillesimiEditor({ condominioId: propId }) {
   // ─── Aggiungi riga unità manualmente in griglia ──────────────
   async function aggiungiRigaUnita() {
     if (!condominioId) return;
+    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse. Vuoi continuare?')) return;
     setSaving(true);
     try {
+      if (tabelle.length === 0) {
+        await supabase.from('tabelle_millesimali').insert({
+          condominio_id: condominioId,
+          nome: 'Proprietà generale',
+        });
+      }
       const num = `Int. ${unita.length + 1}`;
       const { error } = await supabase
         .from('unita')
@@ -247,6 +293,20 @@ export default function MillesimiEditor({ condominioId: propId }) {
       showToast('Errore aggiunta unità: ' + e.message, 'error');
     } finally {
       setSaving(false);
+    }
+  }
+
+  // ─── Elimina riga unità dalla griglia ────────────────────────
+  async function eliminaUnita(u) {
+    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse. Vuoi continuare?')) return;
+    if (!window.confirm(`Sei sicuro di voler eliminare l'unità "${u.numero}"?`)) return;
+    try {
+      const { error } = await supabase.from('unita').delete().eq('id', u.id);
+      if (error) throw error;
+      showToast('Unità eliminata', 'success');
+      await loadAll();
+    } catch (e) {
+      showToast('Impossibile eliminare l\'unità (potrebbe avere rate o documenti collegati): ' + e.message, 'error');
     }
   }
 
@@ -272,6 +332,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
   async function confermaImport() {
     if (!extractedTabelle || extractedTabelle.length === 0) return;
+    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse con l\'importazione. Vuoi continuare?')) return;
     setSaving(true);
     try {
       let currentTabelle = [...tabelle];
@@ -291,38 +352,6 @@ export default function MillesimiEditor({ condominioId: propId }) {
           tabObj = newTab;
           currentTabelle.push(newTab);
         }
-
-        // Funzioni helper per sanificare i dati rispetto agli schemi e vincoli di Postgres
-        const parsePiano = (val) => {
-          if (val === undefined || val === null || val === '') return null;
-          const str = String(val).trim().toLowerCase();
-          if (str.includes('terra') || str === 't' || str === 'pt' || str.includes('rialzato')) return 0;
-          if (str.includes('seminterrato') || str.includes('s. 1') || str === 's1' || str.includes('-1') || str.includes('interrato')) return -1;
-          if (str.includes('primo') || str.includes('1°') || str === '1' || str === 'i') return 1;
-          if (str.includes('secondo') || str.includes('2°') || str === '2' || str === 'ii') return 2;
-          if (str.includes('terzo') || str.includes('3°') || str === '3' || str === 'iii') return 3;
-          if (str.includes('quarto') || str.includes('4°') || str === '4' || str === 'iv') return 4;
-          if (str.includes('quinto') || str.includes('5°') || str === '5' || str === 'v') return 5;
-          if (str.includes('sesto') || str === '6') return 6;
-          if (str.includes('settimo') || str === '7') return 7;
-          if (str.includes('ottavo') || str === '8') return 8;
-          if (str.includes('attico') || str.includes('mansarda')) return 9;
-          const p = Number(str.replace(/,/g, '.').replace(/[^0-9.-]/g, ''));
-          return isNaN(p) ? null : p;
-        };
-
-        const parseTipo = (dest, strU) => {
-          const str = `${String(dest || '')} ${String(strU || '')}`.trim().toLowerCase();
-          if (str.includes('box') || str.includes('garage') || str.includes('autorimessa')) return 'box';
-          if (str.includes('posto') || str.includes('parcheggio') || str.includes('stallo')) return 'posto_auto';
-          if (str.includes('cantina')) return 'cantina';
-          if (str.includes('soffitta') || str.includes('solaio') || str.includes('sottotetto') || str.includes('mansarda')) return 'soffitta';
-          if (str.includes('magazzino') || str.includes('deposito') || str.includes('locale tecnico')) return 'magazzino';
-          if (str.includes('negozio') || str.includes('commerciale') || str.includes('bottega')) return 'negozio';
-          if (str.includes('ufficio') || str.includes('studio')) return 'ufficio';
-          if (str.includes('appartamento') || str.includes('alloggio') || str.includes('abitazione') || str.includes('a/2') || str.includes('a/3')) return 'appartamento';
-          return 'appartamento';
-        };
 
         // 2. Abbina o crea le unità e mappa i valori
         for (const r of (tab.righe || [])) {
@@ -446,7 +475,26 @@ export default function MillesimiEditor({ condominioId: propId }) {
     setTimeout(() => setToast(null), 3500);
   }
 
-  const isDirty = JSON.stringify(valori) !== JSON.stringify(originali);
+  const isDirty = useMemo(() => {
+    const allKeys = new Set([...Object.keys(valori), ...Object.keys(originali)]);
+    for (const key of allKeys) {
+      const v = parseFloat(String(valori[key] ?? 0).replace(/,/g, '.')) || 0;
+      const o = parseFloat(String(originali[key] ?? 0).replace(/,/g, '.')) || 0;
+      if (Math.abs(v - o) > 0.0001) return true;
+    }
+    if (unita.length !== originaliUnita.length) return true;
+    for (let i = 0; i < unita.length; i++) {
+      const u = unita[i];
+      const ou = originaliUnita[i] || {};
+      if (String(u.numero || '') !== String(ou.numero || '')) return true;
+      if (String(u.piano ?? '') !== String(ou.piano ?? '')) return true;
+      if (String(u.tipo || '') !== String(ou.tipo || '')) return true;
+      const mqV = parseFloat(String(u.mq || 0).replace(/,/g, '.')) || 0;
+      const mqO = parseFloat(String(ou.mq || 0).replace(/,/g, '.')) || 0;
+      if (Math.abs(mqV - mqO) > 0.001) return true;
+    }
+    return false;
+  }, [valori, originali, unita, originaliUnita]);
 
   function getNominativo(u) {
     const occ = u?.persone?.[0];
@@ -631,10 +679,10 @@ export default function MillesimiEditor({ condominioId: propId }) {
       )}
 
       {/* Griglia */}
-      {tabelle.length === 0 ? (
+      {tabelle.length === 0 && unita.length === 0 ? (
         <div style={styles.emptyState}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
-          <p style={{ color: '#94a3b8' }}>Nessuna unità o tabella millesimale presente. Aggiungi prima un'unità o importa una tabella.</p>
+          <p style={{ color: '#94a3b8' }}>Nessuna unità o tabella millesimale presente. Clicca su "➕ Aggiungi Riga" o "+ Tabella" per iniziare l'inserimento manuale.</p>
         </div>
       ) : (
         <div style={styles.tableWrap}>
@@ -683,6 +731,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     )}
                   </th>
                 ))}
+                <th style={{ ...styles.th, minWidth: 60 }}>Azioni</th>
               </tr>
             </thead>
             <tbody>
@@ -751,6 +800,15 @@ export default function MillesimiEditor({ condominioId: propId }) {
                       </td>
                     );
                   })}
+                  <td style={styles.td}>
+                    <button
+                      style={styles.btnDistribuisci}
+                      onClick={() => eliminaUnita(u)}
+                      title="Elimina unità"
+                    >
+                      🗑️
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -773,6 +831,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     </td>
                   );
                 })}
+                <td style={styles.td}></td>
               </tr>
             </tfoot>
           </table>

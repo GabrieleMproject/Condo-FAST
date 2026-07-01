@@ -33,7 +33,7 @@ export default function ConfigPagantePage() {
         supabase.from('unita').select(`
           *,
           occupanti:occupanti_unita(
-            tipo_occupante, data_inizio, data_fine,
+            id, ruolo, attivo,
             persona:persone(id, nominativo, email, telefono)
           )
         `).eq('condominio_id', condominioId).order('numero'),
@@ -101,14 +101,12 @@ export default function ConfigPagantePage() {
   }
 
   function getProprietario(u) {
-    return u.occupanti?.find(o => o.tipo_occupante === 'proprietario')?.persona;
+    return u.occupanti?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false)?.persona;
   }
 
   function getInquilino(u) {
-    const oggi = new Date();
     return u.occupanti?.find(o =>
-      o.tipo_occupante === 'inquilino' &&
-      (!o.data_fine || new Date(o.data_fine) >= oggi)
+      (o.ruolo === 'inquilino' || o.tipo_occupante === 'inquilino') && o.attivo !== false
     )?.persona;
   }
 

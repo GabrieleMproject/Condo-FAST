@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { callClaude } from '../lib/claudeClient'
-import { estraiFattura } from '../lib/fileExtractor'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { callClaude, callClaudeDocument } from '../lib/claudeClient'
+import { estraiFattura, fileToBase64 } from '../lib/fileExtractor'
+import { supabase } from '../lib/supabaseClient'
 
 const CATEGORIE = [
   { value: 'ordinaria', label: 'Ordinaria' },
@@ -57,7 +58,120 @@ const trovaTabellaFuzzy = (tabelleList, nomeConsigliato, criterio) => {
   return null
 }
 
-export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false, prefillData = null }) {
+export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false, prefillData = null, onRefreshTabelle = null }) {
+  const [strutturandoDoc, setStrutturandoDoc] = useState(false)
+
+  const tabelleAssociate = useMemo(() => {
+    const list = [...(tabelle || [])]
+    const docTabelle = (documenti || []).filter(d => d.tipo === 'tabella_millesimale_doc')
+    docTabelle.forEach(d => {
+      const exists = list.some(t => String(t.nome || '').trim().toLowerCase() === String(d.nome || '').trim().toLowerCase())
+      if (!exists) {
+        list.push({
+          id: `doc_${d.id}`,
+          nome: d.nome || 'Tabella da Documenti',
+          tipo_lavoro: 'da Documenti',
+          is_doc: true,
+          doc_id: d.id,
+          testo_estratto: d.testo_estratto,
+          url_storage: d.url_storage
+        })
+      }
+    })
+    return list
+  }, [tabelle, documenti])
+
+  const handleStrutturaTabellaAI = async (tab) => {
+    if (!unita || !unita.length) {
+      alert("Nessuna unità censita nel condominio. Configura prima le unità in Anagrafica.")
+      return
+    }
+    setStrutturandoDoc(true)
+    try {
+      let testo = tab.testo_estratto || ''
+      if (!testo && tab.url_storage) {
+        const { data: fileData, error: fErr } = await supabase.storage.from('documenti-condominio').download(tab.url_storage)
+        if (!fErr && fileData) {
+          const base64 = await fileToBase64(fileData)
+          const res = await callClaudeDocument(
+            `Estrai la tabella millesimale associando le quote al seguente elenco di unità del condominio:\n${JSON.stringify(unita.map(u => ({ id: u.id, numero: u.numero, scala: u.scala, piano: u.piano, tipo: u.tipo })))}\n\nRestituisci ESCLUSIVAMENTE un oggetto JSON: { "nome_tabella": "${tab.nome}", "tipo": "generale", "unita_millesimi": [ { "unita_id": "uuid", "valore": 123.45 } ] }`,
+            base64,
+            { maxTokens: 2000, mediaType: 'application/pdf', funzione: 'estrai_tabella_millesimale', condominio_id: condominioId }
+          )
+          testo = res || ''
+        }
+      }
+
+      const prompt = `Sei un esperto contabile per condomìni.
+Hai a disposizione il seguente testo / documento della tabella millesimale:
+"""
+${testo || tab.nome}
+"""
+
+Elenco ufficiale delle unità del condominio nel database:
+${JSON.stringify(unita.map(u => ({ id: u.id, numero: u.numero, scala: u.scala, piano: u.piano, tipo: u.tipo })))}
+
+Estrai i millesimi associando esattamente ogni unità (tramite il suo id) al valore numerico dei millesimi corrispondente.
+Se una unità non è trovata, assegna valore 0.
+
+Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
+{
+  "nome_tabella": "${tab.nome}",
+  "tipo": "generale",
+  "unita_millesimi": [
+    { "unita_id": "uuid_dell_unita", "valore": 125.50 }
+  ]
+}`
+
+      const responseText = await callClaude(prompt, { maxTokens: 2500, funzione: 'struttura_tabella_millesimale', condominio_id: condominioId })
+      const cleanJson = responseText.replace(/```json/gi, '').replace(/```/g, '').trim()
+      const parsed = JSON.parse(cleanJson)
+
+      let tabellaId = tab.is_doc ? null : tab.id
+      if (!tabellaId) {
+        const { data: nuovaTab, error: errTab } = await supabase
+          .from('tabelle_millesimali')
+          .insert([{
+            condominio_id: condominioId,
+            nome: parsed.nome_tabella || tab.nome || 'Tabella Millesimale',
+            tipo_lavoro: parsed.tipo || 'generale',
+            descrizione: 'Strutturata automaticamente da Documenti via AI'
+          }])
+          .select()
+          .single()
+        if (errTab) throw errTab
+        tabellaId = nuovaTab.id
+      } else {
+        await supabase.from('millesimi_unita').delete().eq('tabella_id', tabellaId)
+      }
+
+      const righeMillesimi = (parsed.unita_millesimi || [])
+        .filter(item => item.unita_id && item.valore !== undefined)
+        .map(item => ({
+          condominio_id: condominioId,
+          tabella_id: tabellaId,
+          unita_id: item.unita_id,
+          valore: Number(String(item.valore).replace(',', '.')) || 0
+        }))
+
+      if (righeMillesimi.length > 0) {
+        const { error: errMil } = await supabase.from('millesimi_unita').insert(righeMillesimi)
+        if (errMil) throw errMil
+      }
+
+      if (onRefreshTabelle) {
+        await onRefreshTabelle()
+      }
+      setField('tabella_millesimale_id', tabellaId)
+      alert("✅ Tabella strutturata e salvata con successo nei Millesimi!")
+    } catch (err) {
+      console.error("Errore strutturazione AI:", err)
+      alert("Errore durante la strutturazione automatica: " + (err.message || "Risposta AI non valida"))
+    } finally {
+      setStrutturandoDoc(false)
+    }
+  }
+
   const [form, setForm] = useState({
     esercizio_id: esercizioId,
     condominio_id: condominioId,
@@ -153,7 +267,7 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
       return
     }
 
-    const tabella = tabelle.find(t => t.id === form.tabella_millesimale_id)
+    const tabella = tabelleAssociate.find(t => t.id === form.tabella_millesimale_id)
     if (!tabella?.millesimi_unita?.length) { setRipartizioni([]); return }
 
     const totMill = tabella.millesimi_unita.reduce((s, m) => s + parseFloat(m.valore || 0), 0)
@@ -233,7 +347,7 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
         ?.filter(d => d.testo_estratto && ['regolamento', 'tabella_millesimale_doc', 'verbale', 'contratto', 'altro'].includes(d.tipo))
         .map(d => `--- DOCUMENTO (${d.tipo.toUpperCase()}: ${d.nome_file || 'senza nome'}) ---\n${d.testo_estratto.slice(0, 3500)}`)
         .join('\n\n') || ''
-      const listaTabelle = tabelle.map(t => `- "${t.nome}" (tipo lavoro: ${t.tipo_lavoro || 'ordinario'})`).join('\n') || 'Nessuna tabella millesimale strutturata presente in archivio.'
+      const listaTabelle = tabelleAssociate.map(t => `- "${t.nome}" (tipo lavoro: ${t.tipo_lavoro || 'ordinario'})`).join('\n') || 'Nessuna tabella millesimale strutturata presente in archivio.'
 
       const systemPrompt = 'Sei un esperto di diritto condominiale italiano. Suggerisci il criterio di ripartizione per una spesa condominiale. Rispondi SOLO con un JSON valido, nessun testo prima o dopo.'
 
@@ -279,7 +393,7 @@ Formato JSON:
 
   const applicaAiSuggerimento = () => {
     if (!aiSuggerimento) return
-    const tabella = trovaTabellaFuzzy(tabelle, aiSuggerimento.tabella_consigliata, aiSuggerimento.criterio)
+    const tabella = trovaTabellaFuzzy(tabelleAssociate, aiSuggerimento.tabella_consigliata, aiSuggerimento.criterio)
     setForm(f => ({
       ...f,
       criterio: aiSuggerimento.criterio,
@@ -510,11 +624,46 @@ Formato JSON:
               onChange={e => setField('tabella_millesimale_id', e.target.value)}
             >
               <option value="">— Seleziona —</option>
-              {tabelle.map(t => (
+              {tabelleAssociate.map(t => (
                 <option key={t.id} value={t.id}>{t.nome} ({t.tipo_lavoro})</option>
               ))}
             </select>
             {errors.tabella && <span style={{ color: '#ef4444', fontSize: 12 }}>{errors.tabella}</span>}
+
+            {(() => {
+              const tabSel = tabelleAssociate.find(t => t.id === form.tabella_millesimale_id)
+              if (!tabSel || (!tabSel.is_doc && tabSel.millesimi_unita?.length > 0)) return null
+              return (
+                <div style={{
+                  background: '#8b5cf61a', border: '1px solid #8b5cf666', borderRadius: 8, padding: '12px 16px',
+                  marginTop: 10, fontSize: 13, color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: 10
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>✨</span>
+                    <span>
+                      <strong>{tabSel.nome}</strong> {tabSel.is_doc ? 'è caricata nei Documenti ma non è ancora strutturata nei Millesimi' : 'non ha ancora valori millesimali assegnati alle unità'}.
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      disabled={strutturandoDoc}
+                      onClick={() => handleStrutturaTabellaAI(tabSel)}
+                      style={{
+                        background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 6,
+                        padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: strutturandoDoc ? 'not-allowed' : 'pointer',
+                        opacity: strutturandoDoc ? 0.7 : 1
+                      }}
+                    >
+                      {strutturandoDoc ? '⏳ Estrazione AI in corso...' : '⚡ Struttura automaticamente con AI e Salva'}
+                    </button>
+                    <span style={{ color: '#94a3b8', fontSize: 12 }}>
+                      L'AI assegnerà automaticamente le quote alle {unita?.length || 0} unità del condominio.
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
 
@@ -745,7 +894,7 @@ Formato JSON:
               </div>
             </div>
 
-            {aiSuggerimento.tabella_consigliata && !trovaTabellaFuzzy(tabelle, aiSuggerimento.tabella_consigliata, aiSuggerimento.criterio) && (
+            {aiSuggerimento.tabella_consigliata && !trovaTabellaFuzzy(tabelleAssociate, aiSuggerimento.tabella_consigliata, aiSuggerimento.criterio) && (
               <div style={{
                 background: '#f59e0b1a', border: '1px solid #f59e0b66', borderRadius: 8, padding: '10px 14px',
                 marginBottom: 16, fontSize: 12, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 8

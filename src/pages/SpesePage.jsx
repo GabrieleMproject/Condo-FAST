@@ -334,6 +334,7 @@ export default function SpesePage() {
             prefillData={location.state?.prefillSpesa || null}
             onSave={handleSaveSpesa}
             onCancel={chiudiForm}
+            onRefreshTabelle={fetchTabelle}
           />
         </div>
       )}

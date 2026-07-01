@@ -16,7 +16,7 @@ export function usePersone() {
         .select(`
           *,
           occupanti_unita (
-            id, ruolo, attivo, data_inizio, data_fine,
+            id, ruolo, attivo,
             unita (id, numero, tipo, scala, piano, condominio_id,
               condomini (id, nome)
             )
@@ -75,7 +75,7 @@ export function usePersone() {
     // Disattiva eventuale occupante precedente dello stesso ruolo
     await supabase
       .from('occupanti_unita')
-      .update({ attivo: false, data_fine: new Date().toISOString().split('T')[0] })
+      .update({ attivo: false })
       .eq('unita_id', unitaId)
       .eq('ruolo', ruolo)
       .eq('attivo', true)
@@ -87,7 +87,6 @@ export function usePersone() {
         unita_id: unitaId,
         persona_id: personaId,
         ruolo,
-        data_inizio: dataInizio || new Date().toISOString().split('T')[0],
         attivo: true,
       }])
       .select()
@@ -100,7 +99,7 @@ export function usePersone() {
   const rimuoviPersona = async (occupanteId) => {
     const { error } = await supabase
       .from('occupanti_unita')
-      .update({ attivo: false, data_fine: new Date().toISOString().split('T')[0] })
+      .update({ attivo: false })
       .eq('id', occupanteId)
     if (error) throw error
     await fetchPersone()

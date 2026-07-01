@@ -39,7 +39,7 @@ export default function DashboardFinanziaria() {
       supabase.from('estratto_conto').select('*').eq('condominio_id', condominioId).gte('data_movimento', dataStr).order('data_movimento', { ascending: false }),
       supabase.from('fatture_fornitori').select('*').eq('condominio_id', condominioId).order('data_fattura', { ascending: false }),
       supabase.from('riconciliazioni').select('*').eq('condominio_id', condominioId),
-      supabase.from('spese').select('*, esercizio:esercizi(anno, data_inizio, data_fine)').eq('condominio_id', condominioId).order('data_competenza', { ascending: false }).limit(20),
+      supabase.from('spese').select('*, esercizio:esercizi(anno, data_inizio, data_fine)').eq('condominio_id', condominioId).order('data_spesa', { ascending: false }).limit(20),
       supabase.from('rate').select('*').eq('condominio_id', condominioId).eq('stato', 'non_pagata').lte('data_scadenza', new Date().toISOString().split('T')[0]),
     ]);
 

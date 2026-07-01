@@ -225,7 +225,7 @@ Se non identifichi operazioni chiare, restituisci [].`
           if (op.tipo === 'sostituzione' || op.tipo === 'nuovo') {
             if (op.tipo === 'sostituzione') {
               await supabase.from('occupanti_unita')
-                .update({ attivo: false, data_fine: dataOp })
+                .update({ attivo: false })
                 .eq('unita_id', unitaTarget.id)
                 .eq('ruolo', op.ruolo)
                 .eq('attivo', true)
@@ -245,7 +245,7 @@ Se non identifichi operazioni chiare, restituisci [].`
               }]).select().single()
             if (pErr) throw pErr
             const { error: oErr } = await supabase.from('occupanti_unita')
-              .insert([{ unita_id: unitaTarget.id, persona_id: persona.id, ruolo: op.ruolo, data_inizio: dataOp, attivo: true }])
+              .insert([{ unita_id: unitaTarget.id, persona_id: persona.id, ruolo: op.ruolo, attivo: true }])
             if (oErr) throw oErr
             log.ok.push(`${op.tipo === 'sostituzione' ? 'Sostituzione' : 'Aggiunto'}: ${op.nuovo_nominativo} → Unità ${op.unita}`)
 
@@ -264,7 +264,7 @@ Se non identifichi operazioni chiare, restituisci [].`
 
           } else if (op.tipo === 'rimozione') {
             await supabase.from('occupanti_unita')
-              .update({ attivo: false, data_fine: dataOp })
+              .update({ attivo: false })
               .eq('unita_id', unitaTarget.id).eq('ruolo', op.ruolo).eq('attivo', true)
             log.ok.push(`Rimosso: ${op.nominativo} → Unità ${op.unita}`)
           }

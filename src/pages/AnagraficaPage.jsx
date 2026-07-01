@@ -218,7 +218,34 @@ export default function AnagraficaPage() {
   }
 
   const handleImport = async (rows) => {
-    const result = await importPersone(rows)
+    const mappedRows = rows.map(r => {
+      let unita_id = r.unita_id || null
+      const strUnita = String(r.unita || '').trim().toLowerCase()
+      if (!unita_id && strUnita && unita && unita.length > 0) {
+        const match = unita.find(u => {
+          const num = String(u.numero || '').trim().toLowerCase()
+          const cleanNum = num.replace(/^0+/, '') || '0'
+          const cleanStr = strUnita.replace(/^0+/, '') || '0'
+          const scalaNum = `${String(u.scala || '').trim().toLowerCase()} ${num}`.trim()
+          const isNumEqual = !isNaN(cleanNum) && !isNaN(cleanStr) && Number(cleanNum) === Number(cleanStr)
+          return num === strUnita || cleanNum === cleanStr || isNumEqual || scalaNum === strUnita || strUnita === `int. ${num}` || strUnita === `int ${num}` || strUnita === `interno ${num}` || strUnita.endsWith(` ${num}`)
+        })
+        if (match) unita_id = match.id
+      }
+
+      let ruolo = String(r.ruolo || '').trim().toLowerCase()
+      if (ruolo !== 'proprietario' && ruolo !== 'inquilino') {
+        ruolo = unita_id ? 'proprietario' : ''
+      }
+
+      return {
+        ...r,
+        unita_id,
+        ruolo
+      }
+    })
+
+    const result = await importPersone(mappedRows)
     await fetchUnita()
     showToast(`${result.created} persone importate con successo`)
     return result

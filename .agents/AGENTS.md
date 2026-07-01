@@ -286,3 +286,19 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 2. Bug e Regressioni Risolti (Fix Bug Triager & Bug Fixer)
 - **Fuzzy Matching Prioritario per Tabelle (`trovaTabellaFuzzy`):** Risolto un bug critico di matching in cui la ricerca per parole significative valutava simultaneamente in una singola clausola OR sia la presenza di *tutte* le parole che di *almeno una* parola, portando `.find()` a restituire un match parziale errato anziché un match esatto successivo. Separatala la logica in due passaggi ordinati per priorità: prima corrispondenza completa (`every`), poi parziale (`some`). Introdotto inoltre il fallback automatico in caso di unica tabella millesimale presente in archivio per i criteri a millesimi o misti.
 - **Hint Visivi Caricamento File (`DocumentiCondominio.jsx`):** Estesi i badge e i consigli visivi sull'estrazione del testo AI ai file di categoria `tabella_millesimale_doc`.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S21 (1 Luglio 2026 - Riconoscimento Tabelle Documenti e Fix Anagrafica)
+
+### 1. Decisioni sul Workflow e UI
+- **Integrazione Diretta Tabelle da Documenti (`SpeseForm.jsx`):** I documenti caricati nella sezione "Documenti" con tipo `tabella_millesimale_doc` vengono ora fusi dinamicamente nell'elenco del selettore del modulo spesa (`tabelleAssociate`), rendendoli immediatamente selezionabili senza dover prima creare manualmente il record strutturato in archivio.
+- **Strutturazione Automatica 1-Clic via AI:** Aggiunto un banner interattivo in `SpeseForm.jsx` quando si seleziona una tabella da Documenti o priva di valori millesimali. Con un clic sul pulsante **"⚡ Struttura automaticamente con AI e Salva"**, l'AI analizza il documento (o scarica il PDF/Excel dallo storage e lo converte in base64 via `fileToBase64`), associa i millesimi alle unità del condominio e crea le righe in `tabelle_millesimali` e `millesimi_unita`, aggiornando istantaneamente il selettore e le quote ripartite.
+- **Mapping Unità e Ruoli in Anagrafica Globale (`AnagraficaPage.jsx`):** Estesa ad `AnagraficaPage.jsx` la stessa logica di fuzzy matching per le unità (`unita_id`) e pulizia dei ruoli presente nel tab locale, garantendo che le unità riconosciute durante l'import vengano collegate regolarmente al condominio.
+
+### 2. Bug e Regressioni Risolti (Fix Bug Triager & Bug Fixer)
+- **Rimozione Colonne Inesistenti da `occupanti_unita` (`usePersone.js`, `useUnita.js`, `ConfigPagantePage.jsx`, `RipartizionePage.jsx`, `AggiornamentoAnagrafica.jsx`):** Rimosse tutte le query SQL (SELECT, INSERT, UPDATE) che tentavano di leggere o scrivere le colonne non esistenti nello schema reale (`data_inizio`, `data_fine`). In `assegnaPersona`, la cessazione del vecchio occupante e l'inserimento del nuovo avvengono in modo atomico su `{ unita_id, persona_id, ruolo, attivo }`, risolvendo i crash silenziosi o 400 Bad Request di PostgREST durante l'assegnazione anagrafica.
+- **Standardizzazione Fallback Ruolo (`exportXlsx.js`):** Uniformate le verifiche degli occupanti per supportare `(o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false`.
+- **Firme Canoniche AI in `SpeseForm.jsx`:** Corretto l'ordine invertito degli argomenti in `callClaudeDocument(prompt, base64, opts)`, convertito il Blob scaricato da Supabase in base64 tramite `fileToBase64`, e corretta la chiamata a `callClaude` rimuovendo l'argomento array vuoto che invalidava il parametro `maxTokens`.
+- **Ordinamento su Colonna Reale (`DashboardFinanziaria.jsx`):** Corretto errore difensivo rilevato dal Bug Triager sulla query delle spese, sostituendo la colonna inesistente `.order('data_competenza', ...)` con `.order('data_spesa', ...)`.
+

@@ -56,8 +56,7 @@ export default function RipartizionePage() {
         supabase.from('unita').select(`
           *,
           occupanti:occupanti_unita(
-            tipo_occupante,
-            data_inizio, data_fine,
+            id, ruolo, attivo,
             persona:persone(nominativo, email)
           )
         `).eq('condominio_id', condominioId).order('numero'),
@@ -129,14 +128,14 @@ export default function RipartizionePage() {
 
   // ─── Helper: nome proprietario unità (stringa, per display) ──
   function getProprietario(u) {
-    const occ = u.occupanti?.find(o => o.tipo_occupante === 'proprietario');
+    const occ = u.occupanti?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false);
     return occ?.persona?.nominativo || '—';
   }
 
   // ─── Helper: proprietario come oggetto occupante (per export) ─
   // exportRipartizioneXlsx legge prop.persona?.nominativo nel foglio Rate.
   function getProprietarioOcc(u) {
-    return u.occupanti?.find(o => o.tipo_occupante === 'proprietario') || null;
+    return u.occupanti?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false) || null;
   }
 
   // ─── Export ──────────────────────────────────────────────────

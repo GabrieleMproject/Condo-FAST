@@ -61,6 +61,9 @@ export default function MillesimiEditor({ condominioId: propId }) {
   const [extractedTabelle, setExtractedTabelle] = useState(null);
   const [importError, setImportError] = useState(null);
 
+  // Persone del condominio per il select Proprietario
+  const [personeCondominio, setPersoneCondominio] = useState([]); // [{ id, nominativo }]
+
   // ─── Caricamento dati ───────────────────────────────────────
   useEffect(() => {
     if (!condominioId) return;
@@ -112,6 +115,24 @@ export default function MillesimiEditor({ condominioId: propId }) {
       });
       setValori(map);
       setOriginali(map);
+
+      // Carica persone del condominio per il select Proprietario
+      const { data: persData } = await supabase
+        .from('persone')
+        .select('id, nome, cognome, occupanti_unita!inner(unita!inner(condominio_id))')
+        .eq('occupanti_unita.unita.condominio_id', condominioId)
+        .eq('occupanti_unita.attivo', true);
+      if (persData) {
+        const uniqPersone = [];
+        const seen = new Set();
+        (persData || []).forEach(p => {
+          if (!seen.has(p.id)) {
+            seen.add(p.id);
+            uniqPersone.push({ id: p.id, nominativo: `${p.cognome || ''} ${p.nome || ''}`.trim() || p.nome });
+          }
+        });
+        setPersoneCondominio(uniqPersone.sort((a, b) => a.nominativo.localeCompare(b.nominativo)));
+      }
     } catch (e) {
       console.error('[MillesimiEditor] loadAll error:', e);
       showToast('Errore caricamento dati: ' + e.message, 'error');
@@ -516,8 +537,37 @@ export default function MillesimiEditor({ condominioId: propId }) {
   }, [valori, originali, unita, originaliUnita]);
 
   function getNominativo(u) {
+    // Legge da embed oppure cerca nelle personeCondominio tramite occupanti_unita
     const occ = u?.persone?.[0];
-    return occ?.persona?.nominativo || '—';
+    if (occ?.persona?.nominativo) return occ.persona.nominativo;
+    // Fallback: se l'embed non è disponibile, cerca per persona_id
+    if (occ?.persona_id) {
+      const p = personeCondominio.find(x => x.id === occ.persona_id);
+      if (p) return p.nominativo;
+    }
+    return null; // null = non assegnato (mostriamo il select)
+  }
+
+  // Assegna/rimuovi proprietario per una unità
+  async function handleProprietarioChange(unitaId, personaId) {
+    try {
+      // Disattiva occupanti precedenti con ruolo proprietario
+      await supabase.from('occupanti_unita')
+        .update({ attivo: false })
+        .eq('unita_id', unitaId)
+        .eq('ruolo', 'proprietario')
+        .eq('attivo', true);
+
+      if (personaId) {
+        const { error } = await supabase.from('occupanti_unita')
+          .insert([{ unita_id: unitaId, persona_id: personaId, ruolo: 'proprietario', attivo: true }]);
+        if (error) throw error;
+      }
+      await loadAll();
+      showToast('Proprietario aggiornato', 'success');
+    } catch (e) {
+      showToast('Errore: ' + e.message, 'error');
+    }
   }
 
   // ─── Render ─────────────────────────────────────────────────
@@ -774,8 +824,24 @@ export default function MillesimiEditor({ condominioId: propId }) {
                       placeholder="es. T / 1°"
                     />
                   </td>
-                  <td style={{ ...styles.td, color: '#cbd5e1', fontSize: 13 }}>
-                    {getNominativo(u)}
+                  <td style={{ ...styles.td, minWidth: 170 }}>
+                    {(() => {
+                      const occ = u?.persone?.[0];
+                      const currentPersonaId = occ?.persona_id ||
+                        (occ?.persona ? personeCondominio.find(p => p.nominativo === occ.persona.nominativo)?.id : null);
+                      return (
+                        <select
+                          style={{ ...styles.cellSelect, minWidth: 150, color: currentPersonaId ? '#f1f5f9' : '#64748b' }}
+                          value={currentPersonaId || ''}
+                          onChange={e => handleProprietarioChange(u.id, e.target.value || null)}
+                        >
+                          <option value="">— Nessuno —</option>
+                          {personeCondominio.map(p => (
+                            <option key={p.id} value={p.id}>{p.nominativo}</option>
+                          ))}
+                        </select>
+                      );
+                    })()}
                   </td>
                   <td style={styles.td}>
                     <select

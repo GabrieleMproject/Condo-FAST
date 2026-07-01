@@ -6,13 +6,11 @@ import { exportAnagraficaXlsx } from '../lib/exportXlsx'
 import { exportAnagraficaPdf } from '../lib/exportPdf'
 import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
-import { usePersone } from '../hooks/usePersone'
 import AnagraficaImport from './AnagraficaImport'
 
 export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   const { profile } = usePlan()
   const { checkWatermark, WatermarkModal } = useWatermark()
-  const { importPersone } = usePersone()
   const [persone, setPersone] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -32,21 +30,25 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   const caricaPersone = async () => {
     setLoading(true)
     try {
-      // Estrae le persone collegate alle unità del condominio tramite occupanti_unita
+      // LEFT JOIN: mostra persone anche se non hanno unità assegnata nel condominio
       const { data, error } = await supabase
         .from('persone')
         .select(`
           id, nome, cognome, email, telefono, indirizzo, citta,
-          occupanti_unita!inner(id, ruolo, attivo, unita!inner(id, numero, scala, condominio_id))
+          occupanti_unita(id, ruolo, attivo, unita(id, numero, scala, condominio_id))
         `)
         .eq('occupanti_unita.unita.condominio_id', condominioId)
         .eq('occupanti_unita.attivo', true)
 
       if (error) throw error
 
-      // Raggruppa i dati per persona, aggregando le unità se una persona possiede/occupa più unità
-      const personeMappate = (data || []).map(p => {
-        const occupazioni = p.occupanti_unita || []
+      // Filtra: mantieni solo le persone che hanno almeno un'occupazione in questo condominio
+      const personeFiltrate = (data || []).filter(p =>
+        (p.occupanti_unita || []).some(o => o.unita?.condominio_id === condominioId)
+      )
+
+      const personeMappate = personeFiltrate.map(p => {
+        const occupazioni = (p.occupanti_unita || []).filter(o => o.unita?.condominio_id === condominioId)
         const unitaNomi = occupazioni.map(o => `Unità ${o.unita.numero}${o.unita.scala ? ` (Sc. ${o.unita.scala})` : ''}`).join(', ')
         const ruoli = Array.from(new Set(occupazioni.map(o => o.ruolo))).map(r => r === 'proprietario' ? 'Proprietario' : 'Inquilino').join(' / ')
         
@@ -124,73 +126,84 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   }
 
   const handleImport = async (rows) => {
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Carica unità del condominio per l'abbinamento
     const { data: unitaCondoData } = await supabase
       .from('unita')
       .select('id, numero, scala, piano, tipo')
       .eq('condominio_id', condominioId)
-
     const unitaCondominio = unitaCondoData || []
-    const mappedRows = []
+    const results = { created: 0, errors: [] }
 
     for (const r of rows) {
-      let unita_id = r.unita_id || null
-      const strUnita = String(r.unita || '').trim()
-      const strUnitaLower = strUnita.toLowerCase()
+      try {
+        // 1. Abbina unità per numero
+        let unita_id = r.unita_id || null
+        const strUnita = String(r.unita || '').trim()
+        const strUnitaLower = strUnita.toLowerCase()
 
-      if (!unita_id && strUnita && unitaCondominio) {
-        const match = unitaCondominio.find(u => {
-          const num = String(u.numero || '').trim().toLowerCase()
-          const cleanNum = num.replace(/^0+/, '') || '0'
-          const cleanStr = strUnitaLower.replace(/^0+/, '') || '0'
-          const scalaNum = `${String(u.scala || '').trim().toLowerCase()} ${num}`.trim()
-          const isNumEqual = !isNaN(cleanNum) && !isNaN(cleanStr) && Number(cleanNum) === Number(cleanStr)
-          return num === strUnitaLower || cleanNum === cleanStr || isNumEqual || scalaNum === strUnitaLower || strUnitaLower === `int. ${num}` || strUnitaLower === `int ${num}` || strUnitaLower === `interno ${num}` || strUnitaLower.endsWith(` ${num}`)
-        })
-        if (match) {
-          unita_id = match.id
-        } else {
-          // Creazione automatica unità mancante nel condominio
-          const cleanNumero = strUnita.replace(/^(unita|unità|app\.|appartamento|int\.|interno|n\.|num\.)\s*/i, '').trim() || strUnita
-          let tipoUnita = 'appartamento'
-          if (strUnitaLower.includes('box') || strUnitaLower.includes('garage')) tipoUnita = 'box'
-          else if (strUnitaLower.includes('cantina')) tipoUnita = 'cantina'
-          else if (strUnitaLower.includes('negozio')) tipoUnita = 'negozio'
-          else if (strUnitaLower.includes('ufficio')) tipoUnita = 'ufficio'
-
-          const { data: newU, error: errU } = await supabase
-            .from('unita')
-            .insert([{
-              condominio_id: condominioId,
-              numero: cleanNumero,
-              tipo: tipoUnita,
-              scala: r.scala ? String(r.scala).trim() : null
-            }])
-            .select()
-            .single()
-
-          if (!errU && newU) {
-            unita_id = newU.id
-            unitaCondominio.push(newU)
+        if (!unita_id && strUnita) {
+          const match = unitaCondominio.find(u => {
+            const num = String(u.numero || '').trim().toLowerCase()
+            const cleanNum = num.replace(/^0+/, '') || '0'
+            const cleanStr = strUnitaLower.replace(/^0+/, '') || '0'
+            return num === strUnitaLower || cleanNum === cleanStr ||
+              strUnitaLower === `int. ${num}` || strUnitaLower === `int ${num}` ||
+              strUnitaLower === `interno ${num}` || strUnitaLower.endsWith(` ${num}`)
+          })
+          if (match) {
+            unita_id = match.id
+          } else {
+            const cleanNumero = strUnita.replace(/^(unita|unità|app\.|appartamento|int\.|interno|n\.|num\.)\s*/i, '').trim() || strUnita
+            const { data: newU, error: errU } = await supabase
+              .from('unita')
+              .insert([{ condominio_id: condominioId, numero: cleanNumero, tipo: 'appartamento' }])
+              .select().single()
+            if (!errU && newU) { unita_id = newU.id; unitaCondominio.push(newU) }
           }
         }
-      }
 
-      let ruolo = String(r.ruolo || '').trim().toLowerCase()
-      if (ruolo !== 'proprietario' && ruolo !== 'inquilino') {
-        ruolo = unita_id ? 'proprietario' : ''
-      }
+        // 2. Crea persona
+        const { data: persona, error: pErr } = await supabase
+          .from('persone')
+          .insert([{
+            user_id: user.id,
+            nome: r.nome || '',
+            cognome: r.cognome || '',
+            email: r.email || null,
+            telefono: r.telefono || null,
+            indirizzo: r.indirizzo || null,
+            citta: r.citta || null,
+            cap: r.cap || null,
+            provincia: r.provincia || null,
+            codice_fiscale: r.codice_fiscale || null,
+          }])
+          .select().single()
+        if (pErr) throw pErr
 
-      mappedRows.push({
-        ...r,
-        unita_id,
-        ruolo
-      })
+        // 3. Assegna a unità
+        if (unita_id) {
+          const ruolo = ['proprietario', 'inquilino'].includes(String(r.ruolo || '').toLowerCase())
+            ? r.ruolo.toLowerCase() : 'proprietario'
+          await supabase.from('occupanti_unita')
+            .update({ attivo: false })
+            .eq('unita_id', unita_id).eq('ruolo', ruolo).eq('attivo', true)
+          const { error: aErr } = await supabase.from('occupanti_unita')
+            .insert([{ unita_id, persona_id: persona.id, ruolo, attivo: true }])
+          if (aErr) console.warn(`Assegnazione unità fallita per ${r.nome} ${r.cognome}:`, aErr.message)
+        }
+
+        results.created++
+      } catch (err) {
+        results.errors.push({ row: r, error: err.message })
+      }
     }
 
-    const result = await importPersone(mappedRows)
     await caricaPersone()
-    return result
+    return results
   }
+
 
   return (
     <div style={styles.container}>

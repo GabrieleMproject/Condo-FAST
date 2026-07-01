@@ -70,13 +70,27 @@ export default function MillesimiEditor({ condominioId: propId }) {
   async function loadAll() {
     setLoading(true);
     try {
-      const [{ data: tab }, { data: uni }] = await Promise.all([
+      const [{ data: tab, error: tabErr }, { data: uni, error: uniErr }] = await Promise.all([
         supabase.from('tabelle_millesimali').select('*').eq('condominio_id', condominioId).order('nome'),
         supabase.from('unita').select('*, persone:occupanti_unita(persona:persone(nominativo))').eq('condominio_id', condominioId).order('numero'),
       ]);
 
+      if (tabErr) throw tabErr;
+
+      // Se la query con embed occupanti fallisce, riprova senza embed (non bloccante)
+      let unitaList = uni || [];
+      if (uniErr) {
+        console.warn('[MillesimiEditor] Embed occupanti_unita fallito, riprovo senza embed:', uniErr.message);
+        const { data: uniFallback, error: uniFallbackErr } = await supabase
+          .from('unita')
+          .select('*')
+          .eq('condominio_id', condominioId)
+          .order('numero');
+        if (uniFallbackErr) throw uniFallbackErr;
+        unitaList = uniFallback || [];
+      }
+
       const tabelleList = tab || [];
-      const unitaList = uni || [];
       setTabelle(tabelleList);
       setUnita(unitaList);
       setOriginaliUnita(JSON.parse(JSON.stringify(unitaList)));
@@ -99,11 +113,13 @@ export default function MillesimiEditor({ condominioId: propId }) {
       setValori(map);
       setOriginali(map);
     } catch (e) {
+      console.error('[MillesimiEditor] loadAll error:', e);
       showToast('Errore caricamento dati: ' + e.message, 'error');
     } finally {
       setLoading(false);
     }
   }
+
 
   // ─── Calcolo somme per colonna (tabella) ────────────────────
   const sommaPer = useCallback((tabellaId) => {

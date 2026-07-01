@@ -414,3 +414,71 @@ Esempio: [{"nome":"Mario","cognome":"Rossi","email":"mario@example.com","telefon
     throw new Error('L\'AI non ha restituito un formato JSON valido per l\'anagrafica.')
   }
 }
+
+// ── Estrae una o più tabelle millesimali da un file (PDF, XLSX, CSV, DOCX, Immagine) ──
+export async function estraiTabelleMillesimali(file) {
+  if (!validaMimeType(file)) {
+    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, immagine, XLSX, DOCX, CSV o TXT.`);
+  }
+
+  const prep = await preparaContenuto(file);
+
+  const systemPrompt = `Sei un esperto di amministrazione condominiale e catasto italiano.
+Il tuo compito è analizzare un documento o un foglio di calcolo contenente una o più TABELLE MILLESIMALI di un condominio (es. Tabella di Proprietà Generale, Scale, Ascensore, Riscaldamento, Box, ecc.).
+Estrai tutte le tabelle millesimali trovate e per ciascuna di esse le righe che associano l'unità immobiliare (o condòmino) ai rispettivi millesimi.
+
+Restituisci SOLO un oggetto JSON valido con questa esatta struttura, senza testo prima o dopo e senza markdown:
+{
+  "tabelle": [
+    {
+      "nome": "Nome della colonna millesimale o tabella (es. Proprietà generale, Scale & Ascensore, ecc.)",
+      "righe": [
+        {
+          "unita": "OBBLIGATORIO: L'identificativo univoco dell'unità immobiliare nel documento. REGOLE CRITICHE:\n1) Se nel documento è presente la colonna Subalterno (Sub.), USA QUELLO o formatta come 'Sub. X' (es. 'Sub. 7', 'Sub. 2').\n2) Se non c'è Subalterno, usa il Numero interno/ordine (es. 'Int. 1', '1').\n3) Se una riga di pertinenza (es. box, cantina, garage, posto auto) ha la colonna numero d'ordine o identificativo vuota, NON LASCIARE MAI VUOTO: usa il Subalterno (es. 'Box Sub. 2') o crea un identificativo univoco abbinato al proprietario (es. 'Box - Micieli'). Ogni riga deve avere un valore unita univoco e non vuoto!",
+          "piano": "Piano dell'unità se indicato (es. Terra, T, 1°, 2, -1, S. 1, Seminterrato, Attico... altrimenti stringa vuota)",
+          "destinazione": "Destinazione d'uso se indicata o intuibile dal contesto o classamento (es. appartamento, box, cantina, negozio, ufficio, posto_auto, soffitta, magazzino)",
+          "superficie_mq": numero (superficie in m² o mq se presente es. 85.5, oppure superficie lorda/virtuale se disponibile, altrimenti null),
+          "nominativo": "Nome del proprietario o condòmino se presente (es. MICIELI, CHIODARELLI...). Se per le righe di pertinenza (es. box/cantine) il nome non è ripetuto, RIPORTA IL NOME del proprietario dell'appartamento sovrastante!",
+          "valore": numero (valore millesimale decimale, es. 166.57 o 150.55 o 0. Usa il punto decimale, non la virgola)"
+        }
+      ]
+    }
+  ]
+}
+
+Se nel documento è presente una tabella con più colonne millesimali (es. colonna 1 = Proprietà, colonna 2 = Scale & Ascensore), genera un elemento nell'array "tabelle" per ciascuna di queste colonne.`;
+
+  const userPrompt = `Estrai le tabelle millesimali e i relativi valori presenti in questo contenuto:`;
+
+  let raw;
+  if (prep.isPdf) {
+    raw = await callClaudeDocument(userPrompt, prep.contenuto, {
+      system: systemPrompt,
+      mediaType: prep.mediaType || 'application/pdf',
+      funzione: 'estrai_tabelle_millesimali',
+      maxTokens: 4000,
+    });
+  } else if (prep.isVisual) {
+    raw = await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
+      funzione: 'estrai_tabelle_millesimali',
+      maxTokens: 4000,
+    });
+  } else {
+    raw = await callClaude(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
+      system: systemPrompt,
+      funzione: 'estrai_tabelle_millesimali',
+      maxTokens: 4000,
+    });
+  }
+
+  const rawStr = String(raw || '');
+  const match = rawStr.match(/\{[\s\S]*\}/);
+  const clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
+  try {
+    const parsed = JSON.parse(clean);
+    return parsed?.tabelle && Array.isArray(parsed.tabelle) ? parsed.tabelle : [];
+  } catch (e) {
+    console.error('Errore parsing JSON tabelle millesimali:', e, clean);
+    throw new Error('L\'AI non ha restituito un formato JSON valido per le tabelle millesimali.');
+  }
+}

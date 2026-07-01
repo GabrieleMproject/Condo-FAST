@@ -49,7 +49,6 @@ export default function RipartizionePage() {
         { data: uni },
         { data: rip },
         { data: tab },
-        { data: mil },
         { data: rt },
       ] = await Promise.all([
         supabase.from('spese').select('*').eq('esercizio_id', esercizioId).order('data_spesa'),
@@ -64,9 +63,18 @@ export default function RipartizionePage() {
           *, spesa:spese(id, descrizione, importo, criterio, tabella_millesimale_id, categoria)
         `).eq('condominio_id', condominioId),
         supabase.from('tabelle_millesimali').select('*').eq('condominio_id', condominioId),
-        supabase.from('millesimi_unita').select('*').eq('condominio_id', condominioId),
         supabase.from('rate').select('*').eq('esercizio_id', esercizioId).order('numero_rata'),
       ]);
+
+      const tabelleList = tab || [];
+      let milList = [];
+      if (tabelleList.length > 0) {
+        const { data: milData } = await supabase
+          .from('millesimi_unita')
+          .select('*')
+          .in('tabella_id', tabelleList.map(t => t.id));
+        milList = milData || [];
+      }
 
       // celle rate_unita: scoped alle rate di questo esercizio
       const rateList = rt || [];
@@ -81,8 +89,8 @@ export default function RipartizionePage() {
       setSpese(sp || []);
       setUnita(uni || []);
       setRipartizioni(rip || []);
-      setTabelle(tab || []);
-      setMillesimi(mil || []);
+      setTabelle(tabelleList);
+      setMillesimi(milList);
       setRate(rateList);
       setCells(cellList);
     } finally {

@@ -310,4 +310,17 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Creazione Automatica Unità Mancanti su Importazione (`AnagraficaCondominioTab.jsx`, `AnagraficaPage.jsx`):** Quando si importa un file di anagrafica (Excel/Word/PDF) con l'elenco delle persone e delle relative unità immobiliari (es. Interno 1, A1, Box 2), se l'unità non è ancora censita nel database del condominio, il sistema ora **crea automaticamente l'unità su Supabase** prima di importare la persona, determinando il tipo (appartamento, box, cantina, negozio, ufficio) dalla dicitura. In questo modo le unità del file vengono sempre create e salvate nel condominio e i residenti vengono abbinati istantaneamente senza che vadano persi i collegamenti (`unita_id`).
 - **Sanitizzazione Pre-salvataggio e Sicurezza Tipi (`useUnita.js`):** Aggiunto l'helper `cleanUnitaPayload` in `createUnita` e `updateUnita`. Rimuove preventivamente campi non appartenenti allo schema di `unita` (come `millesimi`, che risiedono su `millesimi_unita`) e converte in modo sicuro `piano` e `mq` in numeri interi o decimali, eliminando qualsiasi rischio di errore `400 Bad Request` da parte di PostgREST durante la creazione o modifica manuale delle unità.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S23 (1 Luglio 2026 - Standardizzazione Tabelle Millesimali e Fix Bug Triager)
+
+### 1. Decisioni sul Workflow e UI (Formato Standard CondoAI)
+- **Formato Standard Universale CondoAI (`MillesimiEditor.jsx`):** Definito un formato standard a 6 colonne (`Interno/Subalterno`, `Piano`, `Destinazione d'uso`, `Superficie mq`, `Proprietario`, `Colonne Millesimali`) per l'importazione e la gestione delle tabelle millesimali in modo immediato senza la complessità dei fogli catastali ufficiali.
+- **Modello Excel/CSV Scaricabile e Aggiunta Manuale:** Aggiunto in `MillesimiEditor.jsx` il pulsante **"📋 Modello Standard (.csv)"** per scaricare un template precompilato (`Modello_Standard_Millesimi_CondoAI.csv`), un banner esplicativo nella modale di importazione, e il pulsante **"➕ Aggiungi Riga"** per creare al volo nuove unità abitative direttamente dall'editor millesimi senza cambiare scheda.
+
+### 2. Bug e Regressioni Risolti (Fix Bug Triager & Bug Fixer)
+- **Arrotondamento in Distribuzione Equa (`distribuisciEquamente`):** Corretta la formula di calcolo quota e resto dell'ultima unità su base arrotondata a 2 decimali (`parseFloat((1000 / unita.length).toFixed(2))`), evitando che la somma finale su condomini non divisibili per 1000 (es. 6 unità) risulti diversa da 1000 (es. 1000.02) mandando in blocco di validazione la tabella.
+- **Falsy Zero in Piano Terra (`salva`):** Risolto il bug per cui l'espressione `piano: u.piano || null` valutava `0` (Piano Terra) come falsy sovrascrivendolo con `NULL` sul database; sostituito con verifica esplicita `(u.piano === 0 || u.piano === '0') ? 0 : ...`. Sostituito inoltre negli input il fallback `|| ''` con il nullish coalescing `?? ''`.
+- **Inconsistenze Destinazione d'Uso e Hardening (`parseTipo`, `getNominativo`, `fileExtractor.js`):** Aggiunto il supporto in `parseTipo` per `posto_auto`, `soffitta` e `magazzino`, allineandolo alla select dell'interfaccia. Aggiunta gestione eccezioni esplicita per le chiamate DB asincrone in `salva` e `confermaImport` e hardening su parsing JSON con regex.
+
 

@@ -60,11 +60,13 @@ export function useSpese(condominioId, esercizioId) {
     setLoading(true)
     setError(null)
     try {
-      // Setta user_id per audit log
-      await supabase.rpc('set_config', {
-        setting: 'app.current_user_id',
-        value: (await supabase.auth.getUser()).data.user?.id || ''
-      }).catch(() => {})
+      // Setta user_id per audit log (non bloccante)
+      try {
+        await supabase.rpc('set_config', {
+          setting: 'app.current_user_id',
+          value: (await supabase.auth.getUser()).data.user?.id || ''
+        })
+      } catch (_) { /* ignora se non disponibile */ }
 
       const { data: spesa, error: spesaError } = await supabase
         .from('spese')

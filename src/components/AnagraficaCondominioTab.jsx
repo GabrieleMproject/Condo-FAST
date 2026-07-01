@@ -1,20 +1,24 @@
 // src/components/AnagraficaCondominioTab.jsx
 import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { Search, UserCog, Edit, X, Mail, Phone, Home, Download, FileText } from 'lucide-react'
+import { Search, UserCog, Edit, X, Mail, Phone, Home, Download, FileText, Upload } from 'lucide-react'
 import { exportAnagraficaXlsx } from '../lib/exportXlsx'
 import { exportAnagraficaPdf } from '../lib/exportPdf'
 import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
+import { usePersone } from '../hooks/usePersone'
+import AnagraficaImport from './AnagraficaImport'
 
 export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   const { profile } = usePlan()
   const { checkWatermark, WatermarkModal } = useWatermark()
+  const { importPersone } = usePersone()
   const [persone, setPersone] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filtroRuolo, setFiltroRuolo] = useState('tutti') // 'tutti' | 'proprietario' | 'inquilino'
   const [editingPersona, setEditingPersona] = useState(null) // persona in editing
+  const [showImport, setShowImport] = useState(false)
 
   // Stati per la modale di editing
   const [nome, setNome] = useState('')
@@ -119,6 +123,46 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
     }
   }
 
+  const handleImport = async (rows) => {
+    const { data: unitaCondominio } = await supabase
+      .from('unita')
+      .select('id, numero, scala, piano')
+      .eq('condominio_id', condominioId)
+
+    const mappedRows = rows.map(r => {
+      let unita_id = null
+      const strUnita = String(r.unita || '').trim().toLowerCase()
+      if (strUnita && unitaCondominio) {
+        const match = unitaCondominio.find(u => {
+          const num = String(u.numero || '').trim().toLowerCase()
+          const cleanNum = num.replace(/^0+/, '') || '0'
+          const cleanStr = strUnita.replace(/^0+/, '') || '0'
+          const scalaNum = `${String(u.scala || '').trim().toLowerCase()} ${num}`.trim()
+          const isNumEqual = !isNaN(cleanNum) && !isNaN(cleanStr) && Number(cleanNum) === Number(cleanStr)
+          return num === strUnita || cleanNum === cleanStr || isNumEqual || scalaNum === strUnita || strUnita === `int. ${num}` || strUnita === `int ${num}` || strUnita === `interno ${num}` || strUnita.endsWith(` ${num}`)
+        })
+        if (match) {
+          unita_id = match.id
+        }
+      }
+
+      let ruolo = String(r.ruolo || '').trim().toLowerCase()
+      if (ruolo !== 'proprietario' && ruolo !== 'inquilino') {
+        ruolo = unita_id ? 'proprietario' : ''
+      }
+
+      return {
+        ...r,
+        unita_id,
+        ruolo
+      }
+    })
+
+    const result = await importPersone(mappedRows)
+    await caricaPersone()
+    return result
+  }
+
   return (
     <div style={styles.container}>
       <WatermarkModal />
@@ -152,6 +196,14 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
             </button>
           ))}
           <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
+            <button
+              type="button"
+              onClick={() => setShowImport(true)}
+              style={{ ...styles.filterBtn(false), display: 'flex', alignItems: 'center', gap: 6, color: '#60a5fa', border: '1px solid rgba(96,165,250,0.3)', padding: '6px 10px' }}
+              title="Importa anagrafica da file Excel, Word o PDF"
+            >
+              <Upload size={14} /> Importa
+            </button>
             <button
               type="button"
               onClick={() => exportAnagraficaXlsx({ condominio: { nome: 'Condominio' }, persone: personeFiltrate })}
@@ -295,6 +347,11 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modale Importazione AI */}
+      {showImport && (
+        <AnagraficaImport onImport={handleImport} onClose={() => setShowImport(false)} />
       )}
     </div>
   )

@@ -105,17 +105,17 @@ export default function AnagraficaImport({ onImport, onClose }) {
 
       if (ext === 'xlsx' || ext === 'xls') {
         const raw = await parseXlsx(file)
-        parsed = normalizeRows(raw)
+        parsed = normalizeRows(raw || [])
       } else if (ext === 'csv') {
         const raw = await parseCsv(file)
-        parsed = normalizeRows(raw)
+        parsed = normalizeRows(raw || [])
       } else if (['pdf', 'docx', 'jpg', 'jpeg', 'png', 'webp', 'txt'].includes(ext)) {
         setAiLoading(true)
         const raw = await estraiAnagraficaDaFile(file)
-        parsed = normalizeRows(raw)
+        parsed = normalizeRows(raw || [])
         setAiLoading(false)
       } else {
-        throw new Error('Formato non supportato. Usa xlsx, csv, pdf, docx o immagini.')
+        throw new Error('Formato non supportato. Usa xlsx, xls, csv, pdf, docx (Word) o immagini.')
       }
 
       if (!parsed || parsed.length === 0) throw new Error('Nessun dato trovato nel file.')
@@ -183,7 +183,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
                 <>
                   <div style={styles.uploadIcon}>📂</div>
                   <p style={styles.dropText}>Trascina qui il file o <span style={styles.link}>clicca per sfogliare</span></p>
-                  <p style={styles.dropSub}>Formati supportati: <strong>XLSX, CSV</strong> (parsing diretto) · <strong>PDF, DOCX</strong> (estrazione AI)</p>
+                  <p style={styles.dropSub}>Formati supportati: <strong>XLSX, XLS, CSV</strong> (Excel/tabelle) · <strong>PDF, DOCX (Word)</strong> (estrazione AI)</p>
                 </>
               )}
               <input

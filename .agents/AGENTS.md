@@ -246,5 +246,34 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Sostituzione Parser Locale in Anagrafica (`AnagraficaImport.jsx` & `fileExtractor.js`):** Sostituito il parser AI locale buggato (che usava `callClaudeWithHistory` andando in crash con i PDF a causa della sanitizzazione degli array di oggetti, e tentava di leggere file `.docx` come testo grezzo via FileReader) con la nuova funzione centralizzata `estraiAnagraficaDaFile` esportata da `fileExtractor.js`. Ora l'importazione supporta nativamente e senza errori PDF, DOCX, XLSX, CSV e Immagini (JPG, PNG, WEBP). Aggiunta inoltre la guardia difensiva per fogli Excel vuoti e visualizzazione/editing del `codice_fiscale` nello step di preview.
 - **Robustezza AI e MIME Type:** Aggiunto il controllo preliminare di sicurezza `validaMimeType` e `maxTokens: 3000` alle estrazioni strutturali in `fileExtractor.js`.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S18 (1 Luglio 2026 - Archiviazione Estratti Conto e Passaggio di Consegne)
+
+### 1. Decisioni di Prodotto e Normative
+- **Archiviazione Automatica Estratti Conto:** Nessuna eliminazione al caricamento di un nuovo file; i vecchi estratti diventano `'estratto_conto_archivio'` visibili nell'apposita categoria del cassetto documenti.
+- **Esportazione Massiva Passaggio di Consegne (Art. 20 GDPR / Artt. 1129, 1130, 1130-bis, 1138 c.c.):** Implementato pulsante nella parte inferiore della scheda Panoramica del condominio per scaricare un archivio `.zip` strutturato.
+- **Checklist Normativa e Revisore AI:** Implementato controllo pre-download che verifica anagrafica, regolamento (>10 condòmini), tabelle millesimali, verbali e rendiconto/estratti conto bancari, mostrando spunte verdi o avvisi in tempo reale.
+- **Libreria JSZip:** Autorizzata e installata la libreria standard `jszip` per la compressione client-side dei documenti di archivio da Supabase Storage insieme al Super-File Excel Multifoglio.
+
+### 2. Bug Risolti
+- **Query su `persone`:** Risolto bug di query su `persone` (mancata colonna `condominio_id`, ora usa join su `occupanti_unita!inner`).
+- **Saldi iniziali:** Risolto bug su saldi iniziali (sostituita tabella inesistente con calcolo su `saldi_iniziali_unita` e `rate_unita`).
+- **Esercizio spese nell'export Excel:** Risolto bug su esercizio spese nell'export Excel aggiungendo la join su `esercizi(anno, nome)`.
+- **Anagrafica unità:** Allineamento lettura relazionale `o.persone` nell'anagrafica unità.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S19 (1 Luglio 2026 - Importazione Anagrafica da Scheda Condominio)
+
+### 1. Decisioni sul Workflow e UI
+- **Importazione AI in Scheda Condominio Locale (`AnagraficaCondominioTab.jsx`):** Aggiunto il pulsante **"📂 Importa"** direttamente nella barra strumenti della scheda locale "Anagrafica" del singolo condominio, eliminando la necessità di recarsi nella sezione globale `/anagrafica` per caricare file storici.
+- **Supporto Esplicito Formati Excel e Word:** Aggiornata la UI e i messaggi di validazione in `AnagraficaImport.jsx` per esplicitare e garantire il supporto a file **Excel (XLSX, XLS)**, **Word (DOCX)**, **PDF** e **CSV**, rendendo immediata la comprensione dei formati caricabili dall'amministratore.
+
+### 2. Bug e Regressioni Risolti (Fix Bug Triager)
+- **Abbinamento Automatico Unità e Zeri Iniziali (`handleImport`):** Migliorato l'algoritmo di confronto e auto-mapping tra la stringa `unita` estratta dall'AI o da Excel e le unità del database nel condominio corrente. Aggiunta la rimozione degli zeri iniziali (`replace(/^0+/, '')`) e l'uguaglianza numerica (`Number(cleanNum) === Number(cleanStr)`), consentendo di abbinare correttamente i condòmini anche quando i formati numerici differiscono tra DB (es. `"1"`) e file sorgente (es. `"01"`, `"001"`, `"1.0"`).
+- **Protezione da Errori di Parsing in `normalizeRows`:** Aggiunto il fallback difensivo `normalizeRows(raw || [])` in `AnagraficaImport.jsx` per prevenire eccezioni di tipo `Cannot read properties of null` nel caso in cui l'estrazione AI o il parser restituiscano un risultato nullo.
+
+
 
 

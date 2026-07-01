@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabaseClient'
 import DocumentiCondominio from '../components/DocumentiCondominio'
 import ComunicazioniTab from '../components/ComunicazioniTab'
 import AnagraficaCondominioTab from '../components/AnagraficaCondominioTab'
+import PassaggioConsegneSection from '../components/PassaggioConsegneSection'
 import {
   DoorOpen, Layers, ArrowUpDown, Wallet, ClipboardList, CalendarDays,
   MoveVertical, Trees, ParkingCircle, UserCheck,
@@ -336,6 +337,8 @@ export default function CondominiDetailPage() {
                 <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.7, margin: 0 }}>{c.note}</p>
               </div>
             )}
+
+            <PassaggioConsegneSection condominioId={c.id} condominio={c} />
           </>
         )}
 

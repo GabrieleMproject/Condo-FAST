@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import ExcelJS from 'exceljs'
 import Papa from 'papaparse'
-import { callClaudeWithHistory } from '../lib/claudeClient'
+import { estraiAnagraficaDaFile } from '../lib/fileExtractor'
 
 // ── Colonne attese (flessibili — l'AI normalizza i nomi) ──────────────────
 const CAMPI_ATTESI = ['nome','cognome','email','telefono','indirizzo','citta','cap','provincia','codice_fiscale','ruolo','unita']
@@ -16,6 +16,7 @@ function parseXlsx(file) {
         const workbook = new ExcelJS.Workbook()
         await workbook.xlsx.load(e.target.result)
         const worksheet = workbook.worksheets[0]
+        if (!worksheet) { resolve([]); return; }
         const rows = []
         let headers = []
         worksheet.eachRow((row, rowNumber) => {
@@ -49,74 +50,6 @@ function parseCsv(file) {
   })
 }
 
-function readFileAsBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target.result.split(',')[1])
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
-function readFileAsText(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target.result)
-    reader.onerror = reject
-    reader.readAsText(file)
-  })
-}
-
-// ── AI parsing via claudeClient ───────────────────────────────────────────
-async function parseWithAI(file, fileType) {
-  let messages = []
-
-  if (fileType === 'pdf') {
-    const base64 = await readFileAsBase64(file)
-    messages = [{
-      role: 'user',
-      content: [
-        {
-          type: 'document',
-          source: { type: 'base64', media_type: 'application/pdf', data: base64 }
-        },
-        {
-          type: 'text',
-          text: `Estrai tutti i dati anagrafici di persone presenti in questo documento.
-Per ogni persona restituisci un oggetto JSON con questi campi (lascia vuoto "" se non presente):
-nome, cognome, email, telefono, indirizzo, citta, cap, provincia, codice_fiscale, ruolo (proprietario/inquilino/""), unita (numero unità/appartamento se presente).
-Rispondi SOLO con un array JSON valido, senza testo aggiuntivo, senza backtick markdown.
-Esempio: [{"nome":"Mario","cognome":"Rossi","email":"mario@example.com","telefono":"3331234567","indirizzo":"Via Roma 1","citta":"Milano","cap":"20100","provincia":"MI","codice_fiscale":"RSSMRA80A01F205X","ruolo":"proprietario","unita":"3"}]`
-        }
-      ]
-    }]
-  } else {
-    const text = await readFileAsText(file)
-    messages = [{
-      role: 'user',
-      content: `Estrai tutti i dati anagrafici di persone presenti in questo testo.
-Per ogni persona restituisci un oggetto JSON con questi campi (lascia vuoto "" se non presente):
-nome, cognome, email, telefono, indirizzo, citta, cap, provincia, codice_fiscale, ruolo (proprietario/inquilino/""), unita.
-Rispondi SOLO con un array JSON valido, senza testo aggiuntivo, senza backtick markdown.
-
-TESTO:
-${text.substring(0, 15000)}`
-    }]
-  }
-
-  const responseText = await callClaudeWithHistory(messages, {
-    funzione: 'import_anagrafica',
-    maxTokens: 4000,
-  })
-
-  const cleaned = responseText
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```\s*$/i, '')
-    .trim()
-
-  return JSON.parse(cleaned)
-}
 
 // ── Normalizza un array di righe grezze → struttura standard ───────────────
 function normalizeRows(rows) {
@@ -176,12 +109,13 @@ export default function AnagraficaImport({ onImport, onClose }) {
       } else if (ext === 'csv') {
         const raw = await parseCsv(file)
         parsed = normalizeRows(raw)
-      } else if (ext === 'pdf' || ext === 'docx' || ext === 'doc') {
+      } else if (['pdf', 'docx', 'jpg', 'jpeg', 'png', 'webp', 'txt'].includes(ext)) {
         setAiLoading(true)
-        parsed = await parseWithAI(file, ext === 'pdf' ? 'pdf' : 'docx')
+        const raw = await estraiAnagraficaDaFile(file)
+        parsed = normalizeRows(raw)
         setAiLoading(false)
       } else {
-        throw new Error('Formato non supportato. Usa xlsx, csv, pdf o docx.')
+        throw new Error('Formato non supportato. Usa xlsx, csv, pdf, docx o immagini.')
       }
 
       if (!parsed || parsed.length === 0) throw new Error('Nessun dato trovato nel file.')
@@ -189,7 +123,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
       setStep('preview')
     } catch (err) {
       setAiLoading(false)
-      setError(err.message)
+      setError(err?.message || 'Si è verificato un errore durante la lettura del file')
     }
   }
 
@@ -255,7 +189,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".xlsx,.xls,.csv,.pdf,.docx,.doc"
+                accept=".xlsx,.xls,.csv,.pdf,.docx,.jpg,.png,.webp"
                 style={{ display: 'none' }}
                 onChange={(e) => handleFile(e.target.files[0])}
               />
@@ -281,7 +215,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    {['nome','cognome','email','telefono','indirizzo','citta','ruolo','unita',''].map(h => (
+                    {['nome','cognome','codice_fiscale','email','telefono','indirizzo','citta','ruolo','unita',''].map(h => (
                       <th key={h} style={styles.th}>{h}</th>
                     ))}
                   </tr>
@@ -289,7 +223,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
                 <tbody>
                   {rows.map((row, i) => (
                     <tr key={i} style={styles.tr}>
-                      {['nome','cognome','email','telefono','indirizzo','citta','ruolo','unita'].map(field => (
+                      {['nome','cognome','codice_fiscale','email','telefono','indirizzo','citta','ruolo','unita'].map(field => (
                         <td key={field} style={styles.td}>
                           <input
                             style={styles.cellInput}

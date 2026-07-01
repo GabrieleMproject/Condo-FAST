@@ -320,6 +320,7 @@ Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
 // Ritorna { etichette_categorie, ordine_categorie, sezioni:{...flags}, note }.
 // NB: estrae la PRESENTAZIONE (ordine/etichette/sezioni presenti), NON i numeri.
 export async function estraiStrutturaConsuntivo(file) {
+  if (!validaMimeType(file)) return null;
   const prep = await preparaContenuto(file) // { contenuto, isPdf?, mediaType?, isVisual? } oppure testo
 
   const system =
@@ -349,15 +350,15 @@ Imposta "attiva": true per ogni sezione effettivamente presente nel modello, fal
   if (prep.isPdf) {
     raw = await callClaudeDocument(userPrompt, prep.contenuto, {
       system, mediaType: prep.mediaType || 'application/pdf',
-      funzione: 'estrai_struttura_consuntivo',
+      funzione: 'estrai_struttura_consuntivo', maxTokens: 3000,
     })
   } else if (prep.isVisual) {
     raw = await callClaudeVision(`${system}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
-      funzione: 'estrai_struttura_consuntivo',
+      funzione: 'estrai_struttura_consuntivo', maxTokens: 3000,
     })
   } else {
     raw = await callClaude(`${userPrompt}\n\n--- DOCUMENTO ---\n${prep.contenuto}`, {
-      system, funzione: 'estrai_struttura_consuntivo',
+      system, funzione: 'estrai_struttura_consuntivo', maxTokens: 3000,
     })
   }
 
@@ -366,5 +367,50 @@ Imposta "attiva": true per ogni sezione effettivamente presente nel modello, fal
     return JSON.parse(clean)
   } catch {
     throw new Error('Struttura consuntivo non interpretabile dalla risposta AI')
+  }
+}
+
+// ─── ANAGRAFICA: Estrai elenco persone e condòmini da qualsiasi file (PDF, DOCX, XLSX, JPG...) ───
+export async function estraiAnagraficaDaFile(file) {
+  if (!validaMimeType(file)) return null;
+  const prep = await preparaContenuto(file)
+
+  const systemPrompt = `Sei un esperto di amministrazione condominiale italiana.
+Il tuo compito è estrarre tutti i dati anagrafici di persone o condòmini presenti nel documento.
+Per ogni persona restituisci un oggetto JSON con questi campi esattamente (lascia vuoto "" se non presente):
+nome, cognome, email, telefono, indirizzo, citta, cap, provincia, codice_fiscale, ruolo ("proprietario"|"inquilino"|""), unita (numero unità/appartamento se presente).
+Rispondi SOLO con un array JSON valido, senza testo aggiuntivo, senza backtick markdown.
+Esempio: [{"nome":"Mario","cognome":"Rossi","email":"mario@example.com","telefono":"3331234567","indirizzo":"Via Roma 1","citta":"Milano","cap":"20100","provincia":"MI","codice_fiscale":"RSSMRA80A01F205X","ruolo":"proprietario","unita":"3"}]`
+
+  const userPrompt = `Estrai l'elenco di tutte le persone e i loro dati anagrafici presenti in questo contenuto:`
+
+  let raw
+  if (prep.isPdf) {
+    raw = await callClaudeDocument(userPrompt, prep.contenuto, {
+      system: systemPrompt,
+      mediaType: prep.mediaType || 'application/pdf',
+      funzione: 'import_anagrafica',
+      maxTokens: 4000,
+    })
+  } else if (prep.isVisual) {
+    raw = await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
+      funzione: 'import_anagrafica',
+      maxTokens: 4000,
+    })
+  } else {
+    raw = await callClaude(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
+      system: systemPrompt,
+      funzione: 'import_anagrafica',
+      maxTokens: 4000,
+    })
+  }
+
+  const clean = String(raw).replace(/```json|```/g, '').trim()
+  try {
+    const parsed = JSON.parse(clean)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (e) {
+    console.error('Errore parsing JSON anagrafica:', e, clean)
+    throw new Error('L\'AI non ha restituito un formato JSON valido per l\'anagrafica.')
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { callClaude } from '../lib/claudeClient'
+import { callClaudeDocument } from '../lib/claudeClient'
 
 const BUCKET = 'documenti-condominio'
 
@@ -33,7 +33,7 @@ export function useDocumenti(condominioId) {
     setError(null)
     try {
       // 1. Upload file su Storage
-      const ext = file.name.split('.').pop()
+      const ext = file.name.split('.').pop().toLowerCase()
       const path = `${condominioId}/${Date.now()}_${file.name}`
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
@@ -122,24 +122,16 @@ export function useDocumenti(condominioId) {
 async function estraiTestoPDF(file) {
   try {
     const base64 = await fileToBase64(file)
-    const data = await callClaude({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 4000,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'document',
-            source: { type: 'base64', media_type: 'application/pdf', data: base64 }
-          },
-          {
-            type: 'text',
-            text: 'Estrai tutto il testo di questo documento in modo fedele e completo. Restituisci solo il testo estratto, senza commenti o formattazione aggiuntiva.'
-          }
-        ]
-      }]
-    })
-    return data.content?.[0]?.text || null
+    const testo = await callClaudeDocument(
+      'Estrai tutto il testo di questo documento in modo fedele e completo. Restituisci solo il testo estratto, senza commenti o formattazione aggiuntiva.',
+      base64,
+      {
+        maxTokens: 4000,
+        mediaType: 'application/pdf',
+        funzione: 'estrai_testo_pdf'
+      }
+    )
+    return testo || null
   } catch {
     return null
   }

@@ -9,7 +9,7 @@ const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).to
 
 export default function EstrattoContoPage() {
   const { condominioId } = useParams();
-  const { documenti, fetch: fetchDocumenti, upload: uploadDoc, remove: removeDoc } = useDocumenti(condominioId);
+  const { documenti, fetch: fetchDocumenti, upload: uploadDoc } = useDocumenti(condominioId);
 
   const [movimenti, setMovimenti] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -138,30 +138,34 @@ export default function EstrattoContoPage() {
         nuovoAl = new Date(Math.max(...dateValide)).toISOString().split('T')[0];
       }
 
-      // Logica di gestione sostituzione / conservazione del file estratto conto
+      // Logica di gestione archiviazione / salvataggio del file estratto conto
       let msgSupplementare = '';
-      const { dal: vecchioDal, al: vecchioAl } = parseDateEstratto(docEstratto);
-
-      const isSostituzione =
-        !docEstratto ||
-        (!vecchioDal || !vecchioAl || !nuovoDal || !nuovoAl) ||
-        (new Date(nuovoDal) <= new Date(vecchioDal) && new Date(nuovoAl) >= new Date(vecchioAl));
-
-      if (isSostituzione) {
-        setUploadProgress('Salvataggio file estratto conto...');
-        if (docEstratto) {
-          try { await removeDoc(docEstratto); } catch { /* ignore if already deleted */ }
-        }
-        const noteJson = JSON.stringify({ dal: nuovoDal, al: nuovoAl });
-        await uploadDoc(file, 'estratto_conto', file.name.replace(/\.[^.]+$/, ''), noteJson);
-        if (docEstratto) {
-          msgSupplementare = ' (File principale sostituito con versione più aggiornata)';
-        } else {
-          msgSupplementare = ' (File salvato come estratto conto principale)';
+      if (docEstratto) {
+        setUploadProgress('Archiviazione precedente estratto conto e salvataggio del nuovo...');
+        try {
+          const { dal: oldDal, al: oldAl } = parseDateEstratto(docEstratto);
+          const periodoStr = (oldDal && oldAl) ? ` (${formattaData(oldDal)} - ${formattaData(oldAl)})` : '';
+          const nuovoNome = `${docEstratto.nome || 'Estratto Conto'}${periodoStr} [Archiviato]`;
+          const { error: errArchivioDb } = await supabase
+            .from('documenti_condominio')
+            .update({
+              tipo: 'estratto_conto_archivio',
+              nome: nuovoNome,
+              note: JSON.stringify({ dal: oldDal, al: oldAl, archiviato_il: new Date().toISOString() })
+            })
+            .eq('id', docEstratto.id);
+          if (errArchivioDb) throw errArchivioDb;
+          msgSupplementare = ' (precedente estratto conto archiviato nei Documenti Condominio)';
+        } catch (errArchivio) {
+          console.error('Errore durante archiviazione vecchio estratto conto:', errArchivio);
         }
       } else {
-        msgSupplementare = ` (File scaricabile non sostituito: copre periodo parziale ${formattaData(nuovoDal)}–${formattaData(nuovoAl)})`;
+        setUploadProgress('Salvataggio file estratto conto...');
+        msgSupplementare = ' (File salvato come estratto conto principale)';
       }
+
+      const noteJson = JSON.stringify({ dal: nuovoDal, al: nuovoAl });
+      await uploadDoc(file, 'estratto_conto', file.name.replace(/\.[^.]+$/, ''), noteJson);
 
       setUploadProgress(`✅ ${records.length} movimenti importati${msgSupplementare}`);
       await loadMovimenti();

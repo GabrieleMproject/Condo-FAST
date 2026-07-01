@@ -7,6 +7,7 @@ const TIPI = [
   { value: 'verbale', label: 'Verbale assemblea', icon: '📝' },
   { value: 'contratto', label: 'Contratto/Appalto', icon: '📄' },
   { value: 'certificazione', label: 'Certificazione', icon: '🏆' },
+  { value: 'estratto_conto_archivio', label: 'Estratto Conto (Archivio)', icon: '🏛️' },
   { value: 'altro', label: 'Altro', icon: '📁' },
 ]
 
@@ -16,6 +17,7 @@ const CATEGORIE_LABEL = {
   verbale: { label: 'Verbale', color: '#10b981' },
   contratto: { label: 'Contratto', color: '#f59e0b' },
   certificazione: { label: 'Certificazione', color: '#06b6d4' },
+  estratto_conto_archivio: { label: 'Archivio E/C', color: '#0ea5e9' },
   altro: { label: 'Altro', color: '#6b7280' },
 }
 
@@ -64,9 +66,18 @@ export default function DocumentiCondominio({ condominioId }) {
   }
 
   const handleOpen = async (doc) => {
+    const newWindow = window.open('about:blank', '_blank')
+    if (!newWindow) {
+      alert('Abilita i popup per visualizzare il file.')
+      return
+    }
     const url = await getSignedUrl(doc.url_storage)
-    if (url) window.open(url, '_blank')
-    else alert('Impossibile aprire il documento')
+    if (url) {
+      newWindow.location.href = url
+    } else {
+      newWindow.close()
+      alert('Impossibile aprire il documento')
+    }
   }
 
   const handleDelete = async (doc) => {
@@ -78,7 +89,8 @@ export default function DocumentiCondominio({ condominioId }) {
     }
   }
 
-  const filtrati = filtroTipo === 'tutti' ? documenti : documenti.filter(d => d.tipo === filtroTipo)
+  const documentiVisibili = documenti.filter(d => d.tipo !== 'estratto_conto')
+  const filtrati = filtroTipo === 'tutti' ? documentiVisibili : documentiVisibili.filter(d => d.tipo === filtroTipo)
 
   return (
     <div style={{ padding: '24px 0' }}>
@@ -119,7 +131,7 @@ export default function DocumentiCondominio({ condominioId }) {
             {tipo === 'tutti' ? 'Tutti' : TIPI.find(t => t.value === tipo)?.label}
             {tipo !== 'tutti' && (
               <span style={{ marginLeft: 6, color: '#64748b' }}>
-                {documenti.filter(d => d.tipo === tipo).length}
+                {documentiVisibili.filter(d => d.tipo === tipo).length}
               </span>
             )}
           </button>

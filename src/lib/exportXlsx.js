@@ -146,3 +146,45 @@ export async function exportRipartizioneXlsx({ condominio, esercizio, spese, uni
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export async function exportAnagraficaXlsx({ condominio, persone }) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'CondoAI'; wb.created = new Date(); wb.modified = new Date();
+  buildFoglioPersone(wb.addWorksheet('Anagrafica'), persone);
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Anagrafica_${(condominio?.nome || 'Condominio').replace(/\s+/g, '_')}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildFoglioPersone(ws, persone) {
+  ws.columns = [
+    { header: 'Cognome', key: 'cognome', width: 20 },
+    { header: 'Nome', key: 'nome', width: 20 },
+    { header: 'Ruolo', key: 'ruoli', width: 20 },
+    { header: 'Unità', key: 'unita', width: 25 },
+    { header: 'Email', key: 'email', width: 30 },
+    { header: 'Telefono', key: 'telefono', width: 20 },
+    { header: 'Indirizzo', key: 'indirizzo', width: 35 },
+    { header: 'Città', key: 'citta', width: 20 },
+  ];
+  styleHeader(ws.getRow(1));
+  persone.forEach((p, i) => {
+    const row = ws.addRow({
+      cognome: p.cognome || '',
+      nome: p.nome || '',
+      ruoli: p.ruoli || '',
+      unita: p.unitaNomi || '',
+      email: p.email || '',
+      telefono: p.telefono || '',
+      indirizzo: p.indirizzo || '',
+      citta: p.citta || '',
+    });
+    styleDataRow(row, i);
+  });
+}

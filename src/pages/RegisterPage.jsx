@@ -11,6 +11,7 @@ export default function RegisterPage() {
 
   const [form, setForm] = useState({ nome: '', cognome: '', email: '', password: '' });
   const [dpaAccepted, setDpaAccepted] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,8 +20,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!dpaAccepted) {
-      setError('Devi accettare il Contratto di Trattamento Dati (DPA) per continuare.');
+    if (!tosAccepted || !dpaAccepted) {
+      setError('Devi accettare i Termini, la Privacy e il DPA per continuare.');
       return;
     }
     setError('');
@@ -143,13 +144,35 @@ export default function RegisterPage() {
               )}
             </div>
 
+            {/* ── Termini & Privacy Checkbox ── */}
+            <div className="rounded-lg p-4" style={{ background: '#0f172a', border: '1px solid #334155' }}>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={tosAccepted}
+                  onChange={e => setTosAccepted(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded accent-blue-600 flex-shrink-0"
+                />
+                <span className="text-slate-300 text-sm leading-relaxed">
+                  Ho letto e accetto i{' '}
+                  <a href="/tos" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                    Termini di Servizio
+                  </a>
+                  {' '}e la{' '}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                    Privacy Policy
+                  </a>.
+                </span>
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={loading || !dpaAccepted}
+              disabled={loading || !dpaAccepted || !tosAccepted}
               className="w-full py-2.5 rounded-lg text-white font-medium text-sm transition-opacity"
               style={{
-                background: dpaAccepted ? '#2563eb' : '#334155',
-                cursor: dpaAccepted ? 'pointer' : 'not-allowed',
+                background: (dpaAccepted && tosAccepted) ? '#2563eb' : '#334155',
+                cursor: (dpaAccepted && tosAccepted) ? 'pointer' : 'not-allowed',
                 opacity: loading ? 0.7 : 1,
               }}
             >

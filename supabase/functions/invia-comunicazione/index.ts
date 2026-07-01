@@ -104,7 +104,7 @@ serve(async (req) => {
         const resData = await res.json()
         invii.push({ email: dest.email, id: resData.id })
       } catch (err) {
-        console.error(`Errore invio a ${dest.email}:`, err.message)
+        console.error(`Errore invio (email offuscata):`, err.message)
         statoInvio = 'fallita'
         errorMsg = err.message
       }
@@ -126,7 +126,7 @@ serve(async (req) => {
         .single()
 
       if (dbError) {
-        console.error(`Errore scrittura log DB per ${dest.email}:`, dbError.message)
+        console.error(`Errore scrittura log DB (email offuscata):`, dbError.message)
         logInseriti.push({ email: dest.email, success: false, error: dbError.message })
       } else {
         logInseriti.push({ email: dest.email, success: true, id: dbData.id })

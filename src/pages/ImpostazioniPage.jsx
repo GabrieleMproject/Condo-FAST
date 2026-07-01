@@ -4,35 +4,27 @@ import { usePlan, PIANI } from '../hooks/usePlan'
 import { PlanBadge } from '../components/PlanGate'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
+import { toast } from 'react-hot-toast'
+import { generaExportGDPR } from '../lib/exportDatiGdpr'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
 async function avviaCheckout({ piano, userId, userEmail }) {
-  const res = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ piano, userId, userEmail }),
-    }
-  )
-  const data = await res.json()
-  if (data.url) window.location.href = data.url
-  else throw new Error(data.error || 'Errore creazione checkout')
+  const { data, error } = await supabase.functions.invoke('stripe-checkout', {
+    body: { piano, userId, userEmail },
+  })
+  if (error) throw new Error(error.message || 'Errore creazione checkout')
+  if (data?.url) window.location.href = data.url
+  else throw new Error(data?.error || 'Errore creazione checkout')
 }
 
 // ── Stripe Customer Portal ────────────────────────────────────────────────
 async function apriPortaleStripe(customerId) {
-  const res = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-portal`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId, returnUrl: window.location.href }),
-    }
-  )
-  const data = await res.json()
-  if (data.url) window.location.href = data.url
-  else throw new Error(data.error || 'Errore apertura portale')
+  const { data, error } = await supabase.functions.invoke('stripe-portal', {
+    body: { customerId, returnUrl: window.location.href },
+  })
+  if (error) throw new Error(error.message || 'Errore apertura portale')
+  if (data?.url) window.location.href = data.url
+  else throw new Error(data?.error || 'Errore apertura portale')
 }
 
 // ── Logo → data-URL PNG ridimensionato (max 400px) ────────────────────────
@@ -75,10 +67,17 @@ export default function ImpostazioniPage() {
   const [loadingPortale, setLoadingPortale]   = useState(false)
   const [error, setError]                     = useState(null)
 
+  // Stati GDPR Oblio e Portabilità
+  const [isExporting, setIsExporting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmWord, setDeleteConfirmWord] = useState('')
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+
   // ── Branding studio ───────────────────────────────────────────────────
   const logoInputRef = useRef()
   const [branding, setBranding] = useState({
     studio_nome: '', studio_indirizzo: '', studio_contatti: '', logo_base64: '',
+    ragione_sociale: '', partita_iva: '', codice_fiscale: '',
   })
   const [savingBranding, setSavingBranding] = useState(false)
   const [brandingSaved, setBrandingSaved]   = useState(false)
@@ -91,6 +90,9 @@ export default function ImpostazioniPage() {
         studio_indirizzo: profile.studio_indirizzo || '',
         studio_contatti:  profile.studio_contatti || '',
         logo_base64:      profile.logo_base64 || '',
+        ragione_sociale:  profile.ragione_sociale || '',
+        partita_iva:      profile.partita_iva || '',
+        codice_fiscale:   profile.codice_fiscale || '',
       })
     }
   }, [profile])
@@ -155,6 +157,41 @@ export default function ImpostazioniPage() {
   const giorniTrialRimasti = trialEndsAt
     ? Math.max(0, Math.ceil((new Date(trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)))
     : 0
+
+  // ── GDPR Handlers ─────────────────────────────────────────────────────
+  const handleExportGDPR = async () => {
+    setIsExporting(true)
+    try {
+      await generaExportGDPR()
+      toast.success('Dati esportati con successo!')
+    } catch (e) {
+      toast.error('Errore durante l\'esportazione dati: ' + e.message)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmWord !== 'ELIMINA') {
+      toast.error('Devi digitare ELIMINA per confermare.')
+      return
+    }
+    setIsDeletingAccount(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account')
+      if (error) throw new Error(error.message)
+      if (data?.error) throw new Error(data.error)
+      
+      toast.success('Account eliminato. Addio!')
+      setTimeout(() => {
+        supabase.auth.signOut()
+        window.location.href = '/'
+      }, 2000)
+    } catch (e) {
+      toast.error('Errore durante l\'eliminazione: ' + e.message)
+      setIsDeletingAccount(false)
+    }
+  }
 
   return (
     <div style={styles.page}>
@@ -320,6 +357,35 @@ export default function ImpostazioniPage() {
                   />
                 </div>
                 <div>
+                  <label style={styles.brandingLabel}>Ragione Sociale Azienda</label>
+                  <input
+                    style={styles.brandingInput}
+                    placeholder="Ragione Sociale dell'azienda di gestione"
+                    value={branding.ragione_sociale}
+                    onChange={e => setBranding(b => ({ ...b, ragione_sociale: e.target.value }))}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={styles.brandingLabel}>Partita IVA</label>
+                    <input
+                      style={styles.brandingInput}
+                      placeholder="Numero P.IVA"
+                      value={branding.partita_iva}
+                      onChange={e => setBranding(b => ({ ...b, partita_iva: e.target.value }))}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={styles.brandingLabel}>Codice Fiscale</label>
+                    <input
+                      style={styles.brandingInput}
+                      placeholder="Codice Fiscale"
+                      value={branding.codice_fiscale}
+                      onChange={e => setBranding(b => ({ ...b, codice_fiscale: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div>
                   <label style={styles.brandingLabel}>Indirizzo</label>
                   <input
                     style={styles.brandingInput}
@@ -453,6 +519,88 @@ export default function ImpostazioniPage() {
             )}
           </div>
         </section>
+
+        {/* ── DATI E PRIVACY (GDPR) ─────────────────────────────────── */}
+        <section style={{ ...styles.section, marginTop: 40 }}>
+          <h2 style={{ ...styles.sectionTitle, color: '#f87171' }}>Dati e Privacy (GDPR)</h2>
+          <div style={{ ...styles.pianoCard, border: '1px solid #7f1d1d' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid #334155' }}>
+              <div>
+                <h3 style={{ color: '#e2e8f0', fontSize: 16, margin: '0 0 4px' }}>Esporta i tuoi dati (Art. 20 GDPR)</h3>
+                <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>Scarica una copia JSON di tutte le anagrafiche, condomini e spese collegate al tuo account.</p>
+              </div>
+              <button 
+                onClick={handleExportGDPR} 
+                disabled={isExporting}
+                style={{ background: '#334155', color: '#f8fafc', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+              >
+                {isExporting ? 'Generazione in corso...' : '📥 Esporta Dati'}
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ color: '#f87171', fontSize: 16, margin: '0 0 4px' }}>Diritto all'Oblio (Art. 17 GDPR)</h3>
+                <p style={{ color: '#fca5a5', fontSize: 13, margin: 0 }}>Elimina definitivamente il tuo account e tutti i condomini. <strong>Azione irreversibile.</strong></p>
+              </div>
+              <button 
+                onClick={() => setShowDeleteModal(true)} 
+                style={{ background: '#7f1d1d', color: '#fecaca', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+              >
+                🗑️ Elimina Account
+              </button>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ── MODALE DOPPIA CONFERMA ELIMINAZIONE ───────────────────── */}
+        {showDeleteModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(4px)' }}>
+            <div style={{ background: '#1e293b', width: 440, borderRadius: 16, padding: 32, border: '1px solid #7f1d1d', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+              
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#450a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                <span style={{ fontSize: 24 }}>⚠️</span>
+              </div>
+              
+              <h2 style={{ color: '#f87171', fontSize: 22, margin: '0 0 12px', textAlign: 'center', fontFamily: 'Sora, sans-serif' }}>Danger Zone</h2>
+              <p style={{ color: '#cbd5e1', fontSize: 14, textAlign: 'center', lineHeight: 1.5, marginBottom: 24 }}>
+                Stai per eliminare il tuo account. Verranno distrutti <strong>immediatamente</strong> e <strong>definitivamente</strong> tutti i condomini, i pagamenti e le anagrafiche legate al tuo profilo.
+              </p>
+              
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 8, textAlign: 'center' }}>
+                  Digita <strong>ELIMINA</strong> per confermare:
+                </label>
+                <input 
+                  type="text" 
+                  value={deleteConfirmWord}
+                  onChange={e => setDeleteConfirmWord(e.target.value)}
+                  placeholder="ELIMINA"
+                  style={{ width: '100%', background: '#0f172a', border: '1px solid #7f1d1d', borderRadius: 8, padding: '12px', color: '#f87171', fontSize: 16, textAlign: 'center', outline: 'none', fontWeight: 600, textTransform: 'uppercase', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button 
+                  onClick={() => { setShowDeleteModal(false); setDeleteConfirmWord(''); }}
+                  style={{ flex: 1, background: 'transparent', color: '#94a3b8', border: '1px solid #334155', padding: 12, borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Annulla
+                </button>
+                <button 
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount || deleteConfirmWord !== 'ELIMINA'}
+                  style={{ flex: 1, background: '#ef4444', color: '#fff', border: 'none', padding: 12, borderRadius: 8, cursor: (isDeletingAccount || deleteConfirmWord !== 'ELIMINA') ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: (isDeletingAccount || deleteConfirmWord !== 'ELIMINA') ? 0.5 : 1 }}
+                >
+                  {isDeletingAccount ? 'Distruzione in corso...' : 'Sì, distruggi dati'}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

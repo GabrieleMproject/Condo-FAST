@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { callClaude } from '../lib/claudeClient';
 
+const formattaData = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—');
+
 export default function RiconciliazioniPage() {
   const { condominioId } = useParams();
+  const navigate = useNavigate();
 
   const [movimenti, setMovimenti] = useState([]);
   const [fatture, setFatture] = useState([]);
@@ -13,6 +16,7 @@ export default function RiconciliazioniPage() {
   const [analizzando, setAnalizzando] = useState(false);
   const [progressoAI, setProgressoAI] = useState('');
   const [filtroStato, setFiltroStato] = useState('suggerita');
+  const [showOrfaniModal, setShowOrfaniModal] = useState(false);
 
   useEffect(() => {
     if (condominioId) loadAll();
@@ -119,6 +123,7 @@ Abbina i movimenti alle fatture.`;
 
       setProgressoAI(`✅ ${suggerimenti.length} abbinamenti suggeriti`);
       await loadAll();
+      setShowOrfaniModal(true);
       setTimeout(() => setProgressoAI(''), 4000);
     } catch (e) {
       setProgressoAI('Errore: ' + e.message);
@@ -129,20 +134,25 @@ Abbina i movimenti alle fatture.`;
 
   // ─── Conferma / rifiuta ──────────────────────────────────────
   async function aggiornaStato(ricId, nuovoStato, movimentoId, fatturaId) {
-    await supabase.from('riconciliazioni').update({
-      stato: nuovoStato,
-      confermata_at: nuovoStato === 'confermata' ? new Date().toISOString() : null,
-    }).eq('id', ricId);
+    try {
+      const { error: errRic } = await supabase.from('riconciliazioni').update({
+        stato: nuovoStato,
+        confermata_at: nuovoStato === 'confermata' ? new Date().toISOString() : null,
+      }).eq('id', ricId);
+      if (errRic) throw errRic;
 
-    if (nuovoStato === 'confermata') {
-      // Segna movimento e fattura come riconciliati
-      await Promise.all([
-        supabase.from('estratto_conto').update({ riconciliato: true }).eq('id', movimentoId),
-        supabase.from('fatture_fornitori').update({ riconciliata: true }).eq('id', fatturaId),
-      ]);
+      if (nuovoStato === 'confermata') {
+        const [resMov, resFatt] = await Promise.all([
+          supabase.from('estratto_conto').update({ riconciliato: true }).eq('id', movimentoId),
+          supabase.from('fatture_fornitori').update({ riconciliata: true }).eq('id', fatturaId),
+        ]);
+        if (resMov.error) throw resMov.error;
+        if (resFatt.error) throw resFatt.error;
+      }
+      await loadAll();
+    } catch (err) {
+      alert('Errore aggiornamento riconciliazione: ' + err.message);
     }
-
-    await loadAll();
   }
 
   // ─── Filtro ──────────────────────────────────────────────────
@@ -152,6 +162,7 @@ Abbina i movimenti alle fatture.`;
   const kpiConfermate = riconciliazioni.filter(r => r.stato === 'confermata').length;
   const kpiRifiutate = riconciliazioni.filter(r => r.stato === 'rifiutata').length;
   const movDaRic = movimenti.filter(m => !m.riconciliato).length;
+  const movOrfani = movimenti.filter(m => !m.riconciliato && !riconciliazioni.some(r => r.movimento_id === m.id && (r.stato === 'suggerita' || r.stato === 'confermata')));
 
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#475569', fontFamily: "'Sora', sans-serif" }}>Caricamento...</div>;
 
@@ -200,10 +211,15 @@ Abbina i movimenti alle fatture.`;
           { val: 'suggerita', label: '🤖 Da confermare' },
           { val: 'confermata', label: '✓ Confermati' },
           { val: 'rifiutata', label: '✕ Rifiutati' },
-        ].map(({ val, label }) => (
+          { val: 'orfani', label: `⚠️ Senza Fattura (${movOrfani.length})`, isAlert: movOrfani.length > 0 },
+        ].map(({ val, label, isAlert }) => (
           <button
             key={val}
-            style={{ ...styles.tBtn, ...(filtroStato === val ? styles.tBtnActive : {}) }}
+            style={{ 
+              ...styles.tBtn, 
+              ...(filtroStato === val ? styles.tBtnActive : {}),
+              ...(isAlert && val === 'orfani' && filtroStato !== 'orfani' ? { background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440' } : {}) 
+            }}
             onClick={() => setFiltroStato(val)}
           >
             {label}
@@ -212,7 +228,24 @@ Abbina i movimenti alle fatture.`;
       </div>
 
       {/* Lista */}
-      {ricFiltrate.length === 0 ? (
+      {filtroStato === 'orfani' ? (
+        movOrfani.length === 0 ? (
+          <div style={styles.empty}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+            <p>Nessun movimento in uscita senza fattura.</p>
+          </div>
+        ) : (
+          <div style={styles.lista}>
+            {movOrfani.map(m => (
+              <MovimentoOrfanoCard
+                key={m.id}
+                mov={m}
+                onInserisci={() => navigate(`/condomini/${condominioId}/spese`, { state: { prefillSpesa: { importo: Math.abs(m.importo), data_spesa: m.data_movimento, descrizione: m.causale || '', fornitore: m.fornitore_rilevato || '' } } })}
+              />
+            ))}
+          </div>
+        )
+      ) : ricFiltrate.length === 0 ? (
         <div style={styles.empty}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🔗</div>
           <p>
@@ -231,6 +264,50 @@ Abbina i movimenti alle fatture.`;
               onRifiuta={() => aggiornaStato(r.id, 'rifiutata', r.movimento_id, r.fattura_id)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Modal Avviso Movimenti Orfani */}
+      {showOrfaniModal && movOrfani.length > 0 && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalBox}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>⚠️ Rilevati Movimenti senza Fattura ({movOrfani.length})</h3>
+              <button style={styles.modalCloseBtn} onClick={() => setShowOrfaniModal(false)}>✕</button>
+            </div>
+            <p style={styles.modalText}>
+              L'AI ha terminato l'analisi ma ha rilevato <b>{movOrfani.length} movimenti bancari in uscita</b> che non hanno alcuna fattura associata in archivio. Puoi inserire le spese mancanti ora (con precompilazione automatica dai dati del bonifico) oppure consultare la scheda <b>"⚠️ Senza Fattura"</b> in qualsiasi momento.
+            </p>
+            <div style={styles.modalList}>
+              {movOrfani.map(m => (
+                <div key={m.id} style={styles.modalItem}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: '#e2e8f0' }}>{m.causale || '—'}</div>
+                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3 }}>
+                      📅 {formattaData(m.data_movimento)} · {m.fornitore_rilevato ? `🏢 ${m.fornitore_rilevato}` : 'Fornitore non rilevato'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                    <span style={{ color: '#ef4444', fontWeight: 700, fontSize: 14 }}>
+                      -€ {Math.abs(m.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                    </span>
+                    <button
+                      style={styles.btnAction}
+                      onClick={() => {
+                        setShowOrfaniModal(false);
+                        navigate(`/condomini/${condominioId}/spese`, { state: { prefillSpesa: { importo: Math.abs(m.importo), data_spesa: m.data_movimento, descrizione: m.causale || '', fornitore: m.fornitore_rilevato || '' } } });
+                      }}
+                    >
+                      ➕ Inserisci Spesa
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={styles.modalFooter}>
+              <button style={styles.btnChiudiModal} onClick={() => setShowOrfaniModal(false)}>Ho capito, chiudi</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -373,4 +450,37 @@ const styles = {
   btnConferma: { background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 13 },
   btnRifiuta: { background: 'none', color: '#64748b', border: '1px solid #334155', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 },
   statoBadge: { borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600 },
+  modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 },
+  modalBox: { background: '#1e293b', borderRadius: 16, border: '1px solid #334155', width: '100%', maxWidth: 640, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' },
+  modalHeader: { padding: '18px 24px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  modalTitle: { margin: 0, fontSize: 18, fontWeight: 700, color: '#f87171' },
+  modalCloseBtn: { background: 'none', border: 'none', color: '#94a3b8', fontSize: 20, cursor: 'pointer' },
+  modalText: { padding: '16px 24px', margin: 0, fontSize: 14, color: '#cbd5e1', lineHeight: 1.5 },
+  modalList: { padding: '0 24px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 },
+  modalItem: { background: '#0f172a', padding: '14px 18px', borderRadius: 12, border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 },
+  modalFooter: { padding: '16px 24px', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end', background: '#0f172a', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+  btnChiudiModal: { background: '#334155', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 },
+  btnAction: { background: 'linear-gradient(135deg, #2563eb, #3b82f6)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' },
 };
+
+function MovimentoOrfanoCard({ mov, onInserisci }) {
+  return (
+    <div style={{ ...styles.card, borderColor: '#ef444440', background: '#ef444408', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div>
+        <div style={{ fontSize: 11, color: '#f87171', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>⚠️ MOVIMENTO IN USCITA SENZA FATTURA</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>{mov.causale || '—'}</div>
+        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>
+          📅 {formattaData(mov.data_movimento)} · {mov.fornitore_rilevato ? `🏢 ${mov.fornitore_rilevato}` : 'Fornitore non rilevato'}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+        <span style={{ color: '#ef4444', fontWeight: 700, fontSize: 18 }}>
+          -€ {Math.abs(mov.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+        </span>
+        <button style={styles.btnAction} onClick={onInserisci}>
+          ➕ Inserisci Spesa / Fattura
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -1,9 +1,15 @@
 // src/components/AnagraficaCondominioTab.jsx
 import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { Search, UserCog, Edit, X, Mail, Phone, Home } from 'lucide-react'
+import { Search, UserCog, Edit, X, Mail, Phone, Home, Download, FileText } from 'lucide-react'
+import { exportAnagraficaXlsx } from '../lib/exportXlsx'
+import { exportAnagraficaPdf } from '../lib/exportPdf'
+import { usePlan } from '../hooks/usePlan'
+import { useWatermark } from '../hooks/useWatermark'
 
-export default function AnagraficaCondominioTab({ condominioId }) {
+export default function AnagraficaCondominioTab({ condominioId, condominio }) {
+  const { profile } = usePlan()
+  const { checkWatermark, WatermarkModal } = useWatermark()
   const [persone, setPersone] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -115,6 +121,8 @@ export default function AnagraficaCondominioTab({ condominioId }) {
 
   return (
     <div style={styles.container}>
+      <WatermarkModal />
+      
       {/* Sezione Filtri */}
       <div style={styles.filterRow}>
         <div style={styles.searchSec}>
@@ -143,6 +151,28 @@ export default function AnagraficaCondominioTab({ condominioId }) {
               {f.label}
             </button>
           ))}
+          <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
+            <button
+              type="button"
+              onClick={() => exportAnagraficaXlsx({ condominio: { nome: 'Condominio' }, persone: personeFiltrate })}
+              style={{ ...styles.filterBtn(false), display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '6px 10px' }}
+              title="Esporta in Excel"
+            >
+              <Download size={14} /> Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                checkWatermark((withWatermark) => {
+                  exportAnagraficaPdf({ condominio: condominio || { nome: 'Condominio' }, persone: personeFiltrate, profile, withWatermark })
+                })
+              }}
+              style={{ ...styles.filterBtn(false), display: 'flex', alignItems: 'center', gap: 6, color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '6px 10px' }}
+              title="Esporta in PDF"
+            >
+              <FileText size={14} /> PDF
+            </button>
+          </div>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiFattura, getTipoFile } from '../lib/fileExtractor';
+import { useFornitori } from '../hooks/useFornitori';
 
 const STATI = {
   attesa:     { label: 'In attesa',  color: '#f59e0b', bg: '#f59e0b20' },
@@ -42,6 +43,10 @@ export default function FattureFornitoriPage() {
   const f24InputRef            = useRef();
   const [f24TargetId, setF24TargetId] = useState(null);
   const [f24Busy, setF24Busy]  = useState(false);
+
+  // Modulo Fiscale (Fornitori)
+  const { fornitori, createFornitore } = useFornitori();
+  const [pendingNewFornitore, setPendingNewFornitore] = useState(null);
 
   useEffect(() => {
     if (condominioId) { loadFatture(); loadSpese(); }
@@ -140,7 +145,7 @@ export default function FattureFornitoriPage() {
       setUploadProgress('Salvataggio...');
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { error } = await supabase.from('fatture_fornitori').insert({
+      const { error, data: insertedRow } = await supabase.from('fatture_fornitori').insert({
         condominio_id:   condominioId,
         user_id:         user.id,
         fornitore:       datiAI.fornitore || 'Fornitore sconosciuto',
@@ -155,12 +160,39 @@ export default function FattureFornitoriPage() {
         stato:           'attesa',
         pdf_url:         fileUrl,
         ai_dati_estratti: datiAI,
-      });
+      }).select().single();
 
       if (error) throw error;
 
       setUploadProgress('✅ Fattura importata con successo');
       await loadFatture();
+      
+      // Controllo Fornitore per Modulo Fiscale
+      if (datiAI.partita_iva_fornitore || datiAI.fornitore) {
+        const pIvaClean = (datiAI.partita_iva_fornitore || '').replace(/\s+/g, '');
+        let fornitoreTrovato = null;
+        
+        if (pIvaClean) {
+          fornitoreTrovato = fornitori.find(f => f.partita_iva === pIvaClean || f.codice_fiscale === pIvaClean);
+        } else {
+          const nomeClean = (datiAI.fornitore || '').trim().toLowerCase();
+          fornitoreTrovato = fornitori.find(f => f.ragione_sociale.toLowerCase() === nomeClean);
+        }
+
+        if (fornitoreTrovato) {
+          // Assegna in automatico se trovato in rubrica
+          await supabase.from('fatture_fornitori').update({ fornitore_id: fornitoreTrovato.id }).eq('id', insertedRow.id);
+          await loadFatture();
+        } else {
+          // Proponi salvataggio in rubrica
+          setPendingNewFornitore({ 
+            fatturaId: insertedRow.id, 
+            ragioneSociale: datiAI.fornitore || '', 
+            partitaIva: pIvaClean 
+          });
+        }
+      }
+
       setTimeout(() => setUploadProgress(''), 3000);
     } catch (e) {
       setErroreUpload('Errore: ' + e.message);
@@ -218,6 +250,7 @@ export default function FattureFornitoriPage() {
   function startEdit(f) {
     setEditingId(f.id);
     setEditData({
+      fornitore_id:     f.fornitore_id || '',
       fornitore:        f.fornitore,
       numero_fattura:   f.numero_fattura || '',
       data_fattura:     f.data_fattura,
@@ -236,6 +269,7 @@ export default function FattureFornitoriPage() {
     if (!update.data_scadenza)  delete update.data_scadenza;
     if (!update.numero_fattura) delete update.numero_fattura;
     if (!update.spesa_id) update.spesa_id = null;
+    if (!update.fornitore_id) update.fornitore_id = null;
     // ritenuta: '' → null, altrimenti numero
     update.ritenuta_acconto =
       (update.ritenuta_acconto === '' || update.ritenuta_acconto == null)
@@ -389,6 +423,7 @@ export default function FattureFornitoriPage() {
                     onSave={() => saveEdit(f.id)}
                     onCancel={() => setEditingId(null)}
                     spese={spese}
+                    fornitori={fornitori}
                   />
                 ) : (
                   <div style={styles.cardContent}>
@@ -445,16 +480,84 @@ export default function FattureFornitoriPage() {
           })}
         </div>
       )}
+
+      {/* Modal Nuovo Fornitore */}
+      {pendingNewFornitore && (
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.modalContent, width: 450 }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: 18, color: '#f8fafc' }}>Nuovo Fornitore Rilevato</h3>
+            <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 20 }}>
+              L'AI ha rilevato un nuovo fornitore nella fattura. Vuoi salvarlo in rubrica per utilizzarlo nelle <b>Certificazioni Fiscali (CU/770)</b>?
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+              <div>
+                <label style={{ display: 'block', color: '#64748b', fontSize: 11, marginBottom: 4 }}>Ragione Sociale</label>
+                <input 
+                  type="text" 
+                  value={pendingNewFornitore.ragioneSociale} 
+                  onChange={e => setPendingNewFornitore({ ...pendingNewFornitore, ragioneSociale: e.target.value })}
+                  style={{ ...styles.input, width: '100%' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', color: '#64748b', fontSize: 11, marginBottom: 4 }}>P.IVA / CF</label>
+                <input 
+                  type="text" 
+                  value={pendingNewFornitore.partitaIva} 
+                  onChange={e => setPendingNewFornitore({ ...pendingNewFornitore, partitaIva: e.target.value })}
+                  style={{ ...styles.input, width: '100%' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button 
+                onClick={() => setPendingNewFornitore(null)}
+                style={{ ...styles.filterBtn(false), padding: '8px 16px', background: 'transparent' }}
+              >
+                Ignora per ora
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    const newFornitore = await createFornitore({ 
+                      ragione_sociale: pendingNewFornitore.ragioneSociale || 'Fornitore sconosciuto', 
+                      partita_iva: pendingNewFornitore.partitaIva || null
+                    });
+                    await supabase.from('fatture_fornitori').update({ fornitore_id: newFornitore.id }).eq('id', pendingNewFornitore.fatturaId);
+                    await loadFatture();
+                    setPendingNewFornitore(null);
+                  } catch(e) {
+                    alert('Errore: ' + e.message);
+                  }
+                }}
+                style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              >
+                Salva in Rubrica
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
-function EditFattura({ data, onChange, onSave, onCancel, spese }) {
+function EditFattura({ data, onChange, onSave, onCancel, spese, fornitori }) {
   const upd = (field, val) => onChange(prev => ({ ...prev, [field]: val }));
   return (
     <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div>
+        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Fornitore (Rubrica)</label>
+        <select value={data.fornitore_id || ''} onChange={e => upd('fornitore_id', e.target.value)}
+          style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 7, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, marginBottom: 4 }}>
+          <option value="">-- Seleziona Fornitore --</option>
+          {fornitori && fornitori.map(f => <option key={f.id} value={f.id}>{f.ragione_sociale}</option>)}
+        </select>
+        <input type="text" placeholder="Oppure testo libero..." value={data.fornitore ?? ''} onChange={e => upd('fornitore', e.target.value)}
+            style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 7, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, boxSizing: 'border-box' }} />
+      </div>
       {[
-        { label: 'Fornitore',          field: 'fornitore',        type: 'text'   },
         { label: 'N° Fattura',         field: 'numero_fattura',   type: 'text'   },
         { label: 'Data Fattura',       field: 'data_fattura',     type: 'date'   },
         { label: 'Data Scadenza',      field: 'data_scadenza',    type: 'date'   },

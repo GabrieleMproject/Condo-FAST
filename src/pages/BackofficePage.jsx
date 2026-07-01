@@ -1,0 +1,277 @@
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import { Users, Ticket, CheckCircle, Search, Save, MessageSquare } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+
+export default function BackofficePage() {
+  const [activeTab, setActiveTab] = useState('utenti')
+  const [utenti, setUtenti] = useState([])
+  const [tickets, setTickets] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const [ticketSearch, setTicketSearch] = useState('')
+  const [rispostaText, setRispostaText] = useState('')
+  const [selectedTicket, setSelectedTicket] = useState(null)
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const { data: prof, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, piano, is_superadmin, studio_nome, ragione_sociale, email:id') // Actually email is in auth.users, which we can't easily query without edge function or raw_user_meta_data.
+        // Profiles doesn't store email by default, but we can just show the id. We'll fetch it.
+      
+      // But we can get email from auth.users only if we are superadmin? Wait, we can't do that easily unless we join, but auth.users is in a different schema.
+      // Let's just use what we have in profiles for now.
+
+      if (profErr) throw profErr
+      setUtenti(prof || [])
+
+      const { data: tick, error: tickErr } = await supabase
+        .from('tickets_assistenza')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (tickErr) throw tickErr
+      setTickets(tick || [])
+
+    } catch (err) {
+      toast.error('Errore caricamento dati: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRispondi = async (ticket) => {
+    if (!rispostaText.trim()) return toast.error('Inserisci una risposta')
+    try {
+      const { error } = await supabase
+        .from('tickets_assistenza')
+        .update({ risposta_admin: rispostaText, stato: 'chiuso', updated_at: new Date().toISOString() })
+        .eq('id', ticket.id)
+
+      if (error) throw error
+      toast.success('Risposta inviata e ticket chiuso')
+      setRispostaText('')
+      setSelectedTicket(null)
+      fetchData()
+    } catch (err) {
+      toast.error('Errore invio risposta: ' + err.message)
+    }
+  }
+
+  const handleChiudiTicket = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('tickets_assistenza')
+        .update({ stato: 'chiuso', updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+      if (error) throw error
+      toast.success('Ticket chiuso')
+      fetchData()
+    } catch (err) {
+      toast.error('Errore chiusura ticket: ' + err.message)
+    }
+  }
+
+  const handlePromuovi = async (id, currentVal) => {
+    if (!window.confirm('Sei sicuro di voler cambiare i permessi di superadmin per questo utente?')) return
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_superadmin: !currentVal })
+        .eq('id', id)
+      if (error) throw error
+      toast.success('Permessi aggiornati')
+      fetchData()
+    } catch (err) {
+      toast.error('Errore aggiornamento permessi: ' + err.message)
+    }
+  }
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.header}>
+        <h1 style={styles.title}>SuperAdmin Backoffice</h1>
+        <p style={styles.subtitle}>Gestione piattaforma, utenti e assistenza.</p>
+      </div>
+
+      <div style={styles.tabs}>
+        <button
+          style={{ ...styles.tabButton, ...(activeTab === 'utenti' ? styles.tabActive : {}) }}
+          onClick={() => setActiveTab('utenti')}
+        >
+          <Users size={16} /> Utenti & Piani
+        </button>
+        <button
+          style={{ ...styles.tabButton, ...(activeTab === 'tickets' ? styles.tabActive : {}) }}
+          onClick={() => setActiveTab('tickets')}
+        >
+          <Ticket size={16} /> Ticket Assistenza ({tickets.filter(t => t.stato === 'aperto').length})
+        </button>
+      </div>
+
+      <div style={styles.content}>
+        {loading ? (
+          <div style={{ color: '#94a3b8', padding: 20 }}>Caricamento in corso...</div>
+        ) : (
+          <>
+            {activeTab === 'utenti' && (
+              <div style={styles.card}>
+                <h2 style={styles.cardTitle}>Lista Utenti</h2>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr>
+                        <th style={styles.th}>ID Utente</th>
+                        <th style={styles.th}>Nome Studio / Ragione Sociale</th>
+                        <th style={styles.th}>Piano</th>
+                        <th style={styles.th}>Ruolo</th>
+                        <th style={styles.th}>Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {utenti.map(u => (
+                        <tr key={u.id} style={styles.tr}>
+                          <td style={styles.td}><span style={{ fontFamily: 'monospace', color: '#94a3b8' }}>{u.id.substring(0, 8)}...</span></td>
+                          <td style={styles.td}>{u.ragione_sociale || u.studio_nome || '—'}</td>
+                          <td style={styles.td}>
+                            <span style={{ padding: '4px 8px', borderRadius: 4, background: '#1e3a8a', color: '#bfdbfe', fontSize: 12, fontWeight: 600 }}>
+                              {(u.piano || 'trial').toUpperCase()}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            {u.is_superadmin ? (
+                              <span style={{ color: '#10b981', fontWeight: 600 }}>SuperAdmin</span>
+                            ) : (
+                              <span style={{ color: '#64748b' }}>Admin</span>
+                            )}
+                          </td>
+                          <td style={styles.td}>
+                            <button 
+                              onClick={() => handlePromuovi(u.id, u.is_superadmin)}
+                              style={{ background: 'transparent', border: '1px solid #334155', color: '#cbd5e1', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
+                            >
+                              Toggle SuperAdmin
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'tickets' && (
+              <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+                <div style={{ ...styles.card, flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <h2 style={styles.cardTitle} style={{ margin: 0 }}>Ticket Aperti</h2>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {tickets.filter(t => t.stato === 'aperto').map(t => (
+                      <div key={t.id} style={{ ...styles.ticketCard, border: selectedTicket?.id === t.id ? '1px solid #3b82f6' : '1px solid #334155' }} onClick={() => setSelectedTicket(t)}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <span style={{ fontWeight: 600, color: '#f1f5f9' }}>{t.titolo}</span>
+                          <span style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(t.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: 13, color: '#cbd5e1', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {t.messaggio}
+                        </p>
+                      </div>
+                    ))}
+                    {tickets.filter(t => t.stato === 'aperto').length === 0 && (
+                      <p style={{ color: '#64748b', fontSize: 13 }}>Nessun ticket aperto.</p>
+                    )}
+                  </div>
+
+                  <h3 style={{ ...styles.cardTitle, marginTop: 40, marginBottom: 20 }}>Ticket Chiusi</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, opacity: 0.7 }}>
+                    {tickets.filter(t => t.stato === 'chiuso').map(t => (
+                      <div key={t.id} style={styles.ticketCard} onClick={() => setSelectedTicket(t)}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <span style={{ fontWeight: 600, color: '#94a3b8', textDecoration: 'line-through' }}>{t.titolo}</span>
+                          <span style={{ fontSize: 12, color: '#64748b' }}>{new Date(t.updated_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ticket Detail Sidebar */}
+                {selectedTicket && (
+                  <div style={{ ...styles.card, flex: 1, position: 'sticky', top: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                      <h2 style={{ margin: 0, color: '#f1f5f9', fontSize: 18 }}>{selectedTicket.titolo}</h2>
+                      <span style={{ padding: '4px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', background: selectedTicket.stato === 'aperto' ? '#fef08a' : '#10b981', color: selectedTicket.stato === 'aperto' ? '#854d0e' : '#fff' }}>
+                        {selectedTicket.stato}
+                      </span>
+                    </div>
+
+                    <div style={{ marginBottom: 20, padding: 16, background: '#0f172a', borderRadius: 8, border: '1px solid #1e293b' }}>
+                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Messaggio Utente ({selectedTicket.utente_id.substring(0,8)})</div>
+                      <div style={{ color: '#cbd5e1', fontSize: 14, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedTicket.messaggio}</div>
+                    </div>
+
+                    {selectedTicket.stato === 'aperto' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <label style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>La tua risposta</label>
+                        <textarea
+                          value={rispostaText}
+                          onChange={e => setRispostaText(e.target.value)}
+                          style={styles.textarea}
+                          placeholder="Scrivi qui la tua risposta all'utente..."
+                        />
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <button onClick={() => handleRispondi(selectedTicket)} style={styles.btnSubmit}>
+                            <Send size={16} /> Rispondi e Chiudi
+                          </button>
+                          <button onClick={() => handleChiudiTicket(selectedTicket.id)} style={styles.btnSecondary}>
+                            Chiudi Senza Rispondere
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ padding: 16, background: '#064e3b', borderRadius: 8, border: '1px solid #047857' }}>
+                        <div style={{ fontSize: 11, color: '#6ee7b7', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Risposta Inviata</div>
+                        <div style={{ color: '#fff', fontSize: 14, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedTicket.risposta_admin || 'Chiuso senza risposta testuale.'}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const styles = {
+  page: { padding: '28px 32px', background: '#0f172a', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
+  header: { marginBottom: 30 },
+  title: { color: '#e2e8f0', fontSize: 26, fontWeight: 700, margin: 0, textAlign: 'left' },
+  subtitle: { color: '#64748b', fontSize: 13, marginTop: 4, textAlign: 'left' },
+  tabs: { display: 'flex', gap: 8, borderBottom: '1px solid #1e293b', paddingBottom: 16, marginBottom: 24 },
+  tabButton: { display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', color: '#64748b', padding: '8px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
+  tabActive: { background: '#1e293b', color: '#f1f5f9' },
+  content: {},
+  card: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 24, textAlign: 'left' },
+  cardTitle: { color: '#e2e8f0', fontSize: 18, fontWeight: 700, marginBottom: 20, marginTop: 0 },
+  table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
+  th: { padding: '12px 16px', borderBottom: '1px solid #334155', color: '#94a3b8', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  tr: { borderBottom: '1px solid #1e293b' },
+  td: { padding: '14px 16px', color: '#e2e8f0', fontSize: 14 },
+  ticketCard: { background: '#0f172a', padding: 16, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s' },
+  textarea: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '12px 14px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', minHeight: 120, resize: 'vertical' },
+  btnSubmit: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 2 },
+  btnSecondary: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 1 },
+}

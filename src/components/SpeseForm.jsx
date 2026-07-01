@@ -18,7 +18,7 @@ const inputStyle = {
 }
 const labelStyle = { display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }
 
-export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false }) {
+export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false, prefillData = null }) {
   const [form, setForm] = useState({
     esercizio_id: esercizioId,
     condominio_id: condominioId,
@@ -65,14 +65,22 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
         })
         setImportiManuali(init)
       }
+    } else if (prefillData) {
+      setForm(prev => ({
+        ...prev,
+        importo: prefillData.importo || prev.importo,
+        data_spesa: prefillData.data_spesa || prev.data_spesa,
+        descrizione: prefillData.descrizione || prev.descrizione,
+        fornitore: prefillData.fornitore || prev.fornitore,
+      }))
     }
-  }, [spesaInEdit])
+  }, [spesaInEdit, prefillData])
 
   useEffect(() => {
     if (form.criterio === 'manuale') { calcolaManuale(); return }
     if (!form.importo || !unita?.length) return
     calcolaRipartizioni()
-  }, [form.importo, form.criterio, form.tabella_millesimale_id, form.percentuale_millesimi, importiManuali])
+  }, [form.importo, form.criterio, form.tabella_millesimale_id, form.percentuale_millesimi, importiManuali, unita])
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -255,6 +263,8 @@ Formato JSON:
       e.tabella = 'Seleziona una tabella millesimale'
     if (form.criterio === 'manuale' && Math.abs(scartoManuale) > 0.01)
       e.manuale = `La somma degli importi (€${totaleRipartito.toFixed(2)}) deve corrispondere al totale (€${(parseFloat(form.importo) || 0).toFixed(2)}). Scarto: €${scartoManuale.toFixed(2)}`
+    if (ripartizioni.length === 0)
+      e.ripartizioni = 'Impossibile ripartire la spesa: verifica che la tabella millesimale selezionata contenga valori validi.'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -617,6 +627,11 @@ Formato JSON:
       )}
 
       {/* Azioni */}
+      {errors.ripartizioni && (
+        <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 16, background: '#ef444410', padding: '10px 14px', borderRadius: 8, border: '1px solid #ef444430' }}>
+          ⚠ {errors.ripartizioni}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 28 }}>
         <button onClick={onCancel} style={{
           background: 'transparent', color: '#94a3b8', border: '1px solid #334155',

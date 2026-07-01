@@ -6,6 +6,7 @@ import { useUnita } from '../hooks/useUnita'
 import { useMillesimi } from '../hooks/useMillesimi'
 import { estraiStrutturaConsuntivo } from '../lib/fileExtractor'
 import { exportConsuntivoPdf } from '../lib/exportConsuntivo'
+import { useWatermark } from '../hooks/useWatermark'
 import { FileText, Upload, Download, RefreshCw } from 'lucide-react'
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -22,6 +23,7 @@ export default function ConsuntivoTab({ condominioId }) {
   const { unita, getProprietario } = useUnita(condominioId)
   const { tabelle, fetch: fetchMill, getMillesimiUnita, getTotaleTabella } = useMillesimi(condominioId)
   const { data, template, loading, error, fetch } = useConsuntivo(condominioId, esercizioId)
+  const { checkWatermark, WatermarkModal } = useWatermark()
 
   useEffect(() => {
     supabase.from('condomini').select('*').eq('id', condominioId).single()
@@ -60,21 +62,22 @@ export default function ConsuntivoTab({ condominioId }) {
 
   async function scaricaPdf() {
     if (!data) return
-    try {
-      await exportConsuntivoPdf({
+    checkWatermark((withWatermark) => {
+      exportConsuntivoPdf({
         condominio, consuntivo: data, template, unita, getProprietario,
-        getMillesimiUnita, getTotaleTabella, tabellaMillId,
+        getMillesimiUnita, getTotaleTabella, tabellaMillId, withWatermark
+      }).catch(err => {
+        setTplMsg('Errore generazione PDF: ' + err.message)
+        setTimeout(() => setTplMsg(''), 5000)
       })
-    } catch (err) {
-      setTplMsg('Errore generazione PDF: ' + err.message)
-      setTimeout(() => setTplMsg(''), 5000)
-    }
+    })
   }
 
   if (!esercizioId) return <div style={st.empty}>Nessun esercizio contabile.</div>
 
   return (
     <div>
+      <WatermarkModal />
       {/* Toolbar */}
       <div style={st.toolbar}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

@@ -21,16 +21,6 @@ function getServiceClient() {
   )
 }
 
-// ── Estrae user_id dal JWT senza libreria esterna ─────────────────────────
-function getUserIdFromJWT(token: string): string | null {
-  try {
-    const payload = token.split('.')[1]
-    const decoded = JSON.parse(atob(payload))
-    return decoded.sub ?? null
-  } catch {
-    return null
-  }
-}
 
 // ── Controlla e registra rate limit ──────────────────────────────────────
 async function checkRateLimit(userId: string): Promise<{ allowed: boolean; retryAfter?: number }> {
@@ -78,15 +68,22 @@ serve(async (req) => {
       )
     }
 
-    const token  = authHeader.replace('Bearer ', '')
-    const userId = getUserIdFromJWT(token)
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
 
-    if (!userId) {
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+
+    if (authError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Token non valido' }),
+        JSON.stringify({ error: 'Token non valido o utente non autenticato' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    const userId = user.id
 
     // ── 2. Rate limiting ───────────────────────────────────────────────
     const { allowed, retryAfter } = await checkRateLimit(userId)

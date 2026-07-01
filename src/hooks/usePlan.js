@@ -102,7 +102,7 @@ export function PlanProvider({ children }) {
     try {
       const { data: prof } = await supabase
         .from('profiles')
-        .select('piano, stripe_customer_id, stripe_subscription_id, stripe_status, trial_ends_at, studio_nome, studio_indirizzo, studio_contatti, logo_base64')
+        .select()
         .eq('id', user.id)
         .single()
 
@@ -145,6 +145,9 @@ export function PlanProvider({ children }) {
           studio_indirizzo: brandingData.studio_indirizzo || null,
           studio_contatti:  brandingData.studio_contatti || null,
           logo_base64:      brandingData.logo_base64 || null,
+          ragione_sociale:  brandingData.ragione_sociale || null,
+          partita_iva:      brandingData.partita_iva || null,
+          codice_fiscale:   brandingData.codice_fiscale || null,
         })
         .eq('id', user.id)
 
@@ -210,6 +213,7 @@ export function PlanProvider({ children }) {
     piano,
     limiti,
     profile,
+    isSuperAdmin: profile?.is_superadmin === true,
 
     isTrialActive,
     isTrialScaduto,

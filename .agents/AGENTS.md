@@ -158,6 +158,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Aggiornamento Simultaneo Anagrafica da Rate**: Abilitata la modifica dei dati anagrafici dei condòmini direttamente dalla modale delle rate (`CellEditor`) con allineamento istantaneo del DB (`persone`) e della griglia rate.
 - **Tab Anagrafica locale nel Condominio**: Aggiunto un tab dedicato alla gestione anagrafica esclusiva del condominio corrente (`AnagraficaCondominioTab.jsx`) con filtri per ruolo e modale di modifica rapida.
 - **Anagrafica Globale Multi-Condominio**: Riconfigurata la pagina `/anagrafica` della sidebar globale per implementare una visione complessiva di tutti i condomini (ad accordion) integrata con una barra di ricerca superiore per l'individuazione e l'editing istantaneo di qualsiasi condomino del sistema.
+- **Campi Fiscali Profilo Amministratore**: Aggiunte le colonne `ragione_sociale`, `partita_iva` e `codice_fiscale` alla tabella `profiles` (tramite `sql/s11_profile_fields.sql`). I campi sono sincronizzati nel form Drawer (`AppLayout.jsx`), in `ImpostazioniPage.jsx` e vengono stampati nell'intestazione del PDF consuntivo (`exportConsuntivo.js`).
 
 ### 2. Bug e Vulnerabilità Risolti
 - **Vulnerabilità getPublicUrl**: Sostituita l'esposizione degli URL pubblici completi con signed URL a tempo (scadenza a 15 minuti) autogenerati al momento del click del link "📄 File" o "📎 F24".
@@ -168,6 +169,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Crash CellEditor destructuring**: Corretto un crash fatale in `CellEditor` dovuto a props mancanti nel destructuring del componente.
 - **Rate a zero dovuto in solleciti**: Risolto un bug logico per cui le rate con dovuto a zero (es: box non partecipanti) venivano considerate "scadute" ed incluse erroneamente tra le proposte di sollecito.
 - **Alert seriali invio massivo**: Eliminata la cascata di alert sincroni bloccanti durante gli invii massivi dei solleciti dalla modale di riepilogo.
+- **Vulnerabilità IDOR e Auth Stripe**: Sostituite le chiamate `fetch` manuali con `supabase.functions.invoke()` in `AppLayout.jsx` e `ImpostazioniPage.jsx`, risolvendo un potenziale IDOR e il mancato invio dell'header di autorizzazione (fix di Bug Triager & Bug Fixer).
 
 ### 3. Fatti Verificati sul Database
 - **Campi pdf_url e f24_url**: Nel database la tabella `fatture_fornitori` accetta e memorizza indifferente URL assoluti completi o path relativi nel bucket.
@@ -176,3 +178,53 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Gestione Stato Condiviso (React Context)**: Implementata la condivisione dello stato globale del piano/profilo tramite il nuovo `PlanProvider` in `usePlan.js` (risolvendo il disallineamento del branding tra Drawer e pagina Impostazioni, ed eliminando le query duplicate su Supabase al caricamento dell'app).
 - **Rimozione JSX da file .js**: Risolto errore di build Vite/Rolldown escludendo la sintassi JSX all'interno di `usePlan.js` tramite l'utilizzo diretto di `React.createElement`.
 - **Allineamento Timezone UTC per AI log**: Risolto potenziale bug di conteggio basato sulla timezone locale impostando la query gte su timestamp UTC di inizio mese.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S13 (30 Giugno 2026)
+
+### 1. Sviluppo Backoffice e Assistenza
+- **Protezione Rotte (SuperAdminGuard):** Introdotto il concetto di SuperAdmin (gestore del SaaS) tramite il campo `is_superadmin` nella tabella `profiles`. Le rotte di backoffice (es. `/backoffice`) sono protette da questo flag.
+- **Gestione RLS per SuperAdmin:** Per evitare loop di RLS su `profiles`, è stata creata la funzione PostgreSQL `SECURITY DEFINER` `public.is_superadmin(uuid)`. Questo permette ai SuperAdmin di leggere tutti i profili e gestire globalmente le risorse, mantenendo l'isolamento per gli utenti standard.
+- **Gestione Ticket (AssistenzaPage e BackofficePage):**
+  - Creato uno schema DB (`tickets_assistenza`) per tracciare i ticket inviati dagli amministratori di condominio.
+  - Sostituito il form dummy in `AssistenzaPage` con l'invio reale al database e la visualizzazione dello storico per l'utente, incluse le eventuali risposte.
+  - Creato il pannello `/backoffice` per visualizzare tutti gli utenti (con il loro piano e stato), e per rispondere direttamente ai ticket (inserendo la risposta e segnandoli come 'chiuso').
+- **Nessun Invio Email Automatico dai Ticket per MVP:** La risposta inserita dal backoffice viene salvata sul DB e resa visibile istantaneamente nell'app (nella pagina Assistenza dell'utente), delegando un eventuale inoltro via email a implementazioni successive in base a come evolverà l'IA chatbot.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S14 (30 Giugno 2026)
+
+### 1. Decisioni sulla Sicurezza e Normativa
+- **DPA e Termini di Servizio:** Inserito un sistema di doppio checkbox nel signup per l'accettazione obbligatoria del DPA (Data Processing Agreement) e dei Termini/Privacy.
+- **Assicurazione:** Approvato il piano di sottoscrivere un'assicurazione RC Professionale / Cyber.
+
+### 2. Bug e Vulnerabilità Risolti
+- **JWT Signature Bypass in `claude-proxy`:** L'edge function ora estrae l'utente crittograficamente validando il token via `supabase.auth.getUser()`, chiudendo l'uso non autorizzato dei crediti Anthropic.
+- **Vulnerabilità IDOR in `stripe-checkout`:** Il checkout convalida l'ID dell'utente dal JWT (via `auth.getUser()`) invece di fidarsi ciecamente dei parametri `userId` inviati dal client.
+- **Data Leak / GDPR:** Rimossi log sensibili (email in `invia-comunicazione` e dettagli admin in `AppLayout.jsx`).
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S15 (30 Giugno 2026)
+
+### 1. Sviluppo Chatbot Assistenza
+- **Chatbot AI in Assistenza:** Il form ticket statico in `AssistenzaPage` è stato rimosso e sostituito con una Chatbot AI UI interattiva (che conosce la mappa del sito CondoAI).
+- **Conversione in Ticket (Fallback automatico):** Introdotto un meccanismo che permette all'utente di convertire l'intera conversazione col chatbot in un ticket formale se l'IA non ha risolto il problema. Durante la conversione, l'AI genera in background ("in silente") un titolo riassuntivo per il ticket.
+- **Privacy e GDPR (Log Chat):** Le trascrizioni delle chat vengono inviate in backoffice nella nuova tabella `chat_assistenza_logs` (tramite script `sql/s14_chat_logs.sql`). La RLS su questa tabella è ristretta per permettere la lettura solo ai superadmin. È stata inoltre implementata una policy di auto-eliminazione (soft/hard purge) a 30 giorni per minimizzare la ritenzione dei dati.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S16 (1 Luglio 2026)
+
+### 1. Decisioni sul Workflow e Riconciliazioni
+- **Workflow Riconciliazione Ibrido (Opzione 3):** Implementato un sistema di avviso per flussi in entrata/uscita non riconciliati con Pop-up post analisi AI + Badge/Tab dedicate sia nel modulo Uscite (`RiconciliazioniPage.jsx`) che nel modulo Incassi (`RiconciliazioniIncassiPage.jsx`).
+- **Inserimento Rapido e Precompilazione:** Il salvataggio di una spesa da un movimento bancario orfano utilizza il passaggio di stato via React Router (`location.state.prefillSpesa`) verso `SpesePage.jsx`, dove `SpeseForm.jsx` autocompila importo, data, descrizione e fornitore. Per gli incassi orfani, è stato implementato un abbinamento manuale rapido con un clic su tendina alle rate aperte del condominio.
+
+### 2. Bug e Regressioni Risolti (Fix Bug Triager)
+- **Gestione Errori su Scritture DB Multiple:** Avvolti i blocchi di aggiornamento di stato e abbinamento in `RiconciliazioniPage.jsx` e `RiconciliazioniIncassiPage.jsx` all'interno di costrutti `try/catch` con verifica puntuale di `.error` per prevenire stati parziali o disallineati sul DB in caso di fallimenti di rete o RLS.
+- **Validazione Ripartizioni Vuote (`SpeseForm.jsx`):** Introdotto il controllo `ripartizioni.length === 0` nel validatore del form per impedire il salvataggio su Supabase di spese prive di quote ripartite nel caso di tabelle millesimali vuote o a zero. Aggiunta inoltre la dipendenza `unita` all'hook di ricalcolo automatico.
+- **Riapertura Modale da History Router (`SpesePage.jsx`):** Implementata la pulizia immediata dello stato del router tramite `window.history.replaceState({}, '')` al consumo di `prefillSpesa`, evitando la riapertura involontaria della modale di creazione spesa al cambio di esercizio contabile.
+- **Abilitazione Tasto Modifica Spesa:** Aggiunto il pulsante "✏️ Modifica" alle card delle spese nella lista, collegando correttamente `setSpesaInEdit` e la funzione `aggiornaSpesa` importata dall'hook `useSpese`.
+- **Formattazione Date Sicura:** Esteso l'utilizzo di helper protetti per le date (`formattaData` e `dataIt`) in tutti i nuovi componenti e modali per prevenire crash di rendering in presenza di date nulle o malformate dal database.

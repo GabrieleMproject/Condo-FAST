@@ -23,6 +23,10 @@ import CondominiDetailPage from './pages/CondominiDetailPage'
 import AnagraficaPage from './pages/AnagraficaPage'
 import RiconciliazioniIncassiPage from './pages/RiconciliazioniIncassiPage'
 import ComunicazioniPage from './pages/ComunicazioniPage'
+import AssistenzaPage from './pages/AssistenzaPage'
+import ModuloFiscalePage from './pages/ModuloFiscalePage'
+import BackofficePage from './pages/BackofficePage'
+import SuperAdminGuard from './components/SuperAdminGuard'
 
 export default function App() {
   return (
@@ -52,7 +56,12 @@ export default function App() {
                 <Route path="/condomini/:condominioId/riconciliazioni-incassi" element={<RiconciliazioniIncassiPage />} />
                 <Route path="/condomini/:condominioId/dashboard-fin" element={<DashboardFinanziaria />} />
                 <Route path="/comunicazioni" element={<ComunicazioniPage />} />
+                <Route path="/fiscale" element={<ModuloFiscalePage />} />
+                <Route path="/assistenza" element={<AssistenzaPage />} />
                 <Route path="/impostazioni" element={<ImpostazioniPage />} />
+                <Route element={<SuperAdminGuard />}>
+                  <Route path="/backoffice" element={<BackofficePage />} />
+                </Route>
               </Route>
             </Route>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

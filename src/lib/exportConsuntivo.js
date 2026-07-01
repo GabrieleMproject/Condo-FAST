@@ -6,6 +6,7 @@
  */
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { applyWatermark } from './watermark'
 
 const eur = (v) => '€ ' + Number(v || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const sgn = (v) => (Number(v) < 0 ? '-' : '') + '€ ' + Math.abs(Number(v || 0)).toLocaleString('it-IT', { minimumFractionDigits: 2 })
@@ -21,9 +22,11 @@ function intestazione(doc, condominio, esercizio, branding) {
   }
   const x = branding?.logo_base64 ? 48 : 14
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(15, 23, 42)
-  doc.text(branding?.studio_nome || 'Amministrazione', x, y); y += 6
+  doc.text(branding?.ragione_sociale || branding?.studio_nome || 'Amministrazione', x, y); y += 6
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(80, 80, 80)
   if (branding?.studio_indirizzo) { doc.text(branding.studio_indirizzo, x, y); y += 5 }
+  if (branding?.partita_iva) { doc.text(`P.IVA: ${branding.partita_iva}`, x, y); y += 4.5 }
+  if (branding?.codice_fiscale) { doc.text(`C.F.: ${branding.codice_fiscale}`, x, y); y += 4.5 }
   if (branding?.studio_contatti) {
     String(branding.studio_contatti).split('\n').forEach(line => { if (line.trim()) { doc.text(line.trim(), x, y); y += 4.5 } })
   }
@@ -55,7 +58,7 @@ function sezioneTitolo(doc, y, testo) {
   return y + 4
 }
 
-export async function exportConsuntivoPdf({ condominio, consuntivo, template, unita, getProprietario, getMillesimiUnita, getTotaleTabella, tabellaMillId }) {
+export async function exportConsuntivoPdf({ condominio, consuntivo, template, unita, getProprietario, getMillesimiUnita, getTotaleTabella, tabellaMillId, withWatermark = false }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const c = consuntivo
   let y = intestazione(doc, condominio, c.esercizio, c.branding)
@@ -178,5 +181,6 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
   }
 
   footer(doc)
+  applyWatermark(doc, withWatermark)
   doc.save(`Consuntivo_${(condominio?.nome || '').replace(/\s+/g, '_')}_${c.esercizio?.anno || ''}.pdf`)
 }

@@ -35,6 +35,7 @@ export default function RiconciliazioniIncassiPage() {
   const [analizzando, setAnalizzando] = useState(false);
   const [progressoAI, setProgressoAI] = useState('');
   const [filtroStato, setFiltroStato] = useState('suggerita');
+  const [showOrfaniModal, setShowOrfaniModal] = useState(false);
 
   useEffect(() => {
     if (condominioId) loadAll();
@@ -195,6 +196,7 @@ Abbina i bonifici alle celle.`;
 
       setProgressoAI(`✅ ${suggerimenti.length} abbinamenti suggeriti`);
       await loadAll();
+      setShowOrfaniModal(true);
       setTimeout(() => setProgressoAI(''), 4000);
     } catch (e) {
       setProgressoAI('Errore: ' + e.message);
@@ -212,45 +214,55 @@ Abbina i bonifici alle celle.`;
       return;
     }
 
-    const nuovoPagato = r2((cella.importo_pagato || 0) + (ab.importo_assegnato || 0));
-    const nuovoStato  = calcolaStato(nuovoPagato, cella.importo);
+    try {
+      const nuovoPagato = r2((cella.importo_pagato || 0) + (ab.importo_assegnato || 0));
+      const nuovoStato  = calcolaStato(nuovoPagato, cella.importo);
 
-    // 1) marca abbinamento confermato
-    await supabase.from('riconciliazioni_incassi')
-      .update({ stato: 'confermata', confermata_at: new Date().toISOString() })
-      .eq('id', ab.id);
+      const { error: errRic } = await supabase.from('riconciliazioni_incassi')
+        .update({ stato: 'confermata', confermata_at: new Date().toISOString() })
+        .eq('id', ab.id);
+      if (errRic) throw errRic;
 
-    // 2) aggiorna la cella (importo_pagato / stato / data_pagamento)
-    await supabase.from('rate_unita')
-      .update({
-        importo_pagato: nuovoPagato,
-        stato:          nuovoStato,
-        data_pagamento: mov.data_movimento,
-      })
-      .eq('id', cella.id);
+      const { error: errCella } = await supabase.from('rate_unita')
+        .update({
+          importo_pagato: nuovoPagato,
+          stato:          nuovoStato,
+          data_pagamento: mov.data_movimento,
+        })
+        .eq('id', cella.id);
+      if (errCella) throw errCella;
 
-    // 3) ricalcola riconciliato del movimento: true se la somma assegnata copre l'intero bonifico
-    const { data: confermati } = await supabase
-      .from('riconciliazioni_incassi')
-      .select('importo_assegnato')
-      .eq('movimento_id', mov.id)
-      .eq('stato', 'confermata');
+      const { data: confermati, error: errConf } = await supabase
+        .from('riconciliazioni_incassi')
+        .select('importo_assegnato')
+        .eq('movimento_id', mov.id)
+        .eq('stato', 'confermata');
+      if (errConf) throw errConf;
 
-    const totAssegnato = r2((confermati || []).reduce((a, x) => a + (x.importo_assegnato || 0), 0));
-    const riconciliato = totAssegnato >= r2(Math.abs(mov.importo));
+      const totAssegnato = r2((confermati || []).reduce((a, x) => a + (x.importo_assegnato || 0), 0));
+      const riconciliato = totAssegnato >= r2(Math.abs(mov.importo));
 
-    await supabase.from('estratto_conto')
-      .update({ riconciliato })
-      .eq('id', mov.id);
+      const { error: errMov } = await supabase.from('estratto_conto')
+        .update({ riconciliato })
+        .eq('id', mov.id);
+      if (errMov) throw errMov;
 
-    await loadAll();
+      await loadAll();
+    } catch (err) {
+      alert('Errore conferma abbinamento incasso: ' + err.message);
+    }
   }
 
   async function rifiutaAbbinamento(ab) {
-    await supabase.from('riconciliazioni_incassi')
-      .update({ stato: 'rifiutata' })
-      .eq('id', ab.id);
-    await loadAll();
+    try {
+      const { error } = await supabase.from('riconciliazioni_incassi')
+        .update({ stato: 'rifiutata' })
+        .eq('id', ab.id);
+      if (error) throw error;
+      await loadAll();
+    } catch (err) {
+      alert('Errore rifiuto abbinamento: ' + err.message);
+    }
   }
 
   // ─── KPI / filtro ───────────────────────────────────────────────────────────
@@ -260,6 +272,48 @@ Abbina i bonifici alle celle.`;
   const kpiSuggerite    = abbinamenti.filter(a => a.stato === 'suggerita').length;
   const kpiConfermate   = abbinamenti.filter(a => a.stato === 'confermata').length;
   const kpiCelleAperte  = celleAperte.length;
+  const entrateOrfane   = entrate.filter(m => !m.riconciliato && !abbinamenti.some(a => a.movimento_id === m.id && (a.stato === 'suggerita' || a.stato === 'confermata')));
+
+  async function abbinaManualeIncasso(mov, cella) {
+    if (!cella || !mov) return;
+    try {
+      const importoAssegnato = r2(Math.min(Math.abs(mov.importo), cella.importo - (cella.importo_pagato || 0)));
+      const nuovoPagato = r2((cella.importo_pagato || 0) + importoAssegnato);
+      const nuovoStato = calcolaStato(nuovoPagato, cella.importo);
+
+      const { error: errIns } = await supabase.from('riconciliazioni_incassi').insert({
+        condominio_id: condominioId,
+        movimento_id: mov.id,
+        rata_unita_id: cella.id,
+        importo_assegnato: importoAssegnato,
+        confidence_score: 100,
+        metodo: 'manuale',
+        stato: 'confermata',
+        confermata_at: new Date().toISOString(),
+        note: 'Abbinamento manuale rapido'
+      });
+      if (errIns) throw errIns;
+
+      const { error: errCella } = await supabase.from('rate_unita').update({
+        importo_pagato: nuovoPagato,
+        stato: nuovoStato,
+        data_pagamento: mov.data_movimento,
+      }).eq('id', cella.id);
+      if (errCella) throw errCella;
+
+      const { data: confermati, error: errConf } = await supabase.from('riconciliazioni_incassi').select('importo_assegnato').eq('movimento_id', mov.id).eq('stato', 'confermata');
+      if (errConf) throw errConf;
+
+      const totAssegnato = r2((confermati || []).reduce((a, x) => a + (x.importo_assegnato || 0), 0));
+      const riconciliato = totAssegnato >= r2(Math.abs(mov.importo));
+      const { error: errMov } = await supabase.from('estratto_conto').update({ riconciliato }).eq('id', mov.id);
+      if (errMov) throw errMov;
+
+      await loadAll();
+    } catch (err) {
+      alert('Errore abbinamento manuale: ' + err.message);
+    }
+  }
 
   if (loading) {
     return <div style={{ padding: 60, textAlign: 'center', color: '#475569', fontFamily: "'Sora', sans-serif" }}>Caricamento...</div>;
@@ -308,10 +362,15 @@ Abbina i bonifici alle celle.`;
           { val: 'suggerita',  label: '🤖 Da confermare' },
           { val: 'confermata', label: '✓ Confermati' },
           { val: 'rifiutata',  label: '✕ Rifiutati' },
-        ].map(({ val, label }) => (
+          { val: 'orfani',     label: `⚠️ Senza Rata (${entrateOrfane.length})`, isAlert: entrateOrfane.length > 0 },
+        ].map(({ val, label, isAlert }) => (
           <button
             key={val}
-            style={{ ...styles.tBtn, ...(filtroStato === val ? styles.tBtnActive : {}) }}
+            style={{ 
+              ...styles.tBtn, 
+              ...(filtroStato === val ? styles.tBtnActive : {}),
+              ...(isAlert && val === 'orfani' && filtroStato !== 'orfani' ? { background: '#f59e0b20', color: '#fbbf24', border: '1px solid #f59e0b40' } : {})
+            }}
             onClick={() => setFiltroStato(val)}
           >
             {label}
@@ -319,7 +378,25 @@ Abbina i bonifici alle celle.`;
         ))}
       </div>
 
-      {abbFiltrati.length === 0 ? (
+      {filtroStato === 'orfani' ? (
+        entrateOrfane.length === 0 ? (
+          <div style={styles.empty}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+            <p>Nessun bonifico in entrata senza rata o incasso sconosciuto.</p>
+          </div>
+        ) : (
+          <div style={styles.lista}>
+            {entrateOrfane.map(m => (
+              <EntrataOrfanaCard
+                key={m.id}
+                mov={m}
+                celleAperte={celleAperte}
+                onAbbina={cella => abbinaManualeIncasso(m, cella)}
+              />
+            ))}
+          </div>
+        )
+      ) : abbFiltrati.length === 0 ? (
         <div style={styles.empty}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>💶</div>
           <p>
@@ -338,6 +415,50 @@ Abbina i bonifici alle celle.`;
               onRifiuta={() => rifiutaAbbinamento(ab)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Modal Avviso Entrate Orfane */}
+      {showOrfaniModal && entrateOrfane.length > 0 && (
+        <div style={styles.modalOverlay || { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div style={styles.modalBox || { background: '#1e293b', borderRadius: 16, border: '1px solid #334155', width: '100%', maxWidth: 680, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fbbf24' }}>⚠️ Rilevati Bonifici senza Rata ({entrateOrfane.length})</h3>
+              <button style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 20, cursor: 'pointer' }} onClick={() => setShowOrfaniModal(false)}>✕</button>
+            </div>
+            <p style={{ padding: '16px 24px', margin: 0, fontSize: 14, color: '#cbd5e1', lineHeight: 1.5 }}>
+              L'AI ha terminato l'analisi ma ha rilevato <b>{entrateOrfane.length} bonifici in entrata</b> non associabili ad alcuna rata in modo automatico. Puoi abbinarli manualmente ora a una delle rate aperte oppure consultare la scheda <b>"⚠️ Senza Rata"</b>.
+            </p>
+            <div style={{ padding: '0 24px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {entrateOrfane.map(m => (
+                <div key={m.id} style={{ background: '#0f172a', padding: '14px 18px', borderRadius: 12, border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: '#e2e8f0' }}>{m.causale || '—'}</div>
+                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3 }}>
+                      📅 {dataIt(m.data_movimento)} · {m.pagante_rilevato ? `👤 ${m.pagante_rilevato}` : 'Pagante non rilevato'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <span style={{ color: '#10b981', fontWeight: 700, fontSize: 14 }}>
+                      +€ {Math.abs(m.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                    </span>
+                    <button
+                      style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 }}
+                      onClick={() => {
+                        setShowOrfaniModal(false);
+                        setFiltroStato('orfani');
+                      }}
+                    >
+                      🔗 Vai ad Abbinamento
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end', background: '#0f172a', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
+              <button style={{ background: '#334155', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 }} onClick={() => setShowOrfaniModal(false)}>Ho capito, chiudi</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -454,4 +575,55 @@ const styles = {
   btnConferma: { background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 13 },
   btnRifiuta: { background: 'none', color: '#64748b', border: '1px solid #334155', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 },
   statoBadge: { borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600 },
+  btnAction: { background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' },
 };
+
+function EntrataOrfanaCard({ mov, celleAperte, onAbbina }) {
+  const [selectedCellaId, setSelectedCellaId] = useState('');
+  return (
+    <div style={{ ...styles.card, borderColor: '#f59e0b40', background: '#f59e0b08', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+      <div style={{ flex: '1 1 250px' }}>
+        <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>⚠️ BONIFICO IN ENTRATA SENZA RATA ASSOCIATA</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>{mov.causale || '—'}</div>
+        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>
+          📅 {dataIt(mov.data_movimento)} · {mov.pagante_rilevato ? `👤 ${mov.pagante_rilevato}` : 'Pagante non rilevato'}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <span style={{ color: '#10b981', fontWeight: 700, fontSize: 18 }}>
+          +€ {Math.abs(mov.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+        </span>
+        <select
+          value={selectedCellaId}
+          onChange={e => setSelectedCellaId(e.target.value)}
+          style={{ background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontFamily: "'Sora', sans-serif", maxWidth: 280 }}
+        >
+          <option value="">-- Seleziona una rata aperta --</option>
+          {celleAperte.map(c => {
+            const unitaLabel = c.unita ? `Unità ${c.unita.numero} (${c.unita.tipo})` : '';
+            const rataLabel = c.rata ? `Rata ${c.rata.numero_rata}` : '';
+            const residuo = r2(c.importo - (c.importo_pagato || 0));
+            return (
+              <option key={c.id} value={c.id}>
+                {unitaLabel} - {rataLabel} (Residuo: € {residuo.toLocaleString('it-IT', { minimumFractionDigits: 2 })})
+              </option>
+            );
+          })}
+        </select>
+        <button
+          style={{ ...styles.btnAction, opacity: selectedCellaId ? 1 : 0.5, cursor: selectedCellaId ? 'pointer' : 'not-allowed' }}
+          disabled={!selectedCellaId}
+          onClick={() => {
+            const cella = celleAperte.find(x => x.id === selectedCellaId);
+            if (cella) {
+              onAbbina(cella);
+              setSelectedCellaId('');
+            }
+          }}
+        >
+          🔗 Abbina e Salda
+        </button>
+      </div>
+    </div>
+  );
+}

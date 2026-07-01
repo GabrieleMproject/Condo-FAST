@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePlan } from '../hooks/usePlan';
 import { PlanBadge } from './PlanGate';
 import { toast } from 'react-hot-toast';
+import { supabase } from '../lib/supabaseClient';
 import {
   LayoutDashboard,
   Building2,
@@ -17,6 +18,8 @@ import {
   Settings,
   Bell,
   Send,
+  LifeBuoy,
+  Landmark
 } from 'lucide-react';
 
 // ── Logo → data-URL PNG ridimensionato (max 400px) ────────────────────────
@@ -44,17 +47,12 @@ function fileToResizedDataUrl(file, maxW = 400) {
 
 // ── Stripe Customer Portal ────────────────────────────────────────────────
 async function apriPortaleStripe(customerId) {
-  const res = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-portal`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId, returnUrl: window.location.href }),
-    }
-  )
-  const data = await res.json()
-  if (data.url) window.location.href = data.url
-  else throw new Error(data.error || 'Errore apertura portale')
+  const { data, error } = await supabase.functions.invoke('stripe-portal', {
+    body: { customerId, returnUrl: window.location.href },
+  })
+  if (error) throw new Error(error.message || 'Errore apertura portale')
+  if (data?.url) window.location.href = data.url
+  else throw new Error(data?.error || 'Errore apertura portale')
 }
 
 const NAV_ITEMS = [
@@ -63,7 +61,9 @@ const NAV_ITEMS = [
   { path: '/anagrafica',   label: 'Anagrafica',            icon: Users },
   { path: '/spese',        label: 'Spese',                 icon: Receipt },
   { path: '/comunicazioni', label: 'Comunicazioni',        icon: Send },
+  { path: '/fiscale',      label: 'Certificazioni',        icon: Landmark },
   { path: '/archivio',     label: 'Storico operazioni',    icon: Archive }, // ✅ rinominato
+  { path: '/assistenza',   label: 'Assistenza',            icon: LifeBuoy },
   { path: '/impostazioni', label: 'Impostazioni',          icon: Settings },
 ];
 
@@ -111,7 +111,7 @@ export default function AppLayout() {
     isStripeAttivo, stripeStatus,
     condominiCount, condominiInclusi, condominiExtra, costoExtraMese,
     aiCallsCount, aiCallsLimit, aiCallsRimanenti,
-    updateBranding, refresh
+    updateBranding, refresh, isSuperAdmin
   } = usePlan();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -124,6 +124,9 @@ export default function AppLayout() {
   const [studioIndirizzo, setStudioIndirizzo] = useState('');
   const [studioContatti, setStudioContatti] = useState('');
   const [logoBase64, setLogoBase64] = useState('');
+  const [ragioneSociale, setRagioneSociale] = useState('');
+  const [partitaIva, setPartitaIva] = useState('');
+  const [codiceFiscale, setCodiceFiscale] = useState('');
   const logoInputRef = useRef(null);
 
   const startEditing = () => {
@@ -131,6 +134,9 @@ export default function AppLayout() {
     setStudioIndirizzo(profile?.studio_indirizzo || '');
     setStudioContatti(profile?.studio_contatti || '');
     setLogoBase64(profile?.logo_base64 || '');
+    setRagioneSociale(profile?.ragione_sociale || '');
+    setPartitaIva(profile?.partita_iva || '');
+    setCodiceFiscale(profile?.codice_fiscale || '');
     setIsEditing(true);
   };
 
@@ -142,6 +148,9 @@ export default function AppLayout() {
         studio_indirizzo: studioIndirizzo,
         studio_contatti: studioContatti,
         logo_base64: logoBase64,
+        ragione_sociale: ragioneSociale,
+        partita_iva: partitaIva,
+        codice_fiscale: codiceFiscale,
       });
       if (res.error) throw res.error;
       toast.success('Dati studio aggiornati con successo!');
@@ -229,6 +238,28 @@ export default function AppLayout() {
               </Link>
             );
           })}
+          
+          {isSuperAdmin && (
+            <>
+              <div style={{ margin: '8px 12px', borderTop: '1px solid #1e293b' }} />
+              <Link to="/backoffice" style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: collapsed ? '10px 16px' : '10px 12px',
+                borderRadius: 8, textDecoration: 'none',
+                background: location.pathname.startsWith('/backoffice') ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+                color: location.pathname.startsWith('/backoffice') ? '#10b981' : '#10b981',
+                fontWeight: location.pathname.startsWith('/backoffice') ? 600 : 400, fontSize: 14,
+                transition: 'all 0.15s', whiteSpace: 'nowrap', overflow: 'hidden',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+              }}
+                onMouseEnter={e => { if (!location.pathname.startsWith('/backoffice')) { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'; } }}
+                onMouseLeave={e => { if (!location.pathname.startsWith('/backoffice')) { e.currentTarget.style.background = 'transparent'; } }}
+              >
+                <Settings size={18} strokeWidth={location.pathname.startsWith('/backoffice') ? 2.5 : 1.8} style={{ flexShrink: 0 }} />
+                {!collapsed && 'Backoffice (Admin)'}
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Bottom */}
@@ -417,7 +448,7 @@ export default function AppLayout() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
               <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 15, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                {profile?.studio_nome || 'Amministrazione'}
+                {profile?.ragione_sociale || profile?.studio_nome || 'Amministrazione'}
               </span>
               <span style={{ color: '#64748b', fontSize: 12, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                 {user?.email}
@@ -521,6 +552,70 @@ export default function AppLayout() {
                   }}
                   placeholder="Nome dello studio"
                 />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Ragione Sociale Azienda</label>
+                <input
+                  type="text"
+                  value={ragioneSociale}
+                  onChange={e => setRagioneSociale(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: '#0f172a',
+                    color: '#f1f5f9',
+                    border: '1px solid #334155',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    fontFamily: 'Sora, sans-serif',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="Ragione Sociale dell'azienda di gestione"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Partita IVA</label>
+                  <input
+                    type="text"
+                    value={partitaIva}
+                    onChange={e => setPartitaIva(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: '#0f172a',
+                      color: '#f1f5f9',
+                      border: '1px solid #334155',
+                      borderRadius: 8,
+                      padding: '8px 12px',
+                      fontSize: 13,
+                      fontFamily: 'Sora, sans-serif',
+                      boxSizing: 'border-box'
+                    }}
+                    placeholder="Numero P.IVA"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Codice Fiscale</label>
+                  <input
+                    type="text"
+                    value={codiceFiscale}
+                    onChange={e => setCodiceFiscale(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: '#0f172a',
+                      color: '#f1f5f9',
+                      border: '1px solid #334155',
+                      borderRadius: 8,
+                      padding: '8px 12px',
+                      fontSize: 13,
+                      fontFamily: 'Sora, sans-serif',
+                      boxSizing: 'border-box'
+                    }}
+                    placeholder="Codice Fiscale"
+                  />
+                </div>
               </div>
 
               <div>
@@ -642,6 +737,28 @@ export default function AppLayout() {
                     <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Nome Studio / Amministratore</span>
                     <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 500 }}>{profile?.studio_nome || '—'}</span>
                   </div>
+                  {profile?.ragione_sociale && (
+                    <div>
+                      <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Ragione Sociale Azienda</span>
+                      <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 500 }}>{profile.ragione_sociale}</span>
+                    </div>
+                  )}
+                  {(profile?.partita_iva || profile?.codice_fiscale) && (
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      {profile?.partita_iva && (
+                        <div style={{ flex: 1 }}>
+                          <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Partita IVA</span>
+                          <span style={{ color: '#cbd5e1', fontSize: 13 }}>{profile.partita_iva}</span>
+                        </div>
+                      )}
+                      {profile?.codice_fiscale && (
+                        <div style={{ flex: 1 }}>
+                          <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Codice Fiscale</span>
+                          <span style={{ color: '#cbd5e1', fontSize: 13 }}>{profile.codice_fiscale}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div>
                     <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Indirizzo</span>
                     <span style={{ color: '#cbd5e1', fontSize: 13 }}>{profile?.studio_indirizzo || '—'}</span>
@@ -756,6 +873,36 @@ export default function AppLayout() {
           flexDirection: 'column',
           gap: 12,
         }}>
+          {isSuperAdmin && (
+            <button
+              onClick={() => {
+                setDrawerOpen(false)
+                navigate('/backoffice')
+              }}
+              style={{
+                width: '100%',
+                background: '#10b981',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '12px 16px',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                fontFamily: 'Sora, sans-serif'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#059669'}
+              onMouseLeave={e => e.currentTarget.style.background = '#10b981'}
+            >
+              <Settings size={16} />
+              Backoffice (Admin)
+            </button>
+          )}
+
           <button
             onClick={handleSignOut}
             disabled={savingBranding}

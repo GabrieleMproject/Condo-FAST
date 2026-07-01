@@ -6,6 +6,7 @@
  */
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { applyWatermark } from './watermark';
 
 const BLU = [37, 99, 235];
 const DARK = [15, 23, 42];
@@ -60,7 +61,7 @@ function aggiungiFooter(doc) {
 }
 
 // ─── Export Ripartizione ──────────────────────────────────────────────
-export async function exportRipartizionePdf({ condominio, esercizio, spese, unita, ripartizioni }) {
+export async function exportRipartizionePdf({ condominio, esercizio, spese, unita, ripartizioni }, withWatermark = false) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   let y = disegnaIntestazione(doc, condominio, esercizio, 'PROSPETTO RIPARTIZIONE SPESE');
 
@@ -84,7 +85,7 @@ export async function exportRipartizionePdf({ condominio, esercizio, spese, unit
     return [
       s.descrizione,
       s.categoria || '',
-      s.criterio || '',                 // ✅ fix: era s.criterio_ripartizione
+      s.criterio || '',
       fmtEuro(s.importo),
       ...importiPerUnita,
       fmtEuro(totRip),
@@ -115,12 +116,13 @@ export async function exportRipartizionePdf({ condominio, esercizio, spese, unit
   });
 
   aggiungiFooter(doc);
+  applyWatermark(doc, withWatermark);
   doc.save(`CondoAI_Ripartizione_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
 }
 
 // ─── Export Rate (modello rate_unita) ─────────────────────────────────
 // Parametri: rate (colonne), cells (rate_unita), unita, getProprietario?
-export async function exportRatePdf({ condominio, esercizio, rate, cells, unita, getProprietario }) {
+export async function exportRatePdf({ condominio, esercizio, rate, cells, unita, getProprietario }, withWatermark = false) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   let y = disegnaIntestazione(doc, condominio, esercizio, 'PIANO RATE');
 
@@ -158,5 +160,40 @@ export async function exportRatePdf({ condominio, esercizio, rate, cells, unita,
   });
 
   aggiungiFooter(doc);
+  applyWatermark(doc, withWatermark);
   doc.save(`CondoAI_Rate_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
+}
+
+// ─── Export Anagrafica ─────────────────────────────────────────────────
+export async function exportAnagraficaPdf({ condominio, persone }, withWatermark = false) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  let y = disegnaIntestazione(doc, condominio, null, 'ANAGRAFICA CONDOMINIALE');
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...TESTO);
+  doc.text(`Totale residenti/proprietari: ${persone.length}`, 14, y);
+  y += 8;
+
+  const head = [['Cognome', 'Nome', 'Ruolo', 'Unità', 'Email', 'Telefono', 'Indirizzo', 'Città']];
+  const body = persone.map(p => [
+    p.cognome || '',
+    p.nome || '',
+    p.ruoli || '',
+    p.unitaNomi || '',
+    p.email || '',
+    p.telefono || '',
+    p.indirizzo || '',
+    p.citta || '',
+  ]);
+
+  autoTable(doc, {
+    startY: y, head, body, theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 7.5, cellPadding: 2.5, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+    headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+    alternateRowStyles: { fillColor: [24, 35, 55] },
+    margin: { left: 10, right: 10 },
+  });
+
+  aggiungiFooter(doc);
+  applyWatermark(doc, withWatermark);
+  doc.save(`Anagrafica_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
 }

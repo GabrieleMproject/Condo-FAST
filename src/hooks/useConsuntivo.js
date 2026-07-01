@@ -108,7 +108,7 @@ export function useConsuntivo(condominioId, esercizioId) {
       if (user?.id) {
         const { data: prof } = await supabase
           .from('profiles')
-          .select('studio_nome, studio_indirizzo, studio_contatti, logo_base64')
+          .select('studio_nome, studio_indirizzo, studio_contatti, logo_base64, ragione_sociale, partita_iva, codice_fiscale')
           .eq('id', user.id).maybeSingle()
         branding = prof || null
       }

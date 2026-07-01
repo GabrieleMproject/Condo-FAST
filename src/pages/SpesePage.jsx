@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useSpese } from '../hooks/useSpese'
 import { useEsercizi } from '../hooks/useEsercizi'
@@ -32,7 +32,7 @@ export default function SpesePage() {
   const [subentriAlert, setSubentriAlert] = useState([])
 
   const { esercizi, loading: loadEsercizi, fetch: fetchEsercizi, crea: creaEsercizio, aggiorna: aggiornaEsercizio } = useEsercizi(condominioId)
-  const { spese, loading: loadSpese, fetch: fetchSpese, crea: creaSpesa, elimina, segnalaSubentro } = useSpese(condominioId, esercizioAttivo?.id)
+  const { spese, loading: loadSpese, fetch: fetchSpese, crea: creaSpesa, aggiorna: aggiornaSpesa, elimina, segnalaSubentro } = useSpese(condominioId, esercizioAttivo?.id)
   const { tabelle, fetch: fetchTabelle } = useMillesimi(condominioId)
   const { documenti, fetch: fetchDocumenti } = useDocumenti(condominioId)
 
@@ -58,6 +58,15 @@ export default function SpesePage() {
   useEffect(() => {
     if (esercizioAttivo) fetchSpese()
   }, [esercizioAttivo])
+
+  const location = useLocation()
+  useEffect(() => {
+    if (location.state?.prefillSpesa && esercizioAttivo) {
+      setFromFattura(false)
+      setShowForm(true)
+      window.history.replaceState({}, '')
+    }
+  }, [location.state, esercizioAttivo])
 
   useEffect(() => {
     const alert = spese.filter(s =>
@@ -119,7 +128,11 @@ export default function SpesePage() {
 
   const handleSaveSpesa = async (payload, ripartizioni) => {
     try {
-      await creaSpesa({ ...payload, esercizio_id: esercizioAttivo.id }, ripartizioni)
+      if (spesaInEdit?.id) {
+        await aggiornaSpesa(spesaInEdit.id, payload, ripartizioni)
+      } else {
+        await creaSpesa({ ...payload, esercizio_id: esercizioAttivo.id }, ripartizioni)
+      }
       setShowForm(false)
       setFromFattura(false)
       setSpesaInEdit(null)
@@ -318,6 +331,7 @@ export default function SpesePage() {
             documenti={documenti}
             spesaInEdit={spesaInEdit}
             fromFattura={fromFattura}
+            prefillData={location.state?.prefillSpesa || null}
             onSave={handleSaveSpesa}
             onCancel={chiudiForm}
           />
@@ -394,15 +408,29 @@ export default function SpesePage() {
                   <div style={{ color: '#10b981', fontSize: 18, fontWeight: 700 }}>
                     €{parseFloat(spesa.importo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                   </div>
-                  <button
-                    onClick={() => elimina(spesa.id)}
-                    style={{
-                      background: 'transparent', color: '#64748b', border: 'none',
-                      fontSize: 12, cursor: 'pointer', marginTop: 4
-                    }}
-                  >
-                    Elimina
-                  </button>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 6 }}>
+                    <button
+                      onClick={() => {
+                        setSpesaInEdit(spesa)
+                        setShowForm(true)
+                      }}
+                      style={{
+                        background: 'transparent', color: '#3b82f6', border: 'none',
+                        fontSize: 12, cursor: 'pointer', fontWeight: 600
+                      }}
+                    >
+                      ✏️ Modifica
+                    </button>
+                    <button
+                      onClick={() => elimina(spesa.id)}
+                      style={{
+                        background: 'transparent', color: '#ef4444', border: 'none',
+                        fontSize: 12, cursor: 'pointer', fontWeight: 600
+                      }}
+                    >
+                      🗑️ Elimina
+                    </button>
+                  </div>
                 </div>
               </div>
             )

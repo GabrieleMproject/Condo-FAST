@@ -158,21 +158,21 @@ export default function DocumentiCondominio({ condominioId }) {
             {filtroTipo === 'tutti' ? 'Nessun documento caricato' : `Nessun documento di tipo "${TIPI.find(t => t.value === filtroTipo)?.label}"`}
           </p>
           <p style={{ color: '#475569', margin: '8px 0 0', fontSize: 12 }}>
-            Carica il regolamento condominiale per abilitare i suggerimenti AI sulle spese
+            Carica il regolamento o le tabelle millesimali per abilitare i suggerimenti AI sulle spese
           </p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtrati.map(doc => {
             const cat = CATEGORIE_LABEL[doc.tipo] || CATEGORIE_LABEL.altro
-            const isRegolamento = doc.tipo === 'regolamento'
+            const isNormativo = doc.tipo === 'regolamento' || doc.tipo === 'tabella_millesimale_doc'
             const hasTesto = !!doc.testo_estratto
             return (
               <div
                 key={doc.id}
                 style={{
                   background: '#1e293b', borderRadius: 10, padding: '14px 18px',
-                  border: `1px solid ${isRegolamento ? '#2563eb44' : '#334155'}`,
+                  border: `1px solid ${isNormativo ? '#2563eb44' : '#334155'}`,
                   display: 'flex', alignItems: 'center', gap: 16
                 }}
               >
@@ -197,7 +197,7 @@ export default function DocumentiCondominio({ condominioId }) {
                         ✓ Testo estratto
                       </span>
                     )}
-                    {isRegolamento && !hasTesto && (
+                    {isNormativo && !hasTesto && (
                       <span style={{ background: '#f59e0b22', color: '#f59e0b', borderRadius: 4, padding: '2px 8px', fontSize: 11 }}>
                         ⚠ Testo non estratto
                       </span>
@@ -285,8 +285,7 @@ export default function DocumentiCondominio({ condominioId }) {
 
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
-                  {/* ✅ Hint aggiornato: PDF e DOCX */}
-                  File * {form.tipo === 'regolamento' && (
+                  File * {(form.tipo === 'regolamento' || form.tipo === 'tabella_millesimale_doc') && (
                     <span style={{ color: '#10b981' }}>(PDF o DOCX consigliato — il testo verrà estratto per l'AI)</span>
                   )}
                 </label>

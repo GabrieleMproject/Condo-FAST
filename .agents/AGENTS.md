@@ -274,6 +274,15 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Abbinamento Automatico Unità e Zeri Iniziali (`handleImport`):** Migliorato l'algoritmo di confronto e auto-mapping tra la stringa `unita` estratta dall'AI o da Excel e le unità del database nel condominio corrente. Aggiunta la rimozione degli zeri iniziali (`replace(/^0+/, '')`) e l'uguaglianza numerica (`Number(cleanNum) === Number(cleanStr)`), consentendo di abbinare correttamente i condòmini anche quando i formati numerici differiscono tra DB (es. `"1"`) e file sorgente (es. `"01"`, `"001"`, `"1.0"`).
 - **Protezione da Errori di Parsing in `normalizeRows`:** Aggiunto il fallback difensivo `normalizeRows(raw || [])` in `AnagraficaImport.jsx` per prevenire eccezioni di tipo `Cannot read properties of null` nel caso in cui l'estrazione AI o il parser restituiscano un risultato nullo.
 
+---
 
+## Storico Decisioni e Fatti Verificati della Sessione S20 (1 Luglio 2026 - Riconoscimento Tabelle Millesimali in Spesa)
 
+### 1. Decisioni e Allineamento Funzionale
+- **Inclusione Documenti Normativi nel Prompt AI (`SpeseForm.jsx`):** Il suggerimento AI sul criterio di ripartizione e sulla tabella consigliata ora trasmette il testo estratto da tutti i documenti di tipo `regolamento`, `tabella_millesimale_doc`, `verbale`, `contratto` e `altro`, superando il precedente limite che inviava solo i file di tipo regolamento.
+- **Supporto Estrazione Testo DOCX in Cassetto Documenti (`useDocumenti.js`):** Abilitata l'estrazione automatica del testo (via `docxToText` in `fileExtractor.js`) anche per i file Word (`.docx`) al momento del caricamento nei documenti condominiali, allineando il comportamento reale al messaggio guida della UI.
+- **Avvisi Proattivi e Fallback:** Inserito in `SpeseForm.jsx` un avviso nella modale AI se l'AI raccomanda una tabella citata nei documenti ma questa non è ancora stata creata in archivio (sezione Millesimi), informando l'amministratore sullo step preliminare necessario per ripartire le quote.
 
+### 2. Bug e Regressioni Risolti (Fix Bug Triager & Bug Fixer)
+- **Fuzzy Matching Prioritario per Tabelle (`trovaTabellaFuzzy`):** Risolto un bug critico di matching in cui la ricerca per parole significative valutava simultaneamente in una singola clausola OR sia la presenza di *tutte* le parole che di *almeno una* parola, portando `.find()` a restituire un match parziale errato anziché un match esatto successivo. Separatala la logica in due passaggi ordinati per priorità: prima corrispondenza completa (`every`), poi parziale (`some`). Introdotto inoltre il fallback automatico in caso di unica tabella millesimale presente in archivio per i criteri a millesimi o misti.
+- **Hint Visivi Caricamento File (`DocumentiCondominio.jsx`):** Estesi i badge e i consigli visivi sull'estrazione del testo AI ai file di categoria `tabella_millesimale_doc`.

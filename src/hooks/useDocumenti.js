@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { callClaudeDocument } from '../lib/claudeClient'
+import { docxToText } from '../lib/fileExtractor'
 
 const BUCKET = 'documenti-condominio'
 
@@ -45,10 +46,12 @@ export function useDocumenti(condominioId) {
         .from(BUCKET)
         .createSignedUrl(path, 60 * 60 * 24 * 365) // 1 anno
 
-      // 3. Estrai testo se PDF (via Claude API - chiamata lato client)
+      // 3. Estrai testo se PDF o DOCX
       let testo_estratto = null
       if (ext === 'pdf') {
         testo_estratto = await estraiTestoPDF(file)
+      } else if (ext === 'docx') {
+        try { testo_estratto = await docxToText(file) } catch (e) { console.error(e) }
       }
 
       // 4. Salva record su DB

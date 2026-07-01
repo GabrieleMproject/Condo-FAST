@@ -18,6 +18,45 @@ const inputStyle = {
 }
 const labelStyle = { display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }
 
+const trovaTabellaFuzzy = (tabelleList, nomeConsigliato, criterio) => {
+  if (!tabelleList || !tabelleList.length) return null
+  if (!nomeConsigliato) {
+    if ((criterio === 'millesimi' || criterio === 'mista') && tabelleList.length === 1) return tabelleList[0]
+    return null
+  }
+  const target = String(nomeConsigliato).trim().toLowerCase()
+  // 1. Match esatto (case insensitive)
+  let found = tabelleList.find(t => String(t.nome || '').trim().toLowerCase() === target)
+  if (found) return found
+  // 2. Substring match reciproco
+  found = tabelleList.find(t => {
+    const n = String(t.nome || '').trim().toLowerCase()
+    return n.includes(target) || target.includes(n)
+  })
+  if (found) return found
+  // 3. Parole significative
+  const words = target.split(/[\s\-_\(\)\/,\.]+/).filter(w => w.length > 2 && !['tabella', 'tabelle', 'millesimale', 'millesimali', 'di', 'per', 'le', 'spese', 'generale', 'generali'].includes(w))
+  if (words.length > 0) {
+    // 3a. Priorità: Tutte le parole significative corrispondono
+    found = tabelleList.find(t => {
+      const nWords = String(t.nome || '').toLowerCase().split(/[\s\-_\(\)\/,\.]+/)
+      return words.every(w => nWords.includes(w))
+    })
+    if (found) return found
+    // 3b. Fallback: Almeno una parola significativa corrisponde
+    found = tabelleList.find(t => {
+      const nWords = String(t.nome || '').toLowerCase().split(/[\s\-_\(\)\/,\.]+/)
+      return words.some(w => w.length > 1 && nWords.includes(w))
+    })
+    if (found) return found
+  }
+  // 4. Fallback: se c'è 1 sola tabella disponibile e il criterio è millesimi/mista
+  if (tabelleList.length === 1 && (criterio === 'millesimi' || criterio === 'mista')) {
+    return tabelleList[0]
+  }
+  return null
+}
+
 export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false, prefillData = null }) {
   const [form, setForm] = useState({
     esercizio_id: esercizioId,
@@ -190,24 +229,28 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
     }
     setLoadingAi(true)
     try {
-      const regolamento = documenti?.find(d => d.tipo === 'regolamento' && d.testo_estratto)
-      const nomiTabelle = tabelle.map(t => t.nome).join(', ')
+      const documentiNormativi = documenti
+        ?.filter(d => d.testo_estratto && ['regolamento', 'tabella_millesimale_doc', 'verbale', 'contratto', 'altro'].includes(d.tipo))
+        .map(d => `--- DOCUMENTO (${d.tipo.toUpperCase()}: ${d.nome_file || 'senza nome'}) ---\n${d.testo_estratto.slice(0, 3500)}`)
+        .join('\n\n') || ''
+      const listaTabelle = tabelle.map(t => `- "${t.nome}" (tipo lavoro: ${t.tipo_lavoro || 'ordinario'})`).join('\n') || 'Nessuna tabella millesimale strutturata presente in archivio.'
 
       const systemPrompt = 'Sei un esperto di diritto condominiale italiano. Suggerisci il criterio di ripartizione per una spesa condominiale. Rispondi SOLO con un JSON valido, nessun testo prima o dopo.'
 
       const prompt = `SPESA: "${form.descrizione}"
 IMPORTO: €${form.importo || 'non specificato'}
 TIPO LAVORO: ${form.tipo_lavoro}
-TABELLE MILLESIMALI DISPONIBILI: ${nomiTabelle || 'nessuna'}
-${regolamento ? `\nREGOLAMENTO CONDOMINIALE:\n${regolamento.testo_estratto.slice(0, 3000)}` : ''}
+TABELLE MILLESIMALI STRUTTURATE DISPONIBILI IN ARCHIVIO:
+${listaTabelle}
+${documentiNormativi ? `\nDOCUMENTI DEL CONDOMINIO (Regolamento, Tabelle Millesimali, Verbali, ecc.):\n${documentiNormativi}` : ''}
 
 Formato JSON:
 {
   "criterio": "millesimi" | "quota_fissa" | "mista",
-  "tabella_consigliata": "nome della tabella o null",
+  "tabella_consigliata": "nome ESATTO della tabella tra quelle disponibili in archivio, oppure il nome indicato nei documenti, o null",
   "percentuale_millesimi": numero tra 0 e 100 (solo per criterio mista),
-  "motivazione": "spiegazione in italiano, max 3 frasi, cita articoli di legge o regolamento se pertinenti",
-  "fonti": ["Regolamento condominiale", "Art. 1123 c.c."],
+  "motivazione": "spiegazione in italiano, max 3 frasi, cita articoli di legge, regolamento o tabelle se pertinenti",
+  "fonti": ["Regolamento condominiale", "Tabella millesimale", "Art. 1123 c.c."],
   "confidenza": "alta" | "media" | "bassa"
 }`
 
@@ -236,7 +279,7 @@ Formato JSON:
 
   const applicaAiSuggerimento = () => {
     if (!aiSuggerimento) return
-    const tabella = tabelle.find(t => t.nome === aiSuggerimento.tabella_consigliata)
+    const tabella = trovaTabellaFuzzy(tabelle, aiSuggerimento.tabella_consigliata, aiSuggerimento.criterio)
     setForm(f => ({
       ...f,
       criterio: aiSuggerimento.criterio,
@@ -701,6 +744,18 @@ Formato JSON:
                 )}
               </div>
             </div>
+
+            {aiSuggerimento.tabella_consigliata && !trovaTabellaFuzzy(tabelle, aiSuggerimento.tabella_consigliata, aiSuggerimento.criterio) && (
+              <div style={{
+                background: '#f59e0b1a', border: '1px solid #f59e0b66', borderRadius: 8, padding: '10px 14px',
+                marginBottom: 16, fontSize: 12, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 8
+              }}>
+                <span>⚠</span>
+                <span>
+                  La tabella consigliata "<strong>{aiSuggerimento.tabella_consigliata}</strong>" non corrisponde a nessuna tabella strutturata in sezione Millesimi. Valuta se crearla o selezionare manualmente la tabella.
+                </span>
+              </div>
+            )}
 
             <div style={{
               background: '#0f172a', borderRadius: 8, padding: '14px 16px',

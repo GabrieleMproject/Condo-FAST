@@ -22,12 +22,22 @@ import {
   Mail,
 } from 'lucide-react'
 
+// ── Helper date sicure ──────────────────────────────────────
+const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
+const formattaDataOra = (d) => (d && !isNaN(new Date(d).getTime()) ? `${new Date(d).toLocaleDateString('it-IT')} ${new Date(d).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}` : '—')
+
 // ── Icone KPI ────────────────────────────────────────────────
-const KPI_ITEMS = (c) => [
+const KPI_ITEMS = (c, saldoConto) => [
   { icon: DoorOpen,      label: 'Unità',            value: c.num_unita || 0 },
   { icon: Layers,        label: 'Scale',             value: c.num_scale || 1 },
   { icon: ArrowUpDown,   label: 'Piani',             value: c.num_piani || '—' },
-  { icon: Wallet,        label: 'Fondo cassa',       value: c.fondo_cassa ? `€${Number(c.fondo_cassa).toLocaleString('it-IT')}` : '—' },
+  { 
+    icon: Wallet,        
+    label: saldoConto ? `Fondo cassa (al ${formattaData(saldoConto.data)})` : 'Fondo cassa',       
+    value: saldoConto 
+      ? `€${Number(saldoConto.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}` 
+      : (c.fondo_cassa ? `€${Number(c.fondo_cassa).toLocaleString('it-IT')}` : '—') 
+  },
   { icon: ClipboardList, label: 'Quote annuali',     value: c.quote_annuali ? `€${Number(c.quote_annuali).toLocaleString('it-IT')}` : '—' },
   { icon: CalendarDays,  label: 'Anno costruzione',  value: c.anno_costruzione || '—' },
 ]
@@ -119,8 +129,7 @@ function StoricoTab({ condominioId }) {
               {ev.tabella_modificata.replace(/_/g, ' ')}
             </span>
             <span style={{ color: '#475569', fontSize: 12 }}>
-              {new Date(ev.created_at).toLocaleDateString('it-IT')}{' '}
-              {new Date(ev.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+              {formattaDataOra(ev.created_at)}
             </span>
           </div>
         )
@@ -139,6 +148,39 @@ export default function CondominiDetailPage() {
   const { condomini, loading } = useCondomini()
   const c = useMemo(() => condomini.find(x => x.id === id), [condomini, id])
   const [activeTab, setActiveTab] = useState('panoramica')
+  const [saldoConto, setSaldoConto] = useState(null)
+
+  useEffect(() => {
+    if (!id) return
+    async function fetchSaldoConto() {
+      const { data, error } = await supabase
+        .from('estratto_conto')
+        .select('data_movimento, saldo, importo')
+        .eq('condominio_id', id)
+        .order('data_movimento', { ascending: false })
+      
+      if (!error && data && data.length > 0) {
+        const movConSaldo = data.find(m => m.saldo != null && m.saldo !== '')
+        if (movConSaldo) {
+          setSaldoConto({
+            saldo: Number(movConSaldo.saldo),
+            data: movConSaldo.data_movimento,
+            fonte: 'estratto'
+          })
+        } else {
+          const totaleNetto = data.reduce((acc, m) => acc + (Number(m.importo) || 0), 0)
+          setSaldoConto({
+            saldo: (Number(c?.fondo_cassa) || 0) + totaleNetto,
+            data: data[0].data_movimento,
+            fonte: 'calcolato'
+          })
+        }
+      } else {
+        setSaldoConto(null)
+      }
+    }
+    fetchSaldoConto()
+  }, [id, c?.fondo_cassa])
 
   if (loading) return <div style={S.loading}>Caricamento…</div>
   if (!c)      return <div style={S.loading}>Condominio non trovato</div>
@@ -181,7 +223,7 @@ export default function CondominiDetailPage() {
 
       {/* KPI */}
       <div style={S.kpiRow}>
-        {KPI_ITEMS(c).map(({ icon: Icon, label, value }) => (
+        {KPI_ITEMS(c, saldoConto).map(({ icon: Icon, label, value }) => (
           <div key={label} style={S.kpiCard}>
             <div style={S.kpiIconWrap}>
               <Icon size={18} color="#60a5fa" strokeWidth={1.8} />
@@ -221,6 +263,38 @@ export default function CondominiDetailPage() {
 
         {activeTab === 'panoramica' && (
           <>
+            <div style={S.section}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <p style={{ ...S.sectionTitle, margin: 0 }}>Fondo Cassa & Conto Corrente</p>
+                <Link to={`/condomini/${c.id}/estratto-conto`} style={{ color: '#60a5fa', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}>
+                  Vai all'estratto conto →
+                </Link>
+              </div>
+              <div style={S.infoGrid}>
+                <div style={S.infoItem}>
+                  <span style={S.infoLabel}>Fondo cassa (Iniziale / Bilancio)</span>
+                  <span style={S.infoValue}>
+                    {c.fondo_cassa ? `€ ${Number(c.fondo_cassa).toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : 'Non specificato'}
+                  </span>
+                </div>
+                <div style={S.infoItem}>
+                  <span style={S.infoLabel}>Saldo Finale Conto (Estratto Conto)</span>
+                  <span style={{ ...S.infoValue, color: saldoConto ? '#38bdf8' : '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {saldoConto ? (
+                      <>
+                        <span style={{ fontWeight: 700 }}>€ {Number(saldoConto.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+                        <span style={{ fontSize: 12, color: '#64748b', fontWeight: 400 }}>
+                          (al {formattaData(saldoConto.data)})
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: 13 }}>Nessun movimento registrato</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {dotazioni.length > 0 && (
               <div style={S.section}>
                 <p style={S.sectionTitle}>Dotazioni</p>
@@ -242,7 +316,7 @@ export default function CondominiDetailPage() {
                   <div style={S.infoItem}>
                     <span style={S.infoLabel}>Inizio amministrazione</span>
                     <span style={S.infoValue}>
-                      {new Date(c.data_inizio_amministrazione).toLocaleDateString('it-IT')}
+                      {formattaData(c.data_inizio_amministrazione)}
                     </span>
                   </div>
                 )}

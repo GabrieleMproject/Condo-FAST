@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { estraiMovimentiBancari, getTipoFile } from '../lib/fileExtractor';
 
 const TIPI_ACCETTATI = '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png';
+const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—');
 
 export default function EstrattoContoPage() {
   const { condominioId } = useParams();
@@ -99,6 +100,14 @@ export default function EstrattoContoPage() {
   const totaleUscite = movimenti.filter(m => m.tipo === 'uscita').reduce((a, m) => a + Math.abs(m.importo), 0);
   const nonRiconciliati = movimenti.filter(m => !m.riconciliato).length;
 
+  const ultimoMovConSaldo = movimenti.find(m => m.saldo != null && m.saldo !== '');
+  const saldoFinaleVal = ultimoMovConSaldo
+    ? `€ ${Number(ultimoMovConSaldo.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}`
+    : (movimenti.length > 0 ? `€ ${(totaleEntrate - totaleUscite).toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : '—');
+  const saldoFinaleLabel = ultimoMovConSaldo
+    ? `Saldo Finale (al ${formattaData(ultimoMovConSaldo.data_movimento)})`
+    : 'Saldo Finale C/C';
+
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -111,9 +120,9 @@ export default function EstrattoContoPage() {
       {/* KPI */}
       <div style={styles.kpiRow}>
         {[
-          { label: 'Entrate', value: `+€ ${totaleEntrate.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, color: '#16a34a' },
-          { label: 'Uscite', value: `-€ ${totaleUscite.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, color: '#ef4444' },
-          { label: 'Saldo Netto', value: `€ ${(totaleEntrate - totaleUscite).toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, color: '#2563eb' },
+          { label: saldoFinaleLabel, value: saldoFinaleVal, color: '#38bdf8' },
+          { label: 'Entrate (Periodo)', value: `+€ ${totaleEntrate.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, color: '#16a34a' },
+          { label: 'Uscite (Periodo)', value: `-€ ${totaleUscite.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, color: '#ef4444' },
           { label: 'Da Riconciliare', value: nonRiconciliati, color: nonRiconciliati > 0 ? '#f59e0b' : '#16a34a' },
         ].map(k => (
           <div key={k.label} style={styles.kpiCard}>
@@ -196,7 +205,7 @@ export default function EstrattoContoPage() {
                     <div style={styles.movPagante}>👤 {m.pagante_rilevato}</div>
                   )}
                   <div style={styles.movMeta}>
-                    {new Date(m.data_movimento).toLocaleDateString('it-IT')}
+                    {formattaData(m.data_movimento)}
                     {m.riferimento_esterno && ` · Rif: ${m.riferimento_esterno}`}
                     {m.riconciliato && <span style={styles.ricBadge}>✓ Riconciliato</span>}
                   </div>
@@ -209,8 +218,8 @@ export default function EstrattoContoPage() {
                 }}>
                   {m.importo >= 0 ? '+' : ''}€ {Math.abs(m.importo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                 </span>
-                {m.saldo !== null && (
-                  <div style={styles.movSaldo}>Saldo: € {m.saldo?.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</div>
+                {m.saldo != null && m.saldo !== '' && (
+                  <div style={styles.movSaldo}>Saldo: € {Number(m.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</div>
                 )}
                 <button style={styles.delBtn} onClick={() => eliminaMovimento(m.id)} title="Elimina">✕</button>
               </div>

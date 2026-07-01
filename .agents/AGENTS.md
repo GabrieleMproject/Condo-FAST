@@ -221,6 +221,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 1. Decisioni sul Workflow e Riconciliazioni
 - **Workflow Riconciliazione Ibrido (Opzione 3):** Implementato un sistema di avviso per flussi in entrata/uscita non riconciliati con Pop-up post analisi AI + Badge/Tab dedicate sia nel modulo Uscite (`RiconciliazioniPage.jsx`) che nel modulo Incassi (`RiconciliazioniIncassiPage.jsx`).
 - **Inserimento Rapido e Precompilazione:** Il salvataggio di una spesa da un movimento bancario orfano utilizza il passaggio di stato via React Router (`location.state.prefillSpesa`) verso `SpesePage.jsx`, dove `SpeseForm.jsx` autocompila importo, data, descrizione e fornitore. Per gli incassi orfani, è stato implementato un abbinamento manuale rapido con un clic su tendina alle rate aperte del condominio.
+- **Saldo Finale Conto in Panoramica:** Il saldo finale dell'estratto conto c/c con relativa data viene ora indicato ed esposto in evidenza sia nei KPI e nella scheda "Panoramica" del condominio (`CondominiDetailPage.jsx`, sezione "Fondo Cassa & Conto Corrente"), sia come KPI principale nella pagina `EstrattoContoPage.jsx`, con formattazione date sicura (`formattaData`).
 
 ### 2. Bug e Regressioni Risolti (Fix Bug Triager)
 - **Gestione Errori su Scritture DB Multiple:** Avvolti i blocchi di aggiornamento di stato e abbinamento in `RiconciliazioniPage.jsx` e `RiconciliazioniIncassiPage.jsx` all'interno di costrutti `try/catch` con verifica puntuale di `.error` per prevenire stati parziali o disallineati sul DB in caso di fallimenti di rete o RLS.

@@ -380,9 +380,11 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Allineamento Asincrono Post-Import:** Rifiutata la mappatura bloccante in fase di importazione file, preferendo uno strumento di diagnostica permanente e flessibile ad accesso asincrono ("Diagnostica & Allineamento").
 - **Fondi ed Elimina (Merge) Unità client-side:** Implementata la fusione di due unità (es. duplicati catastali derivanti da import separati) aggiornando in cascata le chiavi esterne per millesimi, occupanti, saldi, rate e spese ripartite prima dell'eliminazione fisica della riga `unita`, evitando migrazioni SQL sul database.
 
-### 2. Funzionalità Rilasciate
+### 2. Funzionalità Rilasciate e Hardening (Fix Bug Triager)
 - **Pannello DiagnosticaAllineamento.jsx:** Nuovo modulo inserito come scheda permanente in `MillesimiEditor.jsx`. Rileva ed elenca le unità prive di proprietari attivi (con millesimi compilati) e le persone orfane prive di assegnazioni. Permette collegamenti rapidi a condòmini esistenti o la creazione sul posto.
-- **Merge Tool:** Interfaccia grafica con doppio selettore per fondere l'unità sorgente in quella di destinazione con avviso di conferma e protezione contro le modifiche millesimali non salvate.
+- **Merge Tool con conservazione dati:** Migliorato l'algoritmo di unione per evitare la perdita silenziosa dei dati finanziari. Se ci sono record concorrenti su rate, saldi iniziali o ripartizioni delle spese per lo stesso esercizio/rata/spesa, il sistema somma matematicamente i valori (importo, pagato, millesimi_usati) aggiornando la cella target anziché eliminare silenziosamente i record.
+- **Risoluzione vincoli FK (Riconciliazioni):** Corretto un potenziale crash fatale durante il merge: i pagamenti abbinati in `riconciliazioni_incassi` legati alle rate dell'unità sorgente vengono riorientati alla rata dell'unità target prima dell'eliminazione, impedendo violazioni di chiave esterna.
+- **Guardia per Dirty Check:** Aggiunta guardia per `selectedTabellaId === 'diagnostica'` in `isSelectedTableDirty` in `MillesimiEditor.jsx` per evitare controlli inutili su tabelle inesistenti.
 
 
 

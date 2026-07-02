@@ -1,7 +1,7 @@
 // src/components/AnagraficaCondominioTab.jsx
 import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { Search, UserCog, Edit, X, Mail, Phone, Home, Download, FileText, Upload } from 'lucide-react'
+import { Search, UserCog, Edit, X, Mail, Phone, Home, Download, FileText, Upload, Plus } from 'lucide-react'
 import { exportAnagraficaXlsx } from '../lib/exportXlsx'
 import { exportAnagraficaPdf } from '../lib/exportPdf'
 import { usePlan } from '../hooks/usePlan'
@@ -17,6 +17,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   const [filtroRuolo, setFiltroRuolo] = useState('tutti') // 'tutti' | 'proprietario' | 'inquilino'
   const [editingPersona, setEditingPersona] = useState(null) // persona in editing
   const [showImport, setShowImport] = useState(false)
+  const [showNuovoModal, setShowNuovoModal] = useState(false)
 
   // Stati per la modale di editing
   const [nome, setNome] = useState('')
@@ -26,6 +27,41 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   const [indirizzo, setIndirizzo] = useState('')
   const [citta, setCitta] = useState('')
   const [salvando, setSalvando] = useState(false)
+
+  // Stati per la modale di creazione manuale
+  const [nuovoNome, setNuovoNome] = useState('')
+  const [nuovoCognome, setNuovoCognome] = useState('')
+  const [nuovoEmail, setNuovoEmail] = useState('')
+  const [nuovoTelefono, setNuovoTelefono] = useState('')
+  const [nuovoTelefonoAlt, setNuovoTelefonoAlt] = useState('')
+  const [nuovoIndirizzo, setNuovoIndirizzo] = useState('')
+  const [nuovoCitta, setNuovoCitta] = useState('')
+  const [nuovoCap, setNuovoCap] = useState('')
+  const [nuovoProvincia, setNuovoProvincia] = useState('')
+  const [nuovoCf, setNuovoCf] = useState('')
+  const [nuovoDataNascita, setNuovoDataNascita] = useState('')
+  const [nuovoNote, setNuovoNote] = useState('')
+  const [nuovoUnitaId, setNuovoUnitaId] = useState('')
+  const [nuovoRuolo, setNuovoRuolo] = useState('proprietario')
+  const [salvandoNuovo, setSalvandoNuovo] = useState(false)
+
+  // Lista di tutte le unità per il dropdown
+  const [unitaList, setUnitaList] = useState([])
+
+  const caricaUnita = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('unita')
+        .select('id, numero, scala, piano')
+        .eq('condominio_id', condominioId)
+        .order('numero', { ascending: true })
+      if (!error && data) {
+        setUnitaList(data)
+      }
+    } catch (e) {
+      console.warn('Errore caricamento unità:', e.message)
+    }
+  }
 
   const caricaPersone = async () => {
     setLoading(true)
@@ -72,6 +108,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   useEffect(() => {
     if (condominioId) {
       caricaPersone()
+      caricaUnita()
     }
   }, [condominioId])
 
@@ -122,6 +159,94 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
       alert('Errore durante il salvataggio: ' + err.message)
     } finally {
       setSalvando(false)
+    }
+  }
+
+  const handleCreaNuovo = async (e) => {
+    e.preventDefault()
+    if (!nuovoNome.trim() || !nuovoCognome.trim()) {
+      alert('Nome e Cognome sono obbligatori!')
+      return
+    }
+    setSalvandoNuovo(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Utente non autenticato")
+
+      // 1. Crea la persona
+      const { data: persona, error: pErr } = await supabase
+        .from('persone')
+        .insert([{
+          user_id: user.id,
+          nome: nuovoNome.trim(),
+          cognome: nuovoCognome.trim(),
+          email: nuovoEmail.trim() || null,
+          telefono: nuovoTelefono.trim() || null,
+          telefono_alt: nuovoTelefonoAlt.trim() || null,
+          indirizzo: nuovoIndirizzo.trim() || null,
+          citta: nuovoCitta.trim() || null,
+          cap: nuovoCap.trim() || null,
+          provincia: nuovoProvincia.toUpperCase().trim() || null,
+          codice_fiscale: nuovoCf.toUpperCase().trim() || null,
+          data_nascita: nuovoDataNascita || null,
+          note: nuovoNote.trim() || null
+        }])
+        .select()
+        .single()
+
+      if (pErr) throw pErr
+
+      // 2. Se è selezionata una unità, crea l'occupazione
+      if (nuovoUnitaId) {
+        const oggi = new Date().toISOString().split('T')[0]
+        const subDate = new Date()
+        subDate.setDate(subDate.getDate() - 1)
+        const ieri = subDate.toISOString().split('T')[0]
+
+        // Disattiva eventuale occupante precedente attivo con lo stesso ruolo
+        await supabase
+          .from('occupanti_unita')
+          .update({ attivo: false, data_fine: ieri })
+          .eq('unita_id', nuovoUnitaId)
+          .eq('ruolo', nuovoRuolo)
+          .eq('attivo', true)
+
+        // Inserisce il nuovo legame
+        const { error: oErr } = await supabase
+          .from('occupanti_unita')
+          .insert([{
+            unita_id: nuovoUnitaId,
+            persona_id: persona.id,
+            ruolo: nuovoRuolo,
+            attivo: true,
+            data_inizio: oggi
+          }])
+        if (oErr) throw oErr
+      }
+
+      alert('Nuovo condòmino creato con successo!')
+      setShowNuovoModal(false)
+      // Reset form
+      setNuovoNome('')
+      setNuovoCognome('')
+      setNuovoEmail('')
+      setNuovoTelefono('')
+      setNuovoTelefonoAlt('')
+      setNuovoIndirizzo('')
+      setNuovoCitta('')
+      setNuovoCap('')
+      setNuovoProvincia('')
+      setNuovoCf('')
+      setNuovoDataNascita('')
+      setNuovoNote('')
+      setNuovoUnitaId('')
+      setNuovoRuolo('proprietario')
+      
+      await caricaPersone()
+    } catch (err) {
+      alert('Errore durante la creazione: ' + err.message)
+    } finally {
+      setSalvandoNuovo(false)
     }
   }
 
@@ -244,6 +369,14 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
             </button>
           ))}
           <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
+            <button
+              type="button"
+              onClick={() => setShowNuovoModal(true)}
+              style={{ ...styles.filterBtn(false), display: 'flex', alignItems: 'center', gap: 6, color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', padding: '6px 10px' }}
+              title="Crea manualmente un nuovo condòmino"
+            >
+              <Plus size={14} /> Nuovo Condòmino
+            </button>
             <button
               type="button"
               onClick={() => setShowImport(true)}
@@ -390,6 +523,120 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
                 <button type="button" style={styles.btnCancel} onClick={() => setEditingPersona(null)}>Annulla</button>
                 <button type="submit" disabled={salvando} style={styles.btnSave}>
                   {salvando ? 'Salvataggio...' : 'Salva Modifiche'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modale Nuovo Condòmino */}
+      {showNuovoModal && (
+        <div style={styles.overlay} onClick={() => setShowNuovoModal(false)}>
+          <div style={{ ...styles.modal, width: 550, maxContent: '90vw' }} onClick={e => e.stopPropagation()}>
+            <div style={styles.modalHead}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Plus size={18} color="#60a5fa" />
+                <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>Nuovo Condòmino</span>
+              </div>
+              <button style={styles.btnClose} onClick={() => setShowNuovoModal(false)}><X size={16} /></button>
+            </div>
+            
+            <form onSubmit={handleCreaNuovo}>
+              <div style={{ ...styles.modalBody, maxHeight: '65vh', overflowY: 'auto', paddingRight: 6 }}>
+                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Dati Anagrafici</div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Cognome *</label>
+                    <input style={styles.input} type="text" required value={nuovoCognome} onChange={e => setNuovoCognome(e.target.value)} placeholder="es. Rossi" />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Nome *</label>
+                    <input style={styles.input} type="text" required value={nuovoNome} onChange={e => setNuovoNome(e.target.value)} placeholder="es. Mario" />
+                  </div>
+                </div>
+
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Codice Fiscale</label>
+                    <input style={styles.input} type="text" value={nuovoCf} onChange={e => setNuovoCf(e.target.value)} maxLength={16} placeholder="es. RSSMRA80A01F205X" />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Data di Nascita</label>
+                    <input style={styles.input} type="date" value={nuovoDataNascita} onChange={e => setNuovoDataNascita(e.target.value)} />
+                  </div>
+                </div>
+
+                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Contatti</div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Email</label>
+                    <input style={styles.input} type="email" value={nuovoEmail} onChange={e => setNuovoEmail(e.target.value)} placeholder="es. email@esempio.it" />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Telefono</label>
+                    <input style={styles.input} type="text" value={nuovoTelefono} onChange={e => setNuovoTelefono(e.target.value)} placeholder="es. 3331234567" />
+                  </div>
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Telefono Alternativo</label>
+                  <input style={styles.input} type="text" value={nuovoTelefonoAlt} onChange={e => setNuovoTelefonoAlt(e.target.value)} placeholder="es. 02123456" />
+                </div>
+
+                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Residenza</div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Indirizzo</label>
+                  <input style={styles.input} type="text" value={nuovoIndirizzo} onChange={e => setNuovoIndirizzo(e.target.value)} placeholder="es. Via Roma 10" />
+                </div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Città</label>
+                    <input style={styles.input} type="text" value={nuovoCitta} onChange={e => setNuovoCitta(e.target.value)} placeholder="es. Milano" />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>CAP</label>
+                      <input style={styles.input} type="text" value={nuovoCap} onChange={e => setNuovoCap(e.target.value)} maxLength={5} placeholder="20100" />
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Prov.</label>
+                      <input style={styles.input} type="text" value={nuovoProvincia} onChange={e => setNuovoProvincia(e.target.value)} maxLength={2} placeholder="MI" />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Assegnazione Unità</div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Unità</label>
+                    <select style={styles.input} value={nuovoUnitaId} onChange={e => setNuovoUnitaId(e.target.value)}>
+                      <option value="">-- Nessuna Associazione --</option>
+                      {unitaList.map(u => (
+                        <option key={u.id} value={u.id}>
+                          Unità {u.numero} {u.scala ? `(Scala ${u.scala})` : ''} {u.piano !== null ? `(Piano ${u.piano})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Ruolo</label>
+                    <select style={styles.input} value={nuovoRuolo} onChange={e => setNuovoRuolo(e.target.value)} disabled={!nuovoUnitaId}>
+                      <option value="proprietario">Proprietario</option>
+                      <option value="inquilino">Inquilino</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ ...styles.formGroup, marginTop: 12 }}>
+                  <label style={styles.label}>Note</label>
+                  <textarea style={{ ...styles.input, minHeight: 50, resize: 'vertical' }} value={nuovoNote} onChange={e => setNuovoNote(e.target.value)} />
+                </div>
+              </div>
+
+              <div style={styles.modalFooter}>
+                <button type="button" style={styles.btnCancel} onClick={() => setShowNuovoModal(false)}>Annulla</button>
+                <button type="submit" disabled={salvandoNuovo} style={styles.btnSave}>
+                  {salvandoNuovo ? 'Salvataggio...' : 'Crea Condòmino'}
                 </button>
               </div>
             </form>

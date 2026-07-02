@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { estraiTabelleMillesimali } from '../lib/fileExtractor';
 import { 
   Layers, Plus, Trash2, Save, Upload, Download, Search, 
-  AlertCircle, X, Check, Edit2, RotateCcw, Scale, Filter, Clock
+  AlertCircle, X, Check, Edit2, RotateCcw, Scale, Filter, Clock, Calculator
 } from 'lucide-react';
 import StoricoOccupantiModal from './StoricoOccupantiModal';
 import DiagnosticaAllineamento from './DiagnosticaAllineamento';
@@ -55,6 +55,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
   const [unita, setUnita] = useState([]);
   const [valori, setValori] = useState({});       // { `${unitaId}_${tabellaId}`: numeric }
   const [originali, setOriginali] = useState({});  // snapshot for dirty checking
+  const [originalUnita, setOriginalUnita] = useState([]);  // snapshot unita for dirty checking
   const [personeCondominio, setPersoneCondominio] = useState([]); // for reference/read-only owner display
 
   // Selection & UI states
@@ -124,6 +125,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
       const tabelleList = tab || [];
       setTabelle(tabelleList);
       setUnita(unitaList);
+      setOriginalUnita(JSON.parse(JSON.stringify(unitaList)));
 
       // Auto-select first table if none selected
       if (tabelleList.length > 0 && !selectedTabellaId) {
@@ -199,17 +201,33 @@ export default function MillesimiEditor({ condominioId: propId }) {
     }, 0);
   }, [unita, valori]);
 
-  // Check if selected table has unsaved changes
+  // Check if selected table or units have unsaved changes
   const isSelectedTableDirty = useMemo(() => {
     if (!selectedTabellaId || selectedTabellaId === 'diagnostica') return false;
+    
+    // Check millesimi changes
     for (const u of unita) {
       const key = `${u.id}_${selectedTabellaId}`;
       const v = parseFloat(String(valori[key] ?? 0).replace(/,/g, '.')) || 0;
       const o = parseFloat(String(originali[key] ?? 0).replace(/,/g, '.')) || 0;
       if (Math.abs(v - o) > 0.0001) return true;
     }
+
+    // Check unit field changes
+    for (const u of unita) {
+      const orig = originalUnita.find(o => o.id === u.id);
+      if (!orig) continue;
+      if (
+        (orig.numero || '') !== (u.numero || '') ||
+        (orig.scala || '') !== (u.scala || '') ||
+        (orig.piano ?? '') !== (u.piano ?? '') ||
+        (orig.mq ?? '') !== (u.mq ?? '')
+      ) {
+        return true;
+      }
+    }
     return false;
-  }, [valori, originali, unita, selectedTabellaId]);
+  }, [valori, originali, unita, selectedTabellaId, originalUnita]);
 
   // Dynamic Scale list for filter dropdown
   const listScale = useMemo(() => {
@@ -253,6 +271,50 @@ export default function MillesimiEditor({ condominioId: propId }) {
     const normalized = String(rawVal).replace(/,/g, '.');
     setValori(prev => ({ ...prev, [key]: normalized }));
   }
+
+  // Handle inline changes for unit physical metadata
+  const handleUnitFieldChange = (unitaId, field, value) => {
+    setUnita(prev => prev.map(u => {
+      if (u.id === unitaId) {
+        return { ...u, [field]: value };
+      }
+      return u;
+    }));
+  };
+
+  // Action: Recalculate millesimi based on SQM (mq)
+  const calcolaDaMq = () => {
+    if (!selectedTabellaId || unitaFiltrate.length === 0) return;
+    
+    let totaleMq = 0;
+    unitaFiltrate.forEach(u => {
+      totaleMq += parseFloat(u.mq || 0);
+    });
+
+    if (totaleMq === 0) {
+      alert('Impossibile calcolare: inserisci la superficie (mq) per almeno un\'unità visibile.');
+      return;
+    }
+
+    if (!window.confirm(`Vuoi calcolare i millesimi proporzionalmente alla superficie (mq) delle ${unitaFiltrate.length} unità visibili? Questo imposterà tutte le altre unità (non filtrate) a 0.`)) return;
+
+    const nuoviValori = { ...valori };
+    
+    // Azzera tutte le unità del condominio per questa tabella prima
+    unita.forEach(u => {
+      nuoviValori[`${u.id}_${selectedTabellaId}`] = 0;
+    });
+
+    // Ripartisci in base ai mq per quelle visibili
+    unitaFiltrate.forEach(u => {
+      const mq = parseFloat(u.mq || 0);
+      const quota = (mq / totaleMq) * 1000;
+      nuoviValori[`${u.id}_${selectedTabellaId}`] = parseFloat(quota.toFixed(4));
+    });
+
+    setValori(nuoviValori);
+    showToast('Millesimi calcolati proporzionalmente ai MQ!', 'success');
+  };
 
   // Action: Distribute millesimi equally among visible/filtered units
   function distribuisciEquamente() {
@@ -331,6 +393,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
     setSaving(true);
     try {
+      // 1. Save Millesimi values
       const upserts = [];
       unita.forEach(u => {
         const key = `${u.id}_${selectedTabellaId}`;
@@ -349,6 +412,29 @@ export default function MillesimiEditor({ condominioId: propId }) {
         if (error) throw error;
       }
 
+      // 2. Save physical unit fields (scala, piano, mq, numero) only if changed
+      for (const u of unita) {
+        const orig = originalUnita.find(o => o.id === u.id);
+        const hasChanged = !orig || 
+          orig.numero !== u.numero || 
+          orig.scala !== u.scala || 
+          orig.piano !== u.piano || 
+          orig.mq !== u.mq;
+
+        if (hasChanged) {
+          const { error: uniErr } = await supabase
+            .from('unita')
+            .update({
+              numero: u.numero,
+              scala: u.scala || null,
+              piano: u.piano !== '' && u.piano !== null && u.piano !== undefined ? Number(u.piano) : null,
+              mq: u.mq !== '' && u.mq !== null && u.mq !== undefined ? Number(u.mq) : null,
+            })
+            .eq('id', u.id);
+          if (uniErr) throw uniErr;
+        }
+      }
+
       // Update original snapshot to clear dirty check
       setOriginali(prev => {
         const next = { ...prev };
@@ -359,7 +445,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
         return next;
       });
 
-      showToast('Millesimi salvati con successo!', 'success');
+      await loadAll();
+      showToast('Millesimi e dati unità salvati con successo!', 'success');
     } catch (e) {
       showToast('Errore durante il salvataggio: ' + e.message, 'error');
     } finally {
@@ -937,9 +1024,12 @@ export default function MillesimiEditor({ condominioId: propId }) {
                   <table style={styles.table}>
                     <thead>
                       <tr>
-                        <th style={{ ...styles.th, textAlign: 'left' }}>Unità immobiliare (Scala / Piano / Int.)</th>
+                        <th style={{ ...styles.th, textAlign: 'left', width: 120 }}>Interno *</th>
+                        <th style={{ ...styles.th, textAlign: 'left', width: 90 }}>Scala</th>
+                        <th style={{ ...styles.th, textAlign: 'left', width: 90 }}>Piano</th>
+                        <th style={{ ...styles.th, textAlign: 'left', width: 110 }}>Superficie (mq)</th>
                         <th style={{ ...styles.th, textAlign: 'left' }}>Proprietario</th>
-                        <th style={{ ...styles.th, textAlign: 'right', width: 150 }}>Quota millesimale (‰)</th>
+                        <th style={{ ...styles.th, textAlign: 'right', width: 140 }}>Quota (‰)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -948,16 +1038,52 @@ export default function MillesimiEditor({ condominioId: propId }) {
                         const val = valori[key] ?? '';
                         return (
                           <tr key={u.id} style={{ background: idx % 2 === 0 ? '#1e293b20' : 'transparent' }}>
-                            <td style={{ ...styles.td, textAlign: 'left' }}>
-                              <span style={{ fontWeight: 600, color: '#f1f5f9' }}>
-                                {u.numero ? `Int. ${u.numero}` : '—'}
-                              </span>
-                              {u.scala && <span style={styles.badgeUnita}>Scala {u.scala}</span>}
-                              {u.piano !== null && <span style={styles.badgeUnita}>Piano {u.piano}</span>}
+                            {/* Interno */}
+                            <td style={styles.td}>
+                              <input
+                                type="text"
+                                style={styles.inlineInput}
+                                value={u.numero || ''}
+                                onChange={e => handleUnitFieldChange(u.id, 'numero', e.target.value)}
+                                placeholder="es. 3"
+                              />
                             </td>
+                            {/* Scala */}
+                            <td style={styles.td}>
+                              <input
+                                type="text"
+                                style={styles.inlineInput}
+                                value={u.scala || ''}
+                                onChange={e => handleUnitFieldChange(u.id, 'scala', e.target.value)}
+                                placeholder="es. A"
+                              />
+                            </td>
+                            {/* Piano */}
+                            <td style={styles.td}>
+                              <input
+                                type="text"
+                                style={styles.inlineInput}
+                                value={u.piano ?? ''}
+                                onChange={e => handleUnitFieldChange(u.id, 'piano', e.target.value)}
+                                placeholder="es. 1"
+                              />
+                            </td>
+                            {/* Superficie MQ */}
+                            <td style={styles.td}>
+                              <input
+                                type="text"
+                                style={styles.inlineInput}
+                                value={u.mq ?? ''}
+                                onChange={e => handleUnitFieldChange(u.id, 'mq', e.target.value)}
+                                placeholder="es. 85"
+                              />
+                            </td>
+                            {/* Proprietario */}
                             <td style={{ ...styles.td, textAlign: 'left', color: '#94a3b8' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span>{getProprietarioLabel(u)}</span>
+                                <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: 150 }}>
+                                  {getProprietarioLabel(u)}
+                                </span>
                                 <button
                                   onClick={() => setStoricoModal({ unita: u, ruolo: 'proprietario' })}
                                   style={{
@@ -979,6 +1105,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                                 </button>
                               </div>
                             </td>
+                            {/* Quota millesimale */}
                             <td style={{ ...styles.td, textAlign: 'right' }}>
                               <input
                                 type="text"
@@ -1016,6 +1143,14 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     title="Azzera tutti i millesimi delle unità visibili"
                   >
                     <RotateCcw size={14} style={{ marginRight: 6 }} /> Azzera Valori
+                  </button>
+                  <button 
+                    className="millesimi-btn-secondary"
+                    style={styles.btnSecondary} 
+                    onClick={calcolaDaMq}
+                    title="Calcola i millesimi proporzionalmente alla superficie (mq) delle unità visibili"
+                  >
+                    <Calculator size={14} style={{ marginRight: 6 }} /> Calcola da MQ
                   </button>
                 </div>
                 
@@ -1401,6 +1536,14 @@ const styles = {
   badgeUnita: {
     fontSize: 10, color: '#64748b', background: '#1e293b',
     padding: '2px 6px', borderRadius: 6, marginLeft: 6, fontWeight: 500
+  },
+  inlineInput: {
+    width: '100%', background: '#0f172a',
+    border: '1px solid #334155', borderRadius: 6,
+    padding: '5px 8px', color: '#cbd5e1',
+    fontFamily: "'Sora', sans-serif", fontSize: 13,
+    outline: 'none',
+    transition: 'border-color 0.2s',
   },
   cellInput: {
     width: 100, background: '#0f172a',

@@ -220,72 +220,79 @@ export default function AnagraficaPage() {
   }
 
   const handleImport = async (rows) => {
-    let unitaCondoList = [...(unita || [])]
-    if (unitaCondoList.length === 0 && condominioId) {
-      const { data: uData } = await supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condominioId)
-      if (uData) unitaCondoList = uData
-    }
+    try {
+      let unitaCondoList = [...(unita || [])]
+      if (unitaCondoList.length === 0 && condominioId) {
+        const { data: uData, error: uErr } = await supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condominioId)
+        if (uErr) throw uErr
+        if (uData) unitaCondoList = uData
+      }
 
-    const mappedRows = []
-    for (const r of rows) {
-      let unita_id = r.unita_id || null
-      const strUnita = String(r.unita || '').trim()
-      const strUnitaLower = strUnita.toLowerCase()
+      const mappedRows = []
+      for (const r of rows) {
+        let unita_id = r.unita_id || null
+        const strUnita = String(r.unita || '').trim()
+        const strUnitaLower = strUnita.toLowerCase()
 
-      if (!unita_id && strUnita && unitaCondoList) {
-        const match = unitaCondoList.find(u => {
-          const num = String(u.numero || '').trim().toLowerCase()
-          const cleanNum = num.replace(/^0+/, '') || '0'
-          const cleanStr = strUnitaLower.replace(/^0+/, '') || '0'
-          const scalaNum = `${String(u.scala || '').trim().toLowerCase()} ${num}`.trim()
-          const isNumEqual = !isNaN(cleanNum) && !isNaN(cleanStr) && Number(cleanNum) === Number(cleanStr)
-          return num === strUnitaLower || cleanNum === cleanStr || isNumEqual || scalaNum === strUnitaLower || strUnitaLower === `int. ${num}` || strUnitaLower === `int ${num}` || strUnitaLower === `interno ${num}` || strUnitaLower.endsWith(` ${num}`)
-        })
-        if (match) {
-          unita_id = match.id
-        } else if (condominioId) {
-          // Creazione automatica unità mancante su quel condominio
-          const cleanNumero = strUnita.replace(/^(unita|unità|app\.|appartamento|int\.|interno|n\.|num\.)\s*/i, '').trim() || strUnita
-          let tipoUnita = 'appartamento'
-          if (strUnitaLower.includes('box') || strUnitaLower.includes('garage')) tipoUnita = 'box'
-          else if (strUnitaLower.includes('cantina')) tipoUnita = 'cantina'
-          else if (strUnitaLower.includes('negozio')) tipoUnita = 'negozio'
-          else if (strUnitaLower.includes('ufficio')) tipoUnita = 'ufficio'
+        if (!unita_id && strUnita && unitaCondoList) {
+          const match = unitaCondoList.find(u => {
+            const num = String(u.numero || '').trim().toLowerCase()
+            const cleanNum = num.replace(/^0+/, '') || '0'
+            const cleanStr = strUnitaLower.replace(/^0+/, '') || '0'
+            const scalaNum = `${String(u.scala || '').trim().toLowerCase()} ${num}`.trim()
+            const isNumEqual = !isNaN(cleanNum) && !isNaN(cleanStr) && Number(cleanNum) === Number(cleanStr)
+            return num === strUnitaLower || cleanNum === cleanStr || isNumEqual || scalaNum === strUnitaLower || strUnitaLower === `int. ${num}` || strUnitaLower === `int ${num}` || strUnitaLower === `interno ${num}` || strUnitaLower.endsWith(` ${num}`)
+          })
+          if (match) {
+            unita_id = match.id
+          } else if (condominioId) {
+            // Creazione automatica unità mancante su quel condominio
+            const cleanNumero = strUnita.replace(/^(unita|unità|app\.|appartamento|int\.|interno|n\.|num\.)\s*/i, '').trim() || strUnita
+            let tipoUnita = 'appartamento'
+            if (strUnitaLower.includes('box') || strUnitaLower.includes('garage')) tipoUnita = 'box'
+            else if (strUnitaLower.includes('cantina')) tipoUnita = 'cantina'
+            else if (strUnitaLower.includes('negozio')) tipoUnita = 'negozio'
+            else if (strUnitaLower.includes('ufficio')) tipoUnita = 'ufficio'
 
-          const { data: newU, error: errU } = await supabase
-            .from('unita')
-            .insert([{
-              condominio_id: condominioId,
-              numero: cleanNumero,
-              tipo: tipoUnita,
-              scala: r.scala ? String(r.scala).trim() : null
-            }])
-            .select()
-            .single()
+            const { data: newU, error: errU } = await supabase
+              .from('unita')
+              .insert([{
+                condominio_id: condominioId,
+                numero: cleanNumero,
+                tipo: tipoUnita,
+                scala: r.scala ? String(r.scala).trim() : null
+              }])
+              .select()
+              .single()
 
-          if (!errU && newU) {
-            unita_id = newU.id
-            unitaCondoList.push(newU)
+            if (errU) throw errU
+            if (newU) {
+              unita_id = newU.id
+              unitaCondoList.push(newU)
+            }
           }
         }
+
+        let ruolo = String(r.ruolo || '').trim().toLowerCase()
+        if (ruolo !== 'proprietario' && ruolo !== 'inquilino') {
+          ruolo = unita_id ? 'proprietario' : ''
+        }
+
+        mappedRows.push({
+          ...r,
+          unita_id,
+          ruolo
+        })
       }
 
-      let ruolo = String(r.ruolo || '').trim().toLowerCase()
-      if (ruolo !== 'proprietario' && ruolo !== 'inquilino') {
-        ruolo = unita_id ? 'proprietario' : ''
-      }
-
-      mappedRows.push({
-        ...r,
-        unita_id,
-        ruolo
-      })
+      const result = await importPersone(mappedRows)
+      await fetchUnita()
+      showToast(`${result.created} persone importate con successo`)
+      return result
+    } catch (e) {
+      showToast('Errore durante l\'importazione: ' + e.message, 'error')
+      return { created: 0 }
     }
-
-    const result = await importPersone(mappedRows)
-    await fetchUnita()
-    showToast(`${result.created} persone importate con successo`)
-    return result
   }
 
   const handleSaveUnita = async (data) => {
@@ -297,6 +304,16 @@ export default function AnagraficaPage() {
       showToast('Unità salvata')
     } catch (err) {
       showToast(err.message, 'error')
+    }
+  }
+
+  const handleDeleteUnita = async (id) => {
+    if (!window.confirm("Sei sicuro di voler eliminare questa unità? L'operazione potrebbe fallire se associata a millesimi o rate.")) return
+    try {
+      await deleteUnita(id)
+      showToast('Unità eliminata')
+    } catch (err) {
+      showToast("Errore durante l'eliminazione: " + err.message, 'error')
     }
   }
 
@@ -429,7 +446,7 @@ export default function AnagraficaPage() {
                           <button style={styles.iconBtn} title="Modifica" onClick={() => { setEditUnita(u); setShowUnitaForm(true) }}>✏️</button>
                           <button style={styles.iconBtn} title="Aggiungi proprietario" onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'proprietario' })}>🏠</button>
                           <button style={styles.iconBtn} title="Aggiungi inquilino"   onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'inquilino' })}>🔑</button>
-                          <button style={{ ...styles.iconBtn, color: '#ef4444' }} title="Elimina" onClick={() => deleteUnita(u.id)}>🗑️</button>
+                          <button style={{ ...styles.iconBtn, color: '#ef4444' }} title="Elimina" onClick={() => handleDeleteUnita(u.id)}>🗑️</button>
                         </div>
                       </td>
                     </tr>,

@@ -703,3 +703,12 @@ a:hover { text-decoration: underline; }
 .millesimi-btn-secondary:hover {
   background-color: #334155 !important;
 }
+
+/* ─── Storico Occupanti custom styles ─── */
+.storico-close-btn:hover {
+  background-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+.storico-delete-btn:hover {
+  color: #ef4444 !important;
+}

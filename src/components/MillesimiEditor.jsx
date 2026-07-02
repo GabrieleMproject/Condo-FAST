@@ -223,8 +223,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
     return unita.filter(u => {
       // 1. Search Query (Interno or Owner)
       const labelUnita = `int. ${u.numero || ''} ${u.scala ? `sc. ${u.scala}` : ''}`.toLowerCase();
-      const nominativoProp = (u.persone?.[0]?.persona?.nominativo || '').toLowerCase();
-      const matchesSearch = labelUnita.includes(searchQuery.toLowerCase()) || nominativoProp.includes(searchQuery.toLowerCase());
+      const name = getProprietarioLabel(u).toLowerCase();
+      const matchesSearch = labelUnita.includes(searchQuery.toLowerCase()) || name.includes(searchQuery.toLowerCase());
 
       // 2. Scale filter
       const matchesScale = filtroScala === 'Tutte' || (u.scala && u.scala.trim().toUpperCase() === filtroScala.toUpperCase());

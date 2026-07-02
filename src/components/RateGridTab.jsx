@@ -239,29 +239,43 @@ L'Amministratore`;
   useEffect(() => {
     supabase.from('esercizi').select('*').eq('condominio_id', condominioId)
       .order('anno', { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[RateGridTab] Errore caricamento esercizi:", error.message)
+          return
+        }
         setEsercizi(data || [])
         setEsercizio(data?.find((e) => e.stato === 'aperto') || data?.[0] || null)
       })
+      .catch(err => console.error("[RateGridTab] Errore di rete esercizi:", err))
   }, [condominioId])
 
   async function loadGriglia() {
     if (!esercizio) { setLoading(false); return }
     setLoading(true)
-    const { data: rateData } = await supabase
-      .from('rate').select('*').eq('esercizio_id', esercizio.id)
-      .order('numero_rata', { ascending: true })
-    const rateList = rateData || []
-    setRate(rateList)
-    if (rateList.length) {
-      const { data: cellData } = await supabase
-        .from('rate_unita').select('*')
-        .in('rata_id', rateList.map((r) => r.id))
-      setCells(cellData || [])
-    } else {
-      setCells([])
+    try {
+      const { data: rateData, error: rateErr } = await supabase
+        .from('rate').select('*').eq('esercizio_id', esercizio.id)
+        .order('numero_rata', { ascending: true })
+      if (rateErr) throw rateErr
+
+      const rateList = rateData || []
+      setRate(rateList)
+
+      if (rateList.length) {
+        const { data: cellData, error: cellErr } = await supabase
+          .from('rate_unita').select('*')
+          .in('rata_id', rateList.map((r) => r.id))
+        if (cellErr) throw cellErr
+        setCells(cellData || [])
+      } else {
+        setCells([])
+      }
+    } catch (e) {
+      console.error("[RateGridTab] Errore nel caricamento della griglia rate:", e.message)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
   useEffect(() => { loadGriglia() /* eslint-disable-next-line */ }, [esercizio?.id])
 
@@ -481,9 +495,9 @@ L'Amministratore`;
 
 // ── Editor cella (modale) ────────────────────────────────────
 function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave, onSollecita, inviandoSollecito, fetchUnita }) {
-  const [importo, setImporto] = useState(cell.importo ?? 0)
-  const [pagato, setPagato] = useState(cell.importo_pagato ?? 0)
-  const [data, setData] = useState(cell.data_pagamento || '')
+  const [importo, setImporto] = useState(cell?.importo ?? 0)
+  const [pagato, setPagato] = useState(cell?.importo_pagato ?? 0)
+  const [data, setData] = useState(cell?.data_pagamento || '')
   const p = getProprietario(unita)
 
   // Stati per la modifica anagrafica proprietario

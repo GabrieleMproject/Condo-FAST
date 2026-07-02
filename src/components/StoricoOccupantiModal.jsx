@@ -234,7 +234,7 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
               Unità {unita.numero} {unita.scala ? `· Scala ${unita.scala}` : ''} {unita.piano != null ? `· Piano ${unita.piano}` : ''}
             </p>
           </div>
-          <button style={st.closeBtn} onClick={onClose} disabled={saving}>
+          <button className="storico-close-btn" style={st.closeBtn} onClick={onClose} disabled={saving}>
             <X size={18} />
           </button>
         </div>
@@ -284,6 +284,7 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
                           </div>
                           
                           <button 
+                            className="storico-delete-btn"
                             style={st.deleteBtn}
                             onClick={() => handleEliminaStorico(s.id)}
                             title="Elimina record storico"

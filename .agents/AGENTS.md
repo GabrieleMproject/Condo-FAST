@@ -386,6 +386,9 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Risoluzione vincoli FK (Riconciliazioni):** Corretto un potenziale crash fatale durante il merge: i pagamenti abbinati in `riconciliazioni_incassi` legati alle rate dell'unità sorgente vengono riorientati alla rata dell'unità target prima dell'eliminazione, impedendo violazioni di chiave esterna.
 - **Guardia per Dirty Check:** Aggiunta guardia per `selectedTabellaId === 'diagnostica'` in `isSelectedTableDirty` in `MillesimiEditor.jsx` per evitare controlli inutili su tabelle inesistenti.
 - **Creazione Manuale Condòmini locale e globale:** Introdotto il pulsante `➕ Nuovo Condòmino` sia nel tab `AnagraficaCondominioTab.jsx` (localizzato) che nella pagina globale `AnagraficaPage.jsx` (con select condominio -> unità). Consente l'inserimento manuale completo di anagrafica + contatti + residenza con associazione facoltativa all'unità e ruolo, garantendo che i nuovi contatti compaiano istantaneamente nel condominio.
+- **Modifica Inline Unità in Griglia Millesimi:** Aggiornato `MillesimiEditor.jsx` per rendere editabili direttamente nella tabella le colonne fisiche dell'unità (Interno/Numero, Scala, Piano, Superficie/Mq) oltre alla quota millesimale. Le modifiche vengono salvate in blocco su database.
+- **Calcolo Proporzionale da MQ:** Aggiunto il pulsante `Calcola da MQ` nel piè di pagina della griglia millesimi. Ripartisce automaticamente i 1000 millesimi in proporzione alla superficie (mq) inserita per le unità visibili, facilitando la creazione delle tabelle.
+
 
 
 

@@ -9,6 +9,21 @@ import { CreditCard, X, CheckCircle2, Coins, Mail } from 'lucide-react'
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
+function formattaDataMese(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}`;
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 function deriveStato(importo, pagato) {
   if (importo <= 0.001) return pagato > 0.01 ? 'sovra_pagata' : 'pagata'
   if (pagato <= 0.001) return 'non_pagata'
@@ -45,6 +60,64 @@ export default function RateGridTab({ condominioId }) {
   const [editing, setEditing] = useState(null)    // { cell, rata, unita }
 
   const { unita, getProprietario, fetchUnita } = useUnita(condominioId)
+
+  // Funzione per formattare e mostrare la transizione proprietari con date nella cella Unità
+  function renderProprietariTransizione(u) {
+    const proprietari = (u.occupanti_unita || [])
+      .filter(o => o.ruolo === 'proprietario')
+      .sort((a, b) => {
+        const da = a.data_inizio ? new Date(a.data_inizio) : new Date(0);
+        const db = b.data_inizio ? new Date(b.data_inizio) : new Date(0);
+        return da - db;
+      });
+
+    if (proprietari.length === 0) {
+      return <div style={{ color: '#64748b', fontSize: 11, fontStyle: 'italic' }}>— Nessuno —</div>;
+    }
+
+    if (proprietari.length === 1) {
+      const p = proprietari[0].persone;
+      if (!p) return <div style={{ color: '#64748b', fontSize: 11, fontStyle: 'italic' }}>— Nessuno —</div>;
+      return <div style={{ color: '#64748b', fontSize: 11 }}>{p.cognome} {p.nome}</div>;
+    }
+
+    // Se ci sono più proprietari (subentro avvenuto nell'esercizio)
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
+        {proprietari.map((o, idx) => {
+          const p = o.persone;
+          if (!p) return null;
+
+          const dataInizioStr = o.data_inizio ? formattaDataMese(o.data_inizio) : '';
+          const dataFineStr = o.data_fine ? formattaDataMese(o.data_fine) : '';
+
+          let labelDate = '';
+          if (o.attivo) {
+            labelDate = dataInizioStr ? `(dal ${dataInizioStr})` : '(corrente)';
+          } else {
+            labelDate = dataFineStr ? `(fino al ${dataFineStr})` : '';
+          }
+
+          return (
+            <div 
+              key={o.id} 
+              style={{ 
+                color: o.attivo ? '#cbd5e1' : '#64748b', 
+                fontSize: 10,
+                fontWeight: o.attivo ? 600 : 400,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}
+            >
+              {idx > 0 && <span style={{ color: '#475569', fontSize: 9 }}>➔</span>}
+              <span>{p.cognome} {p.nome} <span style={{ color: '#475569', fontSize: 9, fontStyle: 'italic' }}>{labelDate}</span></span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   // Rileva le rate scadute da oltre 10 giorni
   const rateScaduteDa10Giorni = useMemo(() => {
@@ -327,7 +400,7 @@ L'Amministratore`;
                   <tr key={u.id}>
                     <td style={{ ...st.tdLabel, ...st.stickyCol }}>
                       <div style={{ color: '#e2e8f0', fontWeight: 600 }}>Unità {u.numero}</div>
-                      {p && <div style={{ color: '#64748b', fontSize: 11 }}>{p.cognome} {p.nome}</div>}
+                      {renderProprietariTransizione(u)}
                     </td>
                     {rate.map((r) => {
                       const cell = cellMap[`${u.id}_${r.id}`]

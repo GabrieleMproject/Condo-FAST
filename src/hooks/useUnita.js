@@ -17,7 +17,7 @@ export function useUnita(condominioId = null) {
         .select(`
           *,
           occupanti_unita (
-            id, ruolo, attivo,
+            id, ruolo, attivo, data_inizio, data_fine,
             persone (id, nome, cognome, email, telefono, indirizzo, citta)
           )
         `)

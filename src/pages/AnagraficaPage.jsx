@@ -7,7 +7,8 @@ import AnagraficaImport from '../components/AnagraficaImport'
 import UnitaForm from '../components/UnitaForm'
 import PersonaForm from '../components/PersonaForm'
 import { supabase } from '../lib/supabaseClient'
-import { Search, Edit, X, Building2, ChevronDown, ChevronUp, Mail, Phone, Home, UserCog } from 'lucide-react'
+import { Search, Edit, X, Building2, ChevronDown, ChevronUp, Mail, Phone, Home, UserCog, Clock } from 'lucide-react'
+import StoricoOccupantiModal from '../components/StoricoOccupantiModal'
 
 // ── Badge tipo unità (per visualizzazione condominio singolo) ──────────────
 const TIPO_COLORS = {
@@ -62,6 +63,7 @@ export default function AnagraficaPage() {
   const [showPersonaForm, setShowPersonaForm] = useState(null) // { unitaId, ruolo }
   const [expandedRow, setExpandedRow] = useState(null)
   const [toast, setToast]             = useState(null)
+  const [storicoModal, setStoricoModal] = useState(null) // { unita, ruolo }
 
   // ── STATI MODALITÀ GLOBALE MULTI-CONDOMINIO ──────────────────────────────
   const [condomini, setCondomini] = useState([])
@@ -392,8 +394,34 @@ export default function AnagraficaPage() {
                         {u.piano != null ? `Piano ${u.piano}` : '—'}
                         {u.scala ? ` · Sc.${u.scala}` : ''}
                       </td>
-                      <td style={{ ...styles.td, textAlign: 'left' }}><PersonaChip persona={prop} ruolo="proprietario" /></td>
-                      <td style={{ ...styles.td, textAlign: 'left' }}><PersonaChip persona={inq}  ruolo="inquilino" /></td>
+                      <td style={{ ...styles.td, textAlign: 'left' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
+                          <PersonaChip persona={prop} ruolo="proprietario" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setStoricoModal({ unita: u, ruolo: 'proprietario' }) }}
+                            style={styles.historyBtn}
+                            onMouseOver={(e) => e.currentTarget.style.color = '#38bdf8'}
+                            onMouseOut={(e) => e.currentTarget.style.color = '#64748b'}
+                            title="Storico proprietari"
+                          >
+                            <Clock size={12} />
+                          </button>
+                        </div>
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'left' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
+                          <PersonaChip persona={inq}  ruolo="inquilino" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setStoricoModal({ unita: u, ruolo: 'inquilino' }) }}
+                            style={styles.historyBtn}
+                            onMouseOver={(e) => e.currentTarget.style.color = '#38bdf8'}
+                            onMouseOut={(e) => e.currentTarget.style.color = '#64748b'}
+                            title="Storico inquilini"
+                          >
+                            <Clock size={12} />
+                          </button>
+                        </div>
+                      </td>
                       <td style={{ ...styles.td, color: '#94a3b8', textAlign: 'left' }}>{u.mq ? `${u.mq} m²` : '—'}</td>
                       <td style={{ ...styles.td, color: '#94a3b8', textAlign: 'left' }}>{u.millesimi || '—'}</td>
                       <td style={styles.td}>
@@ -464,6 +492,14 @@ export default function AnagraficaPage() {
             ruolo={showPersonaForm.ruolo}
             onSave={handleSavePersona}
             onClose={() => setShowPersonaForm(null)}
+          />
+        )}
+        {storicoModal && (
+          <StoricoOccupantiModal
+            unita={storicoModal.unita}
+            ruolo={storicoModal.ruolo}
+            onClose={() => setStoricoModal(null)}
+            onSaved={fetchUnita}
           />
         )}
       </div>
@@ -760,6 +796,10 @@ const styles = {
   },
   td: { padding: '12px 16px', verticalAlign: 'middle', borderBottom: '1px solid #1e293b' },
   rowActions: { display: 'flex', gap: 2 },
+  historyBtn: {
+    background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
+    padding: '4px', borderRadius: 4, display: 'flex', alignItems: 'center',
+  },
   iconBtn: {
     background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px',
     fontSize: 15, borderRadius: 6, transition: 'background .15s',

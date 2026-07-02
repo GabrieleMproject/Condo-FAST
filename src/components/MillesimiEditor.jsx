@@ -4,8 +4,9 @@ import { supabase } from '../lib/supabaseClient';
 import { estraiTabelleMillesimali } from '../lib/fileExtractor';
 import { 
   Layers, Plus, Trash2, Save, Upload, Download, Search, 
-  AlertCircle, X, Check, Edit2, RotateCcw, Scale, Filter
+  AlertCircle, X, Check, Edit2, RotateCcw, Scale, Filter, Clock
 } from 'lucide-react';
+import StoricoOccupantiModal from './StoricoOccupantiModal';
 
 const parsePiano = (val) => {
   if (val === undefined || val === null || val === '') return null;
@@ -87,6 +88,9 @@ export default function MillesimiEditor({ condominioId: propId }) {
   const [newUnitMq, setNewUnitMq] = useState('');
   const [newUnitTipo, setNewUnitTipo] = useState('appartamento');
 
+  // Storico / subentro modal state
+  const [storicoModal, setStoricoModal] = useState(null); // { unita, ruolo }
+
   // Load all data
   useEffect(() => {
     if (!condominioId) return;
@@ -98,7 +102,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
     try {
       const [{ data: tab, error: tabErr }, { data: uni, error: uniErr }] = await Promise.all([
         supabase.from('tabelle_millesimali').select('*').eq('condominio_id', condominioId).order('nome'),
-        supabase.from('unita').select('*, persone:occupanti_unita(persona:persone(nominativo))').eq('condominio_id', condominioId).order('numero'),
+        supabase.from('unita').select('*, occupanti_unita(id, ruolo, attivo, data_inizio, data_fine, persone:persone(id, nome, cognome, email, telefono, codice_fiscale))').eq('condominio_id', condominioId).order('numero'),
       ]);
 
       if (tabErr) throw tabErr;
@@ -235,12 +239,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
   // Owner label fallback helper
   function getProprietarioLabel(u) {
-    const occ = u?.persone?.[0];
-    if (occ?.persona?.nominativo) return occ.persona.nominativo;
-    if (occ?.persona_id) {
-      const p = personeCondominio.find(x => x.id === occ.persona_id);
-      if (p) return p.nominativo;
-    }
+    const occ = u?.occupanti_unita?.find(o => o.ruolo === 'proprietario' && o.attivo)?.persone;
+    if (occ) return `${occ.cognome || ''} ${occ.nome || ''}`.trim();
     return '—';
   }
 
@@ -835,7 +835,28 @@ export default function MillesimiEditor({ condominioId: propId }) {
                               {u.piano !== null && <span style={styles.badgeUnita}>Piano {u.piano}</span>}
                             </td>
                             <td style={{ ...styles.td, textAlign: 'left', color: '#94a3b8' }}>
-                              {getProprietarioLabel(u)}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>{getProprietarioLabel(u)}</span>
+                                <button
+                                  onClick={() => setStoricoModal({ unita: u, ruolo: 'proprietario' })}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#64748b',
+                                    cursor: 'pointer',
+                                    padding: '2px 4px',
+                                    borderRadius: 4,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    transition: 'color 0.2s',
+                                  }}
+                                  onMouseOver={(e) => e.currentTarget.style.color = '#38bdf8'}
+                                  onMouseOut={(e) => e.currentTarget.style.color = '#64748b'}
+                                  title="Visualizza storico e registra subentro"
+                                >
+                                  <Clock size={12} />
+                                </button>
+                              </div>
                             </td>
                             <td style={{ ...styles.td, textAlign: 'right' }}>
                               <input
@@ -1064,6 +1085,16 @@ export default function MillesimiEditor({ condominioId: propId }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODALE STORICO OCCUPANTI E SUBENTRI */}
+      {storicoModal && (
+        <StoricoOccupantiModal
+          unita={storicoModal.unita}
+          ruolo={storicoModal.ruolo}
+          onClose={() => setStoricoModal(null)}
+          onSaved={loadAll}
+        />
       )}
 
       {/* Toast notifications */}

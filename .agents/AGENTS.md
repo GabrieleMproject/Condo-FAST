@@ -325,7 +325,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
-## Storico Decisioni e Fatti Verificati della Sessione S24 (2 Luglio 2026 - Riprogettazione Editor Millesimi in Modalità Singola Tabella)
+## Storico Decisioni e Fatti Verificati della Sessione S24 (2 Luglio 2026 - Riprogettazione Editor Millesimi in Modalità Singola Tabella, Storico Proprietari e Subentri)
 
 ### 1. Decisioni sul Workflow e Riconciliazioni Parziali
 - **Vista Singola Tabella (Opzione B):** Adottato il layout a singola tabella alla volta con sidebar di selezione sinistra. Questo risolve il problema visivo dei condomini parziali (Edificio A / B): le colonne millesimali specifiche non si accumulano in una griglia gigante piena di zeri.
@@ -333,6 +333,22 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Filtri Edificio/Scala e Distribuzione Mirata:** Aggiunto un filtro per Scala (Edificio A/B) estratto dinamicamente dalle unità. La funzione "Distribuisci Equamente" ora distribuisce i 1000 millesimi dividendo per il numero di unità attualmente visibili (filtrate) e azzera automaticamente le unità escluse, facilitando la creazione di tabelle millesimali parziali.
 - **Modale Inserimento Rapido Unità:** Per non perdere la comodità di aggiungere unità dall'editor millesimi, è stata introdotta una modale di creazione rapida che esegue l'insert in `unita` raccogliendo Interno, Scala, Piano, MQ e Destinazione.
 - **Inline Rename delle Tabelle:** Abilitata la modifica del nome delle tabelle millesimali con un input testuale in-line nel titolo del dettaglio, salvato automaticamente al blur o con il tasto Invio.
+
+### 2. Gestione Registro Storico Proprietari/Inquilini e Subentri con Date
+- **Timeline e Subentri con Date:** Aggiunte le colonne `data_inizio` e `data_fine` alla tabella `occupanti_unita` (tramite migrazione SQL `sql/s24_occupanti_unita_dates.sql`). Questa scelta permette di tracciare cronologicamente il possesso di un'unità senza dover sovrascrivere o eliminare i proprietari storici, salvaguardando il riparto delle spese retroattivo.
+- **Modale Timeline Condivisa (`StoricoOccupantiModal.jsx`):** Creata una modale timeline comune e riutilizzabile per visualizzare lo storico delle proprietà (attivo + ex) ed inserire un subentro. La modale permette anche di creare un condòmino al volo se non presente in anagrafica.
+- **Visualizzazione Differenziata (Millesimi/Anagrafica vs Rate):**
+  - **Millesimi Editor & Anagrafica:** Mostrano solo il proprietario attivo per garantire pulizia, con un pulsante orologio `🕒` che apre la modale timeline dello storico.
+  - **Rate Grid (RateGridTab.jsx):** Mostra nella colonna Unità la transizione completa dei proprietari con le date di validità (es. `M. Bianchi (fino al 14/05) ➔ G. Russo (dal 15/05)`), fornendo all'amministratore un controllo immediato per la quadratura finanziaria e il conguaglio delle quote.
+- **Automazione date nel Hook `usePersone.js`:** Il metodo `assegnaPersona` ora accetta un parametro opzionale `dataInizio` per impostare la data di subentro del nuovo occupante e calcolare in automatico la `data_fine` del precedente occupant (impostandola al giorno prima).
+
+### 3. Bug e Regressioni Risolti (Fix Bug Triager)
+- **Warning di Hover/Focus in React Styles:** Rimossi gli attributi non standard `&:hover` e `hover: { color: ... }` dagli oggetti di stile inline React di `MillesimiEditor.jsx` e `StoricoOccupantiModal.jsx`, definendo classi CSS dedicate in `src/index.css` (`.millesimi-sidebar-item:hover`, `.storico-close-btn:hover`, ecc.).
+- **Fix Ricerca per Nome in Millesimi Editor:** Sostituito il controllo fallimentare `u.persone?.[0]?.persona?.nominativo` (non conforme al nesting DB reale) con il richiamo dell'helper `getProprietarioLabel(u)` per garantire il corretto funzionamento dei filtri di ricerca testuale per nome del condomino.
+- **UX Eliminazione Unità in Anagrafica:** introdotta la conferma di dialogo obbligatoria prima di cancellare un'unità (`handleDeleteUnita`) e racchiuso il blocco asincrono in `try/catch` con messaggi di errore visualizzati via toast in console per evitare crash invisibili (unhandled promise rejection).
+- **Hardening Griglia Rate e CellEditor:** Aggiunti blocchi di cattura errori ed eccezioni (`try/catch`) per il recupero dati dei moduli di griglia e optional chaining (`cell?.importo`) in `CellEditor` per prevenire crash fatali nel caso in cui una cella del database non fosse ancora inizializzata.
+- **Sanitizzazione e Validazione Tipi (Import Bulk):** Integrata la gestione degli errori delle query Supabase all'interno del metodo di importazione `handleImport` in `AnagraficaPage.jsx`.
+
 
 
 

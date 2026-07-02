@@ -685,3 +685,21 @@ a:hover { text-decoration: underline; }
   margin-top: 0;
   padding: 0.65rem 1.4rem;
 }
+
+/* ─── Millesimi Editor custom styles ─── */
+.millesimi-sidebar-add-btn:hover {
+  background-color: #334155 !important;
+}
+.millesimi-sidebar-item:hover {
+  background-color: #1e293b50 !important;
+}
+.millesimi-delete-btn:hover {
+  color: #ef4444 !important;
+  background-color: #ef444410 !important;
+}
+.millesimi-cell-input:focus {
+  border-color: #2563eb !important;
+}
+.millesimi-btn-secondary:hover {
+  background-color: #334155 !important;
+}

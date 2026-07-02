@@ -323,4 +323,16 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Falsy Zero in Piano Terra (`salva`):** Risolto il bug per cui l'espressione `piano: u.piano || null` valutava `0` (Piano Terra) come falsy sovrascrivendolo con `NULL` sul database; sostituito con verifica esplicita `(u.piano === 0 || u.piano === '0') ? 0 : ...`. Sostituito inoltre negli input il fallback `|| ''` con il nullish coalescing `?? ''`.
 - **Inconsistenze Destinazione d'Uso e Hardening (`parseTipo`, `getNominativo`, `fileExtractor.js`):** Aggiunto il supporto in `parseTipo` per `posto_auto`, `soffitta` e `magazzino`, allineandolo alla select dell'interfaccia. Aggiunta gestione eccezioni esplicita per le chiamate DB asincrone in `salva` e `confermaImport` e hardening su parsing JSON con regex.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S24 (2 Luglio 2026 - Riprogettazione Editor Millesimi in Modalità Singola Tabella)
+
+### 1. Decisioni sul Workflow e Riconciliazioni Parziali
+- **Vista Singola Tabella (Opzione B):** Adottato il layout a singola tabella alla volta con sidebar di selezione sinistra. Questo risolve il problema visivo dei condomini parziali (Edificio A / B): le colonne millesimali specifiche non si accumulano in una griglia gigante piena di zeri.
+- **Hiding Colonne Strutturali Unità:** Spostate le colonne strutturali e catastali (Piano, Destinazione, MQ/Superficie, Proprietario) in sola lettura per riferimento. La griglia millesimi mostra solo il nome dell'unità, il proprietario e l'input della quota millesimale (‰), separando la definizione delle unità dai calcoli di riparto.
+- **Filtri Edificio/Scala e Distribuzione Mirata:** Aggiunto un filtro per Scala (Edificio A/B) estratto dinamicamente dalle unità. La funzione "Distribuisci Equamente" ora distribuisce i 1000 millesimi dividendo per il numero di unità attualmente visibili (filtrate) e azzera automaticamente le unità escluse, facilitando la creazione di tabelle millesimali parziali.
+- **Modale Inserimento Rapido Unità:** Per non perdere la comodità di aggiungere unità dall'editor millesimi, è stata introdotta una modale di creazione rapida che esegue l'insert in `unita` raccogliendo Interno, Scala, Piano, MQ e Destinazione.
+- **Inline Rename delle Tabelle:** Abilitata la modifica del nome delle tabelle millesimali con un input testuale in-line nel titolo del dettaglio, salvato automaticamente al blur o con il tasto Invio.
+
+
 

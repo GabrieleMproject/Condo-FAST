@@ -421,7 +421,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
           numero: newUnitNumero.trim(),
           scala: newUnitScala.trim() || null,
           piano: newUnitPiano.trim() !== '' ? parsePiano(newUnitPiano) : null,
-          mq: newUnitMq.trim() !== '' ? parseFloat(newUnitMq.replace(',', '.')) : 0,
+          mq: newUnitMq.trim() !== '' ? (parseFloat(newUnitMq.replace(',', '.')) || 0) : 0,
           tipo: newUnitTipo
         }])
         .select()
@@ -610,10 +610,10 @@ export default function MillesimiEditor({ condominioId: propId }) {
           <p style={styles.subtitle}>Gestisci le quote di ripartizione spese per ciascuna unità.</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button style={styles.btnSecondary} onClick={downloadModelloStandard} title="Scarica tracciato modello CSV">
+          <button className="millesimi-btn-secondary" style={styles.btnSecondary} onClick={downloadModelloStandard} title="Scarica tracciato modello CSV">
             <Download size={15} style={{ marginRight: 6 }} /> Modello (.csv)
           </button>
-          <button style={styles.btnSecondary} onClick={() => { setShowImportModal(true); setExtractedTabelle(null); setImportError(null); }}>
+          <button className="millesimi-btn-secondary" style={styles.btnSecondary} onClick={() => { setShowImportModal(true); setExtractedTabelle(null); setImportError(null); }}>
             <Upload size={15} style={{ marginRight: 6 }} /> Importa File
           </button>
           <button style={styles.btnPrimary} onClick={() => setShowAddUnitModal(true)}>
@@ -628,6 +628,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <h3 style={{ margin: 0, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8' }}>Tabelle</h3>
             <button 
+              className="millesimi-sidebar-add-btn"
               style={styles.sidebarAddBtn} 
               onClick={() => setShowNuovaTabella(!showNuovaTabella)}
               title="Aggiungi nuova tabella"
@@ -648,7 +649,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
               />
               <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                 <button style={{ ...styles.btnPrimary, padding: '4px 8px', fontSize: 11, flex: 1 }} onClick={handleCreaTabella}>Crea</button>
-                <button style={{ ...styles.btnSecondary, padding: '4px 8px', fontSize: 11 }} onClick={() => setShowNuovaTabella(false)}>Annulla</button>
+                <button className="millesimi-btn-secondary" style={{ ...styles.btnSecondary, padding: '4px 8px', fontSize: 11 }} onClick={() => setShowNuovaTabella(false)}>Annulla</button>
               </div>
             </div>
           )}
@@ -665,6 +666,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                 return (
                   <div 
                     key={t.id} 
+                    className="millesimi-sidebar-item"
                     style={{
                       ...styles.sidebarItem,
                       borderLeft: active ? '4px solid #2563eb' : '4px solid transparent',
@@ -695,6 +697,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                       </div>
                     </div>
                     <button 
+                      className="millesimi-delete-btn"
                       style={styles.sidebarItemDeleteBtn} 
                       onClick={(e) => handleEliminaTabella(t, e)}
                       title="Elimina tabella"
@@ -838,6 +841,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                               <input
                                 type="text"
                                 inputMode="decimal"
+                                className="millesimi-cell-input"
                                 style={styles.cellInput}
                                 value={val}
                                 onChange={e => handleMillesimiChange(u.id, e.target.value)}
@@ -856,6 +860,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
               <div style={styles.detailFooter}>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button 
+                    className="millesimi-btn-secondary"
                     style={styles.btnSecondary} 
                     onClick={distribuisciEquamente}
                     title="Distribuisci 1000 millesimi equamente tra le unità attualmente visibili"
@@ -863,6 +868,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     <Scale size={14} style={{ marginRight: 6 }} /> Distribuisci Equamente
                   </button>
                   <button 
+                    className="millesimi-btn-secondary"
                     style={styles.btnSecondary} 
                     onClick={azzeraValori}
                     title="Azzera tutti i millesimi delle unità visibili"
@@ -957,14 +963,14 @@ export default function MillesimiEditor({ condominioId: propId }) {
                           </span>
                         </div>
                         <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                          {tab.righe?.length || 0} unità estratte (es. {tab.righe?.slice(0, 3).map(r => `Unità ${r.unita}: ${r.valore}`).join(', ')}{tab.righe?.length > 3 ? '...' : ''})
+                          {(tab.righe || []).length} unità estratte (es. {(tab.righe || []).slice(0, 3).map(r => `Unità ${r.unita}: ${r.valore}`).join(', ')}{(tab.righe || []).length > 3 ? '...' : ''})
                         </div>
                       </div>
                     );
                   })}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-                  <button style={styles.btnSecondary} onClick={() => setExtractedTabelle(null)}>
+                  <button className="millesimi-btn-secondary" style={styles.btnSecondary} onClick={() => setExtractedTabelle(null)}>
                     Carica altro file
                   </button>
                   <button style={styles.btnPrimary} onClick={confermaImport} disabled={saving}>
@@ -1048,7 +1054,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-                <button style={styles.btnSecondary} onClick={() => setShowAddUnitModal(false)}>
+                <button className="millesimi-btn-secondary" style={styles.btnSecondary} onClick={() => setShowAddUnitModal(false)}>
                   Annulla
                 </button>
                 <button style={styles.btnPrimary} onClick={handleCreaUnita} disabled={saving}>
@@ -1114,7 +1120,7 @@ const styles = {
   sidebarAddBtn: {
     background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155',
     borderRadius: 6, width: 24, height: 24, display: 'flex', alignItems: 'center',
-    justifyContent: 'center', cursor: 'pointer', hover: { background: '#334155' }
+    justifyContent: 'center', cursor: 'pointer'
   },
   sidebarNewTabForm: {
     background: '#1e293b',
@@ -1145,18 +1151,11 @@ const styles = {
     cursor: 'pointer',
     transition: 'background 0.2s, border-left 0.2s',
     gap: 10,
-    '&:hover': {
-      background: '#1e293b50',
-    }
   },
   sidebarItemDeleteBtn: {
     background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
     padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'color 0.2s, background 0.2s',
-    '&:hover': {
-      color: '#ef4444',
-      background: '#ef444410'
-    }
   },
 
   // Detail panel styles
@@ -1258,9 +1257,6 @@ const styles = {
     fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600,
     textAlign: 'right', outline: 'none',
     transition: 'border-color 0.2s',
-    '&:focus': {
-      borderColor: '#2563eb'
-    }
   },
 
   // Detail Footer actions
@@ -1287,9 +1283,6 @@ const styles = {
     fontWeight: 600, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'background 0.2s',
-    '&:hover': {
-      background: '#334155'
-    }
   },
   emptyState: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',

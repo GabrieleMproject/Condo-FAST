@@ -121,16 +121,26 @@ Cosa succederà:
 
       if (sourceMil && sourceMil.length > 0) {
         for (const sM of sourceMil) {
-          const alreadyExistsOnTarget = targetMil?.some(tM => tM.tabella_id === sM.tabella_id);
+          const alreadyExistsOnTarget = targetMil?.find(tM => tM.tabella_id === sM.tabella_id);
           if (alreadyExistsOnTarget) {
-            // Target unit already has values for this table, we delete source's row to avoid unique constraint conflict
+            // Se il target ha valore 0 e la sorgente ha un valore positivo, aggiorniamo il target
+            const targetVal = parseFloat(alreadyExistsOnTarget.valore || 0);
+            const sourceVal = parseFloat(sM.valore || 0);
+            if (targetVal === 0 && sourceVal > 0) {
+              await supabase
+                .from('millesimi_unita')
+                .update({ valore: sourceVal })
+                .eq('unita_id', targetUnitaId)
+                .eq('tabella_id', sM.tabella_id);
+            }
+            // Eliminiamo il record sorgente duplicato per evitare conflitti
             await supabase
               .from('millesimi_unita')
               .delete()
               .eq('unita_id', sourceUnitaId)
               .eq('tabella_id', sM.tabella_id);
           } else {
-            // Target has no record, we can safety update source's unita_id to target
+            // Se il target non ha il record per questa tabella, associamo quello sorgente
             await supabase
               .from('millesimi_unita')
               .update({ unita_id: targetUnitaId })
@@ -186,8 +196,16 @@ Cosa succederà:
 
       if (sourceSaldi && sourceSaldi.length > 0) {
         for (const sS of sourceSaldi) {
-          const hasConflict = targetSaldi?.some(tS => tS.esercizio_id === sS.esercizio_id);
-          if (hasConflict) {
+          const alreadyExistsOnTarget = targetSaldi?.find(tS => tS.esercizio_id === sS.esercizio_id);
+          if (alreadyExistsOnTarget) {
+            // Sommiamo il saldo al target
+            const newSaldo = parseFloat(alreadyExistsOnTarget.saldo || 0) + parseFloat(sS.saldo || 0);
+            await supabase
+              .from('saldi_iniziali_unita')
+              .update({ saldo: newSaldo })
+              .eq('unita_id', targetUnitaId)
+              .eq('esercizio_id', sS.esercizio_id);
+            // Eliminiamo la sorgente
             await supabase.from('saldi_iniziali_unita').delete().eq('id', sS.id);
           } else {
             await supabase.from('saldi_iniziali_unita').update({ unita_id: targetUnitaId }).eq('id', sS.id);
@@ -208,8 +226,35 @@ Cosa succederà:
 
       if (sourceRate && sourceRate.length > 0) {
         for (const sR of sourceRate) {
-          const hasConflict = targetRate?.some(tR => tR.rata_id === sR.rata_id);
-          if (hasConflict) {
+          const alreadyExistsOnTarget = targetRate?.find(tR => tR.rata_id === sR.rata_id);
+          if (alreadyExistsOnTarget) {
+            // Riorizzontiamo le riconciliazioni incassi collegate alla cella sorgente verso quella target
+            await supabase
+              .from('riconciliazioni_incassi')
+              .update({ rata_unita_id: alreadyExistsOnTarget.id })
+              .eq('rata_unita_id', sR.id);
+
+            // Sommiamo gli importi e ricalcoliamo lo stato della rata target
+            const newImporto = parseFloat(alreadyExistsOnTarget.importo || 0) + parseFloat(sR.importo || 0);
+            const newPagato  = parseFloat(alreadyExistsOnTarget.importo_pagato || 0) + parseFloat(sR.importo_pagato || 0);
+            let newStato = 'non_pagata';
+            if (newPagato >= newImporto) {
+              newStato = 'pagata';
+            } else if (newPagato > 0) {
+              newStato = 'parziale';
+            }
+
+            await supabase
+              .from('rate_unita')
+              .update({
+                importo: newImporto,
+                importo_pagato: newPagato,
+                stato: newStato,
+                data_pagamento: alreadyExistsOnTarget.data_pagamento || sR.data_pagamento || null
+              })
+              .eq('id', alreadyExistsOnTarget.id);
+
+            // Eliminiamo la cella sorgente duplicata
             await supabase.from('rate_unita').delete().eq('id', sR.id);
           } else {
             await supabase.from('rate_unita').update({ unita_id: targetUnitaId }).eq('id', sR.id);
@@ -230,8 +275,22 @@ Cosa succederà:
 
       if (sourceRip && sourceRip.length > 0) {
         for (const sRp of sourceRip) {
-          const hasConflict = targetRip?.some(tRp => tRp.spesa_id === sRp.spesa_id);
-          if (hasConflict) {
+          const alreadyExistsOnTarget = targetRip?.find(tRp => tRp.spesa_id === sRp.spesa_id);
+          if (alreadyExistsOnTarget) {
+            // Sommiamo importo e millesimi
+            const newImporto = parseFloat(alreadyExistsOnTarget.importo || 0) + parseFloat(sRp.importo || 0);
+            const newMillesimi = parseFloat(alreadyExistsOnTarget.millesimi_usati || 0) + parseFloat(sRp.millesimi_usati || 0);
+
+            await supabase
+              .from('ripartizioni')
+              .update({
+                importo: newImporto,
+                millesimi_usati: newMillesimi
+              })
+              .eq('unita_id', targetUnitaId)
+              .eq('spesa_id', sRp.spesa_id);
+
+            // Eliminiamo il record sorgente duplicato
             await supabase.from('ripartizioni').delete().eq('id', sRp.id);
           } else {
             await supabase.from('ripartizioni').update({ unita_id: targetUnitaId }).eq('id', sRp.id);

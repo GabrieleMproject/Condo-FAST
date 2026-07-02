@@ -201,7 +201,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
   // Check if selected table has unsaved changes
   const isSelectedTableDirty = useMemo(() => {
-    if (!selectedTabellaId) return false;
+    if (!selectedTabellaId || selectedTabellaId === 'diagnostica') return false;
     for (const u of unita) {
       const key = `${u.id}_${selectedTabellaId}`;
       const v = parseFloat(String(valori[key] ?? 0).replace(/,/g, '.')) || 0;

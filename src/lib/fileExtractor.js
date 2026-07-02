@@ -44,7 +44,20 @@ function fileToArrayBuffer(file) {
 export async function xlsxToText(file) {
   const buffer = await fileToArrayBuffer(file);
   const wb     = new ExcelJS.Workbook();
-  await wb.xlsx.load(buffer);
+  try {
+    await wb.xlsx.load(buffer);
+  } catch (err) {
+    if (file.name.toLowerCase().endsWith('.xls')) {
+      console.warn('[fileExtractor] Lettura XLS con ExcelJS fallita, provo fallback su testo:', err.message);
+      try {
+        const text = await fileToText(file);
+        return text;
+      } catch (e) {
+        throw new Error("Il file .xls (Excel legacy) non è supportato. Salva il file in formato .xlsx o .csv.");
+      }
+    }
+    throw err;
+  }
 
   const lines = [];
   wb.eachSheet(sheet => {

@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import ExcelJS from 'exceljs'
 import Papa from 'papaparse'
-import { estraiAnagraficaDaFile } from '../lib/fileExtractor'
+import { estraiAnagraficaDaFile, fileToText } from '../lib/fileExtractor'
 
 // ── Colonne attese (flessibili — l'AI normalizza i nomi) ──────────────────
 const CAMPI_ATTESI = ['nome','cognome','email','telefono','indirizzo','citta','cap','provincia','codice_fiscale','ruolo','unita']
@@ -112,7 +112,25 @@ function normalizeRows(rows) {
         }
       }
 
-      normalized[mappedKey] = String(v || '').trim()
+      const valStr = String(v || '').trim()
+      if (valStr) {
+        if (normalized[mappedKey]) {
+          if (mappedKey === 'telefono' || mappedKey === 'email') {
+            const valoriEsistenti = normalized[mappedKey].split(',').map(s => s.trim())
+            if (!valoriEsistenti.includes(valStr)) {
+              normalized[mappedKey] = `${normalized[mappedKey]}, ${valStr}`
+            }
+          } else {
+            normalized[mappedKey] = valStr
+          }
+        } else {
+          normalized[mappedKey] = valStr
+        }
+      } else {
+        if (normalized[mappedKey] === undefined) {
+          normalized[mappedKey] = ''
+        }
+      }
     }
     return normalized
   })
@@ -140,8 +158,31 @@ export default function AnagraficaImport({ onImport, onClose }) {
       let parsed = []
 
       if (ext === 'xlsx' || ext === 'xls') {
-        const raw = await parseXlsx(file)
-        parsed = normalizeRows(raw || [])
+        try {
+          const raw = await parseXlsx(file)
+          parsed = normalizeRows(raw || [])
+        } catch (xlsxErr) {
+          if (ext === 'xls') {
+            console.warn('[AnagraficaImport] Caricamento XLS fallito, provo fallback su CSV:', xlsxErr.message);
+            try {
+              const textContent = await fileToText(file)
+              if (textContent && (textContent.includes(';') || textContent.includes(','))) {
+                const parseRes = Papa.parse(textContent, { header: true, skipEmptyLines: true })
+                if (parseRes.data && parseRes.data.length > 0) {
+                  parsed = normalizeRows(parseRes.data)
+                } else {
+                  throw new Error("Dati CSV non validi");
+                }
+              } else {
+                throw new Error("Nessun delimitatore rilevato");
+              }
+            } catch (csvErr) {
+              throw new Error("Il file .xls (Excel legacy) non è supportato. Salva il file in formato .xlsx (Excel moderno) o .csv prima di caricarlo.");
+            }
+          } else {
+            throw xlsxErr;
+          }
+        }
       } else if (ext === 'csv') {
         const raw = await parseCsv(file)
         parsed = normalizeRows(raw || [])

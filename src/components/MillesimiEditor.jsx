@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiTabelleMillesimali } from '../lib/fileExtractor';
+import { 
+  Layers, Plus, Trash2, Save, Upload, Download, Search, 
+  AlertCircle, X, Check, Edit2, RotateCcw, Scale, Filter
+} from 'lucide-react';
 
 const parsePiano = (val) => {
   if (val === undefined || val === null || val === '') return null;
@@ -31,40 +35,59 @@ const parseTipo = (dest, strU) => {
   if (str.includes('magazzino') || str.includes('deposito') || str.includes('locale tecnico')) return 'magazzino';
   if (str.includes('negozio') || str.includes('commerciale') || str.includes('bottega')) return 'negozio';
   if (str.includes('ufficio') || str.includes('studio')) return 'ufficio';
-  if (str.includes('appartamento') || str.includes('alloggio') || str.includes('abitazione') || str.includes('a/2') || str.includes('a/3')) return 'appartamento';
   return 'appartamento';
 };
 
 /**
  * MillesimiEditor
- * Griglia interattiva: righe = unità, colonne = tabelle millesimali
- * Validazione: somma per ogni tabella deve essere 1000
+ * Redesigned to edit one table at a time, hide structural unit fields, 
+ * filter units by search/scale, and add units from a quick modal.
  */
 export default function MillesimiEditor({ condominioId: propId }) {
   const { condominioId: paramId } = useParams();
   const condominioId = propId || paramId;
+
+  // Data states
   const [tabelle, setTabelle] = useState([]);
   const [unita, setUnita] = useState([]);
-  const [originaliUnita, setOriginaliUnita] = useState([]);
   const [valori, setValori] = useState({});       // { `${unitaId}_${tabellaId}`: numeric }
-  const [originali, setOriginali] = useState({});  // snapshot per dirty check
+  const [originali, setOriginali] = useState({});  // snapshot for dirty checking
+  const [personeCondominio, setPersoneCondominio] = useState([]); // for reference/read-only owner display
+
+  // Selection & UI states
+  const [selectedTabellaId, setSelectedTabellaId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState({});
   const [toast, setToast] = useState(null);
+
+  // Sidebar / New table states
   const [nuovaTabella, setNuovaTabella] = useState('');
   const [showNuovaTabella, setShowNuovaTabella] = useState(false);
+  
+  // Inline table rename states
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
 
-  // Stato per importazione da file (PDF/XLS/ecc)
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filtroScala, setFiltroScala] = useState('Tutte');
+  const [soloPartecipanti, setSoloPartecipanti] = useState(false);
+
+  // Modals
   const [showImportModal, setShowImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
   const [extractedTabelle, setExtractedTabelle] = useState(null);
   const [importError, setImportError] = useState(null);
+  
+  // Add unit modal states
+  const [showAddUnitModal, setShowAddUnitModal] = useState(false);
+  const [newUnitNumero, setNewUnitNumero] = useState('');
+  const [newUnitScala, setNewUnitScala] = useState('');
+  const [newUnitPiano, setNewUnitPiano] = useState('');
+  const [newUnitMq, setNewUnitMq] = useState('');
+  const [newUnitTipo, setNewUnitTipo] = useState('appartamento');
 
-  // Persone del condominio per il select Proprietario
-  const [personeCondominio, setPersoneCondominio] = useState([]); // [{ id, nominativo }]
-
-  // ─── Caricamento dati ───────────────────────────────────────
+  // Load all data
   useEffect(() => {
     if (!condominioId) return;
     loadAll();
@@ -80,7 +103,6 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
       if (tabErr) throw tabErr;
 
-      // Se la query con embed occupanti fallisce, riprova senza embed (non bloccante)
       let unitaList = uni || [];
       if (uniErr) {
         console.warn('[MillesimiEditor] Embed occupanti_unita fallito, riprovo senza embed:', uniErr.message);
@@ -96,7 +118,11 @@ export default function MillesimiEditor({ condominioId: propId }) {
       const tabelleList = tab || [];
       setTabelle(tabelleList);
       setUnita(unitaList);
-      setOriginaliUnita(JSON.parse(JSON.stringify(unitaList)));
+
+      // Auto-select first table if none selected
+      if (tabelleList.length > 0 && !selectedTabellaId) {
+        setSelectedTabellaId(tabelleList[0].id);
+      }
 
       let milList = [];
       if (tabelleList.length > 0) {
@@ -108,7 +134,6 @@ export default function MillesimiEditor({ condominioId: propId }) {
         if (!errMil && milData) milList = milData;
       }
 
-      // Costruisci mappa valori
       const map = {};
       milList.forEach(m => {
         map[`${m.unita_id}_${m.tabella_id}`] = m.valore;
@@ -116,7 +141,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
       setValori(map);
       setOriginali(map);
 
-      // Carica persone del condominio per il select Proprietario
+      // Load people for reference display
       const { data: persData } = await supabase
         .from('persone')
         .select('id, nome, cognome, occupanti_unita!inner(unita!inner(condominio_id))')
@@ -125,13 +150,13 @@ export default function MillesimiEditor({ condominioId: propId }) {
       if (persData) {
         const uniqPersone = [];
         const seen = new Set();
-        (persData || []).forEach(p => {
+        persData.forEach(p => {
           if (!seen.has(p.id)) {
             seen.add(p.id);
             uniqPersone.push({ id: p.id, nominativo: `${p.cognome || ''} ${p.nome || ''}`.trim() || p.nome });
           }
         });
-        setPersoneCondominio(uniqPersone.sort((a, b) => a.nominativo.localeCompare(b.nominativo)));
+        setPersoneCondominio(uniqPersone);
       }
     } catch (e) {
       console.error('[MillesimiEditor] loadAll error:', e);
@@ -141,102 +166,177 @@ export default function MillesimiEditor({ condominioId: propId }) {
     }
   }
 
+  // Helper: show toast
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  }
 
-  // ─── Calcolo somme per colonna (tabella) ────────────────────
-  const sommaPer = useCallback((tabellaId) => {
+  // Active / Selected Tabella
+  const selectedTabella = useMemo(() => {
+    return tabelle.find(t => t.id === selectedTabellaId) || null;
+  }, [tabelle, selectedTabellaId]);
+
+  // Setup inline rename input value
+  useEffect(() => {
+    if (selectedTabella) {
+      setRenameValue(selectedTabella.nome || '');
+    }
+    setIsRenaming(false);
+  }, [selectedTabellaId, selectedTabella]);
+
+  // Calculate real-time sum for any table
+  const getSommaTabella = useCallback((tabId) => {
     return unita.reduce((acc, u) => {
-      const v = parseFloat(valori[`${u.id}_${tabellaId}`] || 0);
+      const v = parseFloat(valori[`${u.id}_${tabId}`] || 0);
       return acc + (isNaN(v) ? 0 : v);
     }, 0);
   }, [unita, valori]);
 
-  // ─── Modifica dati unità (numero, piano, tipo, mq) ────────────────
-  function handleUnitaChange(unitaId, field, val) {
-    setUnita(prev => prev.map(u => u.id === unitaId ? { ...u, [field]: val } : u));
-  }
+  // Check if selected table has unsaved changes
+  const isSelectedTableDirty = useMemo(() => {
+    if (!selectedTabellaId) return false;
+    for (const u of unita) {
+      const key = `${u.id}_${selectedTabellaId}`;
+      const v = parseFloat(String(valori[key] ?? 0).replace(/,/g, '.')) || 0;
+      const o = parseFloat(String(originali[key] ?? 0).replace(/,/g, '.')) || 0;
+      if (Math.abs(v - o) > 0.0001) return true;
+    }
+    return false;
+  }, [valori, originali, unita, selectedTabellaId]);
 
-  // ─── Modifica cella ─────────────────────────────────────────
-  function handleChange(unitaId, tabellaId, raw) {
-    const key = `${unitaId}_${tabellaId}`;
-    // Permetti stringa vuota e numeri con virgola
-    const normalized = String(raw).replace(/,/g, '.');
-    setValori(prev => ({ ...prev, [key]: normalized }));
-
-    // Valida in tempo reale la somma
-    const nuoviValori = { ...valori, [key]: normalized };
-    const somma = unita.reduce((acc, u) => {
-      const v = parseFloat(nuoviValori[`${u.id}_${tabellaId}`] || 0);
-      return acc + (isNaN(v) ? 0 : v);
-    }, 0);
-
-    setErrors(prev => ({
-      ...prev,
-      [tabellaId]: Math.abs(somma - 1000) > 0.01 ? `Somma: ${somma.toFixed(2)} (deve essere 1000)` : null,
-    }));
-  }
-
-  // ─── Distribuzione automatica ───────────────────────────────
-  function distribuisciEquamente(tabellaId) {
-    if (unita.length === 0) return;
-    const quotaArrondata = parseFloat((1000 / unita.length).toFixed(2));
-    const nuovi = { ...valori };
-    unita.forEach((u, i) => {
-      // L'ultima unità prende il resto per garantire esattamente 1000
-      const v = i === unita.length - 1
-        ? parseFloat((1000 - (quotaArrondata * (unita.length - 1))).toFixed(2))
-        : quotaArrondata;
-      nuovi[`${u.id}_${tabellaId}`] = v;
+  // Dynamic Scale list for filter dropdown
+  const listScale = useMemo(() => {
+    const scale = new Set();
+    unita.forEach(u => {
+      if (u.scala) scale.add(u.scala.trim().toUpperCase());
     });
-    setValori(nuovi);
-    setErrors(prev => ({ ...prev, [tabellaId]: null }));
+    return ['Tutte', ...Array.from(scale).sort()];
+  }, [unita]);
+
+  // Filtered units based on search, scale, and participation
+  const unitaFiltrate = useMemo(() => {
+    return unita.filter(u => {
+      // 1. Search Query (Interno or Owner)
+      const labelUnita = `int. ${u.numero || ''} ${u.scala ? `sc. ${u.scala}` : ''}`.toLowerCase();
+      const nominativoProp = (u.persone?.[0]?.persona?.nominativo || '').toLowerCase();
+      const matchesSearch = labelUnita.includes(searchQuery.toLowerCase()) || nominativoProp.includes(searchQuery.toLowerCase());
+
+      // 2. Scale filter
+      const matchesScale = filtroScala === 'Tutte' || (u.scala && u.scala.trim().toUpperCase() === filtroScala.toUpperCase());
+
+      // 3. Only participants (value > 0)
+      const val = parseFloat(valori[`${u.id}_${selectedTabellaId}`] || 0);
+      const matchesParticipation = !soloPartecipanti || val > 0;
+
+      return matchesSearch && matchesScale && matchesParticipation;
+    });
+  }, [unita, valori, selectedTabellaId, searchQuery, filtroScala, soloPartecipanti]);
+
+  // Owner label fallback helper
+  function getProprietarioLabel(u) {
+    const occ = u?.persone?.[0];
+    if (occ?.persona?.nominativo) return occ.persona.nominativo;
+    if (occ?.persona_id) {
+      const p = personeCondominio.find(x => x.id === occ.persona_id);
+      if (p) return p.nominativo;
+    }
+    return '—';
   }
 
-  // ─── Salvataggio ────────────────────────────────────────────
-  async function salva() {
-    const tabelleSbilanciate = tabelle.filter(t => Math.abs(sommaPer(t.id) - 1000) > 0.01);
-    if (tabelleSbilanciate.length > 0) {
-      const nomi = tabelleSbilanciate.map(t => `"${t.nome}" (somma: ${sommaPer(t.id).toFixed(2)} ‰)`).join(', ');
+  // Handle value change for a unit in the current selected table
+  function handleMillesimiChange(unitaId, rawVal) {
+    if (!selectedTabellaId) return;
+    const key = `${unitaId}_${selectedTabellaId}`;
+    const normalized = String(rawVal).replace(/,/g, '.');
+    setValori(prev => ({ ...prev, [key]: normalized }));
+  }
+
+  // Action: Distribute millesimi equally among visible/filtered units
+  function distribuisciEquamente() {
+    if (!selectedTabellaId || unitaFiltrate.length === 0) return;
+    const confirmText = `Vuoi distribuire equamente 1000 millesimi tra le ${unitaFiltrate.length} unità visibili? Questo imposterà tutte le altre unità (non filtrate) a 0.`;
+    if (!window.confirm(confirmText)) return;
+
+    const quotaArrotondata = parseFloat((1000 / unitaFiltrate.length).toFixed(2));
+    const nuoviValori = { ...valori };
+
+    // Reset ALL units of the condominio for this table to 0 first
+    unita.forEach(u => {
+      nuoviValori[`${u.id}_${selectedTabellaId}`] = 0;
+    });
+
+    // Distribute among visible units
+    unitaFiltrate.forEach((u, i) => {
+      const val = i === unitaFiltrate.length - 1
+        ? parseFloat((1000 - (quotaArrotondata * (unitaFiltrate.length - 1))).toFixed(2))
+        : quotaArrotondata;
+      nuoviValori[`${u.id}_${selectedTabellaId}`] = val;
+    });
+
+    setValori(nuoviValori);
+    showToast('Millesimi ripartiti equamente!', 'success');
+  }
+
+  // Action: Reset millesimi values of visible/filtered units to 0
+  function azzeraValori() {
+    if (!selectedTabellaId || unitaFiltrate.length === 0) return;
+    if (!window.confirm('Sei sicuro di voler azzerare i millesimi delle unità visibili?')) return;
+
+    const nuoviValori = { ...valori };
+    unitaFiltrate.forEach(u => {
+      nuoviValori[`${u.id}_${selectedTabellaId}`] = 0;
+    });
+    setValori(nuoviValori);
+  }
+
+  // CRUD: Rename Table
+  async function renameTabella() {
+    if (!selectedTabellaId || !renameValue.trim()) {
+      setIsRenaming(false);
+      return;
+    }
+    if (renameValue.trim() === selectedTabella.nome) {
+      setIsRenaming(false);
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('tabelle_millesimali')
+        .update({ nome: renameValue.trim() })
+        .eq('id', selectedTabellaId);
+      if (error) throw error;
+      setTabelle(prev => prev.map(t => t.id === selectedTabellaId ? { ...t, nome: renameValue.trim() } : t));
+      showToast('Tabella rinominata', 'success');
+    } catch (e) {
+      showToast('Errore rinomina: ' + e.message, 'error');
+    } finally {
+      setIsRenaming(false);
+    }
+  }
+
+  // CRUD: Save Millesimi values for the active table
+  async function salvaMillesimi() {
+    if (!selectedTabellaId) return;
+
+    const somma = getSommaTabella(selectedTabellaId);
+    if (Math.abs(somma - 1000) > 0.01) {
       const prosegui = window.confirm(
-        `Attenzione: le seguenti tabelle non sommano ancora a 1000:\n${nomi}\n\nVuoi salvare comunque i valori parziali?`
+        `Attenzione: la somma millesimale per questa tabella è ${somma.toFixed(2)} ‰ (deve essere 1000.00 ‰).\n\nVuoi salvare comunque questo valore parziale?`
       );
       if (!prosegui) return;
     }
 
     setSaving(true);
     try {
-      // Salva prima le modifiche ai dati delle unità (numero, piano, tipo, mq)
-      if (unita.length > 0) {
-        const unitaToSave = unita.map(u => ({
-          id: u.id,
-          condominio_id: condominioId,
-          numero: u.numero || '1',
-          scala: u.scala || null,
-          piano: u.piano !== undefined && u.piano !== null && u.piano !== ''
-            ? (isNaN(Number(u.piano)) ? parsePiano(u.piano) : Number(u.piano))
-            : null,
-          tipo: u.tipo || 'appartamento',
-          mq: u.mq !== undefined && u.mq !== null && u.mq !== '' ? (parseFloat(String(u.mq).replace(/,/g, '.').replace(/[^0-9.-]/g, '')) || null) : null
-        }));
-        const { error: errUnita } = await supabase.from('unita').upsert(unitaToSave);
-        if (errUnita) {
-          console.error('Errore salvataggio dati unità:', errUnita);
-          throw new Error('Impossibile salvare i dati delle unità: ' + errUnita.message);
-        }
-      }
-
       const upserts = [];
-
       unita.forEach(u => {
-        tabelle.forEach(t => {
-          const key = `${u.id}_${t.id}`;
-          const valore = parseFloat(String(valori[key] ?? 0).replace(/,/g, '.')) || 0;
-          if (!isNaN(valore)) {
-            upserts.push({
-              unita_id: u.id,
-              tabella_id: t.id,
-              valore,
-            });
-          }
+        const key = `${u.id}_${selectedTabellaId}`;
+        const valore = parseFloat(String(valori[key] ?? 0).replace(/,/g, '.')) || 0;
+        upserts.push({
+          unita_id: u.id,
+          tabella_id: selectedTabellaId,
+          valore,
         });
       });
 
@@ -247,8 +347,17 @@ export default function MillesimiEditor({ condominioId: propId }) {
         if (error) throw error;
       }
 
-      await loadAll();
-      showToast('Millesimi salvati con successo', 'success');
+      // Update original snapshot to clear dirty check
+      setOriginali(prev => {
+        const next = { ...prev };
+        unita.forEach(u => {
+          const key = `${u.id}_${selectedTabellaId}`;
+          next[key] = parseFloat(String(valori[key] ?? 0).replace(/,/g, '.')) || 0;
+        });
+        return next;
+      });
+
+      showToast('Millesimi salvati con successo!', 'success');
     } catch (e) {
       showToast('Errore durante il salvataggio: ' + e.message, 'error');
     } finally {
@@ -256,101 +365,89 @@ export default function MillesimiEditor({ condominioId: propId }) {
     }
   }
 
-  // ─── Nuova tabella millesimale ───────────────────────────────
-  async function creaTabella() {
+  // CRUD: Create new empty table
+  async function handleCreaTabella() {
     if (!nuovaTabella.trim()) return;
-    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse. Vuoi continuare?')) return;
     try {
-      const { error } = await supabase.from('tabelle_millesimali').insert({
-        condominio_id: condominioId,
-        nome: nuovaTabella.trim(),
-      });
+      const { data, error } = await supabase
+        .from('tabelle_millesimali')
+        .insert({ condominio_id: condominioId, nome: nuovaTabella.trim() })
+        .select()
+        .single();
       if (error) throw error;
+
+      setTabelle(prev => [...prev, data]);
       setNuovaTabella('');
       setShowNuovaTabella(false);
-      await loadAll();
-      showToast('Tabella creata', 'success');
+      setSelectedTabellaId(data.id);
+      showToast('Tabella creata con successo!', 'success');
     } catch (e) {
       showToast('Errore: ' + e.message, 'error');
     }
   }
 
-  // ─── Elimina tabella millesimale ─────────────────────────────
-  async function eliminaTabella(t) {
-    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse. Vuoi continuare?')) return;
-    if (!window.confirm(`Sei sicuro di voler eliminare la tabella "${t.nome}"? All'eliminazione verranno rimossi anche i relativi millesimi.`)) return;
+  // CRUD: Delete table
+  async function handleEliminaTabella(t, event) {
+    event.stopPropagation(); // Avoid selecting the deleted table
+    if (!window.confirm(`Sei sicuro di voler eliminare la tabella "${t.nome}"?\nQuesta operazione eliminerà definitivamente anche tutti i millesimi associati ad essa.`)) {
+      return;
+    }
     try {
       const { error } = await supabase.from('tabelle_millesimali').delete().eq('id', t.id);
       if (error) throw error;
-      await loadAll();
+
+      setTabelle(prev => prev.filter(x => x.id !== t.id));
+      if (selectedTabellaId === t.id) {
+        setSelectedTabellaId(tabelle.find(x => x.id !== t.id)?.id || null);
+      }
+      showToast('Tabella eliminata', 'success');
     } catch (e) {
-      showToast('Errore durante l\'eliminazione: ' + e.message, 'error');
+      showToast('Errore eliminazione: ' + e.message, 'error');
     }
   }
 
-  // ─── Modello Standard CSV per importazione ───────────────────
-  const downloadModelloStandard = () => {
-    const bom = '\uFEFF';
-    const headers = "Interno / Subalterno;Piano;Destinazione d'uso;Superficie mq;Proprietario;Millesimi Proprietà Generale;Millesimi Scale & Ascensore\n";
-    const rows = [
-      "Sub. 1;Terra;appartamento;85.0;Mario Rossi;120.50;110.00",
-      "Box Sub. 11;-1;box;15.0;Mario Rossi;15.20;0.00",
-      "Sub. 2;1°;appartamento;90.5;Laura Bianchi;135.00;140.50",
-      "Box Sub. 12;-1;box;16.0;Laura Bianchi;16.00;0.00"
-    ].join("\n");
-    const csvContent = bom + headers + rows;
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'Modello_Standard_Millesimi_CondoAI.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // ─── Aggiungi riga unità manualmente in griglia ──────────────
-  async function aggiungiRigaUnita() {
-    if (!condominioId) return;
-    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse. Vuoi continuare?')) return;
+  // CRUD: Add a single unit manually
+  async function handleCreaUnita() {
+    if (!newUnitNumero.trim()) {
+      alert('Il numero/interno unità è obbligatorio.');
+      return;
+    }
     setSaving(true);
     try {
-      if (tabelle.length === 0) {
-        const { error: errTab } = await supabase.from('tabelle_millesimali').insert({
-          condominio_id: condominioId,
-          nome: 'Proprietà generale',
-        });
-        if (errTab) throw new Error('Impossibile creare la tabella default: ' + errTab.message);
-      }
-      const num = `Int. ${unita.length + 1}`;
-      const { error } = await supabase
+      const { data: newU, error } = await supabase
         .from('unita')
-        .insert([{ condominio_id: condominioId, numero: num, tipo: 'appartamento', piano: 0, mq: 0 }]);
+        .insert([{
+          condominio_id: condominioId,
+          numero: newUnitNumero.trim(),
+          scala: newUnitScala.trim() || null,
+          piano: newUnitPiano.trim() !== '' ? parsePiano(newUnitPiano) : null,
+          mq: newUnitMq.trim() !== '' ? parseFloat(newUnitMq.replace(',', '.')) : 0,
+          tipo: newUnitTipo
+        }])
+        .select()
+        .single();
+
       if (error) throw error;
-      showToast('Nuova riga unità aggiunta! Clicca sulle celle per modificarla.', 'success');
-      await loadAll();
+
+      setUnita(prev => [...prev, newU].sort((a, b) => (a.numero || '').localeCompare(b.numero || '')));
+      setShowAddUnitModal(false);
+      
+      // Reset fields
+      setNewUnitNumero('');
+      setNewUnitScala('');
+      setNewUnitPiano('');
+      setNewUnitMq('');
+      setNewUnitTipo('appartamento');
+
+      showToast('Unità creata con successo!', 'success');
     } catch (e) {
-      showToast('Errore aggiunta unità: ' + e.message, 'error');
+      showToast('Errore creazione unità: ' + e.message, 'error');
     } finally {
       setSaving(false);
     }
   }
 
-  // ─── Elimina riga unità dalla griglia ────────────────────────
-  async function eliminaUnita(u) {
-    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse. Vuoi continuare?')) return;
-    if (!window.confirm(`Sei sicuro di voler eliminare l'unità "${u.numero}"?`)) return;
-    try {
-      const { error } = await supabase.from('unita').delete().eq('id', u.id);
-      if (error) throw error;
-      showToast('Unità eliminata', 'success');
-      await loadAll();
-    } catch (e) {
-      showToast('Impossibile eliminare l\'unità (potrebbe avere rate o documenti collegati): ' + e.message, 'error');
-    }
-  }
-
-  // ─── Importazione tabelle millesimali da file con AI ─────────
+  // File Upload (AI)
   async function handleFileUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -372,7 +469,6 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
   async function confermaImport() {
     if (!extractedTabelle || extractedTabelle.length === 0) return;
-    if (isDirty && !window.confirm('Ci sono modifiche non salvate nella griglia che andranno perse con l\'importazione. Vuoi continuare?')) return;
     setSaving(true);
     try {
       let currentTabelle = [...tabelle];
@@ -380,7 +476,6 @@ export default function MillesimiEditor({ condominioId: propId }) {
       const upserts = [];
 
       for (const tab of extractedTabelle) {
-        // 1. Trova o crea la tabella in tabelle_millesimali
         let tabObj = currentTabelle.find(t => (t.nome || '').trim().toLowerCase() === (tab.nome || '').trim().toLowerCase());
         if (!tabObj) {
           const { data: newTab, error: errTab } = await supabase
@@ -393,10 +488,9 @@ export default function MillesimiEditor({ condominioId: propId }) {
           currentTabelle.push(newTab);
         }
 
-        // 2. Abbina o crea le unità e mappa i valori
         for (const r of (tab.righe || [])) {
           if (!r) continue;
-          const rawUnita = r.unita ?? r.subalterno ?? r.sub ?? r.interno ?? r.numero ?? r.id ?? r['N. ord.'] ?? r.ordine ?? '';
+          const rawUnita = r.unita ?? r.subalterno ?? r.sub ?? r.interno ?? r.numero ?? r.id ?? '';
           if (!rawUnita) continue;
           const strUnita = String(rawUnita).trim();
           const strUnitaLower = strUnita.toLowerCase();
@@ -407,14 +501,12 @@ export default function MillesimiEditor({ condominioId: propId }) {
             const cleanStr = strUnitaLower.replace(/^0+/, '') || '0';
             const scalaNum = `${String(u.scala || '').trim().toLowerCase()} ${num}`.trim();
             const isNumEqual = !isNaN(cleanNum) && !isNaN(cleanStr) && Number(cleanNum) === Number(cleanStr);
-            const isSubEqual = num === `sub. ${cleanStr}` || num === `sub ${cleanStr}` || `sub. ${cleanNum}` === strUnitaLower || `sub ${cleanNum}` === strUnitaLower;
-            return num === strUnitaLower || cleanNum === cleanStr || isNumEqual || scalaNum === strUnitaLower || strUnitaLower === `int. ${num}` || strUnitaLower === `int ${num}` || strUnitaLower === `interno ${num}` || strUnitaLower.endsWith(` ${num}`) || isSubEqual;
+            return num === strUnitaLower || cleanNum === cleanStr || isNumEqual || scalaNum === strUnitaLower;
           });
 
-          // Se l'unità non esiste, creiamola automaticamente con il tipo corretto e piano sanificato
           if (!unitaObj && condominioId) {
             let cleanNumero = strUnita.replace(/^(unita|unità|app\.|appartamento|int\.|interno|n\.|num\.)\s*/i, '').trim() || strUnita;
-            if (cleanNumero.length > 20) cleanNumero = cleanNumero.substring(0, 20); // Sicurezza varchar
+            if (cleanNumero.length > 20) cleanNumero = cleanNumero.substring(0, 20);
 
             const tipoUnita = parseTipo(r.destinazione, strUnita);
             const pianoNum = parsePiano(r.piano);
@@ -433,8 +525,6 @@ export default function MillesimiEditor({ condominioId: propId }) {
               .single();
 
             if (errU) {
-              console.error('Errore creazione unità su Supabase (riproviamo con payload minimo):', errU.message);
-              // Fallback di sicurezza: inseriamo con il solo numero e tipo base in caso di vincoli rigidi
               const { data: fallbackU, error: errFb } = await supabase
                 .from('unita')
                 .insert([{ condominio_id: condominioId, numero: cleanNumero, tipo: 'appartamento' }])
@@ -451,29 +541,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
           }
 
           if (unitaObj) {
-            let updated = false;
-            let pNum = unitaObj.piano;
-            if ((unitaObj.piano === null || unitaObj.piano === undefined) && r.piano !== undefined && r.piano !== null && r.piano !== '') {
-              const parsedP = parsePiano(r.piano);
-              if (parsedP !== null) { pNum = parsedP; updated = true; }
-            }
-            let mNum = unitaObj.mq;
-            if (!unitaObj.mq && r.superficie_mq) {
-              const parsedM = parseFloat(String(r.superficie_mq).replace(',', '.')) || null;
-              if (parsedM) { mNum = parsedM; updated = true; }
-            }
-            let tTipo = unitaObj.tipo;
-            if ((!unitaObj.tipo || unitaObj.tipo === 'appartamento') && r.destinazione && r.destinazione !== 'appartamento') {
-              tTipo = parseTipo(r.destinazione, strUnita);
-              updated = true;
-            }
-            if (updated) {
-              const { error: errUp } = await supabase.from('unita').update({ piano: pNum, mq: mNum, tipo: tTipo }).eq('id', unitaObj.id);
-              if (errUp) console.error('Err update unita:', errUp);
-              unitaObj.piano = pNum; unitaObj.mq = mNum; unitaObj.tipo = tTipo;
-            }
-
-            const rawVal = r.valore ?? r.millesimi ?? r.val ?? r.quota ?? 0;
+            const rawVal = r.valore ?? r.millesimi ?? 0;
             const valNum = parseFloat(String(rawVal).replace(',', '.')) || 0;
             if (!isNaN(valNum) && valNum >= 0) {
               upserts.push({
@@ -490,12 +558,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
         const { error: errUpsert } = await supabase
           .from('millesimi_unita')
           .upsert(upserts, { onConflict: 'tabella_id,unita_id' });
-        if (errUpsert) {
-          console.error('Errore salvataggio millesimi:', errUpsert);
-          throw errUpsert;
-        }
-      } else {
-        console.warn('Nessun valore millesimale valido trovato da salvare nei dati estratti:', extractedTabelle);
+        if (errUpsert) throw errUpsert;
       }
 
       setShowImportModal(false);
@@ -509,68 +572,26 @@ export default function MillesimiEditor({ condominioId: propId }) {
     }
   }
 
-  // ─── Helpers ────────────────────────────────────────────────
-  function showToast(msg, type = 'success') {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  }
+  const downloadModelloStandard = () => {
+    const bom = '\uFEFF';
+    const headers = "Interno / Subalterno;Piano;Destinazione d'uso;Superficie mq;Proprietario;Millesimi Proprietà Generale;Millesimi Scale & Ascensore\n";
+    const rows = [
+      "Sub. 1;Terra;appartamento;85.0;Mario Rossi;120.50;110.00",
+      "Box Sub. 11;-1;box;15.0;Mario Rossi;15.20;0.00",
+      "Sub. 2;1°;appartamento;90.5;Laura Bianchi;135.00;140.50",
+      "Box Sub. 12;-1;box;16.0;Laura Bianchi;16.00;0.00"
+    ].join("\n");
+    const csvContent = bom + headers + rows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Modello_Standard_Millesimi_CondoAI.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-  const isDirty = useMemo(() => {
-    const allKeys = new Set([...Object.keys(valori), ...Object.keys(originali)]);
-    for (const key of allKeys) {
-      const v = parseFloat(String(valori[key] ?? 0).replace(/,/g, '.')) || 0;
-      const o = parseFloat(String(originali[key] ?? 0).replace(/,/g, '.')) || 0;
-      if (Math.abs(v - o) > 0.0001) return true;
-    }
-    if (unita.length !== originaliUnita.length) return true;
-    for (let i = 0; i < unita.length; i++) {
-      const u = unita[i];
-      const ou = originaliUnita[i] || {};
-      if (String(u.numero || '') !== String(ou.numero || '')) return true;
-      if (String(u.piano ?? '') !== String(ou.piano ?? '')) return true;
-      if (String(u.tipo || '') !== String(ou.tipo || '')) return true;
-      const mqV = parseFloat(String(u.mq || 0).replace(/,/g, '.')) || 0;
-      const mqO = parseFloat(String(ou.mq || 0).replace(/,/g, '.')) || 0;
-      if (Math.abs(mqV - mqO) > 0.001) return true;
-    }
-    return false;
-  }, [valori, originali, unita, originaliUnita]);
-
-  function getNominativo(u) {
-    // Legge da embed oppure cerca nelle personeCondominio tramite occupanti_unita
-    const occ = u?.persone?.[0];
-    if (occ?.persona?.nominativo) return occ.persona.nominativo;
-    // Fallback: se l'embed non è disponibile, cerca per persona_id
-    if (occ?.persona_id) {
-      const p = personeCondominio.find(x => x.id === occ.persona_id);
-      if (p) return p.nominativo;
-    }
-    return null; // null = non assegnato (mostriamo il select)
-  }
-
-  // Assegna/rimuovi proprietario per una unità
-  async function handleProprietarioChange(unitaId, personaId) {
-    try {
-      // Disattiva occupanti precedenti con ruolo proprietario
-      await supabase.from('occupanti_unita')
-        .update({ attivo: false })
-        .eq('unita_id', unitaId)
-        .eq('ruolo', 'proprietario')
-        .eq('attivo', true);
-
-      if (personaId) {
-        const { error } = await supabase.from('occupanti_unita')
-          .insert([{ unita_id: unitaId, persona_id: personaId, ruolo: 'proprietario', attivo: true }]);
-        if (error) throw error;
-      }
-      await loadAll();
-      showToast('Proprietario aggiornato', 'success');
-    } catch (e) {
-      showToast('Errore: ' + e.message, 'error');
-    }
-  }
-
-  // ─── Render ─────────────────────────────────────────────────
   if (loading) {
     return (
       <div style={styles.loadingWrap}>
@@ -581,122 +602,347 @@ export default function MillesimiEditor({ condominioId: propId }) {
   }
 
   return (
-    <div style={styles.wrap}>
-      {/* Header */}
-      <div style={styles.header}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: "'Sora', sans-serif" }}>
+      {/* Top Banner/Header general */}
+      <div style={styles.generalHeader}>
         <div>
-          <h2 style={styles.title}>Editor Millesimi</h2>
-          <p style={styles.subtitle}>
-            Inserisci i valori per ogni unità. La somma di ogni colonna deve essere <strong style={{ color: '#2563eb' }}>1000</strong>.
-          </p>
+          <h2 style={styles.title}>Tabelle Millesimali</h2>
+          <p style={styles.subtitle}>Gestisci le quote di ripartizione spese per ciascuna unità.</p>
         </div>
-        <div style={styles.headerActions}>
-          <button
-            style={styles.btnSecondary}
-            onClick={downloadModelloStandard}
-            title="Scarica il modello CSV standard per un'importazione sicura"
-          >
-            📋 Modello Standard (.csv)
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={styles.btnSecondary} onClick={downloadModelloStandard} title="Scarica tracciato modello CSV">
+            <Download size={15} style={{ marginRight: 6 }} /> Modello (.csv)
           </button>
-          <button
-            style={styles.btnSecondary}
-            onClick={() => { setShowImportModal(true); setExtractedTabelle(null); setImportError(null); }}
-          >
-            📥 Importa da File
+          <button style={styles.btnSecondary} onClick={() => { setShowImportModal(true); setExtractedTabelle(null); setImportError(null); }}>
+            <Upload size={15} style={{ marginRight: 6 }} /> Importa File
           </button>
-          <button
-            style={styles.btnSecondary}
-            onClick={aggiungiRigaUnita}
-            disabled={saving}
-            title="Aggiungi manualmente una nuova riga/unità al condominio"
-          >
-            ➕ Aggiungi Riga
-          </button>
-          <button
-            style={styles.btnSecondary}
-            onClick={() => setShowNuovaTabella(!showNuovaTabella)}
-          >
-            + Tabella
-          </button>
-          <button
-            style={{ ...styles.btnPrimary, opacity: (!isDirty || saving) ? 0.5 : 1 }}
-            onClick={salva}
-            disabled={!isDirty || saving}
-          >
-            {saving ? 'Salvataggio...' : '💾 Salva Millesimi'}
+          <button style={styles.btnPrimary} onClick={() => setShowAddUnitModal(true)}>
+            <Plus size={15} style={{ marginRight: 6 }} /> Aggiungi Unità
           </button>
         </div>
       </div>
 
-      {/* Modale Importazione da File */}
+      <div style={styles.mainLayout}>
+        {/* Sidebar Left: Tables List */}
+        <div style={styles.sidebar}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8' }}>Tabelle</h3>
+            <button 
+              style={styles.sidebarAddBtn} 
+              onClick={() => setShowNuovaTabella(!showNuovaTabella)}
+              title="Aggiungi nuova tabella"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {showNuovaTabella && (
+            <div style={styles.sidebarNewTabForm}>
+              <input
+                style={styles.sidebarInput}
+                placeholder="Nome tabella..."
+                value={nuovaTabella}
+                onChange={e => setNuovaTabella(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreaTabella()}
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                <button style={{ ...styles.btnPrimary, padding: '4px 8px', fontSize: 11, flex: 1 }} onClick={handleCreaTabella}>Crea</button>
+                <button style={{ ...styles.btnSecondary, padding: '4px 8px', fontSize: 11 }} onClick={() => setShowNuovaTabella(false)}>Annulla</button>
+              </div>
+            </div>
+          )}
+
+          <div style={styles.sidebarList}>
+            {tabelle.length === 0 ? (
+              <p style={{ fontSize: 12, color: '#64748b', textAlign: 'center', padding: '16px 0' }}>Nessuna tabella</p>
+            ) : (
+              tabelle.map(t => {
+                const active = t.id === selectedTabellaId;
+                const somma = getSommaTabella(t.id);
+                const isOk = Math.abs(somma - 1000) <= 0.01;
+                
+                return (
+                  <div 
+                    key={t.id} 
+                    style={{
+                      ...styles.sidebarItem,
+                      borderLeft: active ? '4px solid #2563eb' : '4px solid transparent',
+                      background: active ? '#1e293b' : 'transparent',
+                    }}
+                    onClick={() => {
+                      if (isSelectedTableDirty) {
+                        if (!window.confirm('Ci sono modifiche non salvate nella tabella corrente. Cambiando tabella andranno perse. Vuoi continuare?')) return;
+                      }
+                      setSelectedTabellaId(t.id);
+                    }}
+                  >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? '#f1f5f9' : '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {t.nome}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                        <span style={{ 
+                          fontSize: 10, 
+                          fontWeight: 700, 
+                          color: isOk ? '#4ade80' : '#f87171',
+                          background: isOk ? '#4ade8015' : '#f8717115',
+                          padding: '1px 5px',
+                          borderRadius: 4
+                        }}>
+                          {somma.toFixed(2)} ‰
+                        </span>
+                      </div>
+                    </div>
+                    <button 
+                      style={styles.sidebarItemDeleteBtn} 
+                      onClick={(e) => handleEliminaTabella(t, e)}
+                      title="Elimina tabella"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Main Panel Right: Selected Table Details */}
+        <div style={styles.detailContainer}>
+          {selectedTabella ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
+              
+              {/* Header details with inline rename */}
+              <div style={styles.detailHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                  <Layers size={18} color="#60a5fa" />
+                  {isRenaming ? (
+                    <input
+                      style={styles.renameInput}
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onBlur={renameTabella}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') renameTabella();
+                        if (e.key === 'Escape') { setIsRenaming(false); setRenameValue(selectedTabella.nome); }
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {selectedTabella.nome}
+                      </h3>
+                      <button style={styles.iconBtn} onClick={() => setIsRenaming(true)} title="Rinomina tabella">
+                        <Edit2 size={13} color="#94a3b8" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Real-time sum and status */}
+                <div>
+                  {(() => {
+                    const somma = getSommaTabella(selectedTabellaId);
+                    const ok = Math.abs(somma - 1000) <= 0.01;
+                    return (
+                      <div style={{
+                        ...styles.statusBadge,
+                        background: ok ? '#10b98115' : '#ef444415',
+                        border: ok ? '1px solid #10b98130' : '1px solid #ef444430',
+                        color: ok ? '#34d399' : '#f87171',
+                      }}>
+                        {ok ? <Check size={13} style={{ marginRight: 5 }} /> : <AlertCircle size={13} style={{ marginRight: 5 }} />}
+                        Somma: {somma.toFixed(2)} ‰ {ok ? '(Bilanciata)' : '(Dev\'essere 1000)'}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Filters bar */}
+              <div style={styles.filterBar}>
+                <div style={styles.searchWrap}>
+                  <Search size={14} color="#64748b" style={{ marginLeft: 8 }} />
+                  <input
+                    style={styles.searchInput}
+                    placeholder="Cerca per interno o condomino..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button style={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>✕</button>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Filter size={13} color="#94a3b8" />
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>Scala:</span>
+                    <select
+                      style={styles.filterSelect}
+                      value={filtroScala}
+                      onChange={e => setFiltroScala(e.target.value)}
+                    >
+                      {listScale.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#cbd5e1' }}>
+                    <input
+                      type="checkbox"
+                      checked={soloPartecipanti}
+                      onChange={e => setSoloPartecipanti(e.target.checked)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    Solo partecipanti (&gt;0)
+                  </label>
+                </div>
+              </div>
+
+              {/* Simplified Grid */}
+              <div style={styles.gridContainer}>
+                {unitaFiltrate.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>
+                    Nessuna unità corrispondente ai filtri impostati.
+                  </div>
+                ) : (
+                  <table style={styles.table}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...styles.th, textAlign: 'left' }}>Unità immobiliare (Scala / Piano / Int.)</th>
+                        <th style={{ ...styles.th, textAlign: 'left' }}>Proprietario</th>
+                        <th style={{ ...styles.th, textAlign: 'right', width: 150 }}>Quota millesimale (‰)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unitaFiltrate.map((u, idx) => {
+                        const key = `${u.id}_${selectedTabellaId}`;
+                        const val = valori[key] ?? '';
+                        return (
+                          <tr key={u.id} style={{ background: idx % 2 === 0 ? '#1e293b20' : 'transparent' }}>
+                            <td style={{ ...styles.td, textAlign: 'left' }}>
+                              <span style={{ fontWeight: 600, color: '#f1f5f9' }}>
+                                {u.numero ? `Int. ${u.numero}` : '—'}
+                              </span>
+                              {u.scala && <span style={styles.badgeUnita}>Scala {u.scala}</span>}
+                              {u.piano !== null && <span style={styles.badgeUnita}>Piano {u.piano}</span>}
+                            </td>
+                            <td style={{ ...styles.td, textAlign: 'left', color: '#94a3b8' }}>
+                              {getProprietarioLabel(u)}
+                            </td>
+                            <td style={{ ...styles.td, textAlign: 'right' }}>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                style={styles.cellInput}
+                                value={val}
+                                onChange={e => handleMillesimiChange(u.id, e.target.value)}
+                                placeholder="0.00"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Detail Footer actions */}
+              <div style={styles.detailFooter}>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button 
+                    style={styles.btnSecondary} 
+                    onClick={distribuisciEquamente}
+                    title="Distribuisci 1000 millesimi equamente tra le unità attualmente visibili"
+                  >
+                    <Scale size={14} style={{ marginRight: 6 }} /> Distribuisci Equamente
+                  </button>
+                  <button 
+                    style={styles.btnSecondary} 
+                    onClick={azzeraValori}
+                    title="Azzera tutti i millesimi delle unità visibili"
+                  >
+                    <RotateCcw size={14} style={{ marginRight: 6 }} /> Azzera Valori
+                  </button>
+                </div>
+                
+                <button
+                  style={{ ...styles.btnPrimary, opacity: (!isSelectedTableDirty || saving) ? 0.5 : 1 }}
+                  disabled={!isSelectedTableDirty || saving}
+                  onClick={salvaMillesimi}
+                >
+                  <Save size={14} style={{ marginRight: 6 }} /> {saving ? 'Salvataggio...' : 'Salva Millesimi'}
+                </button>
+              </div>
+
+            </div>
+          ) : (
+            <div style={styles.emptyState}>
+              <Layers size={36} color="#475569" style={{ marginBottom: 12 }} />
+              <h4 style={{ margin: 0, color: '#f1f5f9', fontSize: 16 }}>Nessuna Tabella Selezionata</h4>
+              <p style={{ margin: '6px 0 16px', color: '#94a3b8', fontSize: 13, maxWidth: 350, lineHeight: 1.5 }}>
+                Crea una nuova tabella millesimale nella barra laterale o importa le tabelle da file per iniziare la compilazione delle quote.
+              </p>
+              <button style={styles.btnPrimary} onClick={() => setShowNuovaTabella(true)}>
+                <Plus size={14} style={{ marginRight: 6 }} /> Crea Nuova Tabella
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* MODALE IMPORTAZIONE DA FILE */}
       {showImportModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
-              <h3 style={{ margin: 0, fontSize: 18, color: '#f1f5f9' }}>📥 Importa Tabelle Millesimali da File</h3>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#f1f5f9' }}>📥 Importa Tabelle Millesimali da File</h3>
               <button style={styles.closeBtn} onClick={() => setShowImportModal(false)}>✕</button>
             </div>
-            <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 12 }}>
+            <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 12, lineHeight: 1.4 }}>
               Carica un file PDF, Excel (.xlsx, .csv), Word o Immagine. L'AI estrarrà le colonne e i valori associandoli alle unità (o creando le unità mancanti).
             </p>
 
-            <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: '#cbd5e1' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <strong style={{ color: '#38bdf8' }}>💡 Formato Standard Consigliato (CondoAI)</strong>
-                <button style={{ ...styles.btnSecondary, padding: '4px 10px', fontSize: 12 }} onClick={downloadModelloStandard}>
-                  📋 Scarica Modello (.csv)
-                </button>
-              </div>
-              <p style={{ margin: '0 0 8px', fontSize: 12, color: '#94a3b8' }}>
-                Visto che ogni condominio usa tabelle diverse, per lavorare senza intoppi operativi consigliamo di usare o convertire i dati in questo formato standard universale:
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, fontSize: 11 }}>
-                <span style={{ background: '#1e293b', padding: '3px 6px', borderRadius: 4, color: '#e2e8f0', fontWeight: 600 }}>1. Interno / Subalterno*</span>
-                <span style={{ background: '#1e293b', padding: '3px 6px', borderRadius: 4, color: '#e2e8f0' }}>2. Piano</span>
-                <span style={{ background: '#1e293b', padding: '3px 6px', borderRadius: 4, color: '#e2e8f0' }}>3. Destinazione d'uso</span>
-                <span style={{ background: '#1e293b', padding: '3px 6px', borderRadius: 4, color: '#e2e8f0' }}>4. Superficie m²</span>
-                <span style={{ background: '#1e293b', padding: '3px 6px', borderRadius: 4, color: '#e2e8f0' }}>5. Proprietario</span>
-                <span style={{ background: '#0369a1', padding: '3px 6px', borderRadius: 4, color: '#f8fafc', fontWeight: 600 }}>6. Colonne Millesimali (es. Proprietà, Scale...)</span>
-              </div>
-            </div>
+            {!extractedTabelle ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={styles.uploadArea}>
+                  <label htmlFor="file-upload" style={styles.uploadLabel}>
+                    <Upload size={32} color="#60a5fa" style={{ marginBottom: 8 }} />
+                    <div style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 13 }}>Trascina o clicca per caricare un file</div>
+                    <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>PDF, XLSX, CSV, PNG, JPG, DOCX</div>
+                  </label>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    style={{ display: 'none' }}
+                    onChange={handleFileUpload}
+                    accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.docx,.txt"
+                    disabled={importing}
+                  />
+                </div>
 
-            <div style={styles.uploadArea}>
-              <input
-                type="file"
-                accept=".pdf,.xlsx,.xls,.csv,.doc,.docx,.png,.jpg,.jpeg"
-                onChange={handleFileUpload}
-                style={{ display: 'none' }}
-                id="file-import-millesimi"
-                disabled={importing}
-              />
-              <label htmlFor="file-import-millesimi" style={styles.uploadLabel}>
-                {importing ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', padding: 10 }}>
+                {importing && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12 }}>
                     <div style={styles.spinnerSmall} />
-                    <span style={{ color: '#38bdf8' }}>🤖 Analisi AI in corso... estrazione tabelle...</span>
-                  </div>
-                ) : (
-                  <div>
-                    <div style={{ fontSize: 28, marginBottom: 8 }}>📄</div>
-                    <span style={{ color: '#38bdf8', fontWeight: 600 }}>Clicca per scegliere un file</span>
-                    <span style={{ color: '#64748b', display: 'block', fontSize: 12, marginTop: 4 }}>
-                      Supporta PDF, Excel, CSV, Word o scansioni
-                    </span>
+                    <span style={{ fontSize: 13, color: '#38bdf8' }}>L'AI sta analizzando ed estraendo le tabelle millesimali...</span>
                   </div>
                 )}
-              </label>
-            </div>
 
-            {importError && (
-              <div style={{ background: '#ef444420', border: '1px solid #ef4444', color: '#f87171', padding: 12, borderRadius: 8, marginTop: 16, fontSize: 13 }}>
-                ⚠️ {importError}
+                {importError && (
+                  <div style={{ background: '#ef444415', border: '1px solid #ef444430', borderRadius: 8, padding: 10, color: '#f87171', fontSize: 12 }}>
+                    ⚠️ {importError}
+                  </div>
+                )}
               </div>
-            )}
-
-            {extractedTabelle && (
+            ) : (
               <div style={styles.previewBox}>
-                <h4 style={{ margin: '0 0 10px', color: '#38bdf8', fontSize: 14 }}>
-                  ✨ Trovate {extractedTabelle.length} tabelle nel documento:
+                <h4 style={{ margin: '0 0 10px', fontSize: 13, color: '#38bdf8' }}>
+                  Tabelle Rilevate dall'AI ({extractedTabelle.length}):
                 </h4>
                 <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {extractedTabelle.map((tab, i) => {
@@ -704,20 +950,20 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     const ok = Math.abs(totale - 1000) <= 0.5;
                     return (
                       <div key={i} style={{ background: '#0f172a', padding: 10, borderRadius: 8, border: '1px solid #334155' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <strong style={{ color: '#f1f5f9' }}>{tab.nome}</strong>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: ok ? '#4ade80' : '#facc15' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <strong style={{ color: '#f1f5f9', fontSize: 12 }}>{tab.nome}</strong>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: ok ? '#4ade80' : '#facc15' }}>
                             Somma: {totale.toFixed(2)} {ok ? '✓' : '(≠ 1000)'}
                           </span>
                         </div>
-                        <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                        <div style={{ fontSize: 11, color: '#94a3b8' }}>
                           {tab.righe?.length || 0} unità estratte (es. {tab.righe?.slice(0, 3).map(r => `Unità ${r.unita}: ${r.valore}`).join(', ')}{tab.righe?.length > 3 ? '...' : ''})
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
                   <button style={styles.btnSecondary} onClick={() => setExtractedTabelle(null)}>
                     Carica altro file
                   </button>
@@ -731,210 +977,94 @@ export default function MillesimiEditor({ condominioId: propId }) {
         </div>
       )}
 
-      {/* Form nuova tabella */}
-      {showNuovaTabella && (
-        <div style={styles.nuovaTabellaBar}>
-          <input
-            style={styles.input}
-            placeholder="Nome tabella (es. Generale, Scale, Ascensore...)"
-            value={nuovaTabella}
-            onChange={e => setNuovaTabella(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && creaTabella()}
-            autoFocus
-          />
-          <button style={styles.btnPrimary} onClick={creaTabella}>Crea</button>
-          <button style={styles.btnSecondary} onClick={() => setShowNuovaTabella(false)}>Annulla</button>
+      {/* MODALE NUOVA UNITÀ MANUALE */}
+      {showAddUnitModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#f1f5f9' }}>➕ Aggiungi Nuova Unità Immobiliare</h3>
+              <button style={styles.closeBtn} onClick={() => setShowAddUnitModal(false)}>✕</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>Numero / Interno *</label>
+                <input
+                  style={styles.sidebarInput}
+                  placeholder="es. 10, Int. 3, A/2"
+                  value={newUnitNumero}
+                  onChange={e => setNewUnitNumero(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Scala</label>
+                  <input
+                    style={styles.sidebarInput}
+                    placeholder="es. A, B, Ovest"
+                    value={newUnitScala}
+                    onChange={e => setNewUnitScala(e.target.value)}
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Piano</label>
+                  <input
+                    style={styles.sidebarInput}
+                    placeholder="es. T, 1, -1"
+                    value={newUnitPiano}
+                    onChange={e => setNewUnitPiano(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Superficie (m²)</label>
+                  <input
+                    style={styles.sidebarInput}
+                    placeholder="es. 85.0"
+                    value={newUnitMq}
+                    onChange={e => setNewUnitMq(e.target.value)}
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.formLabel}>Destinazione d'uso</label>
+                  <select
+                    style={styles.filterSelect}
+                    value={newUnitTipo}
+                    onChange={e => setNewUnitTipo(e.target.value)}
+                  >
+                    <option value="appartamento">Appartamento</option>
+                    <option value="box">Box / Garage</option>
+                    <option value="cantina">Cantina</option>
+                    <option value="negozio">Negozio / Commerciale</option>
+                    <option value="ufficio">Ufficio / Studio</option>
+                    <option value="posto_auto">Posto Auto</option>
+                    <option value="soffitta">Soffitta / Solaio</option>
+                    <option value="magazzino">Magazzino / Deposito</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+                <button style={styles.btnSecondary} onClick={() => setShowAddUnitModal(false)}>
+                  Annulla
+                </button>
+                <button style={styles.btnPrimary} onClick={handleCreaUnita} disabled={saving}>
+                  {saving ? 'Creazione...' : 'Crea Unità'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Griglia */}
-      {tabelle.length === 0 && unita.length === 0 ? (
-        <div style={styles.emptyState}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
-          <p style={{ color: '#94a3b8' }}>Nessuna unità o tabella millesimale presente. Clicca su "➕ Aggiungi Riga" o "+ Tabella" per iniziare l'inserimento manuale.</p>
-        </div>
-      ) : (
-        <div style={styles.tableWrap}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ ...styles.th, ...styles.thFixed, minWidth: 120 }}>Interno / Subalterno</th>
-                <th style={{ ...styles.th, minWidth: 70 }}>Piano</th>
-                <th style={{ ...styles.th, minWidth: 150, color: '#94a3b8', fontWeight: 400 }}>Proprietario</th>
-                <th style={{ ...styles.th, minWidth: 140 }}>Destinazione d'uso</th>
-                <th style={{ ...styles.th, minWidth: 130 }}>Superficie Virtuale Complessiva (m²)</th>
-                {tabelle.map(t => (
-                  <th key={t.id} style={{ ...styles.th, minWidth: 160 }}>
-                    <div style={styles.thTabella}>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: '#f8fafc' }}>{t.nome}</div>
-                        <div style={{ fontSize: 11, color: '#38bdf8', fontWeight: 400, marginTop: 2 }}>Valore Espresso in Millesimi (‰)</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button
-                          style={styles.btnDistribuisci}
-                          title="Distribuisci equamente"
-                          onClick={() => distribuisciEquamente(t.id)}
-                        >
-                          ⚖️
-                        </button>
-                        <button
-                          style={styles.btnDistribuisci}
-                          title="Elimina tabella"
-                          onClick={() => eliminaTabella(t)}
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                    {/* Somma colonna */}
-                    <div style={{
-                      ...styles.sommaBadge,
-                      background: errors[t.id] ? '#ef444420' : '#16a34a20',
-                      color: errors[t.id] ? '#ef4444' : '#16a34a',
-                    }}>
-                      {sommaPer(t.id).toFixed(2)} ‰
-                    </div>
-                    {errors[t.id] && (
-                      <div style={styles.errorMsg}>{errors[t.id]}</div>
-                    )}
-                  </th>
-                ))}
-                <th style={{ ...styles.th, minWidth: 60 }}>Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {unita.map((u, idx) => (
-                <tr key={u.id} style={{ background: idx % 2 === 0 ? '#0f172a' : '#1e293b08' }}>
-                  <td style={{ ...styles.td, ...styles.tdUnit }}>
-                    <input
-                      type="text"
-                      style={styles.cellInputText}
-                      value={u.numero ?? ''}
-                      onChange={e => handleUnitaChange(u.id, 'numero', e.target.value)}
-                      placeholder="es. Int. 1"
-                    />
-                  </td>
-                  <td style={styles.td}>
-                    <input
-                      type="text"
-                      style={{ ...styles.cellInputText, width: 65, textAlign: 'center' }}
-                      value={u.piano ?? ''}
-                      onChange={e => handleUnitaChange(u.id, 'piano', e.target.value)}
-                      placeholder="es. T / 1°"
-                    />
-                  </td>
-                  <td style={{ ...styles.td, minWidth: 170 }}>
-                    {(() => {
-                      const occ = u?.persone?.[0];
-                      const currentPersonaId = occ?.persona_id ||
-                        (occ?.persona ? personeCondominio.find(p => p.nominativo === occ.persona.nominativo)?.id : null);
-                      return (
-                        <select
-                          style={{ ...styles.cellSelect, minWidth: 150, color: currentPersonaId ? '#f1f5f9' : '#64748b' }}
-                          value={currentPersonaId || ''}
-                          onChange={e => handleProprietarioChange(u.id, e.target.value || null)}
-                        >
-                          <option value="">— Nessuno —</option>
-                          {personeCondominio.map(p => (
-                            <option key={p.id} value={p.id}>{p.nominativo}</option>
-                          ))}
-                        </select>
-                      );
-                    })()}
-                  </td>
-                  <td style={styles.td}>
-                    <select
-                      style={styles.cellSelect}
-                      value={u.tipo || 'appartamento'}
-                      onChange={e => handleUnitaChange(u.id, 'tipo', e.target.value)}
-                    >
-                      <option value="appartamento">Appartamento</option>
-                      <option value="box">Box / Garage</option>
-                      <option value="cantina">Cantina</option>
-                      <option value="negozio">Negozio / Commerciale</option>
-                      <option value="ufficio">Ufficio / Studio</option>
-                      <option value="posto_auto">Posto Auto</option>
-                      <option value="soffitta">Soffitta / Solaio</option>
-                      <option value="magazzino">Magazzino / Deposito</option>
-                    </select>
-                  </td>
-                  <td style={styles.td}>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      style={{ ...styles.cellInputText, width: 80, textAlign: 'right', color: '#38bdf8', fontWeight: 600 }}
-                      value={u.mq ?? ''}
-                      onChange={e => handleUnitaChange(u.id, 'mq', e.target.value)}
-                      placeholder="0.00"
-                    />
-                  </td>
-                  {tabelle.map(t => {
-                    const key = `${u.id}_${t.id}`;
-                    const val = valori[key] ?? '';
-                    return (
-                      <td key={t.id} style={styles.td}>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          style={{ ...styles.cellInput, borderColor: errors[t.id] ? '#ef4444' : '#334155' }}
-                          value={val}
-                          onChange={e => handleChange(u.id, t.id, e.target.value)}
-                          placeholder="0.00"
-                        />
-                      </td>
-                    );
-                  })}
-                  <td style={styles.td}>
-                    <button
-                      style={styles.btnDistribuisci}
-                      onClick={() => eliminaUnita(u)}
-                      title="Elimina unità"
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            {/* Footer somme */}
-            <tfoot>
-              <tr style={{ background: '#1e293b' }}>
-                <td style={{ ...styles.td, fontWeight: 700, color: '#94a3b8', textAlign: 'right' }} colSpan={4}>
-                  TOTALE COMPLESSIVO:
-                </td>
-                <td style={{ ...styles.td, fontWeight: 700, color: '#38bdf8', textAlign: 'right' }}>
-                  {unita.reduce((s, u) => s + (parseFloat(String(u.mq || 0).replace(',', '.')) || 0), 0).toFixed(2)} m²
-                </td>
-                {tabelle.map(t => {
-                  const s = sommaPer(t.id);
-                  const ok = Math.abs(s - 1000) <= 0.01;
-                  return (
-                    <td key={t.id} style={{ ...styles.td, fontWeight: 700, color: ok ? '#16a34a' : '#ef4444', textAlign: 'center' }}>
-                      {s.toFixed(2)}
-                      {ok && <span style={{ marginLeft: 4 }}>✓</span>}
-                    </td>
-                  );
-                })}
-                <td style={styles.td}></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      )}
-
-      {/* Legend */}
-      <div style={styles.legend}>
-        <span style={styles.legendItem}>⚖️ = Distribuisci equamente tra le unità</span>
-        <span style={styles.legendItem}>· La somma per ogni tabella deve essere esattamente 1000</span>
-        <span style={styles.legendItem}>· I valori vengono usati per calcolare la ripartizione delle spese</span>
-      </div>
-
-      {/* Toast */}
+      {/* Toast notifications */}
       {toast && (
         <div style={{
           ...styles.toast,
-          background: toast.type === 'error' ? '#ef4444' : '#16a34a',
+          background: toast.type === 'error' ? '#ef4444' : '#10b981',
         }}>
           {toast.msg}
         </div>
@@ -943,13 +1073,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
   );
 }
 
-// ─── Stili ──────────────────────────────────────────────────────────────────
+// ─── STILI ──────────────────────────────────────────────────────────────────
 const styles = {
-  wrap: {
-    fontFamily: "'Sora', sans-serif",
-    color: '#e2e8f0',
-    position: 'relative',
-  },
   loadingWrap: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     justifyContent: 'center', padding: 60,
@@ -961,130 +1086,226 @@ const styles = {
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
   },
-  header: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-    marginBottom: 20, gap: 16, flexWrap: 'wrap',
+  generalHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    gap: 16, flexWrap: 'wrap',
   },
   title: { margin: 0, fontSize: 20, fontWeight: 700, color: '#f1f5f9' },
   subtitle: { margin: '4px 0 0', fontSize: 13, color: '#94a3b8' },
-  headerActions: { display: 'flex', gap: 10, alignItems: 'center' },
-  nuovaTabellaBar: {
-    display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center',
-    background: '#1e293b', padding: '12px 16px', borderRadius: 10,
-    border: '1px solid #334155',
+  
+  mainLayout: {
+    display: 'flex',
+    gap: 16,
+    alignItems: 'stretch',
+    minHeight: '500px',
   },
-  input: {
-    flex: 1, background: '#0f172a', border: '1px solid #334155',
-    borderRadius: 8, padding: '8px 12px', color: '#e2e8f0',
-    fontFamily: "'Sora', sans-serif", fontSize: 14,
-    outline: 'none',
-  },
-  btnPrimary: {
-    background: '#2563eb', color: '#fff', border: 'none',
-    borderRadius: 8, padding: '8px 18px', fontFamily: "'Sora', sans-serif",
-    fontWeight: 600, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
-    transition: 'background 0.2s',
-  },
-  btnSecondary: {
-    background: '#1e293b', color: '#94a3b8',
-    border: '1px solid #334155', borderRadius: 8,
-    padding: '8px 16px', fontFamily: "'Sora', sans-serif",
-    fontWeight: 600, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
-  },
-  emptyState: {
-    textAlign: 'center', padding: '60px 20px',
-    background: '#1e293b', borderRadius: 12, border: '1px dashed #334155',
-  },
-  tableWrap: {
-    overflowX: 'auto',
+  
+  // Sidebar styles
+  sidebar: {
+    width: 260,
+    background: '#111827b0',
+    backdropFilter: 'blur(8px)',
     borderRadius: 12,
+    border: '1px solid #334155',
+    padding: 16,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  sidebarAddBtn: {
+    background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155',
+    borderRadius: 6, width: 24, height: 24, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', cursor: 'pointer', hover: { background: '#334155' }
+  },
+  sidebarNewTabForm: {
+    background: '#1e293b',
+    border: '1px solid #334155',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 10,
+  },
+  sidebarInput: {
+    width: '100%', background: '#0f172a', border: '1px solid #334155',
+    borderRadius: 6, padding: '6px 10px', color: '#e2e8f0',
+    fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none',
+    boxSizing: 'border-box'
+  },
+  sidebarList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    overflowY: 'auto',
+    flex: 1,
+  },
+  sidebarItem: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '8px 10px 8px 12px',
+    borderRadius: 8,
+    cursor: 'pointer',
+    transition: 'background 0.2s, border-left 0.2s',
+    gap: 10,
+    '&:hover': {
+      background: '#1e293b50',
+    }
+  },
+  sidebarItemDeleteBtn: {
+    background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
+    padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'color 0.2s, background 0.2s',
+    '&:hover': {
+      color: '#ef4444',
+      background: '#ef444410'
+    }
+  },
+
+  // Detail panel styles
+  detailContainer: {
+    flex: 1,
+    background: '#11182760',
+    backdropFilter: 'blur(8px)',
+    borderRadius: 12,
+    border: '1px solid #334155',
+    padding: 20,
+    minWidth: 0,
+  },
+  detailHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottom: '1px solid #1e293b',
+    paddingBottom: 12,
+    gap: 16,
+  },
+  renameInput: {
+    background: '#0f172a', border: '1px solid #2563eb',
+    borderRadius: 6, padding: '4px 8px', color: '#f1f5f9',
+    fontFamily: "'Sora', sans-serif", fontSize: 16, fontWeight: 700,
+    outline: 'none', width: '220px',
+  },
+  statusBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '4px 10px',
+    borderRadius: 6,
+  },
+  iconBtn: {
+    background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center'
+  },
+
+  // Filters Bar
+  filterBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
+    flexWrap: 'wrap',
+  },
+  searchWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    background: '#0f172a',
+    border: '1px solid #334155',
+    borderRadius: 8,
+    width: '280px',
+    position: 'relative',
+  },
+  searchInput: {
+    background: 'none', border: 'none', color: '#e2e8f0', padding: '6px 28px 6px 8px',
+    fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none', flex: 1
+  },
+  clearSearchBtn: {
+    position: 'absolute', right: 8, background: 'none', border: 'none', color: '#64748b',
+    cursor: 'pointer', fontSize: 10
+  },
+  filterSelect: {
+    background: '#0f172a', border: '1px solid #334155', borderRadius: 8,
+    padding: '6px 8px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 12,
+    outline: 'none', cursor: 'pointer'
+  },
+
+  // Simplified Grid table
+  gridContainer: {
+    overflowY: 'auto',
+    maxHeight: '400px',
     border: '1px solid #1e293b',
+    borderRadius: 8,
+    background: '#0f172a30'
   },
   table: {
-    width: '100%', borderCollapse: 'collapse',
-    fontSize: 14,
+    width: '100%', borderCollapse: 'collapse', fontSize: 13,
   },
   th: {
-    background: '#1e293b', color: '#94a3b8',
-    padding: '10px 12px', textAlign: 'center',
-    fontWeight: 600, fontSize: 12, textTransform: 'uppercase',
-    letterSpacing: '0.05em', borderBottom: '1px solid #334155',
-    minWidth: 110,
-  },
-  thFixed: { textAlign: 'left', minWidth: 120 },
-  thTabella: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    gap: 6,
-  },
-  btnDistribuisci: {
-    background: 'none', border: 'none', cursor: 'pointer',
-    fontSize: 14, padding: 2, opacity: 0.7,
-    transition: 'opacity 0.2s',
-  },
-  sommaBadge: {
-    display: 'inline-block', marginTop: 4,
-    padding: '2px 8px', borderRadius: 20,
-    fontSize: 11, fontWeight: 700,
-  },
-  errorMsg: {
-    color: '#ef4444', fontSize: 10, marginTop: 2,
+    background: '#1e293b50', color: '#94a3b8',
+    padding: '8px 12px', fontWeight: 600, fontSize: 11,
+    textTransform: 'uppercase', letterSpacing: '0.05em',
+    borderBottom: '1px solid #334155',
   },
   td: {
-    padding: '8px 12px', borderBottom: '1px solid #1e293b10',
-    textAlign: 'center', color: '#cbd5e1',
-    borderRight: '1px solid #1e293b30',
+    padding: '6px 12px', borderBottom: '1px solid #1e293b30',
+    color: '#cbd5e1', verticalAlign: 'middle'
   },
-  tdUnit: { textAlign: 'left' },
-  unitNum: {
-    fontWeight: 700, color: '#f1f5f9', marginRight: 6,
-  },
-  unitTipo: {
-    color: '#64748b', fontSize: 11,
-    background: '#334155', padding: '2px 6px', borderRadius: 10,
+  badgeUnita: {
+    fontSize: 10, color: '#64748b', background: '#1e293b',
+    padding: '2px 6px', borderRadius: 6, marginLeft: 6, fontWeight: 500
   },
   cellInput: {
-    width: 80, background: '#0f172a',
+    width: 100, background: '#0f172a',
     border: '1px solid #334155', borderRadius: 6,
-    padding: '5px 8px', color: '#e2e8f0',
-    fontFamily: "'Sora', sans-serif", fontSize: 14,
+    padding: '5px 8px', color: '#38bdf8',
+    fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600,
     textAlign: 'right', outline: 'none',
     transition: 'border-color 0.2s',
+    '&:focus': {
+      borderColor: '#2563eb'
+    }
   },
-  cellInputText: {
-    background: '#0f172a',
-    border: '1px solid #334155', borderRadius: 6,
-    padding: '5px 8px', color: '#e2e8f0',
-    fontFamily: "'Sora', sans-serif", fontSize: 13,
-    outline: 'none', transition: 'border-color 0.2s',
+
+  // Detail Footer actions
+  detailFooter: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTop: '1px solid #1e293b',
+    paddingTop: 12,
+    marginTop: 'auto',
   },
-  cellSelect: {
-    background: '#0f172a',
-    border: '1px solid #334155', borderRadius: 6,
-    padding: '5px 6px', color: '#e2e8f0',
-    fontFamily: "'Sora', sans-serif", fontSize: 12,
-    outline: 'none', cursor: 'pointer',
+
+  // Button styles
+  btnPrimary: {
+    background: '#2563eb', color: '#fff', border: 'none',
+    borderRadius: 8, padding: '8px 16px', fontFamily: "'Sora', sans-serif",
+    fontWeight: 600, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
+    transition: 'background 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
-  legend: {
-    display: 'flex', flexWrap: 'wrap', gap: 16,
-    marginTop: 12, fontSize: 12, color: '#475569',
+  btnSecondary: {
+    background: '#1e293b', color: '#cbd5e1',
+    border: '1px solid #334155', borderRadius: 8,
+    padding: '8px 14px', fontFamily: "'Sora', sans-serif",
+    fontWeight: 600, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'background 0.2s',
+    '&:hover': {
+      background: '#334155'
+    }
   },
-  legendItem: {},
-  toast: {
-    position: 'fixed', bottom: 32, right: 32,
-    padding: '12px 24px', borderRadius: 10,
-    color: '#fff', fontWeight: 600, fontSize: 14,
-    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-    zIndex: 9999, animation: 'slideUp 0.3s ease',
+  emptyState: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    textAlign: 'center', padding: '60px 20px', minHeight: 300,
   },
+
+  // Modal styles
   modalOverlay: {
     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 1000, padding: 20,
   },
   modalContent: {
     background: '#1e293b', border: '1px solid #334155', borderRadius: 16,
-    padding: 24, width: '100%', maxWidth: 600, boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+    padding: 20, width: '100%', maxWidth: 500, boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
     maxHeight: '90vh', overflowY: 'auto',
   },
   modalHeader: {
@@ -1092,20 +1313,33 @@ const styles = {
     marginBottom: 12,
   },
   closeBtn: {
-    background: 'none', border: 'none', color: '#94a3b8', fontSize: 18, cursor: 'pointer',
+    background: 'none', border: 'none', color: '#94a3b8', fontSize: 16, cursor: 'pointer',
   },
   uploadArea: {
-    border: '2px dashed #334155', borderRadius: 12, padding: 24, textAlign: 'center',
+    border: '2px dashed #334155', borderRadius: 12, padding: 20, textAlign: 'center',
     background: '#0f172a', cursor: 'pointer', transition: 'border-color 0.2s',
   },
   uploadLabel: {
     cursor: 'pointer', display: 'block', width: '100%',
   },
   spinnerSmall: {
-    width: 20, height: 20, border: '2px solid #1e293b', borderTop: '2px solid #38bdf8',
+    width: 16, height: 16, border: '2px solid #1e293b', borderTop: '2px solid #38bdf8',
     borderRadius: '50%', animation: 'spin 0.8s linear infinite',
   },
   previewBox: {
-    marginTop: 16, background: '#0f172a50', border: '1px solid #334155', borderRadius: 10, padding: 16,
+    marginTop: 12, background: '#0f172a30', border: '1px solid #334155', borderRadius: 8, padding: 12,
+  },
+  formGroup: {
+    display: 'flex', flexDirection: 'column', gap: 4,
+  },
+  formLabel: {
+    fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.03em'
+  },
+  toast: {
+    position: 'fixed', bottom: 32, right: 32,
+    padding: '10px 20px', borderRadius: 8,
+    color: '#fff', fontWeight: 600, fontSize: 13,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    zIndex: 9999, animation: 'slideUp 0.3s ease',
   },
 };

@@ -372,6 +372,18 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Prompt Strutturato Millesimi:** Aggiornato il prompt di estrazione millesimi in `fileExtractor.js` separando il nominativo generico in `proprietario_nome` e `proprietario_cognome` con `nominativo_completo` come fallback, migliorando l'analisi dei proprietari e delle pertinenze collegate.
 - **Automazione Inserimento Proprietari da Millesimi:** Abilitata la creazione e associazione automatica dei proprietari in `MillesimiEditor.jsx` durante l'importazione delle tabelle millesimali. Se l'unità non ha già un proprietario attivo, CondoAI cerca la persona nel condominio (evitando duplicati) e la crea se necessario, per poi associarla come proprietario attivo (`occupanti_unita`), eliminando la necessità di inserimento manuale.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S26 (2 Luglio 2026 - Pannello Diagnostica e Allineamento Millesimi-Anagrafica)
+
+### 1. Decisioni di Prodotto e Architettura
+- **Allineamento Asincrono Post-Import:** Rifiutata la mappatura bloccante in fase di importazione file, preferendo uno strumento di diagnostica permanente e flessibile ad accesso asincrono ("Diagnostica & Allineamento").
+- **Fondi ed Elimina (Merge) Unità client-side:** Implementata la fusione di due unità (es. duplicati catastali derivanti da import separati) aggiornando in cascata le chiavi esterne per millesimi, occupanti, saldi, rate e spese ripartite prima dell'eliminazione fisica della riga `unita`, evitando migrazioni SQL sul database.
+
+### 2. Funzionalità Rilasciate
+- **Pannello DiagnosticaAllineamento.jsx:** Nuovo modulo inserito come scheda permanente in `MillesimiEditor.jsx`. Rileva ed elenca le unità prive di proprietari attivi (con millesimi compilati) e le persone orfane prive di assegnazioni. Permette collegamenti rapidi a condòmini esistenti o la creazione sul posto.
+- **Merge Tool:** Interfaccia grafica con doppio selettore per fondere l'unità sorgente in quella di destinazione con avviso di conferma e protezione contro le modifiche millesimali non salvate.
+
 
 
 

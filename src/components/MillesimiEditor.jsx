@@ -7,6 +7,8 @@ import {
   AlertCircle, X, Check, Edit2, RotateCcw, Scale, Filter, Clock
 } from 'lucide-react';
 import StoricoOccupantiModal from './StoricoOccupantiModal';
+import DiagnosticaAllineamento from './DiagnosticaAllineamento';
+
 
 const parsePiano = (val) => {
   if (val === undefined || val === null || val === '') return null;
@@ -795,11 +797,44 @@ export default function MillesimiEditor({ condominioId: propId }) {
               })
             )}
           </div>
+          
+          {/* Diagnostica & Allineamento Link */}
+          <div style={{ borderTop: '1px solid #334155', marginTop: 12, paddingTop: 12 }}>
+            <div 
+              className="millesimi-sidebar-item"
+              style={{
+                ...styles.sidebarItem,
+                borderLeft: selectedTabellaId === 'diagnostica' ? '4px solid #38bdf8' : '4px solid transparent',
+                background: selectedTabellaId === 'diagnostica' ? '#1e293b' : 'transparent',
+              }}
+              onClick={() => {
+                if (isSelectedTableDirty) {
+                  if (!window.confirm('Ci sono modifiche non salvate nella tabella corrente. Cambiando pagina andranno perse. Vuoi continuare?')) return;
+                }
+                setSelectedTabellaId('diagnostica');
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+                <Search size={14} color={selectedTabellaId === 'diagnostica' ? '#38bdf8' : '#cbd5e1'} />
+                <span style={{ fontSize: 13, fontWeight: selectedTabellaId === 'diagnostica' ? 600 : 400, color: selectedTabellaId === 'diagnostica' ? '#f1f5f9' : '#cbd5e1' }}>
+                  Diagnostica & Allineamento
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Main Panel Right: Selected Table Details */}
         <div style={styles.detailContainer}>
-          {selectedTabella ? (
+          {selectedTabellaId === 'diagnostica' ? (
+            <DiagnosticaAllineamento
+              condominioId={condominioId}
+              unita={unita}
+              tabelle={tabelle}
+              onReload={loadAll}
+              showToast={showToast}
+            />
+          ) : selectedTabella ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
               
               {/* Header details with inline rename */}

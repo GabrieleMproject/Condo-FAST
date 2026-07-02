@@ -137,8 +137,12 @@ export default function RateGridTab({ condominioId }) {
 
     const proposte = [];
     unita.forEach(u => {
-      const p = getProprietario(u);
-      if (!p || !p.email) return;
+      const isOrdinario = esercizio?.tipo === 'ordinario'
+      const paganteTipo = isOrdinario ? (configPagante[u.id] || 'proprietario') : 'proprietario'
+      const inq = getInquilino(u)
+      const dest = (paganteTipo === 'inquilino' && inq) ? inq : getProprietario(u)
+
+      if (!dest || !dest.email) return;
 
       const rateUnitaInsolute = cells.filter(c => 
         c.unita_id === u.id && 
@@ -152,7 +156,9 @@ export default function RateGridTab({ condominioId }) {
         const importoInsoluto = rateUnitaInsolute.reduce((s, c) => s + (parseFloat(c.importo || 0) - parseFloat(c.importo_pagato || 0)), 0);
         proposte.push({
           unita: u,
-          proprietario: p,
+          proprietario: getProprietario(u),
+          destinatario: dest,
+          paganteTipo,
           rateCoinvolte: rateUnitaInsolute.map(c => {
             const r = rate.find(x => x.id === c.rata_id);
             return r ? (r.descrizione || `Rata ${r.numero_rata}`) : 'Rata';
@@ -163,7 +169,7 @@ export default function RateGridTab({ condominioId }) {
     });
 
     return proposte;
-  }, [esercizio, rate, cells, unita, getProprietario]);
+  }, [esercizio, rate, cells, unita, getProprietario, getInquilino, configPagante]);
 
   async function handleSollecitaRata(u, prop, silenzioso = false) {
     const isOrdinario = esercizio?.tipo === 'ordinario'
@@ -171,7 +177,12 @@ export default function RateGridTab({ condominioId }) {
     const inq = getInquilino(u)
     const dest = (paganteTipo === 'inquilino' && inq) ? inq : prop
 
-    if (!dest || !dest.email) return;
+    if (!dest || !dest.email) {
+      if (!silenzioso) {
+        alert(`Impossibile inviare il sollecito: il destinatario (${dest ? `${dest.nome} ${dest.cognome}` : 'sconosciuto'}) non ha un indirizzo email configurato.`);
+      }
+      return;
+    }
     setInviandoSollecito(true);
     try {
       if (!esercizio) throw new Error("Nessun esercizio selezionato o aperto.");
@@ -693,7 +704,12 @@ function ProposteSollecitoModal({ proposte, onSollecita, onClose, inviando }) {
           {proposte.map(p => (
             <div key={p.unita.id} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 13 }}>Unità {p.unita.numero} - {p.proprietario.cognome} {p.proprietario.nome}</div>
+                <div style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 13 }}>
+                  Unità {p.unita.numero} - {p.destinatario.cognome} {p.destinatario.nome}
+                  <span style={{ color: '#8b5cf6', fontSize: 11, fontWeight: 400, marginLeft: 6 }}>
+                    ({p.paganteTipo === 'inquilino' ? 'inquilino' : 'proprietario'})
+                  </span>
+                </div>
                 <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>Rate: {p.rateCoinvolte}</div>
                 <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 700, marginTop: 4 }}>Scaduto: € {p.importoInsoluto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</div>
               </div>

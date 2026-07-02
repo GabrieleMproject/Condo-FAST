@@ -349,6 +349,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Hardening Griglia Rate e CellEditor:** Aggiunti blocchi di cattura errori ed eccezioni (`try/catch`) per il recupero dati dei moduli di griglia e optional chaining (`cell?.importo`) in `CellEditor` per prevenire crash fatali nel caso in cui una cella del database non fosse ancora inizializzata.
 - **Sanitizzazione e Validazione Tipi (Import Bulk):** Integrata la gestione degli errori delle query Supabase all'interno del metodo di importazione `handleImport` in `AnagraficaPage.jsx`.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S24 (2 Luglio 2026 - Esercizi Separati Ordinari/Straordinari)
+
+### 1. Decisioni su Ripartizione e Rate Straordinarie
+- **Modello ad Esercizi Separati (Opzione 1):** Adottata la suddivisione ordinaria/straordinaria a livello di esercizio. La tabella `esercizi` ha ora la colonna `tipo` (`ordinario` / `straordinario`).
+- **Nessun Modifica Consuntivo:** Rifiutato il frazionamento delle colonne ("Dovuto Prop." / "Dovuto Inq.") nella Sezione C del consuntivo per mantenere il bilancio chiaro e comprensibile per i condòmini.
+- **Eliminazione Emojis:** Evitato l'uso di emoji per i nuovi badge UI ed elementi grafici aggiunti, sostituendoli con combinazioni cromatiche professionali (blu per ordinario, viola/indaco per straordinario).
+
+### 2. Implementazione e Targeting Reminders
+- **Griglia Rate:** Se l'esercizio selezionato è `ordinario` ed è configurato `pagante = 'inquilino'` per l'unità, compare il badge `Pagante: [Nome Inquilino]` (viola) ed i solleciti email vengono reindirizzati all'inquilino con diciture personalizzate (*"in qualità di inquilino pagante"*).
+- **Esclusione Inquilini su Straordinario:** Se l'esercizio è `straordinario`, gli inquilini vengono ignorati, la griglia mostra solo i proprietari ed i solleciti vanno a loro.
+- **CellEditor Dinamico:** La modale di modifica si adatta al pagante attivo, mostrando a chi andrà la mail di sollecito e caricando l'anagrafica corretta (proprietario o inquilino) per la modifica rapida.
+
+
 
 
 

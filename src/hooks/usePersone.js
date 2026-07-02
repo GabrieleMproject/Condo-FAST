@@ -72,16 +72,15 @@ export function usePersone() {
   // ── ASSEGNA A UNITÀ ─────────────────────────────────────────────────────
   // Crea o aggiorna il legame occupante ↔ unità
   const assegnaPersona = async (unitaId, personaId, ruolo, dataInizio = null) => {
+    const dataInizioVal = dataInizio || new Date().toISOString().split('T')[0];
     // Calcola data_fine come dataInizio meno 1 giorno
     let dataFine = null;
-    if (dataInizio) {
-      try {
-        const d = new Date(dataInizio);
-        d.setDate(d.getDate() - 1);
-        dataFine = d.toISOString().split('T')[0];
-      } catch (e) {
-        console.error('[usePersone] Errore calcolo dataFine:', e);
-      }
+    try {
+      const d = new Date(dataInizioVal);
+      d.setDate(d.getDate() - 1);
+      dataFine = d.toISOString().split('T')[0];
+    } catch (e) {
+      console.error('[usePersone] Errore calcolo dataFine:', e);
     }
 
     // Disattiva eventuale occupante precedente dello stesso ruolo
@@ -89,7 +88,7 @@ export function usePersone() {
       .from('occupanti_unita')
       .update({ 
         attivo: false,
-        ...(dataFine ? { data_fine: dataFine } : {})
+        data_fine: dataFine
       })
       .eq('unita_id', unitaId)
       .eq('ruolo', ruolo)
@@ -103,7 +102,7 @@ export function usePersone() {
         persona_id: personaId,
         ruolo,
         attivo: true,
-        data_inizio: dataInizio,
+        data_inizio: dataInizioVal,
       }])
       .select()
       .single()

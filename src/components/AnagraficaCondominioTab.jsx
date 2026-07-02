@@ -186,11 +186,16 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
         if (unita_id) {
           const ruolo = ['proprietario', 'inquilino'].includes(String(r.ruolo || '').toLowerCase())
             ? r.ruolo.toLowerCase() : 'proprietario'
+          const oggi = new Date().toISOString().split('T')[0]
+          const subDate = new Date()
+          subDate.setDate(subDate.getDate() - 1)
+          const ieri = subDate.toISOString().split('T')[0]
+
           await supabase.from('occupanti_unita')
-            .update({ attivo: false })
+            .update({ attivo: false, data_fine: ieri })
             .eq('unita_id', unita_id).eq('ruolo', ruolo).eq('attivo', true)
           const { error: aErr } = await supabase.from('occupanti_unita')
-            .insert([{ unita_id, persona_id: persona.id, ruolo, attivo: true }])
+            .insert([{ unita_id, persona_id: persona.id, ruolo, attivo: true, data_inizio: oggi }])
           if (aErr) console.warn(`Assegnazione unità fallita per ${r.nome} ${r.cognome}:`, aErr.message)
         }
 

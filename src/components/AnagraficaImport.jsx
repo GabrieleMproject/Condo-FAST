@@ -20,12 +20,21 @@ function parseXlsx(file) {
         const rows = []
         let headers = []
         worksheet.eachRow((row, rowNumber) => {
-          const values = row.values.slice(1) // ExcelJS usa indice 1-based
+          const cells = []
+          row.eachCell({ includeEmpty: true }, (cell) => {
+            let val = cell.value;
+            if (val && typeof val === 'object') {
+              if (val.result !== undefined) val = val.result;
+              else if (val.richText !== undefined) val = val.richText.map(t => t.text || '').join('');
+              else if (val.text !== undefined) val = val.text;
+            }
+            cells.push(String(val ?? '').trim());
+          });
           if (rowNumber === 1) {
-            headers = values.map(v => String(v || '').trim())
+            headers = cells
           } else {
             const obj = {}
-            headers.forEach((h, i) => { obj[h] = String(values[i] || '').trim() })
+            headers.forEach((h, i) => { if (h) obj[h] = cells[i] || '' })
             rows.push(obj)
           }
         })

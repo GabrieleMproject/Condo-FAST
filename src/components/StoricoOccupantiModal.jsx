@@ -149,6 +149,11 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
       return;
     }
 
+    if (currentActive && currentActive.data_inizio && dataSubentro <= currentActive.data_inizio) {
+      alert(`La data di subentro deve essere successiva alla data di inizio dell'attuale occupante (${formattaData(currentActive.data_inizio)}).`);
+      return;
+    }
+
     setSaving(true);
     setErrorMsg('');
     try {

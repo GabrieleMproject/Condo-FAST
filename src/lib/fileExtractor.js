@@ -414,13 +414,15 @@ Esempio: [{"nome":"Mario","cognome":"Rossi","email":"mario@example.com","telefon
     })
   }
 
-  const clean = String(raw).replace(/```json|```/g, '').trim()
+  const rawStr = String(raw || '');
+  const match = rawStr.match(/\[[\s\S]*\]/);
+  const clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
   try {
-    const parsed = JSON.parse(clean)
-    return Array.isArray(parsed) ? parsed : []
+    const parsed = JSON.parse(clean);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
-    console.error('Errore parsing JSON anagrafica:', e, clean)
-    throw new Error('L\'AI non ha restituito un formato JSON valido per l\'anagrafica.')
+    console.error('Errore parsing JSON anagrafica:', e, clean);
+    throw new Error('L\'AI non ha restituito un formato JSON valido per l\'anagrafica.');
   }
 }
 

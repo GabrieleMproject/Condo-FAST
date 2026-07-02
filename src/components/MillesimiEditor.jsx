@@ -597,13 +597,15 @@ export default function MillesimiEditor({ condominioId: propId }) {
               }
 
               if (personaTrovata) {
+                const oggi = new Date().toISOString().split('T')[0];
                 const { error: oErr } = await supabase
                   .from('occupanti_unita')
                   .insert([{
                     unita_id: unitaObj.id,
                     persona_id: personaTrovata.id,
                     ruolo: 'proprietario',
-                    attivo: true
+                    attivo: true,
+                    data_inizio: oggi
                   }]);
                 
                 if (oErr) {
@@ -616,7 +618,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     ruolo: 'proprietario',
                     attivo: true,
                     persona_id: personaTrovata.id,
-                    persone: personaTrovata
+                    persone: personaTrovata,
+                    data_inizio: oggi
                   });
                 }
               }

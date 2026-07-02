@@ -15,7 +15,7 @@ const CATEGORIE_COLORI = {
 const annoCorrente = () => new Date().getFullYear()
 const esercizioVuoto = () => {
   const a = annoCorrente()
-  return { anno: a, data_inizio: `${a}-01-01`, data_fine: `${a}-12-31`, stato: 'aperto', note: '' }
+  return { anno: a, data_inizio: `${a}-01-01`, data_fine: `${a}-12-31`, stato: 'aperto', tipo: 'ordinario', note: '' }
 }
 
 export default function SpesePage() {
@@ -91,6 +91,7 @@ export default function SpesePage() {
       data_inizio: es.data_inizio || `${es.anno}-01-01`,
       data_fine: es.data_fine || `${es.anno}-12-31`,
       stato: es.stato || 'aperto',
+      tipo: es.tipo || 'ordinario',
       note: es.note || ''
     })
     setShowEsercizioForm(true)
@@ -215,9 +216,15 @@ export default function SpesePage() {
             <div
               key={es.id}
               style={{
-                background: esercizioAttivo?.id === es.id ? '#2563eb' : '#0f172a',
-                color: esercizioAttivo?.id === es.id ? '#fff' : '#94a3b8',
-                border: `1px solid ${esercizioAttivo?.id === es.id ? '#2563eb' : '#334155'}`,
+                background: esercizioAttivo?.id === es.id
+                  ? (es.tipo === 'straordinario' ? '#8b5cf6' : '#2563eb')
+                  : (es.tipo === 'straordinario' ? '#161033' : '#0f172a'),
+                color: esercizioAttivo?.id === es.id
+                  ? '#fff'
+                  : (es.tipo === 'straordinario' ? '#c084fc' : '#94a3b8'),
+                border: `1px solid ${esercizioAttivo?.id === es.id
+                  ? (es.tipo === 'straordinario' ? '#8b5cf6' : '#2563eb')
+                  : (es.tipo === 'straordinario' ? '#4c1d95' : '#334155')}`,
                 borderRadius: 8, padding: '7px 10px 7px 14px', fontSize: 13,
                 fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center', gap: 6
               }}
@@ -231,7 +238,7 @@ export default function SpesePage() {
                   display: 'flex', alignItems: 'center', gap: 6, padding: 0
                 }}
               >
-                {es.anno}
+                {es.anno} {es.tipo === 'straordinario' ? 'straordinaria' : 'ordinaria'}
                 <span style={{
                   fontSize: 10, padding: '1px 6px', borderRadius: 4,
                   background: es.stato === 'aperto' ? '#10b98133' : '#6b728033',
@@ -488,6 +495,15 @@ export default function SpesePage() {
                     onChange={e => setNuovoEsercizio(f => ({ ...f, stato: e.target.value }))}>
                     <option value="aperto">aperto</option>
                     <option value="chiuso">chiuso</option>
+                  </select>
+                </div>
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>Tipo Gestione</label>
+                  <select style={inputStyle}
+                    value={nuovoEsercizio.tipo || 'ordinario'}
+                    onChange={e => setNuovoEsercizio(f => ({ ...f, tipo: e.target.value }))}>
+                    <option value="ordinario">Ordinaria (Ripartita inquilini/proprietari)</option>
+                    <option value="straordinario">Straordinaria (Soli proprietari)</option>
                   </select>
                 </div>
               </div>

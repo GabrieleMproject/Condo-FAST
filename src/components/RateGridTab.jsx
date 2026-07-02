@@ -59,7 +59,8 @@ export default function RateGridTab({ condominioId }) {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)    // { cell, rata, unita }
 
-  const { unita, getProprietario, fetchUnita } = useUnita(condominioId)
+  const { unita, getProprietario, getInquilino, fetchUnita } = useUnita(condominioId)
+  const [configPagante, setConfigPagante] = useState({})
 
   // Funzione per formattare e mostrare la transizione proprietari con date nella cella Unità
   function renderProprietariTransizione(u) {
@@ -165,7 +166,12 @@ export default function RateGridTab({ condominioId }) {
   }, [esercizio, rate, cells, unita, getProprietario]);
 
   async function handleSollecitaRata(u, prop, silenzioso = false) {
-    if (!prop || !prop.email) return;
+    const isOrdinario = esercizio?.tipo === 'ordinario'
+    const paganteTipo = isOrdinario ? (configPagante[u.id] || 'proprietario') : 'proprietario'
+    const inq = getInquilino(u)
+    const dest = (paganteTipo === 'inquilino' && inq) ? inq : prop
+
+    if (!dest || !dest.email) return;
     setInviandoSollecito(true);
     try {
       if (!esercizio) throw new Error("Nessun esercizio selezionato o aperto.");
@@ -198,10 +204,12 @@ export default function RateGridTab({ condominioId }) {
 
       const importoScaduto = rateScadute.reduce((s, r) => s + (parseFloat(r.importo || 0) - parseFloat(r.importo_pagato || 0)), 0);
 
-      const nomeDest = `${prop.nome} ${prop.cognome}`;
+      const nomeDest = `${dest.nome} ${dest.cognome}`;
       const alignmentText = u.scala ? `scala ${u.scala}` : '';
+      const ruoloLabel = paganteTipo === 'inquilino' ? 'inquilino pagante' : 'proprietario';
+      const gestioneLabel = esercizio.tipo === 'straordinario' ? 'Gestione Straordinaria' : 'Gestione Ordinaria';
       const testo = `Gentile <strong>${nomeDest}</strong>,<br/><br/>
-Le inviamo la presente comunicazione in merito all'esercizio condominiale <strong>${esercizio.anno}</strong> (Unità: ${u.numero} ${alignmentText}).<br/><br/>
+Le inviamo la presente comunicazione in merito all'esercizio condominiale <strong>${esercizio.anno}</strong> (${gestioneLabel}, Unità: ${u.numero} ${alignmentText}) in qualità di ${ruoloLabel}.<br/><br/>
 Dalle nostre scritture contabili risulta la seguente <strong>quadratura finanziaria aggiornata</strong> per le sue quote:<br/>
 <ul>
   <li>Totale dovuto per l'esercizio: <strong>€ ${dovuto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong></li>
@@ -215,7 +223,7 @@ L'Amministratore`;
 
       await inviaComunicazione({
         condominioId,
-        destinatari: [{ email: prop.email, nome: nomeDest }],
+        destinatari: [{ email: dest.email, nome: nomeDest }],
         oggetto: `Sollecito pagamento rate Esercizio ${esercizio.anno} - Unità ${u.numero}`,
         messaggio: testo,
         tipo: 'sollecito',
@@ -248,6 +256,17 @@ L'Amministratore`;
         setEsercizio(data?.find((e) => e.stato === 'aperto') || data?.[0] || null)
       })
       .catch(err => console.error("[RateGridTab] Errore di rete esercizi:", err))
+
+    supabase.from('config_pagante_unita').select('unita_id, pagante').eq('condominio_id', condominioId)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[RateGridTab] Errore config_pagante_unita:", error.message)
+          return
+        }
+        const map = {}
+        ;(data || []).forEach(c => { map[c.unita_id] = c.pagante })
+        setConfigPagante(map)
+      })
   }, [condominioId])
 
   async function loadGriglia() {
@@ -344,11 +363,31 @@ L'Amministratore`;
       {/* Selettore esercizio */}
       {esercizi.length > 1 && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-          {esercizi.map((es) => (
-            <button key={es.id} onClick={() => setEsercizio(es)} style={st.esBtn(esercizio?.id === es.id)}>
-              {es.anno}<span style={st.esTag(es.stato === 'aperto')}>{es.stato}</span>
-            </button>
-          ))}
+          {esercizi.map((es) => {
+            const isActive = esercizio?.id === es.id
+            const isStraord = es.tipo === 'straordinario'
+            const activeColor = isStraord ? '#8b5cf6' : '#2563eb'
+            return (
+              <button
+                key={es.id}
+                onClick={() => setEsercizio(es)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  border: `1px solid ${isActive ? activeColor : '#334155'}`,
+                  background: isActive ? (isStraord ? 'rgba(139, 92, 246, 0.15)' : 'rgba(37, 99, 235, 0.15)') : 'transparent',
+                  color: isActive ? (isStraord ? '#a78bfa' : '#60a5fa') : '#64748b',
+                  fontFamily: 'Sora, sans-serif',
+                  fontWeight: isActive ? 600 : 400
+                }}
+              >
+                {es.anno} {isStraord ? 'straordinaria' : 'ordinaria'}
+                <span style={st.esTag(es.stato === 'aperto')}>{es.stato}</span>
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -415,6 +454,20 @@ L'Amministratore`;
                     <td style={{ ...st.tdLabel, ...st.stickyCol }}>
                       <div style={{ color: '#e2e8f0', fontWeight: 600 }}>Unità {u.numero}</div>
                       {renderProprietariTransizione(u)}
+                      {esercizio?.tipo === 'ordinario' && configPagante[u.id] === 'inquilino' && getInquilino(u) && (
+                        <div style={{
+                          color: '#a78bfa',
+                          fontSize: 10,
+                          marginTop: 4,
+                          fontWeight: 600,
+                          background: 'rgba(139, 92, 246, 0.12)',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          display: 'inline-block'
+                        }}>
+                          Pagante: {getInquilino(u).cognome} {getInquilino(u).nome}
+                        </div>
+                      )}
                     </td>
                     {rate.map((r) => {
                       const cell = cellMap[`${u.id}_${r.id}`]
@@ -473,6 +526,9 @@ L'Amministratore`;
         <CellEditor
           {...editing}
           getProprietario={getProprietario}
+          getInquilino={getInquilino}
+          configPagante={configPagante}
+          esercizio={esercizio}
           onClose={() => setEditing(null)}
           onSave={(patch) => salvaCella(editing.cell, patch)}
           onSollecita={handleSollecitaRata}
@@ -494,28 +550,33 @@ L'Amministratore`;
 }
 
 // ── Editor cella (modale) ────────────────────────────────────
-function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave, onSollecita, inviandoSollecito, fetchUnita }) {
+function CellEditor({ cell, rata, unita, getProprietario, getInquilino, configPagante, esercizio, onClose, onSave, onSollecita, inviandoSollecito, fetchUnita }) {
+  const isOrdinario = esercizio?.tipo === 'ordinario'
+  const paganteTipo = isOrdinario ? (configPagante[unita.id] || 'proprietario') : 'proprietario'
+  const inq = getInquilino(unita)
+  const activePayer = (paganteTipo === 'inquilino' && inq) ? inq : getProprietario(unita)
+
   const [importo, setImporto] = useState(cell?.importo ?? 0)
   const [pagato, setPagato] = useState(cell?.importo_pagato ?? 0)
   const [data, setData] = useState(cell?.data_pagamento || '')
-  const p = getProprietario(unita)
+  const pProp = getProprietario(unita)
 
-  // Stati per la modifica anagrafica proprietario
+  // Stati per la modifica anagrafica del pagante attivo
   const [showAnagrafica, setShowAnagrafica] = useState(false)
-  const [nome, setNome] = useState(p?.nome || '')
-  const [cognome, setCognome] = useState(p?.cognome || '')
-  const [email, setEmail] = useState(p?.email || '')
-  const [telefono, setTelefono] = useState(p?.telefono || '')
+  const [nome, setNome] = useState(activePayer?.nome || '')
+  const [cognome, setCognome] = useState(activePayer?.cognome || '')
+  const [email, setEmail] = useState(activePayer?.email || '')
+  const [telefono, setTelefono] = useState(activePayer?.telefono || '')
   const [salvandoAnagrafica, setSalvandoAnagrafica] = useState(false)
 
   const handleSalvaAnagrafica = async () => {
-    if (!p) return;
+    if (!activePayer) return;
     setSalvandoAnagrafica(true);
     try {
       const { error } = await supabase
         .from('persone')
         .update({ nome, cognome, email, telefono })
-        .eq('id', p.id);
+        .eq('id', activePayer.id);
       if (error) throw error;
       alert('Anagrafica salvata con successo!');
       if (fetchUnita) await fetchUnita();
@@ -536,7 +597,7 @@ function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave, onSol
       <div style={st.modal} onClick={(e) => e.stopPropagation()}>
         <div style={st.modalHead}>
           <div>
-            <div style={{ color: '#e2e8f0', fontWeight: 700 }}>Unità {unita.numero}{p ? ` · ${p.cognome} ${p.nome}` : ''}</div>
+            <div style={{ color: '#e2e8f0', fontWeight: 700 }}>Unità {unita.numero}{activePayer ? ` · ${activePayer.cognome} ${activePayer.nome}` : ''}</div>
             <div style={{ color: '#64748b', fontSize: 12 }}>
               {rata.descrizione || `Rata ${rata.numero_rata}`} · scad. {rata.data_scadenza ? new Date(rata.data_scadenza).toLocaleDateString('it-IT') : '—'}
             </div>
@@ -559,14 +620,14 @@ function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave, onSol
           <button style={st.btnPrimary} onClick={() => onSave({ importo, importo_pagato: pagato, data_pagamento: data })}>Salva</button>
         </div>
 
-        {((parseFloat(importo) || 0) > (parseFloat(pagato) || 0)) && p?.email && (
+        {((parseFloat(importo) || 0) > (parseFloat(pagato) || 0)) && activePayer?.email && (
           <button 
             type="button" 
             disabled={inviandoSollecito}
             style={{ ...st.btnPrimary, background: '#ef4444', marginTop: 10, width: '100%' }} 
-            onClick={() => onSollecita(unita, p).then(() => onClose())}
+            onClick={() => onSollecita(unita, pProp).then(() => onClose())}
           >
-            {inviandoSollecito ? 'Invio sollecito...' : '📧 Invia Sollecito Rata'}
+            {inviandoSollecito ? 'Invio sollecito...' : `Invia Sollecito Rata a ${activePayer.nome}`}
           </button>
         )}
 
@@ -576,10 +637,10 @@ function CellEditor({ cell, rata, unita, getProprietario, onClose, onSave, onSol
             onClick={() => setShowAnagrafica(!showAnagrafica)} 
             style={{ ...st.btnGhost, color: '#60a5fa', borderColor: 'transparent', padding: '4px 0', fontSize: 12, justifyContent: 'flex-start', width: '100%', display: 'flex', alignItems: 'center' }}
           >
-            {showAnagrafica ? '▼ Nascondi Anagrafica' : '▶ Modifica Anagrafica Proprietario'}
+            {showAnagrafica ? '▼ Nascondi Anagrafica' : `▶ Modifica Anagrafica ${paganteTipo === 'inquilino' ? 'Inquilino' : 'Proprietario'}`}
           </button>
 
-          {showAnagrafica && p && (
+          {showAnagrafica && activePayer && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8, textAlign: 'left' }}>
               <div>
                 <label style={st.fieldLabel}>Nome</label>

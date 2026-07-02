@@ -385,6 +385,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Merge Tool con conservazione dati:** Migliorato l'algoritmo di unione per evitare la perdita silenziosa dei dati finanziari. Se ci sono record concorrenti su rate, saldi iniziali o ripartizioni delle spese per lo stesso esercizio/rata/spesa, il sistema somma matematicamente i valori (importo, pagato, millesimi_usati) aggiornando la cella target anziché eliminare silenziosamente i record.
 - **Risoluzione vincoli FK (Riconciliazioni):** Corretto un potenziale crash fatale durante il merge: i pagamenti abbinati in `riconciliazioni_incassi` legati alle rate dell'unità sorgente vengono riorientati alla rata dell'unità target prima dell'eliminazione, impedendo violazioni di chiave esterna.
 - **Guardia per Dirty Check:** Aggiunta guardia per `selectedTabellaId === 'diagnostica'` in `isSelectedTableDirty` in `MillesimiEditor.jsx` per evitare controlli inutili su tabelle inesistenti.
+- **Creazione Manuale Condòmini locale e globale:** Introdotto il pulsante `➕ Nuovo Condòmino` sia nel tab `AnagraficaCondominioTab.jsx` (localizzato) che nella pagina globale `AnagraficaPage.jsx` (con select condominio -> unità). Consente l'inserimento manuale completo di anagrafica + contatti + residenza con associazione facoltativa all'unità e ruolo, garantendo che i nuovi contatti compaiano istantaneamente nel condominio.
 
 
 

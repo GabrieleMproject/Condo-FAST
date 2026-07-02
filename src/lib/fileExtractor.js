@@ -69,7 +69,7 @@ export async function docxToText(file) {
 // ─── Determina tipo file ──────────────────────────────────────────────────────
 export function getTipoFile(file) {
   const name = file.name.toLowerCase();
-  const type = file.type.toLowerCase();
+  const type = (file.type || '').toLowerCase();
 
   if (type === 'application/pdf' || name.endsWith('.pdf'))                                return 'pdf';
   if (type.includes('spreadsheetml') || name.endsWith('.xlsx') || name.endsWith('.xls')) return 'xlsx';
@@ -98,7 +98,7 @@ const MIME_CONSENTITI = new Set([
 ]);
 
 export function validaMimeType(file) {
-  const type = file.type.toLowerCase();
+  const type = (file.type || '').toLowerCase();
   const name = file.name.toLowerCase();
 
   if (MIME_CONSENTITI.has(type)) return true;

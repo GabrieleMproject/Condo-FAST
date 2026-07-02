@@ -129,6 +129,7 @@ export function usePersone() {
     for (const p of personeArray) {
       try {
         // Crea persona
+        console.log('[usePersone] Inserimento persona:', p.nome, p.cognome, 'email:', p.email, 'telefono:', p.telefono);
         const { data: persona, error: pErr } = await supabase
           .from('persone')
           .insert([{

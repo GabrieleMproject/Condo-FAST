@@ -165,6 +165,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
         }
 
         // 2. Crea persona
+        console.log('[AnagraficaCondominioTab] Inserimento persona:', r.nome, r.cognome, 'email:', r.email, 'telefono:', r.telefono);
         const { data: persona, error: pErr } = await supabase
           .from('persone')
           .insert([{

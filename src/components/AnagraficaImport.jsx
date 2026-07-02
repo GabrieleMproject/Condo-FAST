@@ -69,11 +69,14 @@ function normalizeRows(rows) {
     email: 'email',
     mail: 'email',
     e_mail: 'email',
+    'e-mail': 'email',
     pec: 'email',
     telefono: 'telefono',
     cellulare: 'telefono',
     cell: 'telefono',
+    'cell.': 'telefono',
     tel: 'telefono',
+    'tel.': 'telefono',
     recapito: 'telefono',
     codice_fiscale: 'codice_fiscale',
     cf: 'codice_fiscale',
@@ -100,13 +103,16 @@ function normalizeRows(rows) {
     const normalized = {}
     for (const [k, v] of Object.entries(row)) {
       const key = k.toLowerCase().trim().replace(/\s+/g, '_')
-      const mappedKey = mapping[key] || key
+      let mappedKey = mapping[key] || key
       
-      if (CAMPI_ATTESI.includes(mappedKey)) {
-        normalized[mappedKey] = String(v || '').trim()
-      } else {
-        normalized[mappedKey] = String(v || '').trim()
+      if (!mapping[key]) {
+        const cleanKey = key.replace(/[-.]/g, '_').replace(/_+$/, '')
+        if (mapping[cleanKey]) {
+          mappedKey = mapping[cleanKey]
+        }
       }
+
+      normalized[mappedKey] = String(v || '').trim()
     }
     return normalized
   })

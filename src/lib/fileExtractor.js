@@ -52,7 +52,7 @@ export async function xlsxToText(file) {
     sheet.eachRow(row => {
       const vals = [];
       row.eachCell({ includeEmpty: true }, cell => vals.push(cell.text ?? ''));
-      lines.push(vals.join(','));
+      lines.push(vals.join(' | '));
     });
   });
 
@@ -375,11 +375,20 @@ export async function estraiAnagraficaDaFile(file) {
   if (!validaMimeType(file)) return null;
   const prep = await preparaContenuto(file)
 
-  const systemPrompt = `Sei un esperto di amministrazione condominiale italiana.
-Il tuo compito è estrarre tutti i dati anagrafici di persone o condòmini presenti nel documento.
+  const systemPrompt = `Sei un esperto di amministrazione condominiale italiana ed estrazione dati con intelligenza artificiale.
+Il tuo compito è scansionare in modo estremamente accurato il documento per estrarre tutti i dati anagrafici di persone o condòmini.
+
+REGOLE CRITICHE PER I CONTATTI (EVITA ERRORI O OMISSIONI):
+1. EMAIL/PEC: Cerca accuratamente in ogni sezione o colonna del documento qualsiasi stringa che contenga il carattere "@" (es. email, e-mail, pec, posta elettronica). Associala alla persona corretta e inseriscila nel campo "email" (se sono presenti sia email che PEC, preferisci l'email ordinaria o separale con una virgola).
+2. TELEFONO/CELLULARE: Cerca in modo approfondito qualsiasi numero di telefono o cellulare associato alle persone. Solitamente si trovano sotto colonne o diciture come "Tel", "Tel.", "Cell", "Cell.", "Cellulare", "Telefono", "Recapito", "Contatto" o "Mobile". Estrai la sequenza numerica (di solito 9-11 cifre, es. 3331234567 o 02123456) pulendola da spazi o trattini intermedi, e inseriscila nel campo "telefono".
+3. ASSOCIAZIONE DI RIGA: Presta attenzione a non saltare le colonne dei contatti. Spesso i contatti sono scritti in fondo alla riga o in una sezione separata ("Elenco contatti"): associali correttamente tramite il nome/cognome o l'interno dell'unità.
+4. NOME E COGNOME: Dividi accuratamente il Nome e il Cognome. Se nel documento è presente un'unica colonna "Nominativo" o "Cognome Nome", separa la parte del cognome (spesso in maiuscolo) dal nome.
+
 Per ogni persona restituisci un oggetto JSON con questi campi esattamente (lascia vuoto "" se non presente):
 nome, cognome, email, telefono, indirizzo, citta, cap, provincia, codice_fiscale, ruolo ("proprietario"|"inquilino"|""), unita (numero unità/appartamento se presente).
+
 Rispondi SOLO con un array JSON valido, senza testo aggiuntivo, senza backtick markdown.
+
 Esempio: [{"nome":"Mario","cognome":"Rossi","email":"mario@example.com","telefono":"3331234567","indirizzo":"Via Roma 1","citta":"Milano","cap":"20100","provincia":"MI","codice_fiscale":"RSSMRA80A01F205X","ruolo":"proprietario","unita":"3"}]`
 
   const userPrompt = `Estrai l'elenco di tutte le persone e i loro dati anagrafici presenti in questo contenuto:`

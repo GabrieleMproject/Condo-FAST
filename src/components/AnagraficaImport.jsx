@@ -53,30 +53,51 @@ function parseCsv(file) {
 
 // ── Normalizza un array di righe grezze → struttura standard ───────────────
 function normalizeRows(rows) {
+  const mapping = {
+    nome: 'nome',
+    cognome: 'cognome',
+    nominativo: 'nominativo',
+    email: 'email',
+    mail: 'email',
+    e_mail: 'email',
+    pec: 'email',
+    telefono: 'telefono',
+    cellulare: 'telefono',
+    cell: 'telefono',
+    tel: 'telefono',
+    recapito: 'telefono',
+    codice_fiscale: 'codice_fiscale',
+    cf: 'codice_fiscale',
+    cod_fisc: 'codice_fiscale',
+    codfisc: 'codice_fiscale',
+    indirizzo: 'indirizzo',
+    via: 'indirizzo',
+    indirizzo_residenza: 'indirizzo',
+    citta: 'citta',
+    città: 'citta',
+    comune: 'citta',
+    cap: 'cap',
+    provincia: 'provincia',
+    prov: 'provincia',
+    unita: 'unita',
+    unità: 'unita',
+    appartamento: 'unita',
+    interno: 'unita',
+    int: 'unita',
+    ruolo: 'ruolo'
+  }
+
   return rows.map(row => {
     const normalized = {}
     for (const [k, v] of Object.entries(row)) {
-      const key = k.toLowerCase().trim()
-        .replace(/\s+/g, '_')
-        .replace('cognome', 'cognome')
-        .replace('nome', 'nome')
-        .replace('telefono', 'telefono')
-        .replace('cell', 'telefono')
-        .replace('cellulare', 'telefono')
-        .replace('tel', 'telefono')
-        .replace('mail', 'email')
-        .replace('cf', 'codice_fiscale')
-        .replace('codice_fiscale', 'codice_fiscale')
-        .replace('indirizzo_residenza', 'indirizzo')
-        .replace('via', 'indirizzo')
-        .replace('comune', 'citta')
-        .replace('città', 'citta')
-        .replace('prov', 'provincia')
-        .replace('appartamento', 'unita')
-        .replace('interno', 'unita')
-
-      if (CAMPI_ATTESI.includes(key)) normalized[key] = String(v || '').trim()
-      else if (!normalized[key]) normalized[key] = String(v || '').trim()
+      const key = k.toLowerCase().trim().replace(/\s+/g, '_')
+      const mappedKey = mapping[key] || key
+      
+      if (CAMPI_ATTESI.includes(mappedKey)) {
+        normalized[mappedKey] = String(v || '').trim()
+      } else {
+        normalized[mappedKey] = String(v || '').trim()
+      }
     }
     return normalized
   })

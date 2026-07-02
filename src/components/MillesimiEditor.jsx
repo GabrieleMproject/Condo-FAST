@@ -471,6 +471,17 @@ export default function MillesimiEditor({ condominioId: propId }) {
     if (!extractedTabelle || extractedTabelle.length === 0) return;
     setSaving(true);
     try {
+      // Recuperiamo l'utente corrente per associare le nuove persone
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utente non autenticato');
+
+      // Carichiamo tutte le persone esistenti dell'amministratore per evitare duplicati
+      const { data: allPersoneData } = await supabase
+        .from('persone')
+        .select('*')
+        .eq('user_id', user.id);
+      let currentPersone = allPersoneData ? [...allPersoneData] : [];
+
       let currentTabelle = [...tabelle];
       let currentUnita = [...unita];
       const upserts = [];
@@ -537,6 +548,78 @@ export default function MillesimiEditor({ condominioId: propId }) {
             } else if (newU) {
               unitaObj = newU;
               currentUnita.push(newU);
+            }
+          }
+
+          // Rileviamo ed associamo il proprietario
+          let propNome = String(r.proprietario_nome || '').trim();
+          let propCognome = String(r.proprietario_cognome || '').trim();
+          if (!propCognome && r.nominativo_completo) {
+            const parti = String(r.nominativo_completo).trim().split(/\s+/);
+            if (parti.length > 1) {
+              propCognome = parti[0];
+              propNome = parti.slice(1).join(' ');
+            } else {
+              propCognome = parti[0];
+            }
+          }
+
+          if (unitaObj && (propCognome || propNome)) {
+            const haProprietarioAttivo = unitaObj.occupanti_unita?.some(o => o.ruolo === 'proprietario' && o.attivo);
+
+            if (!haProprietarioAttivo) {
+              const nomeLower = propNome.toLowerCase();
+              const cognomeLower = propCognome.toLowerCase();
+
+              let personaTrovata = currentPersone.find(p => {
+                const pNome = (p.nome || '').trim().toLowerCase();
+                const pCognome = (p.cognome || '').trim().toLowerCase();
+                return pNome === nomeLower && pCognome === cognomeLower;
+              });
+
+              if (!personaTrovata) {
+                const { data: newP, error: pErr } = await supabase
+                  .from('persone')
+                  .insert([{
+                    user_id: user.id,
+                    nome: propNome,
+                    cognome: propCognome
+                  }])
+                  .select()
+                  .single();
+
+                if (!pErr && newP) {
+                  personaTrovata = newP;
+                  currentPersone.push(newP);
+                } else {
+                  console.error('Errore creazione persona durante import millesimi:', pErr);
+                }
+              }
+
+              if (personaTrovata) {
+                const { error: oErr } = await supabase
+                  .from('occupanti_unita')
+                  .insert([{
+                    unita_id: unitaObj.id,
+                    persona_id: personaTrovata.id,
+                    ruolo: 'proprietario',
+                    attivo: true
+                  }]);
+                
+                if (oErr) {
+                  console.error('Errore associazione occupante durante import millesimi:', oErr);
+                } else {
+                  if (!unitaObj.occupanti_unita) {
+                    unitaObj.occupanti_unita = [];
+                  }
+                  unitaObj.occupanti_unita.push({
+                    ruolo: 'proprietario',
+                    attivo: true,
+                    persona_id: personaTrovata.id,
+                    persone: personaTrovata
+                  });
+                }
+              }
             }
           }
 

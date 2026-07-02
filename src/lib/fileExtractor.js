@@ -447,7 +447,9 @@ Restituisci SOLO un oggetto JSON valido con questa esatta struttura, senza testo
           "piano": "Piano dell'unità se indicato (es. Terra, T, 1°, 2, -1, S. 1, Seminterrato, Attico... altrimenti stringa vuota)",
           "destinazione": "Destinazione d'uso se indicata o intuibile dal contesto o classamento (es. appartamento, box, cantina, negozio, ufficio, posto_auto, soffitta, magazzino)",
           "superficie_mq": numero (superficie in m² o mq se presente es. 85.5, oppure superficie lorda/virtuale se disponibile, altrimenti null),
-          "nominativo": "Nome del proprietario o condòmino se presente (es. MICIELI, CHIODARELLI...). Se per le righe di pertinenza (es. box/cantine) il nome non è ripetuto, RIPORTA IL NOME del proprietario dell'appartamento sovrastante!",
+          "proprietario_nome": "Nome del proprietario (es. Mario, Laura... altrimenti stringa vuota). Se ci sono più comproprietari, estrai il nome del primo.",
+          "proprietario_cognome": "Cognome del proprietario o ragione sociale della ditta (es. Rossi, Bianchi...). Se per le righe di pertinenza (es. box/cantine) il nome non è ripetuto, RIPORTA IL COGNOME del proprietario dell'unità principale collegata (es. dell'appartamento sovrastante).",
+          "nominativo_completo": "Il nominativo intero così come scritto nel file (es. ROSSI MARIO, COOP SOC. ed altri) per riscontro diretto o fallback.",
           "valore": numero (valore millesimale decimale, es. 166.57 o 150.55 o 0. Usa il punto decimale, non la virgola)"
         }
       ]

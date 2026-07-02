@@ -363,6 +363,15 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Esclusione Inquilini su Straordinario:** Se l'esercizio è `straordinario`, gli inquilini vengono ignorati, la griglia mostra solo i proprietari ed i solleciti vanno a loro.
 - **CellEditor Dinamico:** La modale di modifica si adatta al pagante attivo, mostrando a chi andrà la mail di sollecito e caricando l'anagrafica corretta (proprietario o inquilino) per la modifica rapida.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S25 (2 Luglio 2026 - Risoluzione Bug Estrazione Anagrafica ed Automazione Proprietari Millesimali)
+
+### 1. Decisioni sul Workflow e Estrazione
+- **Mappatura Chiavi Deterministica in Import:** Riscritto il parser di normalizzazione delle chiavi in `AnagraficaImport.jsx` abbandonando i rimpiazzi di sottostringhe a cascata (`.replace('mail', 'email')` ecc.) a favore di una mappatura a dizionario esatto. Questo garantisce che email e telefoni estratti dall'AI o presenti nei file Excel non vengano più corrotti in `eemail` o `telefonoono`, azzerando le anomalie di visualizzazione.
+- **Prompt Strutturato Millesimi:** Aggiornato il prompt di estrazione millesimi in `fileExtractor.js` separando il nominativo generico in `proprietario_nome` e `proprietario_cognome` con `nominativo_completo` come fallback, migliorando l'analisi dei proprietari e delle pertinenze collegate.
+- **Automazione Inserimento Proprietari da Millesimi:** Abilitata la creazione e associazione automatica dei proprietari in `MillesimiEditor.jsx` durante l'importazione delle tabelle millesimali. Se l'unità non ha già un proprietario attivo, CondoAI cerca la persona nel condominio (evitando duplicati) e la crea se necessario, per poi associarla come proprietario attivo (`occupanti_unita`), eliminando la necessità di inserimento manuale.
+
 
 
 

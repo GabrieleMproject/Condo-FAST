@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <title>Prezzi — CondoAI | Piani da €129/mese, prova gratis 14 giorni</title>
+  <meta name="description" content="Piani CondoAI per ogni studio: Trial gratuito 14 giorni, Base €129/mese, Studio €249/mese, Professional €399/mese. Sconto 20% con fatturazione annuale. Nessuna carta richiesta per la prova.">
+  <link rel="canonical" href="https://condoai.it/pricing.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="it_IT">
+  <meta property="og:url" content="https://condoai.it/pricing.html">
+  <meta property="og:title" content="Prezzi di CondoAI — Un piano per ogni studio">
+  <meta property="og:description" content="Prova gratis 14 giorni senza carta. Piani da €129/mese, -20% con fatturazione annuale.">
+  <meta property="og:image" content="https://condoai.it/og-image.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{--bg:#0D0F14;--text:#F1F5F9;--font:'Sora',system-ui,sans-serif;--nav-h:72px}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font)}
+  </style>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+
+  <script src="js/main.js" defer></script>
+  <script src="js/animations.js" defer></script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Vai al contenuto principale</a>
+
+  <header class="nav" id="site-nav">
+    <div class="nav__inner">
+      <a class="nav__logo" href="index.html" aria-label="CondoAI — Home">
+        <span class="nav__logo-mark" aria-hidden="true">C</span>
+        CondoAI
+      </a>
+      <nav aria-label="Navigazione principale">
+        <ul class="nav__links" id="nav-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="features.html">Funzionalità</a></li>
+          <li><a href="pricing.html" aria-current="page">Prezzi</a></li>
+          <li><a href="sicurezza.html">Sicurezza</a></li>
+        </ul>
+      </nav>
+      <div class="nav__cta">
+        <a class="btn btn--ghost btn--sm" href="http://localhost:5173/login" id="nav-login">Accedi</a>
+        <a class="btn btn--primary btn--sm" href="http://localhost:5173/register" id="nav-trial">Inizia gratis</a>
+        <button class="nav__toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Apri il menu">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <section class="page-hero" aria-labelledby="page-title">
+      <div class="container">
+        <span class="eyebrow reveal">Prezzi</span>
+        <h1 id="page-title" class="reveal" data-delay="1">Un prezzo <span class="grad-text">chiaro</span>, come i tuoi rendiconti</h1>
+        <p class="lead reveal" data-delay="2">Ogni piano include l'assistente AI, il rendiconto conforme all'art. 1130-bis e la sicurezza di livello bancario. Cambi piano o disdici quando vuoi.</p>
+      </div>
+    </section>
+
+    <section class="section section--tight" id="piani" aria-labelledby="piani-title">
+      <div class="container">
+        <h2 id="piani-title" class="sr-only" style="position:absolute;left:-9999px">Piani e prezzi</h2>
+
+        <div style="text-align:center" class="reveal">
+          <div class="toggle" role="group" aria-label="Fatturazione mensile o annuale">
+            <button type="button" id="toggle-monthly" class="active" aria-pressed="true">Mensile</button>
+            <button type="button" id="toggle-annual" aria-pressed="false">Annuale <span class="badge">-20%</span></button>
+          </div>
+        </div>
+
+        <div class="pricing-grid">
+          <div class="plan reveal">
+            <h3>Trial</h3>
+            <p class="plan__desc">Prova tutto CondoAI, senza impegno e senza carta.</p>
+            <p class="plan__price">Gratis</p>
+            <p class="plan__period">14 giorni · nessuna carta richiesta</p>
+            <ul>
+              <li>Fino a 50 condomini</li>
+              <li>500 operazioni AI/mese</li>
+              <li>Tutte le funzionalità del piano Studio</li>
+              <li>Import dati assistito</li>
+              <li>Supporto via email</li>
+            </ul>
+            <a class="btn btn--ghost" href="http://localhost:5173/register" id="plan-trial-cta">Inizia la prova</a>
+          </div>
+
+          <div class="plan reveal" data-delay="1">
+            <h3>Base</h3>
+            <p class="plan__desc">Per chi gestisce pochi stabili e vuole dire addio a Excel.</p>
+            <p class="plan__price"><span data-monthly="€129" data-annual="€103">€129</span><small>/mese</small></p>
+            <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente (€1.236/anno)">fatturazione mensile</p>
+            <ul>
+              <li>Fino a 10 condomini</li>
+              <li>100 operazioni AI/mese</li>
+              <li>Rendiconto art. 1130-bis</li>
+              <li>Riconciliazione bancaria</li>
+              <li>Tabelle millesimali</li>
+              <li>Supporto via email</li>
+            </ul>
+            <a class="btn btn--ghost" href="http://localhost:5173/register?plan=base" id="plan-base-cta">Scegli Base</a>
+          </div>
+
+          <div class="plan plan--featured reveal" data-delay="2">
+            <span class="plan__tag">Il più scelto</span>
+            <h3>Studio</h3>
+            <p class="plan__desc">Per studi di media dimensione con portafogli in crescita.</p>
+            <p class="plan__price"><span data-monthly="€249" data-annual="€199">€249</span><small>/mese</small></p>
+            <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente (€2.388/anno)">fatturazione mensile</p>
+            <ul>
+              <li>Fino a 50 condomini</li>
+              <li>500 operazioni AI/mese</li>
+              <li>Tutto il piano Base, più:</li>
+              <li>Solleciti automatici illimitati</li>
+              <li>Export PDF/XLSX avanzati</li>
+              <li>Gestione fornitori con F24</li>
+              <li>Supporto prioritario</li>
+            </ul>
+            <a class="btn btn--primary" href="http://localhost:5173/register?plan=studio" id="plan-studio-cta">Scegli Studio</a>
+          </div>
+
+          <div class="plan reveal" data-delay="3">
+            <h3>Professional</h3>
+            <p class="plan__desc">Per grandi studi che vogliono il massimo, senza limiti.</p>
+            <p class="plan__price"><span data-monthly="€399" data-annual="€319">€399</span><small>/mese</small></p>
+            <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente (€3.828/anno)">fatturazione mensile</p>
+            <ul>
+              <li>Condomini illimitati</li>
+              <li>Operazioni AI illimitate</li>
+              <li>Tutto il piano Studio, più:</li>
+              <li>SLA prioritario</li>
+              <li>Onboarding dedicato</li>
+              <li>Account manager</li>
+            </ul>
+            <a class="btn btn--ghost" href="http://localhost:5173/register?plan=professional" id="plan-pro-cta">Scegli Professional</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison table -->
+    <section class="section" aria-labelledby="confronto-title" style="background:rgba(255,255,255,0.012)">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Confronto</span>
+          <h2 id="confronto-title">Confronto completo dei piani</h2>
+        </div>
+        <div class="compare-wrap reveal">
+          <table class="compare">
+            <thead>
+              <tr>
+                <th scope="col">Funzionalità</th>
+                <th scope="col">Trial</th>
+                <th scope="col">Base</th>
+                <th scope="col" class="featured-col">Studio</th>
+                <th scope="col">Professional</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Condomini gestibili</td>
+                <td>50</td>
+                <td>10</td>
+                <td class="featured-col">50</td>
+                <td>Illimitati</td>
+              </tr>
+              <tr>
+                <td>Operazioni AI al mese</td>
+                <td>500</td>
+                <td>100</td>
+                <td class="featured-col">500</td>
+                <td>Illimitate</td>
+              </tr>
+              <tr>
+                <td>Lettura documenti con AI</td>
+                <td class="yes">✓</td>
+                <td class="yes">✓</td>
+                <td class="featured-col yes">✓</td>
+                <td class="yes">✓</td>
+              </tr>
+              <tr>
+                <td>Tabelle millesimali e riparti</td>
+                <td class="yes">✓</td>
+                <td class="yes">✓</td>
+                <td class="featured-col yes">✓</td>
+                <td class="yes">✓</td>
+              </tr>
+              <tr>
+                <td>Rendiconto art. 1130-bis c.c.</td>
+                <td class="yes">✓</td>
+                <td class="yes">✓</td>
+                <td class="featured-col yes">✓</td>
+                <td class="yes">✓</td>
+              </tr>
+              <tr>
+                <td>Riconciliazione estratti conto</td>
+                <td class="yes">✓</td>
+                <td class="yes">✓</td>
+                <td class="featured-col yes">✓</td>
+                <td class="yes">✓</td>
+              </tr>
+              <tr>
+                <td>Solleciti rata generati dall'AI</td>
+                <td class="yes">✓</td>
+                <td>Base</td>
+                <td class="featured-col yes">Illimitati</td>
+                <td class="yes">Illimitati</td>
+              </tr>
+              <tr>
+                <td>Fornitori e ritenute F24</td>
+                <td class="yes">✓</td>
+                <td>—</td>
+                <td class="featured-col yes">✓</td>
+                <td class="yes">✓</td>
+              </tr>
+              <tr>
+                <td>Export PDF / XLSX avanzati</td>
+                <td class="yes">✓</td>
+                <td>Standard</td>
+                <td class="featured-col yes">Avanzati</td>
+                <td class="yes">Avanzati</td>
+              </tr>
+              <tr>
+                <td>Supporto</td>
+                <td>Email</td>
+                <td>Email</td>
+                <td class="featured-col">Prioritario</td>
+                <td>SLA + Account manager</td>
+              </tr>
+              <tr>
+                <td>Onboarding dedicato</td>
+                <td>—</td>
+                <td>—</td>
+                <td class="featured-col">—</td>
+                <td class="yes">✓</td>
+              </tr>
+              <tr>
+                <td>Sicurezza (RLS, cifratura, GDPR, dati EU)</td>
+                <td class="yes">✓</td>
+                <td class="yes">✓</td>
+                <td class="featured-col yes">✓</td>
+                <td class="yes">✓</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="text-align:center;color:var(--muted);font-size:0.85rem;margin-top:22px" class="reveal">Prezzi IVA esclusa. Pagamenti gestiti in sicurezza tramite Stripe. Con la fatturazione annuale risparmi il 20%.</p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" aria-labelledby="faq-title">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Domande frequenti</span>
+          <h2 id="faq-title">Domande sui piani</h2>
+        </div>
+        <div class="faq reveal">
+          <details>
+            <summary>Cosa conta come «operazione AI»?</summary>
+            <p>Ogni volta che l'assistente elabora un documento o genera un contenuto per te: la lettura di una fattura, la riconciliazione di un estratto conto, la bozza di un sollecito. Le operazioni manuali (registrazioni, consultazioni, export) sono sempre illimitate su tutti i piani.</p>
+          </details>
+          <details>
+            <summary>Serve la carta di credito per la prova?</summary>
+            <p>No. Il Trial di 14 giorni non richiede nessun metodo di pagamento. Alla scadenza scegli tu se attivare un piano: se non lo fai, i tuoi dati restano al sicuro per 30 giorni e poi vengono eliminati definitivamente.</p>
+          </details>
+          <details>
+            <summary>Posso cambiare piano in seguito?</summary>
+            <p>Sì, in qualsiasi momento. L'upgrade è immediato con addebito proporzionale; il downgrade parte dal ciclo di fatturazione successivo.</p>
+          </details>
+          <details>
+            <summary>Come funziona lo sconto annuale?</summary>
+            <p>Scegliendo la fatturazione annuale risparmi il 20% rispetto al prezzo mensile: paghi 12 mesi in un'unica soluzione al prezzo scontato indicato.</p>
+          </details>
+          <details>
+            <summary>I miei dati sono al sicuro?</summary>
+            <p>Sì. Ogni account è isolato con Row-Level Security, i dati sono cifrati e custoditi in EU, e l'AI non usa mai i tuoi documenti per l'addestramento. Trovi tutti i dettagli nella pagina <a href="sicurezza.html">Sicurezza</a>.</p>
+          </details>
+          <details>
+            <summary>Posso disdire quando voglio?</summary>
+            <p>Sì, direttamente dal tuo account, senza preavviso e senza penali. Prima della disdetta puoi esportare tutti i tuoi dati in formati standard (PDF, XLSX, CSV).</p>
+          </details>
+        </div>
+
+        <div class="cta-final reveal" style="margin-top:80px">
+          <h2>Inizia dal piano gratuito</h2>
+          <p>14 giorni, tutte le funzionalità, fino a 50 condomini. Il modo migliore per capire se CondoAI fa per te è provarlo sui tuoi dati reali.</p>
+          <a class="btn btn--primary" href="http://localhost:5173/register" id="pricing-final-cta">Inizia gratis — 14 giorni</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div>
+          <a class="nav__logo" href="index.html" style="margin-bottom:16px;display:inline-flex">
+            <span class="nav__logo-mark" aria-hidden="true">C</span>
+            CondoAI
+          </a>
+          <p class="footer__tagline">CondoAI — Il gestionale che gli amministratori italiani meritavano.</p>
+        </div>
+        <nav aria-label="Prodotto">
+          <h4>Prodotto</h4>
+          <ul>
+            <li><a href="features.html">Funzionalità</a></li>
+            <li><a href="pricing.html">Prezzi</a></li>
+            <li><a href="sicurezza.html">Sicurezza</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Legale">
+          <h4>Legale</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="termini.html">Termini di Servizio</a></li>
+            <li><a href="dpa.html">DPA (Art. 28 GDPR)</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Contatti">
+          <h4>Contatti</h4>
+          <ul>
+            <li><a href="mailto:info@condoai.it">info@condoai.it</a></li>
+            <li><a href="mailto:privacy@condoai.it">privacy@condoai.it</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div class="footer__bottom">
+        <span>© <span data-year>2026</span> CondoAI. Tutti i diritti riservati.</span>
+        <span>Dati custoditi nell'Unione Europea 🇪🇺</span>
+      </div>
+    </div>
+  </footer>
+
+  <div class="cookie" id="cookie-banner" role="dialog" aria-live="polite" aria-label="Preferenze cookie">
+    <p><strong style="color:var(--text)">Rispettiamo la tua privacy.</strong> Usiamo solo cookie tecnici essenziali. Con il tuo consenso, attiviamo statistiche anonime e privacy-first. <a href="privacy.html">Leggi la Privacy Policy</a>.</p>
+    <div class="cookie__actions">
+      <button class="btn btn--primary btn--sm" id="cookie-accept" type="button">Accetta statistiche</button>
+      <button class="btn btn--ghost btn--sm" id="cookie-reject" type="button">Solo essenziali</button>
+    </div>
+  </div>
+
+</body>
+</html>

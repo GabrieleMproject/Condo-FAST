@@ -389,6 +389,15 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Modifica Inline Unità in Griglia Millesimi:** Aggiornato `MillesimiEditor.jsx` per rendere editabili direttamente nella tabella le colonne fisiche dell'unità (Interno/Numero, Scala, Piano, Superficie/Mq) oltre alla quota millesimale. Le modifiche vengono salvate in blocco su database.
 - **Calcolo Proporzionale da MQ:** Aggiunto il pulsante `Calcola da MQ` nel piè di pagina della griglia millesimi. Ripartisce automaticamente i 1000 millesimi in proporzione alla superficie (mq) inserita per le unità visibili, facilitando la creazione delle tabelle.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S27 (5 Luglio 2026 - Sito Marketing CondoAI)
+
+### 1. Decisioni sul Sito Marketing e Integrazione
+- **Struttura del Sito Marketing Statico:** Creato e organizzato il sito di marketing (7 pagine HTML, 2 file CSS, 2 file JS) generato con successo da Fable 5, localizzandolo nella cartella `/website/` del progetto.
+- **Integrazione con l'App React Locale:** Modificati tutti i link di login, registrazione e prova gratuita in `index.html`, `features.html`, `pricing.html` e `sicurezza.html` per puntare a `http://localhost:5173/login` e `http://localhost:5173/register`, consentendo il collaudo E2E dell'esperienza utente interamente in locale.
+
+
 
 
 

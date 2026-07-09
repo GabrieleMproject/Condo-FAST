@@ -49,7 +49,7 @@ function cellInfo(cell, rata) {
 
 export default function RateGridTab({ condominioId }) {
   const navigate = useNavigate()
-  const { inviaComunicazione } = useComunicazioni()
+  const { inviaComunicazione, fetchComunicazioni } = useComunicazioni()
   const [inviandoSollecito, setInviandoSollecito] = useState(false)
   const [showProposteModal, setShowProposteModal] = useState(false)
   const [condominio, setCondominio] = useState(null)
@@ -181,10 +181,11 @@ export default function RateGridTab({ condominioId }) {
     const dest = (paganteTipo === 'inquilino' && inq) ? inq : prop
 
     if (!dest || !dest.email) {
+      const errMsg = `Impossibile inviare il sollecito: il destinatario (${dest ? `${dest.nome} ${dest.cognome}` : 'sconosciuto'}) non ha un indirizzo email configurato.`
       if (!silenzioso) {
-        alert(`Impossibile inviare il sollecito: il destinatario (${dest ? `${dest.nome} ${dest.cognome}` : 'sconosciuto'}) non ha un indirizzo email configurato.`);
+        alert(errMsg);
       }
-      return;
+      throw new Error(errMsg);
     }
     setInviandoSollecito(true);
     try {
@@ -244,7 +245,7 @@ L'Amministratore`;
       });
 
       if (!silenzioso) {
-        alert(`Sollecito inviato con successo a ${prop.email}`);
+        alert(`Sollecito inviato con successo a ${dest.email}`);
       }
     } catch (err) {
       if (!silenzioso) {
@@ -405,14 +406,15 @@ L'Amministratore`;
           })
         }
 
-        // 4. Invocazione Edge Function per l'invio
+        // 4. Invocazione Edge Function per l'invio (con skipFetch per ottimizzazione batch)
         await inviaComunicazione({
           condominioId,
           destinatari: [{ email: dest.email, nome: nomeDest }],
           oggetto: oggettoRisolto,
           messaggio: testoRisolto,
           tipo: 'sollecito',
-          allegati
+          allegati,
+          skipFetch: true
         })
 
       } catch (err) {
@@ -420,6 +422,13 @@ L'Amministratore`;
         falliti++
         setInvioMassivoStato(prev => ({ ...prev, falliti }))
       }
+    }
+
+    // Ricarica lo storico delle comunicazioni una sola volta alla fine del loop
+    try {
+      await fetchComunicazioni(condominioId)
+    } catch (fErr) {
+      console.error("Errore ricaricamento registro comunicazioni:", fErr.message)
     }
 
     setInviandoSollecito(false)

@@ -32,7 +32,7 @@ export function useComunicazioni() {
     }
   }, [])
 
-  const inviaComunicazione = useCallback(async ({ condominioId, destinatari, oggetto, messaggio, tipo, allegati }) => {
+  const inviaComunicazione = useCallback(async ({ condominioId, destinatari, oggetto, messaggio, tipo, allegati, skipFetch = false }) => {
     setLoading(true)
     setError(null)
     try {
@@ -50,8 +50,10 @@ export function useComunicazioni() {
       if (invokeErr) throw invokeErr
       if (data?.error) throw new Error(data.error)
 
-      // Ricarica lo storico dopo l'invio
-      await fetchComunicazioni(condominioId)
+      // Ricarica lo storico dopo l'invio (se non richiesto diversamente)
+      if (!skipFetch) {
+        await fetchComunicazioni(condominioId)
+      }
       return data
     } catch (err) {
       setError(err.message)

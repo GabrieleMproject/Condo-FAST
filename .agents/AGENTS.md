@@ -424,6 +424,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Mancata Email ed Errore Promise (`RateGridTab.jsx` & `CellEditor`):** Cambiato il flusso in caso di email assente per lanciare un errore ed impedire che la Promise si risolva positivamente, evitando la chiusura involontaria della modale di anagrafica.
 - **Ottimizzazione query batch (`RateGridTab.jsx` & `useComunicazioni.js`):** Introdotto il parametro `skipFetch` in `inviaComunicazione` per evitare il ricaricamento seriale ad ogni singolo invio (N+1 query). Lo storico viene ricaricato una volta sola al termine del loop asincrono.
 - **Hardening GDPR nei Log (`invia-comunicazione/index.ts`):** Rimossi i riferimenti all'email del condomino in chiaro all'interno dei log `console.error` dell'Edge Function per conformità alle linee guida sulla privacy.
+- **Normalizzazione Millesimi-Anagrafiche (`align_millesimi_anagrafica.mjs`):** Sviluppato ed eseguito con successo lo script di diagnostica e fusione automatica. L'algoritmo rileva e accoppia le unità duplicate causate da importazioni con prefissi/suffissi (es. "Sub. 7", "8 (Sub. 8)") normalizzando le stringhe e fondendo in modo sicuro i record relativi a millesimi, occupanti, rate, saldi e riconciliazioni prima di eliminare i duplicati catastali orfani. Tutte le unità abitate/assegnate ora corrispondono al 100% ai millesimi.
 
 
 

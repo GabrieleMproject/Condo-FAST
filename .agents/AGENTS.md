@@ -420,6 +420,10 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Allegato PDF Lettera di Sollecito:** Creata la funzione `exportSingolaUnitaRatePdfBytes` in `exportPdf.js` per produrre e allegare al sollecito email il PDF della lettera di sollecito dettagliata (con riepilogo contabile e scadenze rateali) per la singola unità morosa.
 - **Configurazione IBAN Condominio:** Inserito il campo per la persistenza dell'IBAN nel form di creazione/modifica condominio e risolto un bug di tag JSX non bilanciato in `CondominiForm.jsx`.
 - **Filtri Stato Registro:** Aggiunto lo stato `consegnata` ai filtri rapidi in `ComunicazioniPage.jsx` per un monitoraggio accurato degli esiti di recapito.
+- **Risoluzione Bug Feedback Destinatario (`RateGridTab.jsx`):** Corretto il messaggio di alert finale per mostrare l'indirizzo email del destinatario effettivo (inquilino o proprietario) anziché quello fisso del proprietario.
+- **Mancata Email ed Errore Promise (`RateGridTab.jsx` & `CellEditor`):** Cambiato il flusso in caso di email assente per lanciare un errore ed impedire che la Promise si risolva positivamente, evitando la chiusura involontaria della modale di anagrafica.
+- **Ottimizzazione query batch (`RateGridTab.jsx` & `useComunicazioni.js`):** Introdotto il parametro `skipFetch` in `inviaComunicazione` per evitare il ricaricamento seriale ad ogni singolo invio (N+1 query). Lo storico viene ricaricato una volta sola al termine del loop asincrono.
+- **Hardening GDPR nei Log (`invia-comunicazione/index.ts`):** Rimossi i riferimenti all'email del condomino in chiaro all'interno dei log `console.error` dell'Edge Function per conformità alle linee guida sulla privacy.
 
 
 

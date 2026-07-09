@@ -93,6 +93,7 @@ DECLARE
     v_anno INT;
     v_abb_count INT;
     v_existing_f24_stato VARCHAR(20);
+    v_admin_id UUID;
 BEGIN
     -- Sincronizzazione per retrocompatibilità con ritenuta_acconto
     IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
@@ -172,8 +173,9 @@ BEGIN
 
             -- Se non esiste, lo creiamo
             IF v_f24_id IS NULL THEN
+                SELECT amministratore_id INTO v_admin_id FROM public.condomini WHERE id = NEW.condominio_id;
                 INSERT INTO public.f24_deleghe (condominio_id, amministratore_id, data_scadenza, stato, importo_totale)
-                VALUES (NEW.condominio_id, NEW.user_id, v_data_scad, 'da_pagare', 0.00)
+                VALUES (NEW.condominio_id, COALESCE(NEW.user_id, v_admin_id, auth.uid()), v_data_scad, 'da_pagare', 0.00)
                 RETURNING id INTO v_f24_id;
             END IF;
 

@@ -10,6 +10,14 @@ import ExcelJS  from 'exceljs';
 import mammoth  from 'mammoth';
 import { callClaude, callClaudeVision, callClaudeDocument } from './claudeClient';
 
+function pulisciEdEstraiJson(risposta, isArray = false) {
+  const rawStr = String(risposta || '').trim();
+  const regex = isArray ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
+  const match = rawStr.match(regex);
+  const clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
+  return JSON.parse(clean);
+}
+
 // ─── Leggi file come base64 ───────────────────────────────────────────────────
 export function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -206,8 +214,7 @@ Regole importanti:
     ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 })
     : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 });
 
-  const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
-  return JSON.parse(clean);
+  return pulisciEdEstraiJson(risposta, true);
 }
 
 // ─── FATTURA FORNITORE: Estrai dati da fattura ────────────────────────────────
@@ -242,16 +249,16 @@ Formato JSON:
 }
 
 Regole Ritenuta d'Acconto:
-- Rileva se il fornitore specifica la ritenuta d'acconto (es. 4%, 20% sul 50%, 11.5%, 20% o ritenuta d'acconto classica).
-- Se il fornitore scrive in fattura "Regime Forfettario ai sensi della L. 190/2014" o simile, la ritenuta d'acconto non si applica. In tal caso, imposta "imponibile_ritenuta" a 0.00, "aliquota_ritenuta_percentuale" a 0.00, "importo_ritenuta" a 0.00 e "codice_tributo_f24" a null.
-- Altrimenti, calcola la ritenuta d'acconto:
+- Se la fattura appartiene alla categoria "utenze" (es. acqua, luce, gas, telefonia) o "assicurazione", o se si tratta di semplice acquisto di materiali/beni non soggetti, la ritenuta d'acconto NON si applica. In tal caso, imposta "imponibile_ritenuta" a 0.00, "aliquota_ritenuta_percentuale" a 0.00, "importo_ritenuta" a 0.00 e "codice_tributo_f24" a null.
+- Se il fornitore specifica in fattura di far parte del "Regime Forfettario ai sensi della L. 190/2014" o regime dei minimi o simile, la ritenuta d'acconto NON si applica. In tal caso, imposta "imponibile_ritenuta" a 0.00, "aliquota_ritenuta_percentuale" a 0.00, "importo_ritenuta" a 0.00 e "codice_tributo_f24" a null.
+- Negli altri casi soggetti (es. prestazioni di servizi, contratti d'appalto come pulizie, manutenzione ascensori, giardinaggio, edilizia, o parcelle di liberi professionisti), calcola la ritenuta:
   - "imponibile_ritenuta" è l'imponibile su cui si calcola la ritenuta (solitamente coincide con l'importo_netto o la quota imponibile esposta).
-  - "aliquota_ritenuta_percentuale" è la percentuale di ritenuta applicata (es. 4.00 per contratti d'appalto/servizi generici, 20.00 per liberi professionisti/amministratori).
+  - "aliquota_ritenuta_percentuale" è la percentuale di ritenuta applicata (es. 4.00 per contratti d'appalto/servizi di imprese, 20.00 per liberi professionisti/amministratori).
   - "importo_ritenuta" è l'importo della ritenuta (imponibile_ritenuta * aliquota_ritenuta_percentuale / 100).
 - Determina "codice_tributo_f24" in base al tipo di prestazione:
-  - "1019" per contratti d'appalto condominio (es: pulizie, ditte edili, manutenzione ascensori, giardinaggio, ecc. - ritenuta tipica 4%).
+  - "1019" per contratti d'appalto condominio (es: ditte di pulizie, imprese edili, manutenzione ascensori, giardinaggio - ritenuta tipica 4%).
   - "1020" per contratti d'opera (ritenuta 4%).
-  - "1040" per compensi per prestazioni di lavoro autonomo/professionisti (es: amministratore, geometra, ingegnere, commercialista, ecc. - ritenuta tipica 20%).
+  - "1040" per compensi per prestazioni di lavoro autonomo/professionisti (es: amministratore, geometra, ingegnere, avvocato - ritenuta tipica 20%).
   - Se non si applica ritenuta, imposta a null.
 
 Regole Generali:
@@ -270,8 +277,7 @@ Regole Generali:
     ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 })
     : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 });
 
-  const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
-  return JSON.parse(clean);
+  return pulisciEdEstraiJson(risposta, false);
 }
 
 // ─── RIPARTIZIONE: Determina criterio da regolamento ─────────────────────────
@@ -299,8 +305,7 @@ Tabelle millesimali disponibili: ${tabelleMillesimali?.map(t => t.nome).join(', 
 ${testoRegolamento ? `Regolamento condominiale:\n${testoRegolamento.substring(0, 3000)}` : 'Nessun regolamento disponibile. Usa il Codice Civile.'}`;
 
   const risposta = await callClaude(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500 });
-  const clean    = risposta.replace(/```json\n?|\n?```/g, '').trim();
-  return JSON.parse(clean);
+  return pulisciEdEstraiJson(risposta, false);
 }
 // ─── CONSUNTIVO ANNO PRECEDENTE: estrai saldi di chiusura per riporto ─────────
 export async function estraiSaldiConsuntivo(file) {
@@ -344,8 +349,7 @@ Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
     ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 })
     : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 });
 
-  const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
-  return JSON.parse(clean);
+  return pulisciEdEstraiJson(risposta, false);
 }// ── Estrae il PROFILO/struttura del modello consuntivo dell'amministratore ──
 // Ritorna { etichette_categorie, ordine_categorie, sezioni:{...flags}, note }.
 // NB: estrae la PRESENTAZIONE (ordine/etichette/sezioni presenti), NON i numeri.
@@ -392,12 +396,7 @@ Imposta "attiva": true per ogni sezione effettivamente presente nel modello, fal
     })
   }
 
-  const clean = String(raw).replace(/```json|```/g, '').trim()
-  try {
-    return JSON.parse(clean)
-  } catch {
-    throw new Error('Struttura consuntivo non interpretabile dalla risposta AI')
-  }
+  return pulisciEdEstraiJson(raw, false);
 }
 
 // ─── ANAGRAFICA: Estrai elenco persone e condòmini da qualsiasi file (PDF, DOCX, XLSX, JPG...) ───

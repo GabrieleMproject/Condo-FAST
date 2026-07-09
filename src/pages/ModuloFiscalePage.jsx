@@ -7,6 +7,12 @@ import { generaTelematicoCU, generaTelematico770 } from '../lib/fiscaleTelematic
 import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
 
+const formattaData = (dataStr) => {
+  if (!dataStr) return '—';
+  const d = new Date(dataStr);
+  return isNaN(d.getTime()) ? dataStr : d.toLocaleDateString('it-IT');
+};
+
 export default function ModuloFiscalePage() {
   const { profile } = usePlan()
   const { checkWatermark, WatermarkModal } = useWatermark()
@@ -210,7 +216,7 @@ export default function ModuloFiscalePage() {
       const path = `${user.id}/f24_quietanze/${Date.now()}_${file.name}`
       
       const { error: uploadErr } = await supabase.storage
-        .from('documenti-condominio')
+        .from('fatture')
         .upload(path, file)
       if (uploadErr) throw uploadErr
 
@@ -251,7 +257,7 @@ export default function ModuloFiscalePage() {
     const newTab = window.open('about:blank', '_blank')
     try {
       const { data, error } = await supabase.storage
-        .from('documenti-condominio')
+        .from('fatture')
         .createSignedUrl(path, 900)
       if (error) throw error
       newTab.location.href = data.signedUrl
@@ -483,11 +489,11 @@ export default function ModuloFiscalePage() {
                               <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: 15 }}>{condo.nome}</div>
                               <div style={{ display: 'flex', gap: 12, marginTop: 4, alignItems: 'center' }}>
                                 <span style={styles.dateLabel}>
-                                  <Calendar size={12} /> Scadenza: {new Date(delega.data_scadenza).toLocaleDateString('it-IT')}
+                                  <Calendar size={12} /> Scadenza: {formattaData(delega.data_scadenza)}
                                 </span>
                                 {delega.data_pagamento && (
                                   <span style={{ ...styles.dateLabel, color: '#10b981' }}>
-                                    <CheckCircle2 size={12} /> Pagato il: {new Date(delega.data_pagamento).toLocaleDateString('it-IT')}
+                                    <CheckCircle2 size={12} /> Pagato il: {formattaData(delega.data_pagamento)}
                                   </span>
                                 )}
                               </div>
@@ -589,8 +595,8 @@ export default function ModuloFiscalePage() {
                               <td style={styles.td}>
                                 <span style={styles.badge}>{fIva}</span>
                               </td>
-                              <td style={styles.td}>N° {fat.numero_fattura || '-'} del {fat.data_fattura ? new Date(fat.data_fattura).toLocaleDateString('it-IT') : '-'}</td>
-                              <td style={styles.td}>{fat.data_pagamento ? new Date(fat.data_pagamento).toLocaleDateString('it-IT') : '-'}</td>
+                              <td style={styles.td}>N° {fat.numero_fattura || '-'} del {formattaData(fat.data_fattura)}</td>
+                              <td style={styles.td}>{formattaData(fat.data_pagamento)}</td>
                               <td style={{ ...styles.td, textAlign: 'right', fontWeight: 600, color: '#10b981' }}>
                                 € {parseFloat(fat.importo_ritenuta || fat.ritenuta_acconto || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                               </td>

@@ -391,6 +391,20 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S28 (9 Luglio 2026 - Collaudo E2E e Registrazione Diretta Spese/Fatture)
+
+### 1. Decisioni di Prodotto e Workflow E2E
+- **Flusso Registrazione Diretta Spesa + Fattura:** Introdotta l'opzione in `SpeseForm.jsx` e `SpesePage.jsx` per caricare un file PDF/immagine di fattura direttamente dal form di inserimento spesa. L'AI precompila i campi della spesa e, al salvataggio, il sistema carica il file nel bucket `fatture` di Supabase Storage, cerca il `fornitore_id` per Partita IVA/CF o nome nella rubrica fornitori, e registra in automatico la riga corrispondente in `fatture_fornitori` in stato `'attesa'`, collegandola alla spesa (`spesa_id`).
+- **Aumento dei Limiti Token (Claude Proxy):** Innalzato il parametro `maxTokens` da `4000` a `8000` per l'estrazione millesimi ed anagrafica in `fileExtractor.js`. Questo evita che l'output JSON di Claude venga troncato a metà nei condomini con molte unità/righe, azzerando gli errori di validazione del client.
+- **Collaudo E2E ed Esito Positivo:** Eseguito con successo un ciclo di test E2E completo tramite il sub-agent `browser` (registrazione account, creazione condominio ed esercizio 2026, importazione millesimi e anagrafica, registrazione spesa con fattura allegata, e verifica badge collegato su Fatture fornitori).
+
+### 2. Bug Risolti
+- **Bug Troncamento JSON (Errore Estrazione Tabelle):** Risolto l'errore per cui il caricamento di tabelle millesimali complesse o anagrafiche falliva con il messaggio *"L'AI non ha restituito un formato JSON valido"* a causa del raggiungimento del precedente limite di 4000 token.
+- **Upload Allegati in Spese:** Risolto il problema per cui i file associati alle spese non venivano caricati fisicamente su storage e collegati alla fattura in fatture fornitori.
+
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S27 (5 Luglio 2026 - Sito Marketing CondoAI)
 
 ### 1. Decisioni sul Sito Marketing e Integrazione

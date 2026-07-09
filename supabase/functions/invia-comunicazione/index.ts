@@ -42,26 +42,24 @@ serve(async (req) => {
 
     const { condominio_id, destinatari, oggetto, messaggio, tipo, allegati } = await req.json()
 
-    // Validazione RLS: verifica che l'utente gestisca il condominio prima di procedere all'invio
-    if (condominio_id) {
-      const { data: condo, error: condoErr } = await supabase
-        .from('condomini')
-        .select('id')
-        .eq('id', condominio_id)
-        .maybeSingle()
-
-      if (condoErr || !condo) {
-        return new Response(JSON.stringify({ error: 'Accesso non autorizzato a questo condominio o condominio inesistente' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-    }
-
     // Validazione campi obbligatori
-    if (!destinatari || !Array.isArray(destinatari) || destinatari.length === 0 || !oggetto || !messaggio || !tipo) {
+    if (!condominio_id || !destinatari || !Array.isArray(destinatari) || destinatari.length === 0 || !oggetto || !messaggio || !tipo) {
       return new Response(JSON.stringify({ error: 'Campi obbligatori mancanti o malformati' }), {
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Validazione RLS: verifica che l'utente gestisca il condominio prima di procedere all'invio
+    const { data: condo, error: condoErr } = await supabase
+      .from('condomini')
+      .select('id')
+      .eq('id', condominio_id)
+      .maybeSingle()
+
+    if (condoErr || !condo) {
+      return new Response(JSON.stringify({ error: 'Accesso non autorizzato a questo condominio o condominio inesistente' }), {
+        status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -112,17 +110,17 @@ serve(async (req) => {
           }
           
           if (partner === 'multidialogo_simulato') {
-            console.log(`[SIMULAZIONE POSTALE] Lettera inviata via Multidialogo a: ${dest.nome} presso ${dest.indirizzo || '—'}, ${dest.cap || '—'} ${dest.citta || '—'} (${dest.provincia || '—'})`)
-            invii.push({ nome: dest.nome, success: true, partner: 'multidialogo_simulato' })
+            console.log(`[SIMULAZIONE POSTALE] Spedizione instradata via partner simulato.`)
+            invii.push({ success: true, partner: 'multidialogo_simulato' })
           } else if (partner === 'multidialogo') {
             const apiKey = profile?.partner_postale_api_key
             if (!apiKey) {
               throw new Error('Chiave API del partner postale mancante')
             }
             
-            console.log(`[INVIATO PARTNER POSTALE] Richiesta inoltrata a Multidialogo per: ${dest.nome}`)
+            console.log(`[INVIATO PARTNER POSTALE] Invio richiesta via Multidialogo.`)
             
-            // Richiesta HTTP fittizia al partner Multidialogo
+            // Richiesta HTTP al partner Multidialogo
             const response = await fetch('https://api.multidialogo.it/v1/spedizioni', {
               method: 'POST',
               headers: {
@@ -142,10 +140,14 @@ serve(async (req) => {
               })
             }).catch(() => null)
             
-            if (response && !response.ok) {
-              console.warn(`Errore API Multidialogo (HTTP ${response.status}) - Rilevato offline/test`)
+            if (!response) {
+              throw new Error('Impossibile connettersi al partner postale (errore di rete)')
             }
-            invii.push({ nome: dest.nome, success: true, partner: 'multidialogo' })
+            if (!response.ok) {
+              const errText = await response.text().catch(() => '')
+              throw new Error(`Errore partner postale (HTTP ${response.status}): ${errText || 'Risposta vuota'}`)
+            }
+            invii.push({ success: true, partner: 'multidialogo' })
           }
         } else {
           // Invio email ordinario

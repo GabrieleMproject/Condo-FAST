@@ -32,7 +32,7 @@ export function useComunicazioni() {
     }
   }, [])
 
-  const inviaComunicazione = useCallback(async ({ condominioId, destinatari, oggetto, messaggio, tipo }) => {
+  const inviaComunicazione = useCallback(async ({ condominioId, destinatari, oggetto, messaggio, tipo, allegati }) => {
     setLoading(true)
     setError(null)
     try {
@@ -43,6 +43,7 @@ export function useComunicazioni() {
           oggetto,
           messaggio,
           tipo,
+          allegati,
         },
       })
 

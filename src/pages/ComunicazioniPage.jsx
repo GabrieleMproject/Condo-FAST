@@ -118,6 +118,7 @@ export default function ComunicazioniPage() {
             <select value={filtroStato} onChange={e => setFiltroStato(e.target.value)} style={styles.select}>
               <option value="">Tutti</option>
               <option value="inviata">Inviata</option>
+              <option value="consegnata">Consegnata</option>
               <option value="fallita">Fallita</option>
             </select>
           </div>

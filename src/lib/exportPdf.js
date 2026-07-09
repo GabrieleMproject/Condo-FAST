@@ -197,3 +197,92 @@ export async function exportAnagraficaPdf({ condominio, persone }, withWatermark
   applyWatermark(doc, withWatermark);
   doc.save(`Anagrafica_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
 }
+
+// ─── Genera PDF Sollecito Singola Unità (restituisce base64) ──────────
+export async function exportSingolaUnitaRatePdfBytes({ condominio, esercizio, rate, cells, unita, proprietario }, withWatermark = false) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  let y = disegnaIntestazione(doc, condominio, esercizio, 'SOLLECITO DI PAGAMENTO QUOTE');
+
+  // Dati condomino (in alto a sinistra, sotto l'intestazione)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...TESTO);
+  doc.text('Spett.le Condomino:', 14, y);
+  doc.setFont('helvetica', 'bold');
+  const nomeCompleto = `${proprietario?.cognome || ''} ${proprietario?.nome || ''}`.trim() || 'Condòmino';
+  doc.text(nomeCompleto, 14, y + 5);
+  doc.setFont('helvetica', 'normal');
+  const alignmentText = unita?.scala ? `Scala ${unita.scala}, ` : '';
+  doc.text(`Unità Immobiliare: ${alignmentText}Interno ${unita?.numero || '—'}`, 14, y + 10);
+
+  y += 22;
+
+  // Lettera di sollecito
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...BLU);
+  doc.text('Oggetto: Sollecito pagamento rate condominiali scadute', 14, y);
+  
+  y += 8;
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...TESTO);
+  const cellMap = {};
+  (cells || []).forEach(c => { cellMap[c.rata_id] = c; });
+  const rateSorted = [...(rate || [])].sort((a, b) => (a.numero_rata || 0) - (b.numero_rata || 0));
+
+  const dovuto = (cells || []).reduce((s, r) => s + parseFloat(r.importo || 0), 0);
+  const pagato = (cells || []).reduce((s, r) => s + parseFloat(r.importo_pagato || 0), 0);
+  const insoluto = dovuto - pagato;
+
+  const testoLettera = `Dalle nostre scritture contabili relative alla gestione condominiale in corso, risulta che ad oggi per la S.V. non è stato regolarizzato il pagamento delle rate di seguito elencate.
+  
+La invitiamo a verificare il riepilogo finanziario ed a provvedere al saldo delle quote insolute il prima possibile tramite bonifico bancario sul conto corrente del condominio.
+
+Riepilogo quote per l'esercizio:
+- Totale dovuto: ${fmtEuro(dovuto)}
+- Totale versato ad oggi: ${fmtEuro(pagato)}
+- Saldo residuo da versare: ${fmtEuro(insoluto)}`;
+
+  const splitText = doc.splitTextToSize(testoLettera, 180);
+  doc.text(splitText, 14, y);
+  y += splitText.length * 5 + 6;
+
+  // Tabella delle rate
+  const body = rateSorted.map(r => {
+    const cell = cellMap[r.id];
+    if (!cell) return null;
+    return [
+      r.descrizione || `Rata ${r.numero_rata}`,
+      fmtData(r.data_scadenza),
+      fmtEuro(cell.importo),
+      fmtEuro(cell.importo_pagato),
+      fmtEuro(parseFloat(cell.importo || 0) - parseFloat(cell.importo_pagato || 0)),
+      cell.stato === 'pagata' ? 'Pagata' : cell.stato === 'sovra_pagata' ? 'Sovra-versata' : cell.stato === 'parziale' ? 'Parziale' : 'Scaduta/Non pagata'
+    ];
+  }).filter(Boolean);
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Rata / Descrizione', 'Scadenza', 'Dovuto', 'Pagato', 'Insoluto', 'Stato']],
+    body,
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 3, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+    headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [24, 35, 55] },
+    margin: { left: 14, right: 14 }
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 12;
+
+  // Se è presente l'IBAN del condominio, scriviamolo nel PDF
+  if (condominio?.iban) {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...TESTO);
+    doc.text('Coordinate per il pagamento (IBAN Condominiale):', 14, finalY);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...BLU);
+    doc.text(condominio.iban, 14, finalY + 5);
+  }
+
+  aggiungiFooter(doc);
+  applyWatermark(doc, withWatermark);
+  
+  // Restituiamo il PDF in formato stringa base64 (senza intestazione data:application/pdf;base64,)
+  const pdfOutput = doc.output('datauristring');
+  const base64 = pdfOutput.split(',')[1];
+  return base64;
+}

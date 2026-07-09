@@ -32,6 +32,7 @@ const EMPTY_FORM = {
   fondo_cassa: '',
   quote_annuali: '',
   note: '',
+  iban: '',
 }
 
 export default function CondominiForm({ condominio, onClose }) {
@@ -55,6 +56,7 @@ export default function CondominiForm({ condominio, onClose }) {
         fondo_cassa: condominio.fondo_cassa ?? '',
         quote_annuali: condominio.quote_annuali ?? '',
         data_inizio_amministrazione: condominio.data_inizio_amministrazione ?? '',
+        iban: condominio.iban ?? '',
       })
     }
   }, [condominio])
@@ -98,6 +100,7 @@ export default function CondominiForm({ condominio, onClose }) {
         fondo_cassa: form.fondo_cassa ? parseFloat(form.fondo_cassa) : 0,
         quote_annuali: form.quote_annuali ? parseFloat(form.quote_annuali) : 0,
         data_inizio_amministrazione: form.data_inizio_amministrazione || null,
+        iban: form.iban || null,
       }
 
       if (isEdit) {
@@ -324,6 +327,17 @@ export default function CondominiForm({ condominio, onClose }) {
                     placeholder="0.00"
                     min="0"
                     step="0.01"
+                  />
+                </Field>
+              </div>
+              <div className="form-row">
+                <Field label="IBAN Conto Corrente Condominiale" fullWidth>
+                  <input
+                    type="text"
+                    value={form.iban}
+                    onChange={e => set('iban', e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                    placeholder="Es. IT60X0542403200000001234567"
+                    maxLength={34}
                   />
                 </Field>
               </div>

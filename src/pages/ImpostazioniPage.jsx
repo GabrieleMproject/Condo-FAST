@@ -83,6 +83,21 @@ export default function ImpostazioniPage() {
   const [brandingSaved, setBrandingSaved]   = useState(false)
   const [brandingErr, setBrandingErr]       = useState(null)
 
+  // ── Configurazione Email ──────────────────────────────────────────────
+  const [emailConfig, setEmailConfig] = useState({
+    mail_invio_tipo: 'sistema',
+    mail_mittente_email: '',
+    mail_mittente_nome: '',
+    smtp_host: '',
+    smtp_port: '587',
+    smtp_user: '',
+    smtp_password: '',
+    resend_api_key: '',
+  })
+  const [savingEmail, setSavingEmail] = useState(false)
+  const [emailSaved, setEmailSaved]   = useState(false)
+  const [emailErr, setEmailErr]       = useState(null)
+
   useEffect(() => {
     if (profile) {
       setBranding({
@@ -93,6 +108,16 @@ export default function ImpostazioniPage() {
         ragione_sociale:  profile.ragione_sociale || '',
         partita_iva:      profile.partita_iva || '',
         codice_fiscale:   profile.codice_fiscale || '',
+      })
+      setEmailConfig({
+        mail_invio_tipo:  profile.mail_invio_tipo || 'sistema',
+        mail_mittente_email: profile.mail_mittente_email || '',
+        mail_mittente_nome:  profile.mail_mittente_nome || '',
+        smtp_host:        profile.smtp_host || '',
+        smtp_port:        profile.smtp_port || '587',
+        smtp_user:        profile.smtp_user || '',
+        smtp_password:    profile.smtp_password || '',
+        resend_api_key:   profile.resend_api_key || '',
       })
     }
   }, [profile])
@@ -124,6 +149,20 @@ export default function ImpostazioniPage() {
       setBrandingErr(e.message)
     } finally {
       setSavingBranding(false)
+    }
+  }
+
+  async function salvaEmailConfig() {
+    setEmailErr(null); setSavingEmail(true)
+    try {
+      const res = await updateBranding(emailConfig)
+      if (res.error) throw res.error
+      setEmailSaved(true)
+      setTimeout(() => setEmailSaved(false), 2500)
+    } catch (e) {
+      setEmailErr(e.message)
+    } finally {
+      setSavingEmail(false)
     }
   }
 
@@ -412,6 +451,127 @@ export default function ImpostazioniPage() {
               {brandingSaved && <span style={{ color: '#4ade80', fontSize: 13 }}>✓ Salvato</span>}
               <button style={styles.brandingBtnSave} onClick={salvaBranding} disabled={savingBranding}>
                 {savingBranding ? 'Salvataggio…' : 'Salva branding'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── CONFIGURAZIONE INVIO EMAIL ───────────────────────────────── */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>Configurazione invio e-mail</h2>
+          <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
+            Configura come vengono inviati i solleciti e gli avvisi condominiali (SMTP o Resend personalizzato).
+          </p>
+
+          <div style={styles.brandingCard}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={styles.brandingLabel}>Canale di invio</label>
+                <select
+                  style={styles.brandingInput}
+                  value={emailConfig.mail_invio_tipo}
+                  onChange={e => setEmailConfig(c => ({ ...c, mail_invio_tipo: e.target.value }))}
+                >
+                  <option value="sistema">Sistema CondoAI (Default, onboarding@resend.dev)</option>
+                  <option value="smtp">SMTP Personalizzato (Consigliato per caselle proprie)</option>
+                  <option value="resend_custom">Resend Personalizzato (Richiede API Key & Dominio proprio)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={styles.brandingLabel}>Nome Mittente</label>
+                  <input
+                    style={styles.brandingInput}
+                    placeholder="Es. Studio Rossi"
+                    value={emailConfig.mail_mittente_nome}
+                    onChange={e => setEmailConfig(c => ({ ...c, mail_mittente_nome: e.target.value }))}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={styles.brandingLabel}>Email Mittente / Alias</label>
+                  <input
+                    style={styles.brandingInput}
+                    placeholder="Es. studio@studioamministratore.it"
+                    value={emailConfig.mail_mittente_email}
+                    onChange={e => setEmailConfig(c => ({ ...c, mail_mittente_email: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {emailConfig.mail_invio_tipo === 'smtp' && (
+                <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p style={{ color: '#64748b', fontSize: 11, margin: '0 0 4px', fontWeight: 700, letterSpacing: '0.05em' }}>PARAMETRI SERVER SMTP</p>
+                  
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ flex: 2 }}>
+                      <label style={styles.brandingLabel}>Host SMTP</label>
+                      <input
+                        style={styles.brandingInput}
+                        placeholder="Es. smtp.studioamministratore.it"
+                        value={emailConfig.smtp_host}
+                        onChange={e => setEmailConfig(c => ({ ...c, smtp_host: e.target.value }))}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={styles.brandingLabel}>Porta SMTP</label>
+                      <input
+                        style={styles.brandingInput}
+                        type="number"
+                        placeholder="Es. 587"
+                        value={emailConfig.smtp_port}
+                        onChange={e => setEmailConfig(c => ({ ...c, smtp_port: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={styles.brandingLabel}>Username SMTP</label>
+                      <input
+                        style={styles.brandingInput}
+                        placeholder="Username o email di accesso"
+                        value={emailConfig.smtp_user}
+                        onChange={e => setEmailConfig(c => ({ ...c, smtp_user: e.target.value }))}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={styles.brandingLabel}>Password SMTP</label>
+                      <input
+                        style={styles.brandingInput}
+                        type="password"
+                        placeholder="••••••••••••"
+                        value={emailConfig.smtp_password}
+                        onChange={e => setEmailConfig(c => ({ ...c, smtp_password: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {emailConfig.mail_invio_tipo === 'resend_custom' && (
+                <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p style={{ color: '#64748b', fontSize: 11, margin: '0 0 4px', fontWeight: 700, letterSpacing: '0.05em' }}>PARAMETRI RESEND</p>
+                  <div>
+                    <label style={styles.brandingLabel}>API Key Resend Personalizzata</label>
+                    <input
+                      style={styles.brandingInput}
+                      type="password"
+                      placeholder="re_••••••••••••"
+                      value={emailConfig.resend_api_key}
+                      onChange={e => setEmailConfig(c => ({ ...c, resend_api_key: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {emailErr && <div style={{ ...styles.errorBox, marginTop: 16, marginBottom: 0 }}>{emailErr}</div>}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
+              {emailSaved && <span style={{ color: '#4ade80', fontSize: 13 }}>✓ Impostazioni email salvate</span>}
+              <button style={styles.brandingBtnSave} onClick={salvaEmailConfig} disabled={savingEmail}>
+                {savingEmail ? 'Salvataggio…' : 'Salva configurazione email'}
               </button>
             </div>
           </div>

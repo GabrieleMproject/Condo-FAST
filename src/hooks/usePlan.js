@@ -134,21 +134,36 @@ export function PlanProvider({ children }) {
 
   useEffect(() => { loadPlan() }, [loadPlan])
 
-  // ── Aggiorna Branding ──────────────────────────────────────────────────
   const updateBranding = useCallback(async (brandingData) => {
     if (!user) return { error: new Error('Utente non autenticato') }
     try {
+      const fieldsToUpdate = {}
+      const textFields = [
+        'studio_nome', 'studio_indirizzo', 'studio_contatti', 'logo_base64',
+        'ragione_sociale', 'partita_iva', 'codice_fiscale', 'mail_invio_tipo',
+        'mail_mittente_email', 'mail_mittente_nome', 'smtp_host',
+        'smtp_user', 'smtp_password', 'resend_api_key'
+      ]
+
+      textFields.forEach(field => {
+        if (brandingData[field] !== undefined) {
+          fieldsToUpdate[field] = brandingData[field] || null
+        }
+      })
+
+      // Gestione speciale per la porta SMTP (numero intero)
+      if (brandingData.smtp_port !== undefined) {
+        fieldsToUpdate.smtp_port = brandingData.smtp_port ? parseInt(brandingData.smtp_port) : null
+      }
+
+      // Evita l'azzeramento forzato di tipo invio se non specificato
+      if (fieldsToUpdate.mail_invio_tipo === null) {
+        fieldsToUpdate.mail_invio_tipo = 'sistema'
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          studio_nome:      brandingData.studio_nome || null,
-          studio_indirizzo: brandingData.studio_indirizzo || null,
-          studio_contatti:  brandingData.studio_contatti || null,
-          logo_base64:      brandingData.logo_base64 || null,
-          ragione_sociale:  brandingData.ragione_sociale || null,
-          partita_iva:      brandingData.partita_iva || null,
-          codice_fiscale:   brandingData.codice_fiscale || null,
-        })
+        .update(fieldsToUpdate)
         .eq('id', user.id)
 
       if (error) throw error

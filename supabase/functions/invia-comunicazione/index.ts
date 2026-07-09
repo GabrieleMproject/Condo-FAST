@@ -1,6 +1,7 @@
 // supabase/functions/invia-comunicazione/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import nodemailer from 'npm:nodemailer'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
@@ -39,7 +40,7 @@ serve(async (req) => {
       })
     }
 
-    const { condominio_id, destinatari, oggetto, messaggio, tipo } = await req.json()
+    const { condominio_id, destinatari, oggetto, messaggio, tipo, allegati } = await req.json()
 
     // Validazione RLS: verifica che l'utente gestisca il condominio prima di procedere all'invio
     if (condominio_id) {
@@ -65,46 +66,98 @@ serve(async (req) => {
       })
     }
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    if (!resendApiKey) {
-      return new Response(JSON.stringify({ error: 'Chiave API Resend non configurata nel server' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    // Carica profilo amministratore per le impostazioni email/SMTP
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('mail_invio_tipo, mail_mittente_email, mail_mittente_nome, smtp_host, smtp_port, smtp_user, smtp_password, resend_api_key')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileErr) {
+      console.warn("Impossibile caricare il profilo, uso impostazioni di default:", profileErr.message)
     }
+
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    const mailInvioTipo = profile?.mail_invio_tipo || 'sistema'
 
     const invii = []
     const logInseriti = []
+
+    // Configura transporter SMTP se necessario per evitare di ricrearlo in loop
+    let transporter: any = null
+    if (mailInvioTipo === 'smtp' && profile?.smtp_host) {
+      transporter = nodemailer.createTransport({
+        host: profile.smtp_host,
+        port: profile.smtp_port || 587,
+        secure: profile.smtp_port === 465,
+        auth: {
+          user: profile.smtp_user || '',
+          pass: profile.smtp_password || '',
+        },
+        tls: {
+          rejectUnauthorized: false
+        }
+      })
+    }
 
     for (const dest of destinatari) {
       let statoInvio: 'inviata' | 'fallita' = 'inviata'
       let errorMsg = null
 
       try {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${resendApiKey}`,
-          },
-          body: JSON.stringify({
-            from: 'CondoAI Amministratore <onboarding@resend.dev>', // Corretto typo resends -> resend
-            to: [dest.email],
+        if (mailInvioTipo === 'smtp' && transporter) {
+          // 1. Invio via SMTP
+          await transporter.sendMail({
+            from: `"${profile.mail_mittente_nome || 'CondoAI Amministratore'}" <${profile.mail_mittente_email || user.email}>`,
+            to: dest.email,
             subject: oggetto,
             html: messaggio,
-            reply_to: user.email, // Estratto direttamente da JWT user.email per evitare spoofing
-          }),
-        })
+            attachments: (allegati || []).map((a: any) => ({
+              filename: a.filename,
+              content: a.content,
+              encoding: 'base64'
+            }))
+          })
+          invii.push({ email: dest.email, success: true })
+        } else {
+          // 2. Invio via Resend (di sistema o personalizzato)
+          const apiKey = (mailInvioTipo === 'resend_custom' && profile?.resend_api_key) ? profile.resend_api_key : resendApiKey
+          const fromEmail = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_email) ? profile.mail_mittente_email : 'onboarding@resend.dev'
+          const fromName = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_nome) ? profile.mail_mittente_nome : 'CondoAI Amministratore'
 
-        if (!res.ok) {
-          const resError = await res.json()
-          throw new Error(resError.message || `Errore HTTP ${res.status}`)
+          if (!apiKey) {
+            throw new Error('Chiave API Resend non configurata')
+          }
+
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              from: `${fromName} <${fromEmail}>`,
+              to: [dest.email],
+              subject: oggetto,
+              html: messaggio,
+              reply_to: user.email,
+              attachments: (allegati || []).map((a: any) => ({
+                content: a.content,
+                filename: a.filename,
+              }))
+            }),
+          })
+
+          if (!res.ok) {
+            const resError = await res.json()
+            throw new Error(resError.message || `Errore HTTP ${res.status}`)
+          }
+
+          const resData = await res.json()
+          invii.push({ email: dest.email, id: resData.id })
         }
-
-        const resData = await res.json()
-        invii.push({ email: dest.email, id: resData.id })
       } catch (err) {
-        console.error(`Errore invio (email offuscata):`, err.message)
+        console.error(`Errore invio a ${dest.email}:`, err.message)
         statoInvio = 'fallita'
         errorMsg = err.message
       }
@@ -126,7 +179,7 @@ serve(async (req) => {
         .single()
 
       if (dbError) {
-        console.error(`Errore scrittura log DB (email offuscata):`, dbError.message)
+        console.error(`Errore scrittura log DB per ${dest.email}:`, dbError.message)
         logInseriti.push({ email: dest.email, success: false, error: dbError.message })
       } else {
         logInseriti.push({ email: dest.email, success: true, id: dbData.id })

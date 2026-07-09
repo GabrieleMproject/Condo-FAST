@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
 import { useComunicazioni } from '../hooks/useComunicazioni'
+import { exportSingolaUnitaRatePdfBytes } from '../lib/exportPdf'
 import { CreditCard, X, CheckCircle2, Coins, Mail } from 'lucide-react'
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
@@ -51,6 +52,8 @@ export default function RateGridTab({ condominioId }) {
   const { inviaComunicazione } = useComunicazioni()
   const [inviandoSollecito, setInviandoSollecito] = useState(false)
   const [showProposteModal, setShowProposteModal] = useState(false)
+  const [condominio, setCondominio] = useState(null)
+  const [invioMassivoStato, setInvioMassivoStato] = useState({ inCorso: false, totale: 0, corrente: 0, falliti: 0 })
 
   const [esercizi, setEsercizi] = useState([])
   const [esercizio, setEsercizio] = useState(null)
@@ -278,6 +281,16 @@ L'Amministratore`;
         ;(data || []).forEach(c => { map[c.unita_id] = c.pagante })
         setConfigPagante(map)
       })
+
+    // Carica dati condominio (con IBAN)
+    supabase.from('condomini').select('*').eq('id', condominioId).maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[RateGridTab] Errore caricamento condominio:", error.message)
+          return
+        }
+        setCondominio(data)
+      })
   }, [condominioId])
 
   async function loadGriglia() {
@@ -331,6 +344,93 @@ L'Amministratore`;
     if (error) { alert('Errore: ' + error.message); return }
     setCells((prev) => prev.map((c) => (c.id === cell.id ? data : c)))
     setEditing(null)
+  }
+
+  async function handleInviaSollecitiMassivi({ proposteSelezionate, oggettoTemplate, testoTemplate, ibanDaUsare, allegaPdf }) {
+    setInviandoSollecito(true)
+    setInvioMassivoStato({ inCorso: true, totale: proposteSelezionate.length, corrente: 0, falliti: 0 })
+
+    let falliti = 0
+    let corrente = 0
+
+    for (const p of proposteSelezionate) {
+      corrente++
+      setInvioMassivoStato(prev => ({ ...prev, corrente }))
+      try {
+        const u = p.unita
+        const dest = p.destinatario
+        
+        // 1. Carica rate_unita dell'unità specifica per calcoli precisi
+        const { data: rateUnitaData, error: ruErr } = await supabase
+          .from('rate_unita')
+          .select('*')
+          .eq('unita_id', u.id)
+          .in('rata_id', rate.map(r => r.id));
+
+        if (ruErr) throw ruErr;
+
+        // 2. Risoluzione dei tag dinamici nel testo dell'email
+        const nomeDest = `${dest.nome} ${dest.cognome}`;
+        const unitLabel = `Interno ${u.numero}${u.scala ? ` (Scala ${u.scala})` : ''}`;
+        
+        let oggettoRisolto = oggettoTemplate
+          .replace(/{NOME}/g, nomeDest)
+          .replace(/{UNITA}/g, unitLabel)
+          .replace(/{CONDOMINIO}/g, condominio?.nome || '')
+          .replace(/{IMPORTO_SCADUTO}/g, `€ ${p.importoInsoluto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`);
+
+        let testoRisolto = testoTemplate
+          .replace(/{NOME}/g, nomeDest)
+          .replace(/{UNITA}/g, unitLabel)
+          .replace(/{CONDOMINIO}/g, condominio?.nome || '')
+          .replace(/{IMPORTO_SCADUTO}/g, `€ ${p.importoInsoluto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`)
+          .replace(/{IBAN}/g, ibanDaUsare || '');
+
+        // 3. Generazione PDF Dettaglio Rate se richiesto
+        const allegati = []
+        if (allegaPdf) {
+          const condoConIbanTemp = { ...condominio, iban: ibanDaUsare }
+          const pdfBase64 = await exportSingolaUnitaRatePdfBytes({
+            condominio: condoConIbanTemp,
+            esercizio,
+            rate,
+            cells: rateUnitaData || [],
+            unita: u,
+            proprietario: dest
+          })
+          allegati.push({
+            content: pdfBase64,
+            filename: `Dettaglio_Rate_Unita_${u.numero}.pdf`,
+            type: 'application/pdf'
+          })
+        }
+
+        // 4. Invocazione Edge Function per l'invio
+        await inviaComunicazione({
+          condominioId,
+          destinatari: [{ email: dest.email, nome: nomeDest }],
+          oggetto: oggettoRisolto,
+          messaggio: testoRisolto,
+          tipo: 'sollecito',
+          allegati
+        })
+
+      } catch (err) {
+        console.error(`Errore invio sollecito per unità ${p.unita.numero}:`, err.message)
+        falliti++
+        setInvioMassivoStato(prev => ({ ...prev, falliti }))
+      }
+    }
+
+    setInviandoSollecito(false)
+    setInvioMassivoStato(prev => ({ ...prev, inCorso: false }))
+    
+    if (falliti > 0) {
+      alert(`Invio massivo completato. Riusciti: ${proposteSelezionate.length - falliti}, Falliti: ${falliti}`);
+    } else {
+      alert('Tutti i solleciti sono stati inviati con successo!');
+    }
+    setShowProposteModal(false)
   }
 
   // ── totali ─────────────────────────────────────────────────
@@ -547,12 +647,14 @@ L'Amministratore`;
           fetchUnita={fetchUnita}
         />
       )}
-
       {showProposteModal && (
         <ProposteSollecitoModal
           proposte={rateScaduteDa10Giorni}
+          condominio={condominio}
+          invioMassivoStato={invioMassivoStato}
           onClose={() => setShowProposteModal(false)}
           onSollecita={handleSollecitaRata}
+          onInviaMassivo={handleInviaSollecitiMassivi}
           inviando={inviandoSollecito}
         />
       )}
@@ -686,78 +788,191 @@ function CellEditor({ cell, rata, unita, getProprietario, getInquilino, configPa
 }
 
 // ── Modale Proposte Solleciti (Scaduti da > 10 giorni) ─────────
-function ProposteSollecitoModal({ proposte, onSollecita, onClose, inviando }) {
+function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClose, onSollecita, onInviaMassivo, inviando }) {
+  const [selezionati, setSelezionati] = useState(proposte.map(p => p.unita.id));
+  const [iban, setIban] = useState(condominio?.iban || '');
+  const [oggetto, setOggetto] = useState('Sollecito pagamento rate condominiali - {CONDOMINIO}');
+  const [testo, setTesto] = useState(`Gentile <strong>{NOME}</strong>,<br/><br/>Le inviamo la presente comunicazione in merito alle scadenze condominiali dell'esercizio in corso del condominio <strong>{CONDOMINIO}</strong> per l'unità <strong>{UNITA}</strong>.<br/><br/>Dalle nostre scritture contabili risulta un importo insoluto attualmente scaduto pari a: <strong>{IMPORTO_SCADUTO}</strong>.<br/><br/>La invitiamo a regolarizzare la sua posizione il prima possibile a mezzo bonifico bancario sulle seguenti coordinate:<br/>IBAN: <strong>{IBAN}</strong><br/><br/>In allegato alla presente email troverà il PDF contenente il dettaglio completo delle rate e dei pagamenti registrati.<br/><br/>Restiamo a disposizione per qualsiasi chiarimento.<br/><br/>Cordiali saluti,<br/>L'Amministratore`);
+  const [allegaPdf, setAllegaPdf] = useState(true);
+
+  // Sincronizza l'IBAN se il condominio viene caricato asincronicamente
+  useEffect(() => {
+    if (condominio?.iban) {
+      setIban(condominio.iban);
+    }
+  }, [condominio]);
+
+  const handleToggle = (id) => {
+    if (selezionati.includes(id)) {
+      setSelezionati(prev => prev.filter(x => x !== id));
+    } else {
+      setSelezionati(prev => [...prev, id]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selezionati.length === proposte.length) {
+      setSelezionati([]);
+    } else {
+      setSelezionati(proposte.map(p => p.unita.id));
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (selezionati.length === 0) {
+      alert("Seleziona almeno un condomino da sollecitare.");
+      return;
+    }
+    const proposteSelezionate = proposte.filter(p => selezionati.includes(p.unita.id));
+    onInviaMassivo({
+      proposteSelezionate,
+      oggettoTemplate: oggetto,
+      testoTemplate: testo,
+      ibanDaUsare: iban,
+      allegaPdf
+    });
+  };
+
   return (
-    <div style={st.overlay} onClick={onClose}>
-      <div style={{ ...st.modal, width: 500, maxWidth: '95vw' }} onClick={e => e.stopPropagation()}>
+    <div style={st.overlay}>
+      <div style={{ ...st.modal, width: 750, maxWidth: '95vw' }}>
         <div style={st.modalHead}>
           <div>
-            <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>Solleciti Consigliati (Scadenza &gt; 10 giorni)</div>
+            <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 16 }}>Gestione Solleciti di Pagamento Massivi</div>
             <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
-              Le rate di queste unità risultano insolute da oltre 10 giorni.
+              Seleziona i condòmini morosi e personalizza il template di invio.
             </div>
           </div>
-          <button style={st.btnIcon} onClick={onClose}><X size={16} /></button>
+          <button style={st.btnIcon} onClick={onClose} disabled={invioMassivoStato.inCorso}><X size={16} /></button>
         </div>
 
-        <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, margin: '14px 0' }}>
-          {proposte.map(p => (
-            <div key={p.unita.id} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 13 }}>
-                  Unità {p.unita.numero} - {p.destinatario.cognome} {p.destinatario.nome}
-                  <span style={{ color: '#8b5cf6', fontSize: 11, fontWeight: 400, marginLeft: 6 }}>
-                    ({p.paganteTipo === 'inquilino' ? 'inquilino' : 'proprietario'})
-                  </span>
+        {invioMassivoStato.inCorso ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ color: '#e2e8f0', fontSize: 15, fontWeight: 600 }}>
+              Invio dei solleciti in corso...
+            </div>
+            <div style={{ color: '#cbd5e1', fontSize: 13 }}>
+              Inviato {invioMassivoStato.corrente} di {invioMassivoStato.totale} solleciti {invioMassivoStato.falliti > 0 && `(${invioMassivoStato.falliti} falliti)`}
+            </div>
+            <div style={{ height: 8, background: '#1e293b', borderRadius: 4, overflow: 'hidden', width: '100%', maxWidth: 400, margin: '0 auto' }}>
+              <div style={{
+                height: '100%',
+                background: '#2563eb',
+                width: `${Math.round((invioMassivoStato.corrente / invioMassivoStato.totale) * 100)}%`,
+                transition: 'width 0.3s ease'
+              }} />
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 10 }}>
+            
+            {/* Grid principale: Destinatari a sinistra, Template a destra */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 20 }}>
+              
+              {/* Colonna Destinatari */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={st.fieldLabel}>Seleziona Condòmini ({selezionati.length})</label>
+                  <button type="button" onClick={handleSelectAll} style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: 0 }}>
+                    {selezionati.length === proposte.length ? 'Deseleziona tutti' : 'Seleziona tutti'}
+                  </button>
                 </div>
-                <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>Rate: {p.rateCoinvolte}</div>
-                <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 700, marginTop: 4 }}>Scaduto: € {p.importoInsoluto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</div>
+
+                <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #334155', borderRadius: 8, background: '#0f172a', display: 'flex', flexDirection: 'column' }}>
+                  {proposte.map(p => {
+                    const isSelected = selezionati.includes(p.unita.id);
+                    return (
+                      <label key={p.unita.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #1e293b', cursor: 'pointer', background: isSelected ? 'rgba(37,99,235,0.06)' : 'transparent', transition: 'background-color 0.15s' }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggle(p.unita.id)}
+                          style={{ marginRight: 12, cursor: 'pointer' }}
+                        />
+                        <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
+                          <div style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Unità {p.unita.numero} - {p.destinatario.cognome} {p.destinatario.nome}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                            <span style={{ color: '#64748b', fontSize: 11 }}>Rate: {p.rateCoinvolte}</span>
+                            <span style={{ color: '#ef4444', fontSize: 12, fontWeight: 700 }}>€ {p.importoInsoluto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
-              <button 
-                disabled={inviando}
-                style={{ ...st.btnPrimary, flex: 'none', padding: '6px 12px', fontSize: 11, background: '#ef4444', width: 'auto' }} 
-                onClick={async () => {
-                  try {
-                    await onSollecita(p.unita, p.proprietario, true);
-                    alert('Sollecito inviato con successo!');
-                  } catch (err) {
-                    alert("Invio fallito: " + err.message);
-                  }
-                }}
+
+              {/* Colonna Template Email */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label style={st.fieldLabel}>IBAN Condominio per Pagamento</label>
+                  <input
+                    type="text"
+                    style={st.input}
+                    value={iban}
+                    onChange={e => setIban(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                    placeholder="Codice IBAN del condominio..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={st.fieldLabel}>Oggetto E-mail</label>
+                  <input
+                    type="text"
+                    style={st.input}
+                    value={oggetto}
+                    onChange={e => setOggetto(e.target.value)}
+                    placeholder="Oggetto dell'email..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={st.fieldLabel}>Corpo E-mail (HTML)</label>
+                  <textarea
+                    style={{ ...st.input, minHeight: 130, resize: 'vertical', fontSize: 12, lineHeight: 1.5 }}
+                    value={testo}
+                    onChange={e => setTesto(e.target.value)}
+                    placeholder="Testo del sollecito..."
+                    required
+                  />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                    {['{NOME}', '{UNITA}', '{CONDOMINIO}', '{IMPORTO_SCADUTO}', '{IBAN}'].map(tag => (
+                      <span key={tag} style={{ color: '#64748b', background: '#0f172a', border: '1px solid #334155', borderRadius: 4, padding: '2px 6px', fontSize: 10, fontFamily: 'monospace' }}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <label style={{ display: 'flex', alignItems: 'center', color: '#cbd5e1', fontSize: 12, cursor: 'pointer', marginTop: 4 }}>
+                  <input
+                    type="checkbox"
+                    checked={allegaPdf}
+                    onChange={e => setAllegaPdf(e.target.checked)}
+                    style={{ marginRight: 8, cursor: 'pointer' }}
+                  />
+                  Allega lettera sollecito in formato PDF (dettaglio rate)
+                </label>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid #334155', paddingTop: 14, marginTop: 6 }}>
+              <button type="button" style={st.btnCancel} onClick={onClose} disabled={inviando}>Annulla</button>
+              <button
+                type="submit"
+                disabled={inviando || selezionati.length === 0}
+                style={{ ...st.btnPrimary, background: '#ef4444', width: 'auto', padding: '10px 24px' }}
               >
-                Invia
+                Invia {selezionati.length} Solleciti
               </button>
             </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
-          <button style={st.btnCancel} onClick={onClose}>Chiudi</button>
-          <button 
-            disabled={inviando}
-            style={{ ...st.btnPrimary, background: '#ef4444', width: 'auto' }} 
-            onClick={async () => {
-              if (confirm(`Inviare il sollecito a tutte le ${proposte.length} unità consigliate?`)) {
-                let falliti = 0;
-                for (const p of proposte) {
-                  try {
-                    await onSollecita(p.unita, p.proprietario, true);
-                  } catch (err) {
-                    falliti++;
-                  }
-                }
-                if (falliti > 0) {
-                  alert(`Invio completato. Alcuni invii sono falliti (${falliti} unità).`);
-                } else {
-                  alert('Tutti i solleciti sono stati inviati!');
-                }
-                onClose();
-              }
-            }}
-          >
-            {inviando ? 'Invio in corso...' : 'Invia a tutti'}
-          </button>
-        </div>
+          </form>
+        )}
       </div>
     </div>
   );

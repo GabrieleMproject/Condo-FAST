@@ -180,7 +180,13 @@ export default function SpesePage() {
             categoria: payload.categoria || 'altro',
             stato: 'attesa',
             pdf_url: path,
-            ai_dati_estratti: aiDatiEstratti
+            ai_dati_estratti: aiDatiEstratti,
+            imponibile_ritenuta: aiDatiEstratti?.imponibile_ritenuta || 0.00,
+            aliquota_ritenuta_percentuale: aiDatiEstratti?.aliquota_ritenuta_percentuale || 0.00,
+            importo_ritenuta: aiDatiEstratti?.importo_ritenuta || 0.00,
+            ritenuta_acconto: aiDatiEstratti?.importo_ritenuta || 0.00,
+            codice_tributo_f24: aiDatiEstratti?.codice_tributo_f24 || null,
+            data_pagamento: null,
           })
           if (invoiceErr) throw invoiceErr
         }

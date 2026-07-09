@@ -142,9 +142,16 @@ Abbina i movimenti alle fatture.`;
       if (errRic) throw errRic;
 
       if (nuovoStato === 'confermata') {
+        const mov = movimenti.find(m => m.id === movimentoId);
+        const dataPagamento = mov ? mov.data_movimento : new Date().toISOString().split('T')[0];
+
         const [resMov, resFatt] = await Promise.all([
           supabase.from('estratto_conto').update({ riconciliato: true }).eq('id', movimentoId),
-          supabase.from('fatture_fornitori').update({ riconciliata: true }).eq('id', fatturaId),
+          supabase.from('fatture_fornitori').update({ 
+            riconciliata: true,
+            stato: 'pagata',
+            data_pagamento: dataPagamento
+          }).eq('id', fatturaId),
         ]);
         if (resMov.error) throw resMov.error;
         if (resFatt.error) throw resFatt.error;

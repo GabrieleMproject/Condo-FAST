@@ -160,6 +160,11 @@ export default function FattureFornitoriPage() {
         stato:           'attesa',
         pdf_url:         fileUrl,
         ai_dati_estratti: datiAI,
+        imponibile_ritenuta: datiAI.imponibile_ritenuta || 0.00,
+        aliquota_ritenuta_percentuale: datiAI.aliquota_ritenuta_percentuale || 0.00,
+        importo_ritenuta: datiAI.importo_ritenuta || 0.00,
+        ritenuta_acconto: datiAI.importo_ritenuta || 0.00,
+        codice_tributo_f24: datiAI.codice_tributo_f24 || null,
       }).select().single();
 
       if (error) throw error;
@@ -261,6 +266,11 @@ export default function FattureFornitoriPage() {
       descrizione:      f.descrizione || '',
       spesa_id:         f.spesa_id || '',
       ritenuta_acconto: f.ritenuta_acconto ?? '',
+      imponibile_ritenuta: f.imponibile_ritenuta ?? 0,
+      aliquota_ritenuta_percentuale: f.aliquota_ritenuta_percentuale ?? 0,
+      importo_ritenuta: f.importo_ritenuta ?? 0,
+      codice_tributo_f24: f.codice_tributo_f24 || '',
+      data_pagamento: f.data_pagamento || '',
     });
   }
 
@@ -270,11 +280,18 @@ export default function FattureFornitoriPage() {
     if (!update.numero_fattura) delete update.numero_fattura;
     if (!update.spesa_id) update.spesa_id = null;
     if (!update.fornitore_id) update.fornitore_id = null;
-    // ritenuta: '' → null, altrimenti numero
-    update.ritenuta_acconto =
-      (update.ritenuta_acconto === '' || update.ritenuta_acconto == null)
-        ? null
-        : parseFloat(update.ritenuta_acconto);
+    
+    update.imponibile_ritenuta = parseFloat(update.imponibile_ritenuta) || 0;
+    update.aliquota_ritenuta_percentuale = parseFloat(update.aliquota_ritenuta_percentuale) || 0;
+    update.importo_ritenuta = parseFloat(update.importo_ritenuta) || 0;
+    update.ritenuta_acconto = update.importo_ritenuta;
+    update.codice_tributo_f24 = update.codice_tributo_f24 || null;
+    
+    if (update.stato === 'pagata') {
+      update.data_pagamento = update.data_pagamento || new Date().toISOString().split('T')[0];
+    } else {
+      update.data_pagamento = null;
+    }
 
     const { error } = await supabase.from('fatture_fornitori').update(update).eq('id', id);
     if (error) {
@@ -544,7 +561,25 @@ export default function FattureFornitoriPage() {
 }
 
 function EditFattura({ data, onChange, onSave, onCancel, spese, fornitori }) {
-  const upd = (field, val) => onChange(prev => ({ ...prev, [field]: val }));
+  const upd = (field, val) => {
+    onChange(prev => {
+      let next = { ...prev, [field]: val };
+      if (field === 'imponibile_ritenuta' || field === 'aliquota_ritenuta_percentuale') {
+        const imp = parseFloat(field === 'imponibile_ritenuta' ? val : next.imponibile_ritenuta) || 0;
+        const aliq = parseFloat(field === 'aliquota_ritenuta_percentuale' ? val : next.aliquota_ritenuta_percentuale) || 0;
+        const calcolata = (imp * aliq / 100).toFixed(2);
+        next.importo_ritenuta = calcolata;
+        next.ritenuta_acconto = calcolata;
+      }
+      if (field === 'stato' && val !== 'pagata') {
+        next.data_pagamento = '';
+      } else if (field === 'stato' && val === 'pagata' && !next.data_pagamento) {
+        next.data_pagamento = new Date().toISOString().split('T')[0];
+      }
+      return next;
+    });
+  };
+
   return (
     <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
       <div>
@@ -562,7 +597,6 @@ function EditFattura({ data, onChange, onSave, onCancel, spese, fornitori }) {
         { label: 'Data Fattura',       field: 'data_fattura',     type: 'date'   },
         { label: 'Data Scadenza',      field: 'data_scadenza',    type: 'date'   },
         { label: 'Importo Totale €',   field: 'importo_totale',   type: 'number' },
-        { label: 'Ritenuta d\'acconto €', field: 'ritenuta_acconto', type: 'number' },
       ].map(({ label, field, type }) => (
         <div key={field}>
           <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>{label}</label>
@@ -570,6 +604,31 @@ function EditFattura({ data, onChange, onSave, onCancel, spese, fornitori }) {
             style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 7, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, boxSizing: 'border-box' }} />
         </div>
       ))}
+      <div>
+        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Imponibile Ritenuta €</label>
+        <input type="number" step="0.01" value={data.imponibile_ritenuta ?? ''} onChange={e => upd('imponibile_ritenuta', e.target.value)}
+          style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 7, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Aliquota Ritenuta %</label>
+        <input type="number" step="0.01" value={data.aliquota_ritenuta_percentuale ?? ''} onChange={e => upd('aliquota_ritenuta_percentuale', e.target.value)}
+          style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 7, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Importo Ritenuta €</label>
+        <input type="number" step="0.01" value={data.importo_ritenuta ?? ''} onChange={e => upd('importo_ritenuta', e.target.value)}
+          style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 7, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Codice Tributo F24</label>
+        <select value={data.codice_tributo_f24 || ''} onChange={e => upd('codice_tributo_f24', e.target.value)}
+          style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 7, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13 }}>
+          <option value="">Nessuno</option>
+          <option value="1019">1019 (Contratti d'appalto - 4%)</option>
+          <option value="1020">1020 (Contratti d'opera - 4%)</option>
+          <option value="1040">1040 (Lavoro autonomo - 20%)</option>
+        </select>
+      </div>
       <div>
         <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Stato</label>
         <select value={data.stato} onChange={e => upd('stato', e.target.value)}
@@ -579,6 +638,13 @@ function EditFattura({ data, onChange, onSave, onCancel, spese, fornitori }) {
           ))}
         </select>
       </div>
+      {data.stato === 'pagata' && (
+        <div>
+          <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Data Pagamento</label>
+          <input type="date" value={data.data_pagamento ?? ''} onChange={e => upd('data_pagamento', e.target.value)}
+            style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: 7, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, boxSizing: 'border-box' }} />
+        </div>
+      )}
       <div>
         <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Collega a Spesa</label>
         <select value={data.spesa_id || ''} onChange={e => upd('spesa_id', e.target.value)}

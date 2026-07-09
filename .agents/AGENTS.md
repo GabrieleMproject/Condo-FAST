@@ -434,6 +434,22 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
   - *GDPR nei Log:* Rimossi i riferimenti e dati personali (nomi completi ed indirizzi) dai log `console.log` di tracciamento dell'Edge Function.
   - *Security RLS:* Reso obbligatorio il parametro `condominio_id` nella validazione iniziale dell'Edge Function prima di effettuare le interrogazioni DB protette da RLS, prevenendo potenziali bypass.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S18 (9 Luglio 2026 - Modulo Fiscale ed Adempimenti Fiscali)
+
+### 1. Decisioni sul Workflow Fiscale ed Adempimenti (Conformità Normativa e CBI)
+- **Logica Contabile F24 via Trigger DB (Opzione A):** Implementato un trigger contabile robusto `BEFORE INSERT OR UPDATE` su `fatture_fornitori` in `sql/s18_modulo_fiscale_adempimenti.sql`. Quando lo stato della fattura passa a `'pagata'`, il trigger calcola automaticamente la scadenza (il 16 del mese successivo) e cumula l'importo della ritenuta nella delega F24 associata.
+- **Protezione Normativa su Storno Ritenute:** Il trigger impedisce l'annullamento o lo storno di fatture la cui ritenuta d'acconto è abbinata ad una delega F24 già in stato `'pagato'`, sollevando un'eccezione SQL per salvaguardare la conformità fiscale.
+- **Standard Esportazione CBI F24 (120 caratteri):** Implementato in `cbiGenerator.js` la generazione della distinta F24 massiva nel formato standard Corporate Banking Italiano posizionale a 120 caratteri per riga, contenente i record 10, 20, 30, 90.
+- **Formati Telematici Agenzia delle Entrate (CU e 770):** Rilasciato in `fiscaleTelematico.js` il generatore del file telematico `.txt` a lunghezza record fissa (1900 caratteri) conforme alle specifiche Sogei per l'invio diretto tramite Desktop Telematico.
+- **Quietanza per il Fornitore:** Implementato in `exportFiscale.js` la funzione `exportQuietanzaFornitore` per scaricare la certificazione di avvenuto versamento della ritenuta in formato PDF firmato dall'amministratore.
+
+### 2. Bug e Vulnerabilità Risolti (GDPR & Sicurezza)
+- **Apertura Sicura PDF Quietanza:** Allineato il caricamento e la visualizzazione delle quietanze F24 in `ModuloFiscalePage.jsx` all'uso di Signed URL temporanei (scadenza 15 minuti) autogenerati tramite bucket `documenti-condominio` protetto e pattern anti-popup blocker sincrono.
+- **Aggiornamento Riconciliazione con Data Movimento:** Corretta la funzione `aggiornaStato` in `RiconciliazioniPage.jsx` per passare `data_pagamento` valorizzata con la data del movimento bancario al momento del salvataggio della fattura a `'pagata'`.
+
+
 
 
 

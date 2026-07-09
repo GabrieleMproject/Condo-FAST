@@ -234,10 +234,27 @@ Formato JSON:
   "aliquota_iva": number | null,
   "descrizione": "descrizione dei lavori/servizi",
   "categoria": "manutenzione" | "pulizie" | "utenze" | "assicurazione" | "amministrazione" | "altro",
-  "note": "note aggiuntive" | null
+  "note": "note aggiuntive" | null,
+  "imponibile_ritenuta": number,
+  "aliquota_ritenuta_percentuale": number,
+  "importo_ritenuta": number,
+  "codice_tributo_f24": "1019" | "1020" | "1040" | null
 }
 
-Regole:
+Regole Ritenuta d'Acconto:
+- Rileva se il fornitore specifica la ritenuta d'acconto (es. 4%, 20% sul 50%, 11.5%, 20% o ritenuta d'acconto classica).
+- Se il fornitore scrive in fattura "Regime Forfettario ai sensi della L. 190/2014" o simile, la ritenuta d'acconto non si applica. In tal caso, imposta "imponibile_ritenuta" a 0.00, "aliquota_ritenuta_percentuale" a 0.00, "importo_ritenuta" a 0.00 e "codice_tributo_f24" a null.
+- Altrimenti, calcola la ritenuta d'acconto:
+  - "imponibile_ritenuta" è l'imponibile su cui si calcola la ritenuta (solitamente coincide con l'importo_netto o la quota imponibile esposta).
+  - "aliquota_ritenuta_percentuale" è la percentuale di ritenuta applicata (es. 4.00 per contratti d'appalto/servizi generici, 20.00 per liberi professionisti/amministratori).
+  - "importo_ritenuta" è l'importo della ritenuta (imponibile_ritenuta * aliquota_ritenuta_percentuale / 100).
+- Determina "codice_tributo_f24" in base al tipo di prestazione:
+  - "1019" per contratti d'appalto condominio (es: pulizie, ditte edili, manutenzione ascensori, giardinaggio, ecc. - ritenuta tipica 4%).
+  - "1020" per contratti d'opera (ritenuta 4%).
+  - "1040" per compensi per prestazioni di lavoro autonomo/professionisti (es: amministratore, geometra, ingegnere, commercialista, ecc. - ritenuta tipica 20%).
+  - Se non si applica ritenuta, imposta a null.
+
+Regole Generali:
 - Se la fattura ha più righe, somma gli importi
 - La categoria deve essere quella più appropriata tra quelle elencate
 - Gli importi devono essere numeri senza simboli €

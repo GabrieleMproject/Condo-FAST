@@ -117,3 +117,139 @@ export function exportBozzaCU(condominio, anno, fornitori, profile, withWatermar
   applyWatermark(doc, withWatermark)
   doc.save(`Bozza_CU_${condominio.nome}_${anno}.pdf`)
 }
+
+export function exportQuietanzaFornitore(condominio, fornitore, fatture, delegaF24, profile, withWatermark = false) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  
+  let y = 20
+  
+  // Intestazione
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(14)
+  doc.setTextColor(...BLU)
+  doc.text(`RICEVUTA DI VERSAMENTO RITENUTA D'ACCONTO`, 14, y)
+  
+  y += 8
+  doc.setFontSize(10)
+  doc.setTextColor(...TESTO)
+  doc.text(`SOSTITUTO D'IMPOSTA: ${condominio.nome}`, 14, y)
+  doc.text(`C.F.: ${condominio.codice_fiscale || '_______________'}`, 120, y)
+  
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  const indirizzoCondominio = [condominio.indirizzo, condominio.cap, condominio.citta, condominio.provincia].filter(Boolean).join(' - ')
+  doc.text(`Indirizzo: ${indirizzoCondominio || '____________________'}`, 14, y)
+  
+  y += 8
+  
+  // Rappresentante Legale (Amministratore)
+  if (profile) {
+    doc.setFont('helvetica', 'bold')
+    doc.text(`RAPPRESENTANTE LEGALE: ${profile.ragione_sociale || '________________'}`, 14, y)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`C.F.: ${profile.codice_fiscale || '_______________'} | P.IVA: ${profile.partita_iva || '_______________'}`, 120, y)
+    y += 5
+    doc.text(`Studio: ${profile.studio_indirizzo || '____________________'}`, 14, y)
+  }
+  
+  y += 12
+  
+  // Dati Percipiente (Fornitore)
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...BLU)
+  doc.text(`PERCIPIENTE (FORNITORE): ${fornitore.ragione_sociale}`, 14, y)
+  
+  y += 6
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...TESTO)
+  doc.text(`P.IVA: ${fornitore.partita_iva || '_______________'} | C.F.: ${fornitore.codice_fiscale || '_______________'}`, 14, y)
+  
+  y += 5
+  const indirizzoFornitore = [fornitore.indirizzo, fornitore.cap, fornitore.citta, fornitore.provincia].filter(Boolean).join(' - ')
+  doc.text(`Indirizzo: ${indirizzoFornitore || '____________________'}`, 14, y)
+  
+  y += 12
+  
+  // Testo Certificazione
+  doc.setFont('helvetica', 'bold')
+  doc.text(`SI CERTIFICA L'AVVENUTO VERSAMENTO DELLA RITENUTA D'ACCONTO`, 14, y)
+  y += 6
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9.5)
+  doc.text(`Si attesta che, in relazione alle fatture sotto indicate corrisposte al percipiente, questo Condominio ha provveduto`, 14, y)
+  y += 5
+  doc.text(`ad effettuare ed a versare all'Erario la ritenuta d'acconto sul compenso erogato tramite modello F24 cumulativo.`, 14, y)
+  
+  y += 8
+  
+  // Tabella Fatture incluse
+  const body = fatture.map(fat => {
+    const imponibile = fat.imponibile_ritenuta || (fat.importo_totale || 0) - (fat.importo_iva || 0)
+    const ritenuta = fat.importo_ritenuta || fat.ritenuta_acconto || 0
+    return [
+      fat.numero_fattura || '-',
+      fat.data_fattura || '-',
+      fat.data_pagamento || '-',
+      `€ ${imponibile.toFixed(2)}`,
+      `${fat.aliquota_ritenuta_percentuale || 0}%`,
+      `€ ${ritenuta.toFixed(2)}`
+    ]
+  })
+
+  autoTable(doc, {
+    startY: y,
+    head: [['N° Fattura', 'Data Fatt.', 'Data Pag.', 'Imponibile Ritenuta', 'Aliquota', 'Ritenuta']],
+    body,
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.5 },
+    headStyles: { fillColor: BLU, textColor: [255, 255, 255] },
+    margin: { left: 14, right: 14 }
+  })
+  
+  y = doc.lastAutoTable.finalY + 12
+  
+  // Dati Versamento F24
+  if (y > 230) {
+    doc.addPage()
+    y = 20
+  }
+  
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...BLU)
+  doc.text(`RIFERIMENTI DEL VERSAMENTO (MODELLO F24)`, 14, y)
+  
+  y += 6
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...TESTO)
+  doc.text(`Stato Versamento: VERSATO (PAGATO)`, 14, y)
+  y += 5
+  doc.text(`Data di pagamento F24: ${delegaF24.data_pagamento || '_______________'}`, 14, y)
+  y += 5
+  const codTributo = fatture[0]?.codice_tributo_f24 || '1019';
+  doc.text(`Codice Tributo utilizzato: ${codTributo}`, 14, y)
+  y += 5
+  const totaleRitenutaVersata = fatture.reduce((sum, f) => sum + (f.importo_ritenuta || f.ritenuta_acconto || 0), 0);
+  doc.text(`Importo della ritenuta versata: € ${totaleRitenutaVersata.toFixed(2)}`, 14, y)
+  y += 6
+  doc.setFont('helvetica', 'italic')
+  doc.setFontSize(9)
+  doc.text(`Nota: La ritenuta del fornitore è stata inclusa nel versamento cumulativo F24 di € ${delegaF24.importo_totale?.toFixed(2)} del Condominio.`, 14, y)
+  
+  y += 20
+  if (y > 260) {
+    doc.addPage()
+    y = 20
+  }
+  
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.text(`Luogo e Data: ________________________`, 14, y)
+  doc.text(`Firma dell'Amministratore: ________________________`, 100, y)
+  
+  applyWatermark(doc, withWatermark)
+  doc.save(`Quietanza_Ritenuta_${condominio.nome.replace(/\s+/g, '_')}_${fornitore.ragione_sociale.replace(/\s+/g, '_')}.pdf`)
+}

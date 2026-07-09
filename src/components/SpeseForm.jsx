@@ -193,6 +193,9 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [ripartizioni, setRipartizioni] = useState([])
   // Importi manuali: { [unita_id]: stringa } — modificabili dall'utente
   const [importiManuali, setImportiManuali] = useState({})
+  const [fileCaricato, setFileCaricato] = useState(null)
+  const [aiDatiEstratti, setAiDatiEstratti] = useState(null)
+
 
   const [showAiModal, setShowAiModal] = useState(false)
   const [loadingAi, setLoadingAi] = useState(false)
@@ -315,6 +318,8 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
       }))
 
       setFatturaImportata(true)
+      setFileCaricato(file)
+      setAiDatiEstratti(estratto)
     } catch (e) {
       console.error('Errore estrazione fattura:', e)
       setErrFattura('Impossibile estrarre i dati. Verifica il file e riprova.')
@@ -444,7 +449,7 @@ Formato JSON:
           ? { override_manuale: true, importo_override: r.importo_override ?? r.importo }
           : {}),
       }))
-      await onSave(payload, ripartDaSalvare)
+      await onSave(payload, ripartDaSalvare, fileCaricato, aiDatiEstratti)
     } finally {
       setSaving(false)
     }
@@ -497,7 +502,7 @@ Formato JSON:
                   Verifica e modifica i campi pre-compilati qui sotto
                 </div>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setFatturaImportata(false); fileInputRef.current?.click() }}
+                  onClick={(e) => { e.stopPropagation(); setFatturaImportata(false); setFileCaricato(null); setAiDatiEstratti(null); fileInputRef.current?.click() }}
                   style={{
                     marginTop: 8, background: 'transparent', color: '#64748b',
                     border: '1px solid #334155', borderRadius: 6, padding: '4px 12px',

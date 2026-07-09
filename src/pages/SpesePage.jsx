@@ -127,12 +127,63 @@ export default function SpesePage() {
     }
   }
 
-  const handleSaveSpesa = async (payload, ripartizioni) => {
+  const handleSaveSpesa = async (payload, ripartizioni, fileCaricato, aiDatiEstratti) => {
     try {
       if (spesaInEdit?.id) {
         await aggiornaSpesa(spesaInEdit.id, payload, ripartizioni)
       } else {
-        await creaSpesa({ ...payload, esercizio_id: esercizioAttivo.id }, ripartizioni)
+        const nuovaSpesa = await creaSpesa({ ...payload, esercizio_id: esercizioAttivo.id }, ripartizioni)
+        
+        if (fileCaricato && nuovaSpesa) {
+          const { data: { user } } = await supabase.auth.getUser()
+          const path = `${user.id}/${condominioId}/${Date.now()}_${fileCaricato.name}`
+          const { error: storageErr } = await supabase.storage
+            .from('fatture')
+            .upload(path, fileCaricato, { contentType: fileCaricato.type })
+          if (storageErr) throw storageErr
+
+          // Cerca fornitore_id corrispondente nella rubrica fornitori
+          let fornitoreId = null
+          try {
+            const { data: fornitoriList } = await supabase
+              .from('fornitori')
+              .select('id, ragione_sociale, partita_iva, codice_fiscale')
+            
+            if (fornitoriList && fornitoriList.length > 0) {
+              const pIvaClean = (aiDatiEstratti?.partita_iva_fornitore || '').replace(/\s+/g, '')
+              if (pIvaClean) {
+                const trovato = fornitoriList.find(f => f.partita_iva === pIvaClean || f.codice_fiscale === pIvaClean)
+                if (trovato) fornitoreId = trovato.id
+              } else {
+                const nomeClean = (payload.fornitore || '').trim().toLowerCase()
+                const trovato = fornitoriList.find(f => f.ragione_sociale.toLowerCase() === nomeClean)
+                if (trovato) fornitoreId = trovato.id
+              }
+            }
+          } catch (fornErr) {
+            console.error('Errore ricerca fornitore:', fornErr)
+          }
+
+          const { error: invoiceErr } = await supabase.from('fatture_fornitori').insert({
+            condominio_id: condominioId,
+            user_id: user.id,
+            spesa_id: nuovaSpesa.id,
+            fornitore: payload.fornitore || 'Fornitore sconosciuto',
+            fornitore_id: fornitoreId,
+            numero_fattura: payload.numero_fattura || null,
+            data_fattura: payload.data_spesa,
+            data_scadenza: aiDatiEstratti?.data_scadenza || payload.data_spesa,
+            importo_totale: payload.importo,
+            importo_iva: aiDatiEstratti?.importo_iva || 0,
+            importo_netto: aiDatiEstratti?.importo_netto || (payload.importo - (aiDatiEstratti?.importo_iva || 0)),
+            descrizione: payload.descrizione || '',
+            categoria: payload.categoria || 'altro',
+            stato: 'attesa',
+            pdf_url: path,
+            ai_dati_estratti: aiDatiEstratti
+          })
+          if (invoiceErr) throw invoiceErr
+        }
       }
       setShowForm(false)
       setFromFattura(false)

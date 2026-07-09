@@ -412,18 +412,18 @@ Esempio: [{"nome":"Mario","cognome":"Rossi","email":"mario@example.com","telefon
       system: systemPrompt,
       mediaType: prep.mediaType || 'application/pdf',
       funzione: 'import_anagrafica',
-      maxTokens: 4000,
+      maxTokens: 8000,
     })
   } else if (prep.isVisual) {
     raw = await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
       funzione: 'import_anagrafica',
-      maxTokens: 4000,
+      maxTokens: 8000,
     })
   } else {
     raw = await callClaude(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
       system: systemPrompt,
       funzione: 'import_anagrafica',
-      maxTokens: 4000,
+      maxTokens: 8000,
     })
   }
 
@@ -482,18 +482,18 @@ Se nel documento è presente una tabella con più colonne millesimali (es. colon
       system: systemPrompt,
       mediaType: prep.mediaType || 'application/pdf',
       funzione: 'estrai_tabelle_millesimali',
-      maxTokens: 4000,
+      maxTokens: 8000,
     });
   } else if (prep.isVisual) {
     raw = await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
       funzione: 'estrai_tabelle_millesimali',
-      maxTokens: 4000,
+      maxTokens: 8000,
     });
   } else {
     raw = await callClaude(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
       system: systemPrompt,
       funzione: 'estrai_tabelle_millesimali',
-      maxTokens: 4000,
+      maxTokens: 8000,
     });
   }
 

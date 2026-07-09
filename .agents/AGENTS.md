@@ -425,6 +425,14 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Ottimizzazione query batch (`RateGridTab.jsx` & `useComunicazioni.js`):** Introdotto il parametro `skipFetch` in `inviaComunicazione` per evitare il ricaricamento seriale ad ogni singolo invio (N+1 query). Lo storico viene ricaricato una volta sola al termine del loop asincrono.
 - **Hardening GDPR nei Log (`invia-comunicazione/index.ts`):** Rimossi i riferimenti all'email del condomino in chiaro all'interno dei log `console.error` dell'Edge Function per conformità alle linee guida sulla privacy.
 - **Normalizzazione Millesimi-Anagrafiche (`align_millesimi_anagrafica.mjs`):** Sviluppato ed eseguito con successo lo script di diagnostica e fusione automatica. L'algoritmo rileva e accoppia le unità duplicate causate da importazioni con prefissi/suffissi (es. "Sub. 7", "8 (Sub. 8)") normalizzando le stringhe e fondendo in modo sicuro i record relativi a millesimi, occupanti, rate, saldi e riconciliazioni prima di eliminare i duplicati catastali orfani. Tutte le unità abitate/assegnate ora corrispondono al 100% ai millesimi.
+- **Canale Spedizione Cartacea e Partner Postale (`ImpostazioniPage.jsx` & `RateGridTab.jsx`):** Rilasciata la gestione dell'invio cartaceo massivo dei solleciti. L'amministratore può selezionare i morosi, definire il canale per unità (con fallback automatico su cartaceo per chi non ha e-mail) ed optare tra:
+  - *Stampa manuale:* Scarica un unico file PDF cumulativo multi-pagina (generato in `exportPdf.js` via `exportSollecitiMassiviPdf`) contenente tutte le lettere dei destinatari selezionati.
+  - *Partner Postale (opzionale):* Configura API Key e ID Mittente per l'invio fisico via Multidialogo.
+- **Risoluzione Bug e Hardening (Feedback Bug Triager):**
+  - *CHECK Constraint DB:* Applicato lo script SQL `sql/s29_patch_comunicazioni_tipo.sql` per allargare il vincolo CHECK della tabella `comunicazioni` introducendo il tipo `'sollecito_cartaceo'`, evitando così fallimenti di inserimento log.
+  - *Silenziamento Eccezioni API:* Corretta l'Edge Function `invia-comunicazione` per lanciare eccezioni in caso di fallimento HTTP o di rete nelle chiamate API al partner postale, garantendo che lo stato nel DB e i log rispecchino l'errore effettivo.
+  - *GDPR nei Log:* Rimossi i riferimenti e dati personali (nomi completi ed indirizzi) dai log `console.log` di tracciamento dell'Edge Function.
+  - *Security RLS:* Reso obbligatorio il parametro `condominio_id` nella validazione iniziale dell'Edge Function prima di effettuare le interrogazioni DB protette da RLS, prevenendo potenziali bypass.
 
 
 

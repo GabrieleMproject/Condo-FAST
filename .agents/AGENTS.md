@@ -405,11 +405,22 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
-## Storico Decisioni e Fatti Verificati della Sessione S27 (5 Luglio 2026 - Sito Marketing CondoAI)
 
-### 1. Decisioni sul Sito Marketing e Integrazione
-- **Struttura del Sito Marketing Statico:** Creato e organizzato il sito di marketing (7 pagine HTML, 2 file CSS, 2 file JS) generato con successo da Fable 5, localizzandolo nella cartella `/website/` del progetto.
-- **Integrazione con l'App React Locale:** Modificati tutti i link di login, registrazione e prova gratuita in `index.html`, `features.html`, `pricing.html` e `sicurezza.html` per puntare a `http://localhost:5173/login` e `http://localhost:5173/register`, consentendo il collaudo E2E dell'esperienza utente interamente in locale.
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S29 (9 Luglio 2026 - Morosità Massiva, SMTP ed email personalizzate)
+
+### 1. Decisioni sul Mittente Personalizzato & SMTP
+- **Supporto multi-canale:** Configurate tre opzioni di invio nella tabella `profiles`: `'sistema'` (fall-back su Resend onboarding), `'smtp'` (connessione diretta a server di posta propri tramite Nodemailer), `'resend_custom'` (utilizzo di chiavi API e mittenti personali di Resend).
+- **Hardening dell'Update Profilo:** Rifattorizzato `updateBranding` in `usePlan.js` per aggiornare solo i campi esplicitamente valorizzati (preservando l'SMTP o il Branding studio per evitare la cancellazione dei parametri in caso di aggiornamenti parziali provenienti da moduli separati come il Drawer di layout).
+- **Integrazione SMTP in Edge Function:** Aggiornata l'edge function `invia-comunicazione` per importare nativamente `nodemailer` e instradare i messaggi e gli allegati base64 in modo criptato SSL/TLS.
+
+### 2. Funzionalità Rilasciate & Bug Risolti
+- **Invio Massivo dei Solleciti:** Integrata la modale `ProposteSollecitoModal` per caricare asincronicamente i condòmini con rate scadute da oltre 10 giorni, consentendo la selezione multipla tramite checkbox, la personalizzazione del template dell'oggetto e del corpo (con placeholder dinamici `{NOME}`, `{UNITA}`, `{CONDOMINIO}`, `{IMPORTO_SCADUTO}`, `{IBAN}`), e la visualizzazione in tempo reale dello stato e del progresso di invio in background.
+- **Allegato PDF Lettera di Sollecito:** Creata la funzione `exportSingolaUnitaRatePdfBytes` in `exportPdf.js` per produrre e allegare al sollecito email il PDF della lettera di sollecito dettagliata (con riepilogo contabile e scadenze rateali) per la singola unità morosa.
+- **Configurazione IBAN Condominio:** Inserito il campo per la persistenza dell'IBAN nel form di creazione/modifica condominio e risolto un bug di tag JSX non bilanciato in `CondominiForm.jsx`.
+- **Filtri Stato Registro:** Aggiunto lo stato `consegnata` ai filtri rapidi in `ComunicazioniPage.jsx` per un monitoraggio accurato degli esiti di recapito.
+
 
 
 

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
 import { useComunicazioni } from '../hooks/useComunicazioni'
-import { exportSingolaUnitaRatePdfBytes } from '../lib/exportPdf'
+import { exportSingolaUnitaRatePdfBytes, exportSollecitiMassiviPdf } from '../lib/exportPdf'
 import { CreditCard, X, CheckCircle2, Coins, Mail } from 'lucide-react'
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
@@ -347,12 +347,13 @@ L'Amministratore`;
     setEditing(null)
   }
 
-  async function handleInviaSollecitiMassivi({ proposteSelezionate, oggettoTemplate, testoTemplate, ibanDaUsare, allegaPdf }) {
+  async function handleInviaSollecitiMassivi({ proposteSelezionate, oggettoTemplate, testoTemplate, ibanDaUsare, allegaPdf, canaleCartaceoConfig }) {
     setInviandoSollecito(true)
     setInvioMassivoStato({ inCorso: true, totale: proposteSelezionate.length, corrente: 0, falliti: 0 })
 
     let falliti = 0
     let corrente = 0
+    const sollecitiDaStampare = []
 
     for (const p of proposteSelezionate) {
       corrente++
@@ -360,6 +361,7 @@ L'Amministratore`;
       try {
         const u = p.unita
         const dest = p.destinatario
+        const canaleScelto = p.canale || 'email'
         
         // 1. Carica rate_unita dell'unità specifica per calcoli precisi
         const { data: rateUnitaData, error: ruErr } = await supabase
@@ -387,40 +389,112 @@ L'Amministratore`;
           .replace(/{IMPORTO_SCADUTO}/g, `€ ${p.importoInsoluto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`)
           .replace(/{IBAN}/g, ibanDaUsare || '');
 
-        // 3. Generazione PDF Dettaglio Rate se richiesto
-        const allegati = []
-        if (allegaPdf) {
-          const condoConIbanTemp = { ...condominio, iban: ibanDaUsare }
-          const pdfBase64 = await exportSingolaUnitaRatePdfBytes({
-            condominio: condoConIbanTemp,
-            esercizio,
-            rate,
-            cells: rateUnitaData || [],
-            unita: u,
-            proprietario: dest
-          })
-          allegati.push({
-            content: pdfBase64,
-            filename: `Dettaglio_Rate_Unita_${u.numero}.pdf`,
-            type: 'application/pdf'
-          })
-        }
+        if (canaleScelto === 'email') {
+          // ── GESTIONE EMAIL ──
+          const allegati = []
+          if (allegaPdf) {
+            const condoConIbanTemp = { ...condominio, iban: ibanDaUsare }
+            const pdfBase64 = await exportSingolaUnitaRatePdfBytes({
+              condominio: condoConIbanTemp,
+              esercizio,
+              rate,
+              cells: rateUnitaData || [],
+              unita: u,
+              proprietario: dest
+            })
+            allegati.push({
+              content: pdfBase64,
+              filename: `Dettaglio_Rate_Unita_${u.numero}.pdf`,
+              type: 'application/pdf'
+            })
+          }
 
-        // 4. Invocazione Edge Function per l'invio (con skipFetch per ottimizzazione batch)
-        await inviaComunicazione({
-          condominioId,
-          destinatari: [{ email: dest.email, nome: nomeDest }],
-          oggetto: oggettoRisolto,
-          messaggio: testoRisolto,
-          tipo: 'sollecito',
-          allegati,
-          skipFetch: true
-        })
+          await inviaComunicazione({
+            condominioId,
+            destinatari: [{ email: dest.email, nome: nomeDest }],
+            oggetto: oggettoRisolto,
+            messaggio: testoRisolto,
+            tipo: 'sollecito',
+            allegati,
+            skipFetch: true
+          })
+        } else {
+          // ── GESTIONE CARTACEO ──
+          if (canaleCartaceoConfig?.tipoCartaceo === 'partner') {
+            const condoConIbanTemp = { ...condominio, iban: ibanDaUsare }
+            const pdfBase64 = await exportSingolaUnitaRatePdfBytes({
+              condominio: condoConIbanTemp,
+              esercizio,
+              rate,
+              cells: rateUnitaData || [],
+              unita: u,
+              proprietario: dest
+            })
+
+            // Invia al partner postale passando i dati di spedizione della persona
+            await inviaComunicazione({
+              condominioId,
+              destinatari: [{ 
+                email: dest.email || 'cartaceo@condoai.local',
+                nome: nomeDest,
+                indirizzo: dest.indirizzo || '',
+                citta: dest.citta || '',
+                cap: dest.cap || '',
+                provincia: dest.provincia || ''
+              }],
+              oggetto: oggettoRisolto,
+              messaggio: testoRisolto,
+              tipo: 'sollecito_cartaceo',
+              allegati: [{
+                content: pdfBase64,
+                filename: `Sollecito_Cartaceo_Unita_${u.numero}.pdf`,
+                type: 'application/pdf'
+              }],
+              skipFetch: true
+            })
+          } else {
+            // Stampa manuale (generazione PDF cumulativo alla fine)
+            sollecitiDaStampare.push({
+              unita: u,
+              destinatario: dest,
+              cells: rateUnitaData || []
+            })
+
+            // Salva log sul DB in stato 'inviata' (da stampare)
+            const { data: userData } = await supabase.auth.getUser()
+            await supabase.from('comunicazioni').insert({
+              condominio_id: condominioId,
+              amministratore_id: userData?.user?.id,
+              destinatario_email: dest.email || 'cartaceo@condoai.local',
+              destinatario_nome: nomeDest,
+              oggetto: oggettoRisolto,
+              messaggio: testoRisolto,
+              tipo: 'sollecito',
+              stato: 'inviata',
+            })
+          }
+        }
 
       } catch (err) {
         console.error(`Errore invio sollecito per unità ${p.unita.numero}:`, err.message)
         falliti++
         setInvioMassivoStato(prev => ({ ...prev, falliti }))
+      }
+    }
+
+    // Se ci sono solleciti cartacei da stampare manualmente, genera il PDF cumulativo
+    if (sollecitiDaStampare.length > 0) {
+      try {
+        const condoConIbanTemp = { ...condominio, iban: ibanDaUsare }
+        await exportSollecitiMassiviPdf({
+          condominio: condoConIbanTemp,
+          esercizio,
+          rate,
+          proposte: sollecitiDaStampare
+        })
+      } catch (pdfErr) {
+        console.error("Errore generazione PDF cumulativo:", pdfErr.message)
+        alert("Errore durante la generazione del PDF cumulativo delle stampe.")
       }
     }
 
@@ -437,12 +511,11 @@ L'Amministratore`;
     if (falliti > 0) {
       alert(`Invio massivo completato. Riusciti: ${proposteSelezionate.length - falliti}, Falliti: ${falliti}`);
     } else {
-      alert('Tutti i solleciti sono stati inviati con successo!');
+      alert('Tutti i solleciti sono stati elaborati con successo!');
     }
     setShowProposteModal(false)
   }
 
-  // ── totali ─────────────────────────────────────────────────
   const totRata = (rataId) => {
     const cs = cells.filter((c) => c.rata_id === rataId)
     return {
@@ -801,8 +874,40 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
   const [selezionati, setSelezionati] = useState(proposte.map(p => p.unita.id));
   const [iban, setIban] = useState(condominio?.iban || '');
   const [oggetto, setOggetto] = useState('Sollecito pagamento rate condominiali - {CONDOMINIO}');
-  const [testo, setTesto] = useState(`Gentile <strong>{NOME}</strong>,<br/><br/>Le inviamo la presente comunicazione in merito alle scadenze condominiali dell'esercizio in corso del condominio <strong>{CONDOMINIO}</strong> per l'unità <strong>{UNITA}</strong>.<br/><br/>Dalle nostre scritture contabili risulta un importo insoluto attualmente scaduto pari a: <strong>{IMPORTO_SCADUTO}</strong>.<br/><br/>La invitiamo a regolarizzare la sua posizione il prima possibile a mezzo bonifico bancario sulle seguenti coordinate:<br/>IBAN: <strong>{IBAN}</strong><br/><br/>In allegato alla presente email troverà il PDF contenente il dettaglio completo delle rate e dei pagamenti registrati.<br/><br/>Restiamo a disposizione per qualsiasi chiarimento.<br/><br/>Cordiali saluti,<br/>L'Amministratore`);
+  const [testo, setTesto] = useState(`Gentile <strong>{NOME}</strong>,<br/><br/>Le inviamo la presente comunicazione in merito alle scadenze condominiali dell'esercizio in corso del condominio <strong>{CONDOMINIO}</strong> per l'unità <strong>{UNITA}</strong>.<br/><br/>Dalle nostre scritture contabili risulta un importo insoluto attualmente scaduto pari a: <strong>{IMPORTO_SCADUTO}</strong>.<br/><br/>La invitiamo a regolarizzare la sua posizione il prima possibile a mezzo bonifico bancario sulle seguenti coordinate:<br/>IBAN: <strong>{IBAN}</strong><br/><br/>In allegato alla presente email troverà il PDF contenente il dettaglio completo delle rate e dei pagamenti registrati.<br/><br/>Restiamo a disposition per qualsiasi chiarimento.<br/><br/>Cordiali saluti,<br/>L'Amministratore`);
   const [allegaPdf, setAllegaPdf] = useState(true);
+
+  // Mappa dei canali scelti per ciascuna unità (default email se ha l'email, cartaceo altrimenti)
+  const [canali, setCanali] = useState(() => {
+    const init = {};
+    proposte.forEach(p => {
+      init[p.unita.id] = p.destinatario?.email ? 'email' : 'cartaceo';
+    });
+    return init;
+  });
+
+  const [partnerPostale, setPartnerPostale] = useState('nessuno');
+  const [tipoCartaceo, setTipoCartaceo] = useState('stampa'); // 'stampa' | 'partner'
+
+  useEffect(() => {
+    async function loadPartner() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('partner_postale_nome')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (data?.partner_postale_nome) {
+          setPartnerPostale(data.partner_postale_nome);
+          if (data.partner_postale_nome !== 'nessuno') {
+            setTipoCartaceo('partner');
+          }
+        }
+      }
+    }
+    loadPartner();
+  }, []);
 
   // Sincronizza l'IBAN se il condominio viene caricato asincronicamente
   useEffect(() => {
@@ -833,15 +938,26 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
       alert("Seleziona almeno un condomino da sollecitare.");
       return;
     }
-    const proposteSelezionate = proposte.filter(p => selezionati.includes(p.unita.id));
+    const proposteSelezionate = proposte
+      .filter(p => selezionati.includes(p.unita.id))
+      .map(p => ({
+        ...p,
+        canale: canali[p.unita.id]
+      }));
+
     onInviaMassivo({
       proposteSelezionate,
       oggettoTemplate: oggetto,
       testoTemplate: testo,
       ibanDaUsare: iban,
-      allegaPdf
+      allegaPdf,
+      canaleCartaceoConfig: { tipoCartaceo }
     });
   };
+
+  const haCartaceiSelezionati = proposte
+    .filter(p => selezionati.includes(p.unita.id))
+    .some(p => canali[p.unita.id] === 'cartaceo');
 
   return (
     <div style={st.overlay}>
@@ -850,7 +966,7 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
           <div>
             <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 16 }}>Gestione Solleciti di Pagamento Massivi</div>
             <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
-              Seleziona i condòmini morosi e personalizza il template di invio.
+              Seleziona i condòmini morosi, imposta il canale (E-mail o Cartaceo) e personalizza il template.
             </div>
           </div>
           <button style={st.btnIcon} onClick={onClose} disabled={invioMassivoStato.inCorso}><X size={16} /></button>
@@ -859,10 +975,10 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
         {invioMassivoStato.inCorso ? (
           <div style={{ padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ color: '#e2e8f0', fontSize: 15, fontWeight: 600 }}>
-              Invio dei solleciti in corso...
+              Elaborazione ed invio dei solleciti in corso...
             </div>
             <div style={{ color: '#cbd5e1', fontSize: 13 }}>
-              Inviato {invioMassivoStato.corrente} di {invioMassivoStato.totale} solleciti {invioMassivoStato.falliti > 0 && `(${invioMassivoStato.falliti} falliti)`}
+              Elaborato {invioMassivoStato.corrente} di {invioMassivoStato.totale} solleciti {invioMassivoStato.falliti > 0 && `(${invioMassivoStato.falliti} falliti)`}
             </div>
             <div style={{ height: 8, background: '#1e293b', borderRadius: 4, overflow: 'hidden', width: '100%', maxWidth: 400, margin: '0 auto' }}>
               <div style={{
@@ -876,7 +992,7 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 10 }}>
             
-            {/* Grid principale: Destinatari a sinistra, Template a destra */}
+            {/* Grid principale */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 20 }}>
               
               {/* Colonna Destinatari */}
@@ -888,9 +1004,12 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                   </button>
                 </div>
 
-                <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #334155', borderRadius: 8, background: '#0f172a', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ maxHeight: 340, overflowY: 'auto', border: '1px solid #334155', borderRadius: 8, background: '#0f172a', display: 'flex', flexDirection: 'column' }}>
                   {proposte.map(p => {
                     const isSelected = selezionati.includes(p.unita.id);
+                    const haEmail = !!p.destinatario?.email;
+                    const canaleCorrente = canali[p.unita.id];
+
                     return (
                       <label key={p.unita.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #1e293b', cursor: 'pointer', background: isSelected ? 'rgba(37,99,235,0.06)' : 'transparent', transition: 'background-color 0.15s' }}>
                         <input
@@ -900,8 +1019,30 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                           style={{ marginRight: 12, cursor: 'pointer' }}
                         />
                         <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
-                          <div style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Unità {p.unita.numero} - {p.destinatario.cognome} {p.destinatario.nome}</span>
+                          <div style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
+                              U. {p.unita.numero} - {p.destinatario.cognome} {p.destinatario.nome}
+                            </span>
+                            
+                            {/* Selettore Canale */}
+                            {haEmail ? (
+                              <select
+                                value={canaleCorrente}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  setCanali(prev => ({ ...prev, [p.unita.id]: e.target.value }));
+                                }}
+                                style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 4, color: '#e2e8f0', fontSize: 11, padding: '2px 4px', cursor: 'pointer' }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <option value="email">📧 E-mail</option>
+                                <option value="cartaceo">✉️ Cartaceo</option>
+                              </select>
+                            ) : (
+                              <span style={{ fontSize: 10, color: '#f59e0b', background: '#f59e0b15', border: '1px solid #f59e0b30', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>
+                                ✉️ Cartaceo
+                              </span>
+                            )}
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                             <span style={{ color: '#64748b', fontSize: 11 }}>Rate: {p.rateCoinvolte}</span>
@@ -929,21 +1070,21 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                 </div>
 
                 <div>
-                  <label style={st.fieldLabel}>Oggetto E-mail</label>
+                  <label style={st.fieldLabel}>Oggetto Sollecito</label>
                   <input
                     type="text"
                     style={st.input}
                     value={oggetto}
                     onChange={e => setOggetto(e.target.value)}
-                    placeholder="Oggetto dell'email..."
+                    placeholder="Oggetto..."
                     required
                   />
                 </div>
 
                 <div>
-                  <label style={st.fieldLabel}>Corpo E-mail (HTML)</label>
+                  <label style={st.fieldLabel}>Testo Lettera (HTML)</label>
                   <textarea
-                    style={{ ...st.input, minHeight: 130, resize: 'vertical', fontSize: 12, lineHeight: 1.5 }}
+                    style={{ ...st.input, minHeight: 100, resize: 'vertical', fontSize: 12, lineHeight: 1.5 }}
                     value={testo}
                     onChange={e => setTesto(e.target.value)}
                     placeholder="Testo del sollecito..."
@@ -965,6 +1106,42 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                   />
                   Allega lettera sollecito in formato PDF (dettaglio rate)
                 </label>
+
+                {/* Opzioni Spedizione Cartacea */}
+                {haCartaceiSelezionati && (
+                  <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+                    <label style={st.fieldLabel}>Opzione Spedizione Cartacea</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', color: '#cbd5e1', fontSize: 12, cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="tipoCartaceo"
+                          checked={tipoCartaceo === 'stampa'}
+                          onChange={() => setTipoCartaceo('stampa')}
+                          style={{ marginRight: 8 }}
+                        />
+                        Stampa Manuale (Genera PDF unico)
+                      </label>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: partnerPostale === 'nessuno' ? '#64748b' : '#cbd5e1',
+                        fontSize: 12,
+                        cursor: partnerPostale === 'nessuno' ? 'not-allowed' : 'pointer'
+                      }}>
+                        <input
+                          type="radio"
+                          name="tipoCartaceo"
+                          checked={tipoCartaceo === 'partner'}
+                          disabled={partnerPostale === 'nessuno'}
+                          onChange={() => setTipoCartaceo('partner')}
+                          style={{ marginRight: 8 }}
+                        />
+                        Invia tramite Partner ({partnerPostale === 'nessuno' ? 'Non config.' : partnerPostale === 'multidialogo_simulato' ? 'Multidialogo Sim.' : 'Multidialogo'})
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -977,7 +1154,7 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                 disabled={inviando || selezionati.length === 0}
                 style={{ ...st.btnPrimary, background: '#ef4444', width: 'auto', padding: '10px 24px' }}
               >
-                Invia {selezionati.length} Solleciti
+                Elabora {selezionati.length} Solleciti
               </button>
             </div>
           </form>

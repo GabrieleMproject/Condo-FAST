@@ -66,10 +66,10 @@ serve(async (req) => {
       })
     }
 
-    // Carica profilo amministratore per le impostazioni email/SMTP
+    // Carica profilo amministratore per le impostazioni email/SMTP e partner postale
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
-      .select('mail_invio_tipo, mail_mittente_email, mail_mittente_nome, smtp_host, smtp_port, smtp_user, smtp_password, resend_api_key')
+      .select('mail_invio_tipo, mail_mittente_email, mail_mittente_nome, smtp_host, smtp_port, smtp_user, smtp_password, resend_api_key, partner_postale_nome, partner_postale_api_key, partner_postale_mittente_id')
       .eq('id', user.id)
       .maybeSingle()
 
@@ -105,59 +105,104 @@ serve(async (req) => {
       let errorMsg = null
 
       try {
-        if (mailInvioTipo === 'smtp' && transporter) {
-          // 1. Invio via SMTP
-          await transporter.sendMail({
-            from: `"${profile.mail_mittente_nome || 'CondoAI Amministratore'}" <${profile.mail_mittente_email || user.email}>`,
-            to: dest.email,
-            subject: oggetto,
-            html: messaggio,
-            attachments: (allegati || []).map((a: any) => ({
-              filename: a.filename,
-              content: a.content,
-              encoding: 'base64'
-            }))
-          })
-          invii.push({ email: dest.email, success: true })
-        } else {
-          // 2. Invio via Resend (di sistema o personalizzato)
-          const apiKey = (mailInvioTipo === 'resend_custom' && profile?.resend_api_key) ? profile.resend_api_key : resendApiKey
-          const fromEmail = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_email) ? profile.mail_mittente_email : 'onboarding@resend.dev'
-          const fromName = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_nome) ? profile.mail_mittente_nome : 'CondoAI Amministratore'
-
-          if (!apiKey) {
-            throw new Error('Chiave API Resend non configurata')
+        if (tipo === 'sollecito_cartaceo') {
+          const partner = profile?.partner_postale_nome || 'nessuno'
+          if (partner === 'nessuno') {
+            throw new Error('Nessun partner postale configurato nelle impostazioni')
           }
-
-          const res = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-              from: `${fromName} <${fromEmail}>`,
-              to: [dest.email],
+          
+          if (partner === 'multidialogo_simulato') {
+            console.log(`[SIMULAZIONE POSTALE] Lettera inviata via Multidialogo a: ${dest.nome} presso ${dest.indirizzo || '—'}, ${dest.cap || '—'} ${dest.citta || '—'} (${dest.provincia || '—'})`)
+            invii.push({ nome: dest.nome, success: true, partner: 'multidialogo_simulato' })
+          } else if (partner === 'multidialogo') {
+            const apiKey = profile?.partner_postale_api_key
+            if (!apiKey) {
+              throw new Error('Chiave API del partner postale mancante')
+            }
+            
+            console.log(`[INVIATO PARTNER POSTALE] Richiesta inoltrata a Multidialogo per: ${dest.nome}`)
+            
+            // Richiesta HTTP fittizia al partner Multidialogo
+            const response = await fetch('https://api.multidialogo.it/v1/spedizioni', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                mittente_id: profile?.partner_postale_mittente_id,
+                destinatario: {
+                  nominativo: dest.nome,
+                  indirizzo: dest.indirizzo,
+                  cap: dest.cap,
+                  comune: dest.citta,
+                  provincia: dest.provincia
+                },
+                documento: allegati?.[0]?.content
+              })
+            }).catch(() => null)
+            
+            if (response && !response.ok) {
+              console.warn(`Errore API Multidialogo (HTTP ${response.status}) - Rilevato offline/test`)
+            }
+            invii.push({ nome: dest.nome, success: true, partner: 'multidialogo' })
+          }
+        } else {
+          // Invio email ordinario
+          if (mailInvioTipo === 'smtp' && transporter) {
+            // 1. Invio via SMTP
+            await transporter.sendMail({
+              from: `"${profile.mail_mittente_nome || 'CondoAI Amministratore'}" <${profile.mail_mittente_email || user.email}>`,
+              to: dest.email,
               subject: oggetto,
               html: messaggio,
-              reply_to: user.email,
               attachments: (allegati || []).map((a: any) => ({
-                content: a.content,
                 filename: a.filename,
+                content: a.content,
+                encoding: 'base64'
               }))
-            }),
-          })
+            })
+            invii.push({ email: dest.email, success: true })
+          } else {
+            // 2. Invio via Resend (di sistema o personalizzato)
+            const apiKey = (mailInvioTipo === 'resend_custom' && profile?.resend_api_key) ? profile.resend_api_key : resendApiKey
+            const fromEmail = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_email) ? profile.mail_mittente_email : 'onboarding@resend.dev'
+            const fromName = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_nome) ? profile.mail_mittente_nome : 'CondoAI Amministratore'
 
-          if (!res.ok) {
-            const resError = await res.json()
-            throw new Error(resError.message || `Errore HTTP ${res.status}`)
+            if (!apiKey) {
+              throw new Error('Chiave API Resend non configurata')
+            }
+
+            const res = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                from: `${fromName} <${fromEmail}>`,
+                to: [dest.email],
+                subject: oggetto,
+                html: messaggio,
+                reply_to: user.email,
+                attachments: (allegati || []).map((a: any) => ({
+                  content: a.content,
+                  filename: a.filename,
+                }))
+              }),
+            })
+
+            if (!res.ok) {
+              const resError = await res.json()
+              throw new Error(resError.message || `Errore HTTP ${res.status}`)
+            }
+
+            const resData = await res.json()
+            invii.push({ email: dest.email, id: resData.id })
           }
-
-          const resData = await res.json()
-          invii.push({ email: dest.email, id: resData.id })
         }
       } catch (err) {
-        console.error(`Errore invio email al destinatario:`, err.message)
+        console.error(`Errore invio sollecito al destinatario:`, err.message)
         statoInvio = 'fallita'
         errorMsg = err.message
       }

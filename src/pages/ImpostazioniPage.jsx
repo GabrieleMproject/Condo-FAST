@@ -98,6 +98,16 @@ export default function ImpostazioniPage() {
   const [emailSaved, setEmailSaved]   = useState(false)
   const [emailErr, setEmailErr]       = useState(null)
 
+  // ── Configurazione Partner Postale ──────────────────────────────────────
+  const [partnerConfig, setPartnerConfig] = useState({
+    partner_postale_nome: 'nessuno',
+    partner_postale_api_key: '',
+    partner_postale_mittente_id: '',
+  })
+  const [savingPartner, setSavingPartner] = useState(false)
+  const [partnerSaved, setPartnerSaved]   = useState(false)
+  const [partnerErr, setPartnerErr]       = useState(null)
+
   useEffect(() => {
     if (profile) {
       setBranding({
@@ -118,6 +128,11 @@ export default function ImpostazioniPage() {
         smtp_user:        profile.smtp_user || '',
         smtp_password:    profile.smtp_password || '',
         resend_api_key:   profile.resend_api_key || '',
+      })
+      setPartnerConfig({
+        partner_postale_nome: profile.partner_postale_nome || 'nessuno',
+        partner_postale_api_key: profile.partner_postale_api_key || '',
+        partner_postale_mittente_id: profile.partner_postale_mittente_id || '',
       })
     }
   }, [profile])
@@ -163,6 +178,20 @@ export default function ImpostazioniPage() {
       setEmailErr(e.message)
     } finally {
       setSavingEmail(false)
+    }
+  }
+
+  async function salvaPartnerConfig() {
+    setPartnerErr(null); setSavingPartner(true)
+    try {
+      const res = await updateBranding(partnerConfig)
+      if (res.error) throw res.error
+      setPartnerSaved(true)
+      setTimeout(() => setPartnerSaved(false), 2500)
+    } catch (e) {
+      setPartnerErr(e.message)
+    } finally {
+      setSavingPartner(false)
     }
   }
 
@@ -572,6 +601,68 @@ export default function ImpostazioniPage() {
               {emailSaved && <span style={{ color: '#4ade80', fontSize: 13 }}>✓ Impostazioni email salvate</span>}
               <button style={styles.brandingBtnSave} onClick={salvaEmailConfig} disabled={savingEmail}>
                 {savingEmail ? 'Salvataggio…' : 'Salva configurazione email'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── CONFIGURAZIONE PARTNER POSTALE ───────────────────────────── */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>Spedizione cartacea & Partner postale</h2>
+          <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
+            Configura un partner postale opzionale per l'invio fisico dei solleciti cartacei direttamente dal gestionale.
+          </p>
+
+          <div style={styles.brandingCard}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={styles.brandingLabel}>Seleziona Partner Postale</label>
+                <select
+                  style={styles.brandingInput}
+                  value={partnerConfig.partner_postale_nome}
+                  onChange={e => setPartnerConfig(c => ({ ...c, partner_postale_nome: e.target.value }))}
+                >
+                  <option value="nessuno">Nessuno (Solo generazione PDF cumulativo da stampare manuale)</option>
+                  <option value="multidialogo_simulato">Multidialogo (Simulazione per test / Nessun costo)</option>
+                  <option value="multidialogo">Multidialogo (Account reale / Spedizioni fisiche)</option>
+                </select>
+              </div>
+
+              {partnerConfig.partner_postale_nome !== 'nessuno' && (
+                <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p style={{ color: '#64748b', fontSize: 11, margin: '0 0 4px', fontWeight: 700, letterSpacing: '0.05em' }}>PARAMETRI PARTNER POSTALE</p>
+                  
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ flex: 2 }}>
+                      <label style={styles.brandingLabel}>Chiave API (Token di Autenticazione)</label>
+                      <input
+                        style={styles.brandingInput}
+                        type="password"
+                        placeholder="re_•••••••••••• o token..."
+                        value={partnerConfig.partner_postale_api_key}
+                        onChange={e => setPartnerConfig(c => ({ ...c, partner_postale_api_key: e.target.value }))}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={styles.brandingLabel}>ID Mittente Registrato</label>
+                      <input
+                        style={styles.brandingInput}
+                        placeholder="Es. MIT-98124"
+                        value={partnerConfig.partner_postale_mittente_id}
+                        onChange={e => setPartnerConfig(c => ({ ...c, partner_postale_mittente_id: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {partnerErr && <div style={{ ...styles.errorBox, marginTop: 16, marginBottom: 0 }}>{partnerErr}</div>}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
+              {partnerSaved && <span style={{ color: '#4ade80', fontSize: 13 }}>✓ Impostazioni partner postale salvate</span>}
+              <button style={styles.brandingBtnSave} onClick={salvaPartnerConfig} disabled={savingPartner}>
+                {savingPartner ? 'Salvataggio…' : 'Salva impostazioni partner'}
               </button>
             </div>
           </div>

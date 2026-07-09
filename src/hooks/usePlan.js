@@ -142,7 +142,8 @@ export function PlanProvider({ children }) {
         'studio_nome', 'studio_indirizzo', 'studio_contatti', 'logo_base64',
         'ragione_sociale', 'partita_iva', 'codice_fiscale', 'mail_invio_tipo',
         'mail_mittente_email', 'mail_mittente_nome', 'smtp_host',
-        'smtp_user', 'smtp_password', 'resend_api_key'
+        'smtp_user', 'smtp_password', 'resend_api_key',
+        'partner_postale_nome', 'partner_postale_api_key', 'partner_postale_mittente_id'
       ]
 
       textFields.forEach(field => {

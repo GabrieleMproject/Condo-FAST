@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { generaExportGDPR } from '../lib/exportDatiGdpr'
-import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock } from 'lucide-react'
+import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell } from 'lucide-react'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
 async function avviaCheckout({ piano, userId, userEmail }) {
@@ -109,6 +109,18 @@ export default function ImpostazioniPage() {
   const [partnerSaved, setPartnerSaved]   = useState(false)
   const [partnerErr, setPartnerErr]       = useState(null)
 
+  // ── Configurazione Notifiche & Promemoria ────────────────────────────────
+  const DEFAULT_NOTIFICHE = {
+    f24_ritenute:               { enabled: true },
+    rate_scadute:               { enabled: true,  giorni_dopo_scadenza: 10 },
+    esercizio_in_scadenza:      { enabled: true,  giorni_prima: 30 },
+    movimenti_non_riconciliati: { enabled: false, giorni_tolleranza: 15 },
+  }
+  const [notificheConfig, setNotificheConfig] = useState(DEFAULT_NOTIFICHE)
+  const [savingNotifiche, setSavingNotifiche] = useState(false)
+  const [notificheSaved, setNotificheSaved]   = useState(false)
+  const [notificheErr, setNotificheErr]       = useState(null)
+
   useEffect(() => {
     if (profile) {
       setBranding({
@@ -135,6 +147,13 @@ export default function ImpostazioniPage() {
         partner_postale_api_key: profile.partner_postale_api_key || '',
         partner_postale_mittente_id: profile.partner_postale_mittente_id || '',
       })
+      // Carica impostazioni notifiche con fallback ai default
+      if (profile.notification_settings) {
+        setNotificheConfig(prev => ({
+          ...DEFAULT_NOTIFICHE,
+          ...profile.notification_settings,
+        }))
+      }
     }
   }, [profile])
 
@@ -193,6 +212,26 @@ export default function ImpostazioniPage() {
       setPartnerErr(e.message)
     } finally {
       setSavingPartner(false)
+    }
+  }
+
+  async function salvaNotificheConfig() {
+    setNotificheErr(null); setSavingNotifiche(true)
+    try {
+      const { data: { user: u } } = await supabase.auth.getUser()
+      if (!u) throw new Error('Utente non autenticato')
+      const { error } = await supabase
+        .from('profiles')
+        .update({ notification_settings: notificheConfig })
+        .eq('id', u.id)
+      if (error) throw error
+      await refresh()
+      setNotificheSaved(true)
+      setTimeout(() => setNotificheSaved(false), 2500)
+    } catch (e) {
+      setNotificheErr(e.message)
+    } finally {
+      setSavingNotifiche(false)
     }
   }
 
@@ -668,6 +707,158 @@ export default function ImpostazioniPage() {
               {partnerSaved && <span style={{ color: '#4ade80', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Impostazioni partner postale salvate</span>}
               <button style={styles.brandingBtnSave} onClick={salvaPartnerConfig} disabled={savingPartner}>
                 {savingPartner ? 'Salvataggio…' : 'Salva impostazioni partner'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── NOTIFICHE & PROMEMORIA ─────────────────────────────────────── */}
+        <section id="notifiche" style={styles.section}>
+          <h2 style={styles.sectionTitle}>Notifiche &amp; Promemoria</h2>
+          <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
+            Configura i promemoria automatici che appaiono nella campanella 🔔 del gestionale.
+          </p>
+
+          <div style={styles.brandingCard}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* ─ Riga promemoria: helper */}
+              {[
+                {
+                  key: 'f24_ritenute',
+                  label: 'Promemoria F24 — Ritenute d\'acconto',
+                  desc: 'Appare dal 1° al 16 del mese successivo se ci sono fatture pagate con ritenuta e F24 non ancora presentato. La scadenza è fissa per legge (art. 25 DPR 600/73).',
+                  timing: null,
+                  timingLabel: null,
+                },
+                {
+                  key: 'rate_scadute',
+                  label: 'Verifica pagamenti rate',
+                  desc: 'Avvisa quando una rata risulta scaduta da più di N giorni senza risultare pagata. Suggerisce di aggiornare l\'estratto conto.',
+                  timing: 'giorni_dopo_scadenza',
+                  timingLabel: 'Giorni di attesa dalla scadenza',
+                  min: 1, max: 60,
+                },
+                {
+                  key: 'esercizio_in_scadenza',
+                  label: 'Esercizio in scadenza',
+                  desc: 'Avvisa quando la data di fine esercizio si avvicina. Ottimo per prepararsi in anticipo con il consuntivo.',
+                  timing: 'giorni_prima',
+                  timingLabel: 'Giorni di anticipo rispetto alla data di fine',
+                  min: 7, max: 90,
+                },
+                {
+                  key: 'movimenti_non_riconciliati',
+                  label: 'Movimenti bancari non riconciliati',
+                  desc: 'Avvisa se ci sono movimenti bancari nell\'estratto conto rimasti orfani (non riconciliati) per più di N giorni.',
+                  timing: 'giorni_tolleranza',
+                  timingLabel: 'Giorni di tolleranza prima dell\'avviso',
+                  min: 1, max: 60,
+                },
+              ].map(({ key, label, desc, timing, timingLabel, min, max }) => {
+                const cfg = notificheConfig[key] || {}
+                const enabled = cfg.enabled === true
+                const giorni = timing ? (cfg[timing] ?? 10) : null
+
+                return (
+                  <div
+                    key={key}
+                    style={{
+                      background: '#0f172a',
+                      border: `1px solid ${enabled ? '#2563eb' : '#1e293b'}`,
+                      borderRadius: 12,
+                      padding: 20,
+                      transition: 'border-color 0.2s',
+                    }}
+                  >
+                    {/* Intestazione toggle */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: desc ? 8 : 0 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <Bell size={14} color={enabled ? '#3b82f6' : '#475569'} />
+                          <span style={{ color: enabled ? '#e2e8f0' : '#64748b', fontSize: 14, fontWeight: 600 }}>
+                            {label}
+                          </span>
+                        </div>
+                        <p style={{ color: '#475569', fontSize: 12, margin: 0, lineHeight: 1.5 }}>{desc}</p>
+                      </div>
+
+                      {/* Toggle switch */}
+                      <button
+                        onClick={() => setNotificheConfig(prev => ({
+                          ...prev,
+                          [key]: { ...prev[key], enabled: !enabled },
+                        }))}
+                        style={{
+                          width: 44, height: 24, borderRadius: 12,
+                          background: enabled ? '#2563eb' : '#334155',
+                          border: 'none', cursor: 'pointer', position: 'relative',
+                          flexShrink: 0, transition: 'background 0.2s',
+                          padding: 0,
+                        }}
+                        aria-label={enabled ? `Disabilita ${label}` : `Abilita ${label}`}
+                        role="switch"
+                        aria-checked={enabled}
+                      >
+                        <span style={{
+                          position: 'absolute',
+                          top: 3, left: enabled ? 23 : 3,
+                          width: 18, height: 18, borderRadius: '50%',
+                          background: '#fff',
+                          transition: 'left 0.2s',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        }} />
+                      </button>
+                    </div>
+
+                    {/* Slider giorni (solo se la notifica ha timing configurabile) */}
+                    {timing && enabled && (
+                      <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #1e293b' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <label style={{ color: '#94a3b8', fontSize: 12 }}>{timingLabel}</label>
+                          <span style={{
+                            background: '#1e293b', color: '#60a5fa',
+                            padding: '2px 10px', borderRadius: 6,
+                            fontSize: 13, fontWeight: 700,
+                          }}>
+                            {giorni} {giorni === 1 ? 'giorno' : 'giorni'}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={min}
+                          max={max}
+                          value={giorni}
+                          onChange={e => setNotificheConfig(prev => ({
+                            ...prev,
+                            [key]: { ...prev[key], [timing]: parseInt(e.target.value) },
+                          }))}
+                          style={{
+                            width: '100%', accentColor: '#2563eb',
+                            height: 4, cursor: 'pointer',
+                          }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#334155', fontSize: 11, marginTop: 4 }}>
+                          <span>{min} gg</span>
+                          <span>{max} gg</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {notificheErr && <div style={{ ...styles.errorBox, marginTop: 16, marginBottom: 0 }}>{notificheErr}</div>}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
+              {notificheSaved && (
+                <span style={{ color: '#4ade80', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Check size={14} /> Impostazioni notifiche salvate
+                </span>
+              )}
+              <button style={styles.brandingBtnSave} onClick={salvaNotificheConfig} disabled={savingNotifiche}>
+                {savingNotifiche ? 'Salvataggio…' : 'Salva impostazioni notifiche'}
               </button>
             </div>
           </div>

@@ -3,9 +3,11 @@ import { useState, useRef } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlan } from '../hooks/usePlan';
+import { useNotifiche } from '../hooks/useNotifiche';
 import { PlanBadge } from './PlanGate';
 import { toast } from 'react-hot-toast';
 import BrandLogo from './BrandLogo';
+import NotificheDropdown from './NotificheDropdown';
 import { supabase } from '../lib/supabaseClient';
 import {
   LayoutDashboard,
@@ -117,6 +119,14 @@ export default function AppLayout() {
     aiCallsCount, aiCallsLimit, aiCallsRimanenti,
     updateBranding, refresh, isSuperAdmin
   } = usePlan();
+
+  // ── Notifiche / Promemoria ────────────────────────────────────────────
+  const {
+    notifiche, nonLette, count: notificheCount,
+    loading: notificheLoading, refresh: refreshNotifiche,
+    segnaLetta, segnaAllLette,
+  } = useNotifiche();
+  const [dropdownNotificheOpen, setDropdownNotificheOpen] = useState(false);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -313,9 +323,63 @@ export default function AppLayout() {
             {NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.label ?? 'CondoSmart'}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', display: 'flex' }}>
-              <Bell size={18} />
-            </button>
+            {/* ── Campanella Notifiche ── */}
+            <div style={{ position: 'relative' }}>
+              <button
+                id="btn-notifiche"
+                onClick={() => setDropdownNotificheOpen(o => !o)}
+                style={{
+                  background: dropdownNotificheOpen ? 'rgba(37,99,235,0.15)' : 'none',
+                  border: 'none',
+                  color: dropdownNotificheOpen ? '#60a5fa' : (notificheCount > 0 ? '#f59e0b' : '#475569'),
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: 6,
+                  borderRadius: 8,
+                  transition: 'all 0.15s',
+                  position: 'relative',
+                }}
+                aria-label={`Promemoria${notificheCount > 0 ? ` (${notificheCount} nuovi)` : ''}`}
+                onMouseEnter={e => { if (!dropdownNotificheOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#94a3b8'; } }}
+                onMouseLeave={e => { if (!dropdownNotificheOpen) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = notificheCount > 0 ? '#f59e0b' : '#475569'; } }}
+              >
+                <Bell size={18} />
+                {notificheCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: 2, right: 2,
+                    minWidth: 16, height: 16,
+                    background: '#ef4444', color: '#fff',
+                    borderRadius: '50%', fontSize: 9, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid #0f172a',
+                    lineHeight: 1,
+                    animation: 'bellPulse 2s ease-in-out infinite',
+                  }}>
+                    {notificheCount > 9 ? '9+' : notificheCount}
+                    <style>{`
+                      @keyframes bellPulse {
+                        0%, 100% { transform: scale(1); }
+                        50% { transform: scale(1.15); }
+                      }
+                    `}</style>
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown notifiche */}
+              {dropdownNotificheOpen && (
+                <NotificheDropdown
+                  notifiche={notifiche}
+                  nonLette={nonLette}
+                  loading={notificheLoading}
+                  onClose={() => setDropdownNotificheOpen(false)}
+                  onRefresh={refreshNotifiche}
+                  onSegnaLetta={segnaLetta}
+                  onSegnaAllLette={segnaAllLette}
+                />
+              )}
+            </div>
             <div
               onClick={() => setDrawerOpen(true)}
               style={{

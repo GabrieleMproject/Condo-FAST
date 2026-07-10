@@ -48,7 +48,7 @@ serve(async (req) => {
         try {
           const { data: fileList, error: listError } = await supabaseAdmin.storage
             .from('documenti-condominio')
-            .list(condo.id)
+            .list(condo.id, { limit: 1000 })
 
           if (!listError && fileList && fileList.length > 0) {
             const pathsToRemove = fileList.map(f => `${condo.id}/${f.name}`)
@@ -70,7 +70,7 @@ serve(async (req) => {
     try {
       const { data: subDirs, error: subDirsError } = await supabaseAdmin.storage
         .from('fatture')
-        .list(user.id)
+        .list(user.id, { limit: 1000 })
 
       if (!subDirsError && subDirs && subDirs.length > 0) {
         for (const item of subDirs) {
@@ -79,7 +79,7 @@ serve(async (req) => {
             if (!item.id) {
               const { data: files, error: filesError } = await supabaseAdmin.storage
                 .from('fatture')
-                .list(`${user.id}/${item.name}`)
+                .list(`${user.id}/${item.name}`, { limit: 1000 })
               
               if (!filesError && files && files.length > 0) {
                 const pathsToRemove = files.map(f => `${user.id}/${item.name}/${f.name}`)

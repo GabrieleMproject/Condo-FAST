@@ -146,11 +146,13 @@ export function PlanBadge({ piano }) {
       border: `1px solid ${c.border}`,
       borderRadius: 20, padding: '2px 10px',
       fontSize: 12, fontWeight: 600,
+      display: 'inline-flex', alignItems: 'center', gap: 4,
     }}>
-      {PIANO_ICONS[piano] || ''} {PIANI[piano]?.label || piano}
+      {renderPianoIcon(piano, 12)} {PIANI[piano]?.label || piano}
     </span>
   )
 }
+
 
 // ── Stili ─────────────────────────────────────────────────────────────────
 const styles = {

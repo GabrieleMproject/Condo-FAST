@@ -23,10 +23,10 @@ const FAQS = [
   }
 ]
 
-const SYSTEM_PROMPT = `Sei l'assistente virtuale di CondoAI, il gestionale SaaS moderno per amministratori di condominio.
+const SYSTEM_PROMPT = `Sei l'assistente virtuale di CondoSmart, il gestionale SaaS moderno per amministratori di condominio.
 Il tuo compito è aiutare l'amministratore a usare il software in modo chiaro e rapido.
 
-MAPPA STRUTTURALE CONDOAI:
+MAPPA STRUTTURALE CONDOSMART:
 - "Dashboard": panoramica sintetica e alert.
 - "Condomini": elenco condomini, inserimento nuovo condominio, configurazione base. Entrando nel singolo condominio ci sono vari tab (Anagrafica, Spese, Consuntivo, Rate).
 - "Anagrafica": gestione globale condòmini (ricerca istantanea) e anagrafiche locali per singolo condominio. Import da Excel e AI estrattiva supportata.
@@ -52,7 +52,7 @@ export default function AssistenzaPage() {
   // Stati Chatbot
   const [chatInput, setChatInput] = useState('')
   const [chatHistory, setChatHistory] = useState([
-    { role: 'assistant', content: 'Ciao! Sono l\'assistente AI di CondoAI. Come posso aiutarti con il gestionale oggi?' }
+    { role: 'assistant', content: 'Ciao! Sono l\'assistente virtuale di CondoSmart. Come posso aiutarti con il gestionale oggi?' }
   ])
   const [isTyping, setIsTyping] = useState(false)
   const [isConvertingToTicket, setIsConvertingToTicket] = useState(false)

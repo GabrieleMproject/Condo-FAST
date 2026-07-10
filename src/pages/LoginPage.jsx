@@ -41,18 +41,18 @@ export default function LoginPage() {
         <div className="brand-content">
           <div className="brand-logo">
             <Building2 size={32} />
-            <span>CondoAI</span>
+            <span>CondoSmart</span>
           </div>
           <h1 className="brand-headline">
             Gestisci i tuoi condomini.<br />
-            L'AI fa il resto.
+            L'automazione fa il resto.
           </h1>
           <p className="brand-sub">
-            La piattaforma intelligente per amministratori condominiali professionisti.
+            La piattaforma moderna per amministratori condominiali professionisti.
             Automatizza le comunicazioni, gestisci la contabilità, risolvi le pratiche più veloce.
           </p>
           <div className="brand-features">
-            {['Comunicazioni automatizzate con AI', 'Contabilità condominiale integrata', 'Gestione fornitori e interventi', 'App per i condòmini inclusa'].map(f => (
+            {['Comunicazioni e solleciti automatizzati', 'Contabilità condominiale integrata', 'Gestione fornitori e interventi', 'App per i condòmini inclusa'].map(f => (
               <div key={f} className="feature-item">
                 <span className="feature-dot" />
                 {f}

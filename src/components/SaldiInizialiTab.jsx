@@ -64,7 +64,7 @@ export default function SaldiInizialiTab({ condominioId }) {
     () => esercizi.find(e => e.id === esercizioId), [esercizi, esercizioId]
   )
 
-  // Esercizio precedente in CondoAI (anno − 1) con rate presenti
+  // Esercizio precedente in CondoSmart (anno − 1) con rate presenti
   const esercizioPrec = useMemo(() => {
     if (!esercizioCorr) return null
     return esercizi.find(e => e.anno === (esercizioCorr.anno - 1)) || null
@@ -186,7 +186,7 @@ export default function SaldiInizialiTab({ condominioId }) {
         <button
           onClick={handleRiporta}
           disabled={!esercizioPrec}
-          title={esercizioPrec ? `Calcola dai dati ${esercizioPrec.anno}` : 'Nessun esercizio precedente in CondoAI'}
+          title={esercizioPrec ? `Calcola dai dati ${esercizioPrec.anno}` : 'Nessun esercizio precedente in CondoSmart'}
           style={{
             background: esercizioPrec ? '#0e7490' : '#1e293b',
             color: esercizioPrec ? '#fff' : '#475569',

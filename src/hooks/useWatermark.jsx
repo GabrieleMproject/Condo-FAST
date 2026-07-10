@@ -48,7 +48,7 @@ export function useWatermark() {
           
           <h2 style={styles.title}>Scopri quanto tempo risparmieresti con la versione Pro!</h2>
           <p style={styles.desc}>
-            Stai utilizzando la versione gratuita di CondoAI. Il documento PDF generato riporterà una <b>filigrana in sovraimpressione</b>.
+            Stai utilizzando la versione gratuita di CondoSmart. Il documento PDF generato riporterà una <b>filigrana in sovraimpressione</b>.
           </p>
           <p style={styles.desc}>
             Passa a uno dei piani Premium per rimuovere la filigrana, personalizzare i PDF con il logo del tuo studio e sbloccare tutte le automazioni dell'Intelligenza Artificiale.

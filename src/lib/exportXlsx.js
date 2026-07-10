@@ -132,7 +132,7 @@ function buildFoglioRate(ws, rate, cells, unita, getProprietario) {
 
 export async function exportRipartizioneXlsx({ condominio, esercizio, spese, unita, ripartizioni, rate, cells, getProprietario }) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'CondoAI'; wb.created = new Date(); wb.modified = new Date();
+  wb.creator = 'CondoSmart'; wb.created = new Date(); wb.modified = new Date();
   buildFoglioAnagrafica(wb.addWorksheet('Anagrafica'), unita);
   buildFoglioRipartizione(wb.addWorksheet('Ripartizione Spese'), spese, unita, ripartizioni);
   buildFoglioRate(wb.addWorksheet('Rate'), rate, cells, unita, getProprietario);
@@ -142,14 +142,14 @@ export async function exportRipartizioneXlsx({ condominio, esercizio, spese, uni
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `CondoAI_${(condominio?.nome || 'Condominio').replace(/\s+/g, '_')}_${esercizio?.anno || ''}.xlsx`;
+  a.download = `CondoSmart_${(condominio?.nome || 'Condominio').replace(/\s+/g, '_')}_${esercizio?.anno || ''}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
 export async function exportAnagraficaXlsx({ condominio, persone }) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'CondoAI'; wb.created = new Date(); wb.modified = new Date();
+  wb.creator = 'CondoSmart'; wb.created = new Date(); wb.modified = new Date();
   buildFoglioPersone(wb.addWorksheet('Anagrafica'), persone);
 
   const buffer = await wb.xlsx.writeBuffer();

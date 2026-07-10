@@ -501,7 +501,7 @@ export default function ImpostazioniPage() {
                   value={emailConfig.mail_invio_tipo}
                   onChange={e => setEmailConfig(c => ({ ...c, mail_invio_tipo: e.target.value }))}
                 >
-                  <option value="sistema">Sistema CondoAI (Default, onboarding@resend.dev)</option>
+                  <option value="sistema">Sistema CondoSmart (Default, onboarding@resend.dev)</option>
                   <option value="smtp">SMTP Personalizzato (Consigliato per caselle proprie)</option>
                   <option value="resend_custom">Resend Personalizzato (Richiede API Key & Dominio proprio)</option>
                 </select>

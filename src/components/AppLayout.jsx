@@ -89,7 +89,7 @@ function AiBanner() {
       flexShrink: 0,
     }}>
       <span>
-        🤖 <strong>CondoAI utilizza intelligenza artificiale</strong> (Anthropic Claude) per
+        🤖 <strong>CondoSmart utilizza intelligenza artificiale</strong> (Anthropic Claude) per
         alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati
         dall'amministratore. Conforme AI Act UE 2024/1689.
       </span>
@@ -216,7 +216,7 @@ export default function AppLayout() {
           <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #2563eb, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Building2 size={18} color="#fff" />
           </div>
-          {!collapsed && <span style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 18, whiteSpace: 'nowrap' }}>CondoAI</span>}
+          {!collapsed && <span style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 18, whiteSpace: 'nowrap' }}>CondoSmart</span>}
         </div>
 
         {/* Nav */}
@@ -313,7 +313,7 @@ export default function AppLayout() {
         <header style={{ height: 64, background: '#0f172a', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
           {/* ✅ breadcrumb legge la label aggiornata da NAV_ITEMS */}
           <div style={{ color: '#94a3b8', fontSize: 13 }}>
-            {NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.label ?? 'CondoAI'}
+            {NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.label ?? 'CondoSmart'}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <button style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', display: 'flex' }}>

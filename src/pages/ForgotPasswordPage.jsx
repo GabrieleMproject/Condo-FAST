@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
         <div className="auth-form-wrapper">
           <div className="brand-logo brand-logo--dark">
             <Building2 size={28} />
-            <span>CondoAI</span>
+            <span>CondoSmart</span>
           </div>
 
           {sent ? (

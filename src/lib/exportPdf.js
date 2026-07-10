@@ -27,7 +27,7 @@ function disegnaIntestazione(doc, condominio, esercizio, titoloDoc) {
   doc.setFillColor(...DARK); doc.rect(0, 0, W, 42, 'F');
   doc.setFillColor(...BLU); doc.rect(0, 0, 4, 42, 'F');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...BLU);
-  doc.text('CONDOAI', 12, 12);
+  doc.text('CONDOSMART', 12, 12);
   doc.setFontSize(15); doc.setTextColor(...TESTO);
   doc.text(condominio?.nome || 'Condominio', 12, 23);
   if (condominio?.indirizzo) {
@@ -55,7 +55,7 @@ function aggiungiFooter(doc) {
     doc.setPage(i);
     doc.setFillColor(30, 41, 59); doc.rect(0, H - 12, W, 12, 'F');
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
-    doc.text('CondoAI — Gestionale Condominiale', 10, H - 4);
+    doc.text('CondoSmart — Gestionale Condominiale', 10, H - 4);
     doc.text(`Pagina ${i} di ${pageCount}`, W - 10, H - 4, { align: 'right' });
   }
 }
@@ -117,7 +117,7 @@ export async function exportRipartizionePdf({ condominio, esercizio, spese, unit
 
   aggiungiFooter(doc);
   applyWatermark(doc, withWatermark);
-  doc.save(`CondoAI_Ripartizione_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
+  doc.save(`CondoSmart_Ripartizione_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
 }
 
 // ─── Export Rate (modello rate_unita) ─────────────────────────────────
@@ -161,7 +161,7 @@ export async function exportRatePdf({ condominio, esercizio, rate, cells, unita,
 
   aggiungiFooter(doc);
   applyWatermark(doc, withWatermark);
-  doc.save(`CondoAI_Rate_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
+  doc.save(`CondoSmart_Rate_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
 }
 
 // ─── Export Anagrafica ─────────────────────────────────────────────────

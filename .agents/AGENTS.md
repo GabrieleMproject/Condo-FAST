@@ -1,4 +1,4 @@
-# Regole Progetto CondoAI
+# Regole Progetto CondoSmart
 
 ## Lingua
 - **Comunicare sempre in italiano** con l'utente (Gabriele).
@@ -210,7 +210,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ## Storico Decisioni e Fatti Verificati della Sessione S15 (30 Giugno 2026)
 
 ### 1. Sviluppo Chatbot Assistenza
-- **Chatbot AI in Assistenza:** Il form ticket statico in `AssistenzaPage` è stato rimosso e sostituito con una Chatbot AI UI interattiva (che conosce la mappa del sito CondoAI).
+- **Chatbot AI in Assistenza:** Il form ticket statico in `AssistenzaPage` è stato rimosso e sostituito con una Chatbot AI UI interattiva (che conosce la mappa del sito CondoSmart).
 - **Conversione in Ticket (Fallback automatico):** Introdotto un meccanismo che permette all'utente di convertire l'intera conversazione col chatbot in un ticket formale se l'IA non ha risolto il problema. Durante la conversione, l'AI genera in background ("in silente") un titolo riassuntivo per il ticket.
 - **Privacy e GDPR (Log Chat):** Le trascrizioni delle chat vengono inviate in backoffice nella nuova tabella `chat_assistenza_logs` (tramite script `sql/s14_chat_logs.sql`). La RLS su questa tabella è ristretta per permettere la lettura solo ai superadmin. È stata inoltre implementata una policy di auto-eliminazione (soft/hard purge) a 30 giorni per minimizzare la ritenzione dei dati.
 
@@ -314,9 +314,9 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ## Storico Decisioni e Fatti Verificati della Sessione S23 (1 Luglio 2026 - Standardizzazione Tabelle Millesimali e Fix Bug Triager)
 
-### 1. Decisioni sul Workflow e UI (Formato Standard CondoAI)
-- **Formato Standard Universale CondoAI (`MillesimiEditor.jsx`):** Definito un formato standard a 6 colonne (`Interno/Subalterno`, `Piano`, `Destinazione d'uso`, `Superficie mq`, `Proprietario`, `Colonne Millesimali`) per l'importazione e la gestione delle tabelle millesimali in modo immediato senza la complessità dei fogli catastali ufficiali.
-- **Modello Excel/CSV Scaricabile e Aggiunta Manuale:** Aggiunto in `MillesimiEditor.jsx` il pulsante **"📋 Modello Standard (.csv)"** per scaricare un template precompilato (`Modello_Standard_Millesimi_CondoAI.csv`), un banner esplicativo nella modale di importazione, e il pulsante **"➕ Aggiungi Riga"** per creare al volo nuove unità abitative direttamente dall'editor millesimi senza cambiare scheda.
+### 1. Decisioni sul Workflow e UI (Formato Standard CondoSmart)
+- **Formato Standard Universale CondoSmart (`MillesimiEditor.jsx`):** Definito un formato standard a 6 colonne (`Interno/Subalterno`, `Piano`, `Destinazione d'uso`, `Superficie mq`, `Proprietario`, `Colonne Millesimali`) per l'importazione e la gestione delle tabelle millesimali in modo immediato senza la complessità dei fogli catastali ufficiali.
+- **Modello Excel/CSV Scaricabile e Aggiunta Manuale:** Aggiunto in `MillesimiEditor.jsx` il pulsante **"📋 Modello Standard (.csv)"** per scaricare un template precompilato (`Modello_Standard_Millesimi_CondoSmart.csv`), un banner esplicativo nella modale di importazione, e il pulsante **"➕ Aggiungi Riga"** per creare al volo nuove unità abitative direttamente dall'editor millesimi senza cambiare scheda.
 
 ### 2. Bug e Regressioni Risolti (Fix Bug Triager & Bug Fixer)
 - **Arrotondamento in Distribuzione Equa (`distribuisciEquamente`):** Corretta la formula di calcolo quota e resto dell'ultima unità su base arrotondata a 2 decimali (`parseFloat((1000 / unita.length).toFixed(2))`), evitando che la somma finale su condomini non divisibili per 1000 (es. 6 unità) risulti diversa da 1000 (es. 1000.02) mandando in blocco di validazione la tabella.
@@ -370,7 +370,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 1. Decisioni sul Workflow e Estrazione
 - **Mappatura Chiavi Deterministica in Import:** Riscritto il parser di normalizzazione delle chiavi in `AnagraficaImport.jsx` abbandonando i rimpiazzi di sottostringhe a cascata (`.replace('mail', 'email')` ecc.) a favore di una mappatura a dizionario esatto. Questo garantisce che email e telefoni estratti dall'AI o presenti nei file Excel non vengano più corrotti in `eemail` o `telefonoono`, azzerando le anomalie di visualizzazione.
 - **Prompt Strutturato Millesimi:** Aggiornato il prompt di estrazione millesimi in `fileExtractor.js` separando il nominativo generico in `proprietario_nome` e `proprietario_cognome` con `nominativo_completo` come fallback, migliorando l'analisi dei proprietari e delle pertinenze collegate.
-- **Automazione Inserimento Proprietari da Millesimi:** Abilitata la creazione e associazione automatica dei proprietari in `MillesimiEditor.jsx` durante l'importazione delle tabelle millesimali. Se l'unità non ha già un proprietario attivo, CondoAI cerca la persona nel condominio (evitando duplicati) e la crea se necessario, per poi associarla come proprietario attivo (`occupanti_unita`), eliminando la necessità di inserimento manuale.
+- **Automazione Inserimento Proprietari da Millesimi:** Abilitata la creazione e associazione automatica dei proprietari in `MillesimiEditor.jsx` durante l'importazione delle tabelle millesimali. Se l'unità non ha già un proprietario attivo, CondoSmart cerca la persona nel condominio (evitando duplicati) e la crea se necessario, per poi associarla come proprietario attivo (`occupanti_unita`), eliminando la necessità di inserimento manuale.
 
 ---
 
@@ -496,4 +496,17 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - Export "Passaggio di consegne" → formato proprietario, solo per re-importazione in altro Danea
 - Export "Excel per sezione" → `.xlsx/.xls` per sezione singola (Persone, Unità, Tabelle, Fornitori) → **questo è il percorso di migrazione corretto**
 - Non esiste un "esporta tutto" nativo
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S20 (10 Luglio 2026 - Rebranding in CondoSmart)
+
+### 1. Decisioni sul Marketing e Naming
+- **Rebranding in CondoSmart:** Modificato il nome dell'applicazione da "CondoAI" a "CondoSmart" in tutti i punti esposti all'utente finale (UI, stampe PDF, esportazioni Excel, messaggi e-mail e prompt dell'assistente virtuale) per mitigare le resistenze del target di amministratori tradizionali rispetto alla parola "AI".
+- **Naming strategy:** Scelta la variante "CondoSmart" rispetto a "smartCondo" per dare immediata rilevanza al settore merceologico ("Condo") ed evitare l'ambiguità con l'hardware/domotica condominiale.
+- **Rimodulazione dell'identità chatbot:** Il chatbot assistente virtuale si presenta ora come "assistente virtuale" di CondoSmart anziché "assistente AI di CondoAI".
+
+### 2. File Modificati e Validazione
+- Eseguito il refactoring completo su 20 file del progetto e superata con successo la validazione della build locale (`npm run build`).
+
 

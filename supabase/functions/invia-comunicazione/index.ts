@@ -154,7 +154,7 @@ serve(async (req) => {
           if (mailInvioTipo === 'smtp' && transporter) {
             // 1. Invio via SMTP
             await transporter.sendMail({
-              from: `"${profile.mail_mittente_nome || 'CondoAI Amministratore'}" <${profile.mail_mittente_email || user.email}>`,
+              from: `"${profile.mail_mittente_nome || 'CondoSmart Amministratore'}" <${profile.mail_mittente_email || user.email}>`,
               to: dest.email,
               subject: oggetto,
               html: messaggio,
@@ -169,7 +169,7 @@ serve(async (req) => {
             // 2. Invio via Resend (di sistema o personalizzato)
             const apiKey = (mailInvioTipo === 'resend_custom' && profile?.resend_api_key) ? profile.resend_api_key : resendApiKey
             const fromEmail = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_email) ? profile.mail_mittente_email : 'onboarding@resend.dev'
-            const fromName = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_nome) ? profile.mail_mittente_nome : 'CondoAI Amministratore'
+            const fromName = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_nome) ? profile.mail_mittente_nome : 'CondoSmart Amministratore'
 
             if (!apiKey) {
               throw new Error('Chiave API Resend non configurata')

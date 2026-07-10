@@ -64,7 +64,7 @@ export default function RegisterPage() {
 
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
-            Condo<span style={{ color: '#2563eb' }}>AI</span>
+            Condo<span style={{ color: '#2563eb' }}>Smart</span>
           </h1>
           <p className="text-slate-400 mt-2 text-sm">30 giorni gratuiti — nessuna carta richiesta</p>
         </div>
@@ -134,7 +134,7 @@ export default function RegisterPage() {
                     Contratto di Trattamento Dati (DPA)
                   </a>{' '}
                   ai sensi dell'art. 28 GDPR. Confermo di essere l'amministratore condominiale
-                  responsabile del trattamento dei dati dei condomini gestiti tramite CondoAI.
+                  responsabile del trattamento dei dati dei condomini gestiti tramite CondoSmart.
                 </span>
               </label>
               {!dpaAccepted && (

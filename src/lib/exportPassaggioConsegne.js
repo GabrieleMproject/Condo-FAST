@@ -43,7 +43,7 @@ export async function generatePassaggioExcelBuffer({ condominio, unita = [], per
   const saldiList   = saldi || [];
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'CondoAI - Gestionale Amministratore';
+  wb.creator = 'CondoSmart - Gestionale Amministratore';
   wb.created = new Date();
   wb.modified = new Date();
 

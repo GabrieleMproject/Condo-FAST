@@ -9,7 +9,7 @@ export async function generaExportGDPR() {
       export_date: new Date().toISOString(),
       user_id: user.id,
       email: user.email,
-      app: "CondoAI"
+      app: "CondoSmart"
     },
     data: {}
   }
@@ -56,7 +56,7 @@ export async function generaExportGDPR() {
   const blob = new Blob([dataStr], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   
-  const exportFileDefaultName = `condoai_export_${new Date().toISOString().split('T')[0]}.json`
+  const exportFileDefaultName = `condosmart_export_${new Date().toISOString().split('T')[0]}.json`
   
   const linkElement = document.createElement('a')
   linkElement.setAttribute('href', url)

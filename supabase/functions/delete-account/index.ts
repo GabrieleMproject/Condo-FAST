@@ -26,19 +26,89 @@ serve(async (req) => {
       throw new Error('Token non valido o utente non autenticato')
     }
 
-    // 3. Inizializza l'Admin Client
-    // Il client Admin usa la SERVICE_ROLE_KEY, che scavalca la RLS. 
-    // Lo usiamo solo per operazioni privilegiate (es. cancellare l'utente da auth.users)
+    // 3. Inizializza l'Admin Client privilegiato (SERVICE_ROLE_KEY)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // TODO: Eventuale logica per cancellare fisicamente i file da Supabase Storage associati a questo utente,
-    // dato che il cascade SQL non pulisce i bucket (essendo esterni al database).
-    // Per l'MVP si consiglia l'uso di un hook webhook/trigger sul DB, oppure una cron per i bucket.
+    // 4. Raccogli tutti i condomini di questo amministratore
+    const { data: condomini, error: condominiError } = await supabaseAdmin
+      .from('condomini')
+      .select('id')
+      .eq('amministratore_id', user.id)
 
-    // 4. Esegui la cancellazione da auth.users
+    if (condominiError) {
+      console.error(`Errore durante il recupero dei condomini: ${condominiError.message}`)
+    }
+
+    // 5. Pulisci lo Storage in documenti-condominio (per ogni condominio legato all'utente)
+    if (condomini && condomini.length > 0) {
+      for (const condo of condomini) {
+        try {
+          const { data: fileList, error: listError } = await supabaseAdmin.storage
+            .from('documenti-condominio')
+            .list(condo.id)
+
+          if (!listError && fileList && fileList.length > 0) {
+            const pathsToRemove = fileList.map(f => `${condo.id}/${f.name}`)
+            const { error: removeError } = await supabaseAdmin.storage
+              .from('documenti-condominio')
+              .remove(pathsToRemove)
+            
+            if (removeError) {
+              console.error(`Errore rimozione file documenti-condominio per condo ${condo.id}:`, removeError.message)
+            }
+          }
+        } catch (storageErr: any) {
+          console.error(`Eccezione pulizia storage documenti-condominio per condo ${condo.id}:`, storageErr.message)
+        }
+      }
+    }
+
+    // 6. Pulisci lo Storage in fatture (tutti i file sotto la cartella user.id)
+    try {
+      const { data: subDirs, error: subDirsError } = await supabaseAdmin.storage
+        .from('fatture')
+        .list(user.id)
+
+      if (!subDirsError && subDirs && subDirs.length > 0) {
+        for (const item of subDirs) {
+          try {
+            // Se item.id è nullo o non definito, è una directory (es. condominio_id o f24_quietanze)
+            if (!item.id) {
+              const { data: files, error: filesError } = await supabaseAdmin.storage
+                .from('fatture')
+                .list(`${user.id}/${item.name}`)
+              
+              if (!filesError && files && files.length > 0) {
+                const pathsToRemove = files.map(f => `${user.id}/${item.name}/${f.name}`)
+                const { error: removeError } = await supabaseAdmin.storage
+                  .from('fatture')
+                  .remove(pathsToRemove)
+                if (removeError) {
+                  console.error(`Errore rimozione file in fatture/${user.id}/${item.name}:`, removeError.message)
+                }
+              }
+            } else {
+              // È un file posizionato direttamente nella root di user.id
+              const { error: removeError } = await supabaseAdmin.storage
+                .from('fatture')
+                .remove([`${user.id}/${item.name}`])
+              if (removeError) {
+                console.error(`Errore rimozione file singolo in fatture/${user.id}/${item.name}:`, removeError.message)
+              }
+            }
+          } catch (itemErr: any) {
+            console.error(`Eccezione durante la pulizia di fatture/${user.id}/${item.name}:`, itemErr.message)
+          }
+        }
+      }
+    } catch (storageErr: any) {
+      console.error(`Eccezione generale pulizia storage fatture per utente ${user.id}:`, storageErr.message)
+    }
+
+    // 7. Esegui la cancellazione definitiva da auth.users
     // Il vincolo ON DELETE CASCADE sulle foreign key nel DB (es. profiles) 
     // distruggerà a catena i condomini, spese, fatture collegate.
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id)
@@ -47,7 +117,7 @@ serve(async (req) => {
       throw new Error(`Impossibile eliminare l'utente: ${deleteError.message}`)
     }
 
-    return new Response(JSON.stringify({ success: true, message: 'Account e dati eliminati con successo' }), {
+    return new Response(JSON.stringify({ success: true, message: 'Account e dati fisici/logici eliminati con successo' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

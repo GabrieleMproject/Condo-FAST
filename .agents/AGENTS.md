@@ -528,5 +528,29 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Origine dei fogli volanti:** L'interpolazione lineare immediata tra lo `0%` e il `15%` Y-offset nei keyframe causava un volo ad alta velocità fin dai primi millisecondi che materializzava il foglietto già sollevato di diversi pixel. L'introduzione dello step al `6%` a traslazione `(0,0)` ha risolto il disallineamento visivo.
 - **Vite Rolldown warning:** I file CSS compressi rimangono correttamente posizionati. La build di Vite viene completata in meno di 400ms.
 
+### 4. Bug Risolti
+- **Prop `interactive` in `BrandLogo.jsx`:** Risolto il mismatch per cui il prop `interactive` non veniva destrutturato né propagato come classe CSS `.interactive`, impedendo il funzionamento dell'animazione di volo in React.
+- **Sintassi CSS in `website/css/style.css`:** Corretta l'unità di misura mancante (`deg`) e ripristinata la proprietà `scale(0.95)` al frame `75%` di `@keyframes fly-sheet-3`.
+- **Doppio Nido Metadata in `RegisterPage.jsx`:** Rimosso il wrapping ridondante `{ data: ... }` nella chiamata a `signUp`, ripristinando il popolamento corretto di `nome` e `cognome` nella tabella `profiles` su Supabase.
+- **Link DPA e Legali Interrotti in `RegisterPage.jsx`:** Aggiornati i link delle checkbox di registrazione che puntavano a risorse non esistenti (`/dpa.pdf`, `/tos`, `/privacy`), reindirizzandoli correttamente alle rispettive pagine statiche `.html` del sito.
 
+---
 
+## Storico Decisioni e Fatti Verificati della Sessione S30 (10 Luglio 2026 - Conformità GDPR e Risoluzione File Storage Orfani)
+
+### 1. Decisioni sul GDPR e Diritto all'Oblio
+- **Risoluzione dei File Orfani (Storage):** Implementata la pulizia automatica dello storage fisico all'eliminazione dell'account. Il database cascade elimina le righe SQL, ma è necessario rimuovere i file binari nei bucket di Supabase Storage per conformità reale al GDPR.
+- **Pagine Legali nella Build:** Creati `privacy.html` e `termini.html` all'interno della cartella `public/`. Vite li copia automaticamente in `dist/` durante il processo di build, rendendoli fruibili su `/privacy.html` e `/termini.html` e prevenendo gli errori 404 dai link di registrazione.
+
+### 2. Funzionalità Rilasciate
+- **Pulizia Storage in `delete-account` (Edge Function):**
+  - Recupero di tutti i condomini dell'amministratore.
+  - Elencazione e rimozione di tutti i file in `documenti-condominio` sotto il prefisso `${condominio_id}/`.
+  - Elencazione e rimozione ricorsiva di tutti i file in `fatture` sotto la cartella dell'utente (`${user_id}/`), inclusi gli F24 pagati.
+- **File di Compliance Statici:**
+  - `public/privacy.html` con informativa specifica sull'elaborazione AI stateless e diritti GDPR (esportazione dati, oblio).
+  - `public/termini.html` con i Termini di Servizio e la clausola di esclusione responsabilità contabile dell'amministratore.
+
+### 3. Fatti Verificati
+- **Verifica Deploy:** Eseguito con successo `supabase functions deploy delete-account`. La funzione è correttamente caricata e attiva in produzione.
+- **Verifica Build:** `npm run build` genera correttamente i file HTML compilati nella cartella `dist/` garantendo l'accessibilità a runtime.

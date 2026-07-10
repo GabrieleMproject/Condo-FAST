@@ -166,7 +166,8 @@ export default function BrandLogo({
   showText = true,
   variant = 'default', // 'default', 'light', 'sidebar', 'login'
   className = '',
-  style = {}
+  style = {},
+  interactive = false
 }) {
   const textFontSize = size * 0.56;
 
@@ -197,7 +198,7 @@ export default function BrandLogo({
 
   return (
     <div
-      className={`condosmart-logo-container ${className}`}
+      className={`condosmart-logo-container ${interactive ? 'interactive' : ''} ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

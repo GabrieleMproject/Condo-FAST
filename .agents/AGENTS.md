@@ -509,4 +509,24 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 2. File Modificati e Validazione
 - Eseguito il refactoring completo su 20 file del progetto e superata con successo la validazione della build locale (`npm run build`).
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S21 (10 Luglio 2026 - Logo BrandLogo Statico e Dinamico)
+
+### 1. Decisioni sul Design e Animazione Logo
+- **Separazione Visiva Statico/Dinamico:** Il logo dinamico con l'effetto hover di volo dei foglietti e la reazione della scritta è abilitato solo sulle pagine ad alta attrazione dell'attenzione (LoginPage, RegisterPage, ForgotPasswordPage, e tutto il sito di marketing statico). Nelle sezioni interne del gestionale (sidebar di AppLayout) il logo rimane statico e pulito.
+- **Variabili CSS per Temi Dinamici:** Utilizzate variabili CSS tematiche (`--logo-text-prefix`, `--logo-text-highlight`, `--logo-text-glow`) per i colori e i bagliori all'hover del logo. Questo permette di invertire dinamicamente le pulsazioni sul testo (nero profondo e glow azzurro soffuso in tema chiaro, bianco brillante e glow bianco in tema scuro) risolvendo il problema della scomparsa della scritta Condo.
+- **Materializzazione sul Posto:** Sistemati i keyframe iniziali dei foglietti (dallo 0% al 6% dell'animazione a traslazione nulla `translate(0, 0)`) per evitare salti a mezz'aria all'avvio, garantendo che i fogli appaiano visibilmente all'interno delle finestre e fessure.
+
+### 2. Funzionalità e Cablaggio Rilasciati
+- **React App:** Cablato `BrandLogo` in `AppLayout.jsx` (sidebar, statico), `LoginPage.jsx` (dinamico), `RegisterPage.jsx` (dinamico) e `ForgotPasswordPage.jsx` (dinamico).
+- **Sito di Marketing (`website/`):** Sostituito il logo statico con l'SVG intero interattivo in tutte le 7 pagine del sito statico (`index.html`, `features.html`, `pricing.html`, `sicurezza.html`, `dpa.html`, `privacy.html`, `termini.html`).
+- **CSS di Marketing:** Integrate le regole CSS dei keyframe e del volo a foglia morta direttamente nel file `website/css/style.css`.
+- **E2E Smoke Verification:** Eseguita con successo la build del gestionale (`npm run build`).
+
+### 3. Fatti Verificati
+- **Origine dei fogli volanti:** L'interpolazione lineare immediata tra lo `0%` e il `15%` Y-offset nei keyframe causava un volo ad alta velocità fin dai primi millisecondi che materializzava il foglietto già sollevato di diversi pixel. L'introduzione dello step al `6%` a traslazione `(0,0)` ha risolto il disallineamento visivo.
+- **Vite Rolldown warning:** I file CSS compressi rimangono correttamente posizionati. La build di Vite viene completata in meno di 400ms.
+
+
 

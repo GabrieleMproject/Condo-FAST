@@ -31,7 +31,7 @@ export default function RegisterPage() {
       const { error: signUpError } = await signUp(
         form.email,
         form.password,
-        { data: { nome: form.nome, cognome: form.cognome } }
+        { nome: form.nome, cognome: form.cognome }
       );
       if (signUpError) throw signUpError;
 
@@ -129,7 +129,7 @@ export default function RegisterPage() {
                 />
                 <span className="text-slate-300 text-sm leading-relaxed">
                   Ho letto e accetto il{' '}
-                  <a href="/dpa.pdf" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                  <a href="/dpa.html" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
                     Contratto di Trattamento Dati (DPA)
                   </a>{' '}
                   ai sensi dell'art. 28 GDPR. Confermo di essere l'amministratore condominiale
@@ -154,11 +154,11 @@ export default function RegisterPage() {
                 />
                 <span className="text-slate-300 text-sm leading-relaxed">
                   Ho letto e accetto i{' '}
-                  <a href="/tos" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                  <a href="/termini.html" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
                     Termini di Servizio
                   </a>
                   {' '}e la{' '}
-                  <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                  <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
                     Privacy Policy
                   </a>.
                 </span>

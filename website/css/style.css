@@ -1088,7 +1088,7 @@ p { margin: 0 0 1em; }
   6% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
   25% { transform: translate(calc(var(--logo-size) * 0.15), calc(var(--logo-size) * -0.08)) rotate(15deg) scale(1.2); opacity: 1; }
   50% { transform: translate(calc(var(--logo-size) * 0.5), calc(var(--logo-size) * 0.15)) rotate(-25deg) scale(1.1); opacity: 1; }
-  75% { transform: translate(calc(var(--logo-size) * 1.1), calc(var(--logo-size) * 0.05)) rotate(0.95); opacity: 1; }
+  75% { transform: translate(calc(var(--logo-size) * 1.1), calc(var(--logo-size) * 0.05)) rotate(20deg) scale(0.95); opacity: 1; }
   92% { transform: translate(calc(var(--logo-size) * 0.98), calc(var(--logo-size) * 0.12)) rotate(-110deg) scale(0.5); opacity: 0.8; }
   100% { transform: translate(calc(var(--logo-size) * 1.0), calc(var(--logo-size) * 0.12)) rotate(-110deg) scale(0.2); opacity: 0; }
 }

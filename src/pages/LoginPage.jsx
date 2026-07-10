@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import { Building2, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import BrandLogo from '../components/BrandLogo'
 
 export default function LoginPage() {
   const { signIn } = useAuth()
@@ -40,8 +41,7 @@ export default function LoginPage() {
       <div className="auth-brand">
         <div className="brand-content">
           <div className="brand-logo">
-            <Building2 size={32} />
-            <span>CondoSmart</span>
+            <BrandLogo size={48} variant="login" interactive={true} />
           </div>
           <h1 className="brand-headline">
             Gestisci i tuoi condomini.<br />

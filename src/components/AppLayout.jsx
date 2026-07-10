@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePlan } from '../hooks/usePlan';
 import { PlanBadge } from './PlanGate';
 import { toast } from 'react-hot-toast';
+import BrandLogo from './BrandLogo';
 import { supabase } from '../lib/supabaseClient';
 import {
   LayoutDashboard,
@@ -212,11 +213,8 @@ export default function AppLayout() {
         flexShrink: 0,
       }}>
         {/* Logo */}
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid #1e293b', gap: 10, overflow: 'hidden' }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #2563eb, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Building2 size={18} color="#fff" />
-          </div>
-          {!collapsed && <span style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 18, whiteSpace: 'nowrap' }}>CondoSmart</span>}
+        <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: collapsed ? '0 16px' : '0 20px', borderBottom: '1px solid #1e293b', gap: 10, overflow: 'hidden' }}>
+          <BrandLogo size={32} showText={!collapsed} variant="sidebar" />
         </div>
 
         {/* Nav */}

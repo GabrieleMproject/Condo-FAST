@@ -1008,3 +1008,130 @@ p { margin: 0 0 1em; }
   .mockup__body { grid-template-columns: 1fr; }
   .mockup__side { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); }
 }
+
+/* ============================================================
+   Logo CondoSmart - Animato & Dinamico
+   ============================================================ */
+.condosmart-logo-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+  font-family: 'Sora', sans-serif;
+  --logo-text-prefix: #f1f5f9;
+  --logo-text-suffix: #60a5fa;
+  --logo-text-highlight: #ffffff;
+  --logo-text-glow: rgba(255, 255, 255, 0.4);
+  --logo-text-suffix-glow: rgba(96, 165, 250, 0.8);
+  --logo-text-suffix-highlight: #93c5fd;
+  text-decoration: none !important;
+}
+
+.condosmart-logo-container .condosmart-icon {
+  display: inline-block;
+  vertical-align: middle;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.condosmart-logo-container:hover .condosmart-icon {
+  transform: scale(1.08) translateY(-2px);
+}
+
+/* Effetto 3D isometrico sui condomini all'hover */
+.condosmart-logo-container:hover .tower-left {
+  transform: translateY(-3px) translateX(-1px);
+}
+.condosmart-logo-container:hover .tower-center {
+  transform: translateY(-6px);
+}
+.condosmart-logo-container:hover .tower-right {
+  transform: translateY(-4.5px) translateX(1.5px);
+}
+.condosmart-logo-container.interactive:hover .smart-flow-line {
+  filter: drop-shadow(0 0 5px rgba(236, 72, 153, 0.8));
+  stroke-width: 5.5px;
+}
+
+/* Animazione Fogli Volanti */
+.condosmart-logo-container.interactive:hover .sheet-1 {
+  animation: fly-sheet-1 2.4s infinite ease-in-out;
+}
+.condosmart-logo-container.interactive:hover .sheet-2 {
+  animation: fly-sheet-2 2.4s infinite ease-in-out 0.4s;
+}
+.condosmart-logo-container.interactive:hover .sheet-3 {
+  animation: fly-sheet-3 2.4s infinite ease-in-out 0.8s;
+}
+
+@keyframes fly-sheet-1 {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0); opacity: 0; }
+  6% { transform: translate(0, 0) rotate(5deg) scale(1); opacity: 1; }
+  25% { transform: translate(calc(var(--logo-size) * 0.2), calc(var(--logo-size) * -0.12)) rotate(20deg) scale(1.2); opacity: 1; }
+  50% { transform: translate(calc(var(--logo-size) * 0.6), calc(var(--logo-size) * 0.05)) rotate(-15deg) scale(1.1); opacity: 1; }
+  75% { transform: translate(calc(var(--logo-size) * 1.15), calc(var(--logo-size) * -0.1)) rotate(25deg) scale(0.95); opacity: 1; }
+  90% { transform: translate(calc(var(--logo-size) * 1.04), calc(var(--logo-size) * -0.07)) rotate(0deg) scale(0.5); opacity: 0.8; }
+  100% { transform: translate(calc(var(--logo-size) * 1.06), calc(var(--logo-size) * -0.07)) rotate(0deg) scale(0.2); opacity: 0; }
+}
+
+@keyframes fly-sheet-2 {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0); opacity: 0; }
+  6% { transform: translate(0, 0) rotate(-5deg) scale(1); opacity: 1; }
+  25% { transform: translate(calc(var(--logo-size) * 0.22), calc(var(--logo-size) * -0.16)) rotate(-25deg) scale(1.2); opacity: 1; }
+  55% { transform: translate(calc(var(--logo-size) * 0.75), calc(var(--logo-size) * 0.02)) rotate(20deg) scale(1.1); opacity: 1; }
+  80% { transform: translate(calc(var(--logo-size) * 1.25), calc(var(--logo-size) * -0.08)) rotate(-10deg) scale(0.95); opacity: 1; }
+  92% { transform: translate(calc(var(--logo-size) * 1.59), calc(var(--logo-size) * -0.04)) rotate(90deg) scale(0.5); opacity: 0.8; }
+  100% { transform: translate(calc(var(--logo-size) * 1.62), calc(var(--logo-size) * -0.04)) rotate(90deg) scale(0.2); opacity: 0; }
+}
+
+@keyframes fly-sheet-3 {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0); opacity: 0; }
+  6% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  25% { transform: translate(calc(var(--logo-size) * 0.15), calc(var(--logo-size) * -0.08)) rotate(15deg) scale(1.2); opacity: 1; }
+  50% { transform: translate(calc(var(--logo-size) * 0.5), calc(var(--logo-size) * 0.15)) rotate(-25deg) scale(1.1); opacity: 1; }
+  75% { transform: translate(calc(var(--logo-size) * 1.1), calc(var(--logo-size) * 0.05)) rotate(0.95); opacity: 1; }
+  92% { transform: translate(calc(var(--logo-size) * 0.98), calc(var(--logo-size) * 0.12)) rotate(-110deg) scale(0.5); opacity: 0.8; }
+  100% { transform: translate(calc(var(--logo-size) * 1.0), calc(var(--logo-size) * 0.12)) rotate(-110deg) scale(0.2); opacity: 0; }
+}
+
+/* Animazione della scritta al ricevimento dei documenti */
+.condosmart-logo-container.interactive:hover .text-prefix {
+  animation: receive-docs-prefix 2.4s infinite ease-in-out;
+}
+.condosmart-logo-container.interactive:hover .text-suffix {
+  animation: receive-docs-suffix 2.4s infinite ease-in-out;
+}
+
+@keyframes receive-docs-prefix {
+  0% { color: var(--logo-text-prefix); text-shadow: none; transform: translateY(0) scale(1); }
+  13.3% { color: var(--logo-text-highlight); text-shadow: 0 0 10px var(--logo-text-glow); transform: translateY(-1px); }
+  25% { color: var(--logo-text-prefix); text-shadow: none; transform: translateY(0) scale(1); }
+  80% { color: var(--logo-text-highlight); text-shadow: 0 0 10px var(--logo-text-glow); transform: translateY(-1px); }
+  92% { color: var(--logo-text-prefix); text-shadow: none; transform: translateY(0) scale(1); }
+  100% { color: var(--logo-text-prefix); text-shadow: none; transform: translateY(0) scale(1); }
+}
+
+@keyframes receive-docs-suffix {
+  0%, 100% { color: var(--logo-text-suffix-highlight); text-shadow: 0 0 18px var(--logo-text-suffix-glow), 0 0 28px rgba(6, 182, 212, 0.4); transform: translateY(-1.5px) scale(1.03); }
+  12% { color: var(--logo-text-suffix); text-shadow: 0 0 8px rgba(96, 165, 250, 0.2); transform: translateY(0) scale(1); }
+  90% { color: var(--logo-text-suffix); text-shadow: 0 0 8px rgba(96, 165, 250, 0.2); transform: translateY(0) scale(1); }
+}
+
+.condosmart-logo-text {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+.text-prefix {
+  color: var(--logo-text-prefix);
+  display: inline-block;
+  transition: color 0.3s, text-shadow 0.3s, transform 0.3s;
+}
+.text-suffix {
+  color: var(--logo-text-suffix);
+  display: inline-block;
+  margin-left: 0.05em;
+  transition: color 0.3s, text-shadow 0.3s, transform 0.3s;
+}

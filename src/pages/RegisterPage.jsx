@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
+import BrandLogo from '../components/BrandLogo';
 
 export default function RegisterPage() {
   const { signUp } = useAuth();
@@ -63,9 +64,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
-            Condo<span style={{ color: '#2563eb' }}>Smart</span>
-          </h1>
+          <BrandLogo size={40} variant="login" interactive={true} />
           <p className="text-slate-400 mt-2 text-sm">30 giorni gratuiti — nessuna carta richiesta</p>
         </div>
 

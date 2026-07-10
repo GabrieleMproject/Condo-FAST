@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import { Building2, Mail, ArrowLeft, ArrowRight } from 'lucide-react'
+import BrandLogo from '../components/BrandLogo'
 
 export default function ForgotPasswordPage() {
   const { resetPassword } = useAuth()
@@ -27,8 +28,7 @@ export default function ForgotPasswordPage() {
       <div className="auth-form-panel auth-form-panel--full">
         <div className="auth-form-wrapper">
           <div className="brand-logo brand-logo--dark">
-            <Building2 size={28} />
-            <span>CondoSmart</span>
+            <BrandLogo size={36} variant="login" interactive={true} />
           </div>
 
           {sent ? (

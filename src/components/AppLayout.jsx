@@ -19,8 +19,10 @@ import {
   Bell,
   Send,
   LifeBuoy,
-  Landmark
+  Landmark,
+  ArrowLeftRight
 } from 'lucide-react';
+
 
 // ── Logo → data-URL PNG ridimensionato (max 400px) ────────────────────────
 function fileToResizedDataUrl(file, maxW = 400) {
@@ -63,9 +65,11 @@ const NAV_ITEMS = [
   { path: '/comunicazioni', label: 'Comunicazioni',        icon: Send },
   { path: '/fiscale',      label: 'Certificazioni',        icon: Landmark },
   { path: '/archivio',     label: 'Storico operazioni',    icon: Archive }, // ✅ rinominato
+  { path: '/migrazione',   label: 'Migra gestionale',      icon: ArrowLeftRight, badge: 'NEW' },
   { path: '/assistenza',   label: 'Assistenza',            icon: LifeBuoy },
   { path: '/impostazioni', label: 'Impostazioni',          icon: Settings },
 ];
+
 
 // ── Banner AI Act ────────────────────────────────────────────────────────────
 function AiBanner() {
@@ -217,7 +221,7 @@ export default function AppLayout() {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+          {NAV_ITEMS.map(({ path, label, icon: Icon, badge }) => {
             const active = location.pathname.startsWith(path);
             return (
               <Link key={path} to={path} style={{
@@ -235,9 +239,18 @@ export default function AppLayout() {
               >
                 <Icon size={18} strokeWidth={active ? 2.5 : 1.8} style={{ flexShrink: 0 }} />
                 {!collapsed && label}
+                {!collapsed && badge && (
+                  <span style={{
+                    marginLeft: 'auto', fontSize: 9, fontWeight: 700,
+                    background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                    color: '#fff', borderRadius: 4, padding: '2px 5px',
+                    letterSpacing: '0.05em',
+                  }}>{badge}</span>
+                )}
               </Link>
             );
           })}
+
           
           {isSuperAdmin && (
             <>

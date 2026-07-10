@@ -524,3 +524,181 @@ Se nel documento è presente una tabella con più colonne millesimali (es. colon
     throw new Error('L\'AI non ha restituito un formato JSON valido per le tabelle millesimali.');
   }
 }
+
+// ─── MIGRAZIONE GESTIONALE: Classifica e struttura i dati da un file esportato ──
+// da gestionali condominiali (Danea Domustudio, Gecosei, Metodo, ecc.).
+// Riconosce automaticamente il tipo di dati (anagrafica, unità, millesimi, spese,
+// rate, saldi) e restituisce un oggetto JSON strutturato pronto per la preview.
+export async function classificaEStraiFileGestionale(file) {
+  if (!validaMimeType(file)) {
+    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XLSX, DOCX, CSV, JPG o PNG.`);
+  }
+
+  const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
+
+  const systemPrompt = `Sei un esperto di migrazione dati per gestionali condominiali italiani.
+Il tuo compito è analizzare un file esportato da un gestionale (es. Danea Domustudio, Gecosei, Metodo o altri) e classificare i dati che contiene, poi estrarli in un formato JSON strutturato.
+
+IDENTIFICAZIONE DEL GESTIONALE:
+- Danea Domustudio: tipiche colonne "Nominativo", "Scala", "Interno", "Millesimi proprietà", "Versato", "Da versare", "Quote spettanti"
+- Gecosei: tipiche colonne "Cond.", "Piano", "Vani", "Quota", intestazioni con "GECOSEI"
+- Metodo: tipiche colonne "Id", "Scala", "Unità", "Quote", "Saldo Precedente", intestazioni con "METODO"
+- generico: qualsiasi altro formato non riconoscibile
+
+CLASSIFICAZIONE DEL TIPO DI DATI (scegli il tipo predominante):
+- anagrafica: contiene principalmente nomi, cognomi, codici fiscali, email, telefoni
+- unita: contiene elenco unità immobiliari con scala, piano, superficie, proprietari
+- millesimi: contiene tabelle con valori millesimali per unità e tabella
+- spese: contiene spese/fatture/uscite con importi e categorie
+- rate: contiene piani di rateizzazione o quietanze con importi pagati/da pagare
+- saldo_cassa: contiene saldi di conto corrente o cassa condominiale
+- misto: contiene dati di più tipi contemporaneamente
+- sconosciuto: il contenuto non è riconducibile a nessuna categoria
+
+REGOLE CRITICHE PER L'ESTRAZIONE:
+1. Segni dei saldi: POSITIVO = credito del condòmino (ha pagato in eccesso), NEGATIVO = debito (deve ancora versare)
+2. Date: usa SEMPRE il formato ISO YYYY-MM-DD
+3. Importi: numeri decimali puri senza simboli € né separatori migliaia (usa punto decimale)
+4. Se un campo non è rilevabile, usa null (non stringa vuota, non 0)
+5. Estrai TUTTI i blocchi di dati presenti nel file (un file può contenere sia persone che unità)
+6. Per le unità: usa il campo "numero" come identificativo breve dell'unità (scala+interno o subalterno)
+7. Per i millesimi: ogni colonna millesimale distinta è una tabella separata
+8. Per le rate: "stato" si determina da importo_pagato vs importo (pagata = uguali, parziale = parziale, non_pagata = 0 pagato)
+
+Restituisci SOLO un oggetto JSON valido, senza testo aggiuntivo, senza markdown, senza backtick.
+
+Schema esatto da rispettare:
+{
+  "tipo": "anagrafica" | "unita" | "millesimi" | "spese" | "rate" | "saldo_cassa" | "misto" | "sconosciuto",
+  "gestionale": "Danea Domustudio" | "Gecosei" | "Metodo" | "generico",
+  "condominio": { "nome": string | null, "indirizzo": string | null, "cf_condominio": string | null } | null,
+  "persone": [
+    { "nome": string, "cognome": string, "codice_fiscale": string | null, "email": string | null, "telefono": string | null, "ruolo": "proprietario" | "inquilino" | "", "unita_rif": string | null }
+  ] | null,
+  "unita": [
+    { "numero": string, "tipo": string | null, "scala": string | null, "piano": string | null, "mq": number | null, "proprietario_nome": string | null, "proprietario_cognome": string | null }
+  ] | null,
+  "millesimi": [
+    { "tabella": string, "righe": [ { "unita_rif": string, "valore": number, "proprietario_nome": string | null } ] }
+  ] | null,
+  "saldi_iniziali": [
+    { "anno": number, "unita_rif": string, "proprietario_nome": string | null, "saldo": number }
+  ] | null,
+  "spese": [
+    { "anno": number, "data": string | null, "descrizione": string, "categoria": string, "importo": number, "fornitore": string | null }
+  ] | null,
+  "rate": [
+    { "anno": number, "numero_rata": number | null, "scadenza": string | null, "unita_rif": string, "importo": number, "importo_pagato": number, "stato": "pagata" | "parziale" | "non_pagata" }
+  ] | null
+}`;
+
+  const userPrompt = (isVisual || isPdf)
+    ? 'Analizza questo file esportato da un gestionale condominiale, classifica i dati che contiene ed estraili nel formato JSON richiesto.'
+    : `Analizza questo file esportato da un gestionale condominiale, classifica i dati che contiene ed estraili nel formato JSON richiesto.\n\nContenuto del file:\n${String(contenuto).substring(0, 30000)}`;
+
+  const risposta = isVisual
+    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'classifica_gestionale', maxTokens: 6000 })
+    : isPdf
+    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000 })
+    : await callClaude(userPrompt, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000 });
+
+  return pulisciEdEstraiJson(risposta, false);
+}
+
+// ─── MIGRAZIONE GESTIONALE: Aggrega i risultati di più file in un unico oggetto ─
+// Funzione sincrona pura (no AI). Unifica i blocchi di dati estratti da
+// classificaEStraiFileGestionale con deduplicazione leggera sui soli campi chiave
+// esplicitamente valorizzati — mai scartare dati in caso di dubbio.
+export function aggregaDatiGestionale(risultatiPerFile) {
+  if (!Array.isArray(risultatiPerFile) || risultatiPerFile.length === 0) {
+    return { gestionale: 'generico', condominio: null, persone: [], unita: [], millesimi: [], saldi_iniziali: [], spese: [], rate: [] };
+  }
+
+  // ── gestionale: first non-generic value wins ──────────────────────────────────
+  const gestionale = risultatiPerFile.map(r => r?.gestionale).find(g => g && g !== 'generico') || 'generico';
+
+  // ── condominio: merge fields — first non-null per field wins ─────────────────
+  let condominio = null;
+  for (const r of risultatiPerFile) {
+    if (!r?.condominio) continue;
+    if (!condominio) {
+      condominio = { nome: null, indirizzo: null, cf_condominio: null };
+    }
+    if (!condominio.nome        && r.condominio.nome)        condominio.nome        = r.condominio.nome;
+    if (!condominio.indirizzo   && r.condominio.indirizzo)   condominio.indirizzo   = r.condominio.indirizzo;
+    if (!condominio.cf_condominio && r.condominio.cf_condominio) condominio.cf_condominio = r.condominio.cf_condominio;
+  }
+
+  // ── persone: concat all; light dedup on exact codice_fiscale only ─────────────
+  const tutteLePersone = risultatiPerFile.flatMap(r => Array.isArray(r?.persone) ? r.persone : []).filter(Boolean);
+  const personeMap = new Map(); // key: codice_fiscale → merged record
+  const personeNoCf = [];
+  for (const p of tutteLePersone) {
+    const cf = p?.codice_fiscale?.trim?.() || null;
+    if (!cf) {
+      // No fiscal code → always keep (cannot safely dedup)
+      personeNoCf.push(p);
+    } else if (personeMap.has(cf)) {
+      // Merge non-null fields from duplicate into existing record
+      const existing = personeMap.get(cf);
+      for (const k of Object.keys(p)) {
+        if (p[k] != null && p[k] !== '' && (existing[k] == null || existing[k] === '')) {
+          existing[k] = p[k];
+        }
+      }
+    } else {
+      personeMap.set(cf, { ...p });
+    }
+  }
+  const persone = [...personeMap.values(), ...personeNoCf];
+
+  // ── unita: concat all; dedup on exact "numero" ────────────────────────────────
+  const tutteLeUnita = risultatiPerFile.flatMap(r => Array.isArray(r?.unita) ? r.unita : []).filter(Boolean);
+  const unitaMap = new Map();
+  const unitaSenzaNumero = [];
+  for (const u of tutteLeUnita) {
+    const num = u?.numero?.trim?.() || null;
+    if (!num) {
+      unitaSenzaNumero.push(u);
+    } else if (unitaMap.has(num)) {
+      const existing = unitaMap.get(num);
+      for (const k of Object.keys(u)) {
+        if (u[k] != null && u[k] !== '' && (existing[k] == null || existing[k] === '')) {
+          existing[k] = u[k];
+        }
+      }
+    } else {
+      unitaMap.set(num, { ...u });
+    }
+  }
+  const unita = [...unitaMap.values(), ...unitaSenzaNumero];
+
+  // ── millesimi: concat all; dedup on tabella name (merge rows) ─────────────────
+  const tuttiIMillesimi = risultatiPerFile.flatMap(r => Array.isArray(r?.millesimi) ? r.millesimi : []).filter(Boolean);
+  const millesimiMap = new Map();
+  for (const m of tuttiIMillesimi) {
+    const nome = m?.tabella?.trim?.() || null;
+    if (!nome) continue; // skip malformed entries
+    if (millesimiMap.has(nome)) {
+      // Merge rows — append rows not already present (by unita_rif)
+      const existing = millesimiMap.get(nome);
+      const existingRefs = new Set(existing.righe.map(r => r?.unita_rif).filter(Boolean));
+      for (const riga of (Array.isArray(m.righe) ? m.righe : [])) {
+        if (!riga?.unita_rif || !existingRefs.has(riga.unita_rif)) {
+          existing.righe.push(riga);
+          if (riga?.unita_rif) existingRefs.add(riga.unita_rif);
+        }
+      }
+    } else {
+      millesimiMap.set(nome, { tabella: nome, righe: Array.isArray(m.righe) ? [...m.righe] : [] });
+    }
+  }
+  const millesimi = [...millesimiMap.values()];
+
+  // ── saldi_iniziali, spese, rate: concatenate as-is (no dedup) ─────────────────
+  const saldi_iniziali = risultatiPerFile.flatMap(r => Array.isArray(r?.saldi_iniziali) ? r.saldi_iniziali : []).filter(Boolean);
+  const spese          = risultatiPerFile.flatMap(r => Array.isArray(r?.spese)          ? r.spese          : []).filter(Boolean);
+  const rate           = risultatiPerFile.flatMap(r => Array.isArray(r?.rate)           ? r.rate           : []).filter(Boolean);
+
+  return { gestionale, condominio, persone, unita, millesimi, saldi_iniziali, spese, rate };
+}

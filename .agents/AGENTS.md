@@ -554,3 +554,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 3. Fatti Verificati
 - **Verifica Deploy:** Eseguito con successo `supabase functions deploy delete-account`. La funzione è correttamente caricata e attiva in produzione.
 - **Verifica Build:** `npm run build` genera correttamente i file HTML compilati nella cartella `dist/` garantendo l'accessibilità a runtime.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S31 (10 Luglio 2026 - Rimozione Emoji Residue e Habilitazione AI Client in AggiornamentoAnagrafica)
+
+### 1. Sostituzione delle Emoji residue
+- **React App:** Rimosse le restanti emoji grafiche in `ModuloFiscalePage.jsx` (pulsante quietanza), `FattureFornitoriPage.jsx` (ritenute, F24 upload, alert di errore), `RiconciliazioniIncassiPage.jsx` (bottoni e badge orfani), `RiconciliazioniPage.jsx` (bottoni e badge orfani) e `ImpostazioniPage.jsx` (lucchetto pagamento sicuro Stripe). Sostituite tutte con icone Lucide React coerenti e professionali (`FileText`, `AlertTriangle`, `Paperclip`, `Upload`, `Bot`, `Calendar`, `User`, `Building2`, `Plus`, `RefreshCw`, `Lock`).
+- **Sito di Marketing (`website/`):** Completata la rimozione su tutte le pagine statiche (`index.html`, `features.html`, `sicurezza.html`, `pricing.html`, `dpa.html`, `privacy.html`, `termini.html`) sostituendo le emoji con moderne icone SVG inline (`grid`, `building`, `receipt`, `link`, `file-text`, `mail`, `cpu`, `bar-chart-2`, `landmark`, `lock`, `shield`, `globe`, `clipboard`, `alert-triangle`) per un'esperienza coerente, pulita e professionale a 1440p.
+
+### 2. Risoluzione Bug e Sicurezza (Report Bug Triager)
+- **AggiornamentoAnagrafica.jsx:** Sostituita la chiamata `fetch` diretta a Anthropic con l'utilizzo di `callClaude` importata da `../lib/claudeClient`, garantendo la validazione corretta del token JWT lato server, riducendo l'esposizione di API key e correggendo l'uso del parametro `maxTokens` in sostituzione di `max_tokens`.
+- **GDPR Logs:** Rimossi i log di console in chiaro contenenti dati personali degli utenti/condòmini in `AnagraficaCondominioTab.jsx` e `usePersone.js` per garantire la conformità alla minimizzazione ed evitare il leak di informazioni sensibili.
+- **Navigazione Pagine Legali Sito:** Uniformati i link di Accedi (`nav-login` -> `http://localhost:5173/login`) e Trial (`nav-trial` -> `http://localhost:5173/register`) in `dpa.html`, `privacy.html`, `termini.html` e `index.html` per garantire coerenza globale su tutto il portale statico.
+
+### 3. Fatti Verificati
+- **Verifica Build:** `npm run build` eseguito con successo, build completata senza alcun errore di compilazione o warning.
+- **Git status ed origin push:** Modifiche caricate sul ramo principale ed eseguito il push a `origin/main`.
+

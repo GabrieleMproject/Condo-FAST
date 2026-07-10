@@ -270,10 +270,10 @@ export default function CondominiForm({ condominio, onClose }) {
                 <p className="checkbox-group-label">Caratteristiche</p>
                 <div className="checkbox-grid">
                   {[
-                    { field: 'presenza_ascensore', label: '🛗 Ascensore' },
-                    { field: 'presenza_giardino', label: '🌳 Giardino / Aree verdi' },
-                    { field: 'presenza_parcheggio', label: '🅿️ Parcheggio' },
-                    { field: 'presenza_portiere', label: '👤 Portiere / Custode' },
+                    { field: 'presenza_ascensore', label: 'Ascensore' },
+                    { field: 'presenza_giardino', label: 'Giardino / Aree verdi' },
+                    { field: 'presenza_parcheggio', label: 'Parcheggio' },
+                    { field: 'presenza_portiere', label: 'Portiere / Custode' },
                   ].map(({ field, label }) => (
                     <label key={field} className="checkbox-item">
                       <input

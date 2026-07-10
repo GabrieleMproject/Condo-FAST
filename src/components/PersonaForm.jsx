@@ -1,8 +1,8 @@
 // src/components/PersonaForm.jsx
 import { useState } from 'react'
+import { UserCheck, Key, X } from 'lucide-react'
 
 export default function PersonaForm({ ruolo, onSave, onClose }) {
-  const label = ruolo === 'proprietario' ? '🏠 Proprietario' : '🔑 Inquilino'
   const [form, setForm] = useState({
     nome: '', cognome: '', codice_fiscale: '', data_nascita: '',
     email: '', telefono: '', telefono_alt: '',
@@ -36,8 +36,10 @@ export default function PersonaForm({ ruolo, onSave, onClose }) {
     <div style={ov}>
       <div style={modal}>
         <div style={hdr}>
-          <h2 style={ttl}>Aggiungi {label}</h2>
-          <button style={cls} onClick={onClose}>✕</button>
+          <h2 style={{ ...ttl, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {ruolo === 'proprietario' ? <UserCheck size={18} /> : <Key size={18} />} Aggiungi {ruolo === 'proprietario' ? 'Proprietario' : 'Inquilino'}
+          </h2>
+          <button style={cls} onClick={onClose}><X size={18} /></button>
         </div>
 
         <div style={body}>

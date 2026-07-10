@@ -7,7 +7,7 @@ import AnagraficaImport from '../components/AnagraficaImport'
 import UnitaForm from '../components/UnitaForm'
 import PersonaForm from '../components/PersonaForm'
 import { supabase } from '../lib/supabaseClient'
-import { Search, Edit, X, Building2, ChevronDown, ChevronUp, Mail, Phone, Home, UserCog, Clock, Plus } from 'lucide-react'
+import { Search, Edit, X, Building2, ChevronDown, ChevronUp, Mail, Phone, Home, UserCog, Clock, Plus, Key, Trash2 } from 'lucide-react'
 import StoricoOccupantiModal from '../components/StoricoOccupantiModal'
 
 // ── Badge tipo unità (per visualizzazione condominio singolo) ──────────────
@@ -20,7 +20,7 @@ const TIPO_COLORS = {
   altro:        { bg: '#1e293b', text: '#94a3b8', label: 'Altro' },
 }
 
-const RUOLO_ICON = { proprietario: '🏠', inquilino: '🔑' }
+const RUOLO_ICON = { proprietario: Home, inquilino: Key }
 
 function TipoBadge({ tipo }) {
   const c = TIPO_COLORS[tipo] || TIPO_COLORS.altro
@@ -34,9 +34,10 @@ function TipoBadge({ tipo }) {
 
 function PersonaChip({ persona, ruolo }) {
   if (!persona) return <span style={{ color: '#475569', fontSize: 12, fontStyle: 'italic' }}>—</span>
+  const Icon = RUOLO_ICON[ruolo]
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span>{RUOLO_ICON[ruolo]}</span>
+      {Icon && <Icon size={14} style={{ color: ruolo === 'proprietario' ? '#3b82f6' : '#f59e0b' }} />}
       <div style={{ textAlign: 'left' }}>
         <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 500 }}>
           {persona.cognome} {persona.nome}
@@ -575,10 +576,10 @@ export default function AnagraficaPage() {
                       <td style={{ ...styles.td, color: '#94a3b8', textAlign: 'left' }}>{u.millesimi || '—'}</td>
                       <td style={styles.td}>
                         <div style={styles.rowActions} onClick={e => e.stopPropagation()}>
-                          <button style={styles.iconBtn} title="Modifica" onClick={() => { setEditUnita(u); setShowUnitaForm(true) }}>✏️</button>
-                          <button style={styles.iconBtn} title="Aggiungi proprietario" onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'proprietario' })}>🏠</button>
-                          <button style={styles.iconBtn} title="Aggiungi inquilino"   onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'inquilino' })}>🔑</button>
-                          <button style={{ ...styles.iconBtn, color: '#ef4444' }} title="Elimina" onClick={() => handleDeleteUnita(u.id)}>🗑️</button>
+                          <button style={styles.iconBtn} title="Modifica" onClick={() => { setEditUnita(u); setShowUnitaForm(true) }}><Edit size={14} /></button>
+                          <button style={styles.iconBtn} title="Aggiungi proprietario" onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'proprietario' })}><Home size={14} style={{ color: '#3b82f6' }} /></button>
+                          <button style={styles.iconBtn} title="Aggiungi inquilino"   onClick={() => setShowPersonaForm({ unitaId: u.id, ruolo: 'inquilino' })}><Key size={14} style={{ color: '#f59e0b' }} /></button>
+                          <button style={{ ...styles.iconBtn, color: '#ef4444' }} title="Elimina" onClick={() => handleDeleteUnita(u.id)}><Trash2 size={14} /></button>
                         </div>
                       </td>
                     </tr>,
@@ -742,7 +743,7 @@ export default function AnagraficaPage() {
                         </td>
                         <td style={{ ...styles.td, textAlign: 'center' }}>
                           <button onClick={() => apriModificaGlobale(p)} style={styles.btnEdit} title="Modifica Anagrafica">
-                            ✏️ Modifica
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Edit size={12} /> Modifica</span>
                           </button>
                         </td>
                       </tr>
@@ -833,7 +834,7 @@ export default function AnagraficaPage() {
                                   </td>
                                   <td style={{ ...styles.td, textAlign: 'center' }}>
                                     <button onClick={() => apriModificaGlobale(p)} style={styles.btnEdit} title="Modifica Anagrafica">
-                                      ✏️ Modifica
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Edit size={12} /> Modifica</span>
                                     </button>
                                   </td>
                                 </tr>

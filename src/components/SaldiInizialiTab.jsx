@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useEsercizi } from '../hooks/useEsercizi'
 import { useSaldiIniziali } from '../hooks/useSaldiIniziali'
 import { estraiSaldiConsuntivo } from '../lib/fileExtractor'
+import { Loader2, FileText, Check } from 'lucide-react'
 
 const inputStyle = {
   width: '100%', background: '#0f172a', color: '#f1f5f9',
@@ -206,7 +207,15 @@ export default function SaldiInizialiTab({ condominioId }) {
             cursor: loadingImport ? 'not-allowed' : 'pointer', fontFamily: 'Sora, sans-serif'
           }}
         >
-          {loadingImport ? '⏳ Estrazione…' : '📄 Carica consuntivo anno prec.'}
+          {loadingImport ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Estrazione…
+            </span>
+          ) : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <FileText size={14} /> Carica consuntivo anno prec.
+            </span>
+          )}
         </button>
         <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.csv,.txt"
           style={{ display: 'none' }} onChange={handleFile} />
@@ -346,7 +355,7 @@ export default function SaldiInizialiTab({ condominioId }) {
               <button onClick={applicaMapping} style={{
                 background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8,
                 padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' }}>
-                ✓ Applica alla griglia
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Check size={14} /> Applica alla griglia</span>
               </button>
             </div>
           </div>

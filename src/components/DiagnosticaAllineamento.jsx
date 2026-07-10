@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { 
-  Search, Trash2, Check, AlertCircle, RefreshCw, UserPlus, Link2, Info, ArrowRight, UserCheck
+  Search, Trash2, Check, AlertCircle, RefreshCw, UserPlus, Link2, Info, ArrowRight, UserCheck, X
 } from 'lucide-react';
 
 export default function DiagnosticaAllineamento({ condominioId, unita, tabelle, onReload, showToast }) {
@@ -92,7 +92,7 @@ export default function DiagnosticaAllineamento({ condominioId, unita, tabelle, 
     const sourceU = unita.find(u => u.id === sourceUnitaId);
     const targetU = unita.find(u => u.id === targetUnitaId);
 
-    const confirmText = `⚠️ ATTENZIONE: FONDERE LE UNITÀ È UN'OPERAZIONE IRREVERSIBILE.
+    const confirmText = `ATTENZIONE: FONDERE LE UNITÀ È UN'OPERAZIONE IRREVERSIBILE.
 
 Sei sicuro di voler unire l'unità "${sourceU?.numero || 'Senza Numero'}" (sorgente) nell'unità "${targetU?.numero || 'Senza Numero'}" (destinazione)?
 
@@ -680,13 +680,13 @@ Cosa succederà:
                             ))}
                           </select>
                           <button
-                            style={S.btnActionPrimary}
-                            onClick={() => handleLinkPersona(orphanTargetUnitaId, p.id, 'proprietario')}
-                            disabled={!orphanTargetUnitaId || loadingAction}
-                          >
-                            ✓
-                          </button>
-                          <button style={S.btnActionSecondary} onClick={() => setSelectedOrphanPersonaId('')}>✕</button>
+                             style={S.btnActionPrimary}
+                             onClick={() => handleLinkPersona(orphanTargetUnitaId, p.id, 'proprietario')}
+                             disabled={!orphanTargetUnitaId || loadingAction}
+                           >
+                             <Check size={14} />
+                           </button>
+                           <button style={S.btnActionSecondary} onClick={() => setSelectedOrphanPersonaId('')}><X size={14} /></button>
                         </div>
                       ) : (
                         <button

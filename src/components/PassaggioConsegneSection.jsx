@@ -118,7 +118,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
       obbligatorio: unita.length > 10,
       dettaglioOk: 'Regolamento condominiale presente in archivio documenti.',
       dettaglioErr: unita.length > 10
-        ? '⚠️ MANCANTE: Obbligatorio per legge per condomini con più di 10 condòmini.'
+        ? 'MANCANTE: Obbligatorio per legge per condomini con più di 10 condòmini.'
         : 'Non caricato (facoltativo per condomini fino a 10 condòmini).'
     },
     {

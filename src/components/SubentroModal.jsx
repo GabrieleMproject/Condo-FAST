@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { ArrowRightLeft, X, Calculator, Check } from 'lucide-react';
 
 /**
  * SubentroModal
@@ -117,13 +118,15 @@ export default function SubentroModal({ spesa, unita, ripartizione, esercizio, o
         {/* Header */}
         <div style={styles.modalHeader}>
           <div>
-            <h3 style={styles.modalTitle}>🔄 Gestione Subentro</h3>
+            <h3 style={{ ...styles.modalTitle, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ArrowRightLeft size={18} /> Gestione Subentro
+            </h3>
             <p style={styles.modalSub}>
               {unita?.numero && `Unità ${unita.numero} · `}
               {spesa?.descrizione}
             </p>
           </div>
-          <button style={styles.closeBtn} onClick={onClose}>✕</button>
+          <button style={styles.closeBtn} onClick={onClose} type="button"><X size={18} /></button>
         </div>
 
         {/* Info spesa */}
@@ -162,7 +165,9 @@ export default function SubentroModal({ spesa, unita, ripartizione, esercizio, o
         {/* Preview pro-rata */}
         {calcoloProrata && (
           <div style={styles.proRataBox}>
-            <div style={styles.proRataTitle}>📐 Calcolo Pro-Rata</div>
+            <div style={{ ...styles.proRataTitle, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Calculator size={15} /> Calcolo Pro-Rata
+            </div>
             <div style={styles.proRataGrid}>
               <div style={styles.proRataItem}>
                 <span style={styles.proRataLabel}>Giorni esercizio</span>
@@ -255,7 +260,11 @@ export default function SubentroModal({ spesa, unita, ripartizione, esercizio, o
             onClick={salva}
             disabled={saving}
           >
-            {saving ? 'Salvataggio...' : '✓ Conferma Subentro'}
+            {saving ? 'Salvataggio...' : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Check size={16} /> Conferma Subentro
+              </span>
+            )}
           </button>
         </div>
       </div>

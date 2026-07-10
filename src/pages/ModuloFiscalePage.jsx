@@ -534,7 +534,7 @@ export default function ModuloFiscalePage() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             {delega.quietanza_url ? (
                               <button onClick={() => visualizzaQuietanza(delega.quietanza_url)} style={styles.btnAction}>
-                                📄 Visualizza Quietanza PDF
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><FileText size={14} /> Visualizza Quietanza PDF</span>
                               </button>
                             ) : (
                               <label style={styles.btnUpload}>

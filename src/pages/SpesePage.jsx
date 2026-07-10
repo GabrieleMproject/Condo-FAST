@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { AlertTriangle, Bot, Edit3, Trash2, Info, FileSpreadsheet, Scale, Split, Plus } from 'lucide-react'
 import { useSpese } from '../hooks/useSpese'
 import { useEsercizi } from '../hooks/useEsercizi'
 import { useMillesimi } from '../hooks/useMillesimi'
@@ -268,7 +269,7 @@ export default function SpesePage() {
           background: '#78350f22', border: '1px solid #f59e0b44', borderRadius: 10,
           padding: '14px 18px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center'
         }}>
-          <span style={{ fontSize: 20 }}>⚠️</span>
+          <AlertTriangle size={20} style={{ color: '#fbbf24', flexShrink: 0 }} />
           <div>
             <div style={{ color: '#fbbf24', fontWeight: 600, fontSize: 14 }}>
               {subentriAlert.length} {subentriAlert.length === 1 ? 'spesa ha' : 'spese hanno'} subentri non gestiti
@@ -470,20 +471,22 @@ export default function SpesePage() {
                       </span>
                     )}
                     {hasSubentro && (
-                      <span style={{ background: '#f59e0b22', color: '#f59e0b', borderRadius: 4, padding: '2px 8px', fontSize: 11 }}>
-                        ⚠ subentro
+                      <span style={{ background: '#f59e0b22', color: '#f59e0b', borderRadius: 4, padding: '2px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <AlertTriangle size={10} /> subentro
                       </span>
                     )}
                     {spesa.suggerimento_ai && !spesa.criterio_override && (
-                      <span style={{ background: '#7c3aed11', color: '#7c3aed', borderRadius: 4, padding: '2px 8px', fontSize: 11 }}>
-                        🤖 AI
+                      <span style={{ background: '#7c3aed11', color: '#7c3aed', borderRadius: 4, padding: '2px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Bot size={10} /> AI
                       </span>
                     )}
                   </div>
                   <div style={{ color: '#64748b', fontSize: 12, display: 'flex', gap: 12 }}>
                     <span>{new Date(spesa.data_spesa).toLocaleDateString('it-IT')}</span>
                     {spesa.fornitore && <span>· {spesa.fornitore}</span>}
-                    <span>· {spesa.criterio === 'millesimi' ? '📊 Millesimi' : spesa.criterio === 'quota_fissa' ? '⚖️ Quote fisse' : '🔀 Misto'}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      · {spesa.criterio === 'millesimi' ? <><FileSpreadsheet size={12} /> Millesimi</> : spesa.criterio === 'quota_fissa' ? <><Scale size={12} /> Quote fisse</> : <><Split size={12} /> Misto</>}
+                    </span>
                     {spesa.tabelle_millesimali && <span>· {spesa.tabelle_millesimali.nome}</span>}
                     <span>· {spesa.ripartizioni?.length || 0} unità</span>
                   </div>
@@ -500,19 +503,23 @@ export default function SpesePage() {
                       }}
                       style={{
                         background: 'transparent', color: '#3b82f6', border: 'none',
-                        fontSize: 12, cursor: 'pointer', fontWeight: 600
+                        fontSize: 12, cursor: 'pointer', fontWeight: 600,
+                        display: 'inline-flex', alignItems: 'center', gap: 4
                       }}
+                      type="button"
                     >
-                      ✏️ Modifica
+                      <Edit3 size={12} /> Modifica
                     </button>
                     <button
                       onClick={() => elimina(spesa.id)}
                       style={{
                         background: 'transparent', color: '#ef4444', border: 'none',
-                        fontSize: 12, cursor: 'pointer', fontWeight: 600
+                        fontSize: 12, cursor: 'pointer', fontWeight: 600,
+                        display: 'inline-flex', alignItems: 'center', gap: 4
                       }}
+                      type="button"
                     >
-                      🗑️ Elimina
+                      <Trash2 size={12} /> Elimina
                     </button>
                   </div>
                 </div>
@@ -584,8 +591,9 @@ export default function SpesePage() {
                 </div>
               </div>
 
-              <div style={{ background: '#0f172a', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#64748b' }}>
-                ℹ️ Il periodo amministrativo può non coincidere con l'anno solare (es. 1/7 → 30/6). Le rate si generano dal preventivo, non automaticamente.
+              <div style={{ background: '#0f172a', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#64748b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Info size={14} style={{ flexShrink: 0 }} />
+                <span>Il periodo amministrativo può non coincidere con l'anno solare (es. 1/7 → 30/6). Le rate si generano dal preventivo, non automaticamente.</span>
               </div>
 
               {esercizioErr && (

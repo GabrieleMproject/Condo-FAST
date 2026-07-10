@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
 import { useComunicazioni } from '../hooks/useComunicazioni'
 import { exportSingolaUnitaRatePdfBytes, exportSollecitiMassiviPdf } from '../lib/exportPdf'
-import { CreditCard, X, CheckCircle2, Coins, Mail } from 'lucide-react'
+import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone } from 'lucide-react'
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -601,7 +601,7 @@ L'Amministratore`;
       {rateScaduteDa10Giorni.length > 0 && (
         <div style={st.bannerProposte}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 20 }}>📢</span>
+            <Megaphone size={20} style={{ color: '#fbbf24', flexShrink: 0 }} />
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 14 }}>Solleciti Consigliati</div>
               <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
@@ -1035,12 +1035,12 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                                 style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 4, color: '#e2e8f0', fontSize: 11, padding: '2px 4px', cursor: 'pointer' }}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <option value="email">📧 E-mail</option>
-                                <option value="cartaceo">✉️ Cartaceo</option>
+                                <option value="email">E-mail</option>
+                                <option value="cartaceo">Cartaceo</option>
                               </select>
                             ) : (
-                              <span style={{ fontSize: 10, color: '#f59e0b', background: '#f59e0b15', border: '1px solid #f59e0b30', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>
-                                ✉️ Cartaceo
+                              <span style={{ fontSize: 10, color: '#f59e0b', background: '#f59e0b15', border: '1px solid #f59e0b30', borderRadius: 4, padding: '2px 6px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <Mail size={10} /> Cartaceo
                               </span>
                             )}
                           </div>

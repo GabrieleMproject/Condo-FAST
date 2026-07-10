@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCondomini } from '../hooks/useCondomini'
 import CondominiForm from '../components/CondominiForm'
+import { Building2, CheckCircle2, Home, Eye, Edit3, Archive, Trash2, Layers, Grid } from 'lucide-react'
 
 const STATO_STYLE = {
   attivo:      { bg:'#052e16', text:'#4ade80', label:'Attivo' },
@@ -85,12 +86,12 @@ export default function CondominiPage() {
       {/* KPI */}
       <div style={S.kpiRow}>
         {[
-          { label:'Totale', value: totale, icon:'🏢' },
-          { label:'Attivi', value: attivi, icon:'✅' },
-          { label:'Unità totali', value: unita, icon:'🚪' },
+          { label:'Totale', value: totale, icon: Building2, color: '#3b82f6' },
+          { label:'Attivi', value: attivi, icon: CheckCircle2, color: '#16a34a' },
+          { label:'Unità totali', value: unita, icon: Home, color: '#d97706' },
         ].map(k => (
           <div key={k.label} style={S.kpiCard}>
-            <span style={{ fontSize:24 }}>{k.icon}</span>
+            <span style={{ color: k.color, display: 'flex', alignItems: 'center' }}><k.icon size={24} /></span>
             <div>
               <div style={S.kpiValue}>{k.value}</div>
               <div style={S.kpiLabel}>{k.label}</div>
@@ -119,7 +120,7 @@ export default function CondominiPage() {
         <div style={S.empty}>Caricamento…</div>
       ) : filtered.length === 0 ? (
         <div style={S.empty}>
-          <p style={{ fontSize:48 }}>🏢</p>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Building2 size={48} style={{ color: '#475569' }} /></div>
           <p style={{ color:'#94a3b8' }}>Nessun condominio trovato</p>
           <button style={S.btnPrimary} onClick={() => setShowForm(true)}>+ Aggiungi il primo</button>
         </div>
@@ -131,7 +132,7 @@ export default function CondominiPage() {
               <div key={c.id} style={S.card} onClick={() => navigate(`/condomini/${c.id}`)}>
                 {/* Card header */}
                 <div style={S.cardHeader}>
-                  <div style={S.cardIcon}>🏢</div>
+                  <div style={{ ...S.cardIcon, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Building2 size={20} /></div>
                   <div style={{ flex:1 }}>
                     <div style={S.cardTitle}>{c.nome}</div>
                     <div style={S.cardAddr}>{c.indirizzo} {c.civico}, {c.citta}</div>
@@ -141,10 +142,10 @@ export default function CondominiPage() {
                     <button style={S.menuBtn} onClick={() => setMenuOpen(menuOpen === c.id ? null : c.id)}>⋮</button>
                     {menuOpen === c.id && (
                       <div style={S.dropdown}>
-                        <button style={S.ddItem} onClick={() => navigate(`/condomini/${c.id}`)}>👁 Visualizza</button>
-                        <button style={S.ddItem} onClick={() => { setEditItem(c); setShowForm(true); setMenuOpen(null) }}>✏️ Modifica</button>
-                        <button style={S.ddItem} onClick={() => handleArchivia(c.id)}>📦 Archivia</button>
-                        <button style={{ ...S.ddItem, color:'#f87171' }} onClick={() => handleDelete(c.id)}>🗑️ Elimina</button>
+                        <button style={{ ...S.ddItem, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => navigate(`/condomini/${c.id}`)}><Eye size={14} /> Visualizza</button>
+                        <button style={{ ...S.ddItem, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => { setEditItem(c); setShowForm(true); setMenuOpen(null) }}><Edit3 size={14} /> Modifica</button>
+                        <button style={{ ...S.ddItem, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => handleArchivia(c.id)}><Archive size={14} /> Archivia</button>
+                        <button style={{ ...S.ddItem, color:'#f87171', display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => handleDelete(c.id)}><Trash2 size={14} /> Elimina</button>
                       </div>
                     )}
                   </div>
@@ -152,9 +153,9 @@ export default function CondominiPage() {
 
                 {/* Stats */}
                 <div style={S.cardStats}>
-                  <span style={S.stat}>🚪 {c.num_unita || 0} unità</span>
-                  <span style={S.stat}>🏗️ {c.num_scale || 1} scale</span>
-                  {c.num_piani && <span style={S.stat}>📐 {c.num_piani} piani</span>}
+                  <span style={{ ...S.stat, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Home size={12} /> {c.num_unita || 0} unità</span>
+                  <span style={{ ...S.stat, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Layers size={12} /> {c.num_scale || 1} scale</span>
+                  {c.num_piani && <span style={{ ...S.stat, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Grid size={12} /> {c.num_piani} piani</span>}
                 </div>
 
                 {/* Badge stato */}

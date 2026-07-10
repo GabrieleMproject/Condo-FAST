@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { exportRipartizioneXlsx } from '../lib/exportXlsx';
 import { exportRipartizionePdf } from '../lib/exportPdf';
+import { FileSpreadsheet, FileText, AlertTriangle } from 'lucide-react';
 
 export default function RipartizionePage() {
   const { condominioId } = useParams();
@@ -191,10 +192,10 @@ export default function RipartizionePage() {
             ))}
           </select>
           <button style={styles.btnSecondary} onClick={handleExportXlsx} disabled={exporting}>
-            📊 XLSX
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><FileSpreadsheet size={14} /> XLSX</span>
           </button>
           <button style={styles.btnSecondary} onClick={handleExportPdf} disabled={exporting}>
-            📄 PDF
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><FileText size={14} /> PDF</span>
           </button>
         </div>
       </div>
@@ -217,7 +218,10 @@ export default function RipartizionePage() {
       {/* Alert spese non ripartite */}
       {speseNonRipartite.length > 0 && (
         <div style={styles.alert}>
-          ⚠️ {speseNonRipartite.length} {speseNonRipartite.length === 1 ? 'spesa non è stata' : 'spese non sono state'} ancora ripartita. Vai in "Spese" per elaborarle.
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <AlertTriangle size={16} style={{ color: '#fbbf24' }} />
+            <span>{speseNonRipartite.length} {speseNonRipartite.length === 1 ? 'spesa non è stata' : 'spese non sono state'} ancora ripartita. Vai in "Spese" per elaborarle.</span>
+          </span>
         </div>
       )}
 
@@ -279,7 +283,10 @@ function TabellaPerSpesa({ spese, unita, ripMap, tabelle }) {
               <div style={styles.spesaImporti}>
                 <span style={styles.spesaImporto}>€ {(spesa.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
                 {rips.length > 0 && Math.abs(totaleRip - spesa.importo) > 0.05 && (
-                  <span style={styles.spesaAlert}>⚠️ Δ € {Math.abs(totaleRip - spesa.importo).toFixed(2)}</span>
+                  <span style={{ ...styles.spesaAlert, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <AlertTriangle size={12} />
+                    <span>Δ € {Math.abs(totaleRip - spesa.importo).toFixed(2)}</span>
+                  </span>
                 )}
               </div>
             </div>

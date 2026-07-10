@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { 
-  User, Clock, Plus, Trash2, Calendar, UserPlus, X, Search, Check, AlertCircle 
+  User, Clock, Plus, Trash2, Calendar, UserPlus, X, Search, Check, AlertCircle, Mail, Phone, ArrowRightLeft 
 } from 'lucide-react';
 
 const formattaData = (dateStr) => {
@@ -232,8 +232,8 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
         {/* Header */}
         <div style={st.modalHeader}>
           <div>
-            <h3 style={st.modalTitle}>
-              🕒 Storico {ruolo === 'proprietario' ? 'Proprietari' : 'Inquilini'}
+            <h3 style={{ ...st.modalTitle, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Clock size={18} /> Storico {ruolo === 'proprietario' ? 'Proprietari' : 'Inquilini'}
             </h3>
             <p style={st.modalSub}>
               Unità {unita.numero} {unita.scala ? `· Scala ${unita.scala}` : ''} {unita.piano != null ? `· Piano ${unita.piano}` : ''}
@@ -312,8 +312,8 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
                         {/* Contact details */}
                         {(p.email || p.telefono) && (
                           <div style={st.timelineContacts}>
-                            {p.email && <span style={{ marginRight: 8 }}>✉️ {p.email}</span>}
-                            {p.telefono && <span>📞 {p.telefono}</span>}
+                            {p.email && <span style={{ marginRight: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Mail size={12} /> {p.email}</span>}
+                            {p.telefono && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Phone size={12} /> {p.telefono}</span>}
                           </div>
                         )}
                       </div>
@@ -326,7 +326,9 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
 
           {/* Right panel: Subentry registration Form */}
           <div style={st.rightPanel}>
-            <h4 style={st.sectionTitle}>🔄 Registra Subentro</h4>
+            <h4 style={{ ...st.sectionTitle, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ArrowRightLeft size={16} /> Registra Subentro
+            </h4>
             
             {showNewPersonForm ? (
               // Structured form to create a new person inline

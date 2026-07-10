@@ -1,11 +1,15 @@
 // src/components/PlanGate.jsx
 import { usePlan, PIANI } from '../hooks/usePlan'
+import { Zap, Building2, Rocket, Lock, Check } from 'lucide-react'
 
 // ── Icone piani ───────────────────────────────────────────────────────────
-const PIANO_ICONS = {
-  base:         '⚡',
-  studio:       '🏢',
-  professional: '🚀',
+function renderPianoIcon(piano, size = 32) {
+  switch(piano) {
+    case 'base': return <Zap size={size} style={{ color: '#fbbf24' }} />;
+    case 'studio': return <Building2 size={size} style={{ color: '#3b82f6' }} />;
+    case 'professional': return <Rocket size={size} style={{ color: '#8b5cf6' }} />;
+    default: return <Lock size={size} style={{ color: '#64748b' }} />;
+  }
 }
 
 // ── Componente UpgradePrompt ──────────────────────────────────────────────
@@ -15,7 +19,7 @@ function UpgradePrompt({ feature, pianoMinimo, compact = false }) {
   if (compact) {
     return (
       <div style={styles.compactPrompt}>
-        <span style={styles.lockIcon}>🔒</span>
+        <Lock size={12} style={{ color: '#f59e0b', marginRight: 6 }} />
         <span style={styles.compactText}>
           Funzione {info?.label || pianoMinimo} — 
           <a href="/impostazioni" style={styles.upgradeLink}> Aggiorna piano</a>
@@ -26,7 +30,7 @@ function UpgradePrompt({ feature, pianoMinimo, compact = false }) {
 
   return (
     <div style={styles.upgradeBox}>
-      <div style={styles.upgradeIcon}>{PIANO_ICONS[pianoMinimo] || '🔒'}</div>
+      <div style={styles.upgradeIcon}>{renderPianoIcon(pianoMinimo)}</div>
       <h3 style={styles.upgradeTitle}>
         Funzione disponibile nel piano {info?.label || pianoMinimo}
       </h3>
@@ -41,7 +45,7 @@ function UpgradePrompt({ feature, pianoMinimo, compact = false }) {
         <div style={styles.upgradeFeatures}>
           {getUpgradeFeatures(pianoMinimo).map((f, i) => (
             <div key={i} style={styles.upgradeFeatureItem}>
-              <span style={{ color: '#22c55e' }}>✓</span>
+              <Check size={14} style={{ color: '#22c55e', marginRight: 4, flexShrink: 0 }} />
               <span style={{ color: '#94a3b8', fontSize: 13 }}>{f}</span>
             </div>
           ))}

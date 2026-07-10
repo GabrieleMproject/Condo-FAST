@@ -3,6 +3,23 @@
 
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { ArrowRightLeft, Plus, Edit3, Trash2, Home, Key, X, AlertTriangle, CheckCircle2, XCircle, Search, ClipboardList, Check } from 'lucide-react'
+import { callClaude } from '../lib/claudeClient'
+
+function renderDiffIcon(iconName, color, size = 20) {
+  switch (iconName) {
+    case 'ArrowRightLeft':
+      return <ArrowRightLeft size={size} style={{ color }} />
+    case 'Plus':
+      return <Plus size={size} style={{ color }} />
+    case 'Edit3':
+      return <Edit3 size={size} style={{ color }} />
+    case 'Trash2':
+      return <Trash2 size={size} style={{ color }} />
+    default:
+      return null
+  }
+}
 
 // ───────────────────────────────────────────────────────────────
 // STEP INDICATOR
@@ -18,7 +35,7 @@ function StepDot({ active, done, label, n }) {
         border:`2px solid ${done ? '#16a34a' : active ? '#3b82f6' : '#334155'}`,
         transition:'all .3s',
       }}>
-        {done ? '✓' : n}
+        {done ? <Check size={14} /> : n}
       </div>
       <span style={{ fontSize:10, color: active ? '#e2e8f0' : '#475569', fontWeight: active ? 600 : 400 }}>
         {label}
@@ -41,10 +58,10 @@ function StepLine({ done }) {
 // DIFF BANNER
 // ───────────────────────────────────────────────────────────────
 const TIPO_STYLE = {
-  sostituzione: { icon:'🔄', bg:'#1c1917', border:'#d97706', text:'#fbbf24', label:'SOSTITUZIONE' },
-  nuovo:        { icon:'➕', bg:'#052e16', border:'#16a34a', text:'#4ade80', label:'NUOVO' },
-  modifica:     { icon:'✏️',  bg:'#0c1a2e', border:'#2563eb', text:'#60a5fa', label:'MODIFICA' },
-  rimozione:    { icon:'🗑️',  bg:'#2d0a0a', border:'#dc2626', text:'#f87171', label:'RIMOZIONE' },
+  sostituzione: { icon:'ArrowRightLeft', bg:'#1c1917', border:'#d97706', text:'#fbbf24', label:'SOSTITUZIONE' },
+  nuovo:        { icon:'Plus', bg:'#052e16', border:'#16a34a', text:'#4ade80', label:'NUOVO' },
+  modifica:     { icon:'Edit3',  bg:'#0c1a2e', border:'#2563eb', text:'#60a5fa', label:'MODIFICA' },
+  rimozione:    { icon:'Trash2',  bg:'#2d0a0a', border:'#dc2626', text:'#f87171', label:'RIMOZIONE' },
 }
 
 function DiffBanner({ operazioni }) {
@@ -61,7 +78,7 @@ function DiffBanner({ operazioni }) {
             borderRadius:12, padding:'14px 18px',
             display:'flex', gap:14, alignItems:'flex-start',
           }}>
-            <span style={{ fontSize:22, flexShrink:0, lineHeight:1 }}>{st.icon}</span>
+            {renderDiffIcon(st.icon, st.border)}
             <div style={{ flex:1 }}>
               {/* Tipo + unità + ruolo */}
               <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:7, flexWrap:'wrap' }}>
@@ -71,8 +88,8 @@ function DiffBanner({ operazioni }) {
                 }}>{st.label}</span>
                 <span style={{ color:'#e2e8f0', fontSize:14, fontWeight:700 }}>Unità {op.unita}</span>
                 {op.ruolo && (
-                  <span style={{ color:'#64748b', fontSize:12 }}>
-                    · {op.ruolo === 'proprietario' ? '🏠 Proprietario' : '🔑 Inquilino'}
+                  <span style={{ color:'#64748b', fontSize:12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    · {op.ruolo === 'proprietario' ? <Home size={12} /> : <Key size={12} />} <span>{op.ruolo === 'proprietario' ? 'Proprietario' : 'Inquilino'}</span>
                   </span>
                 )}
               </div>
@@ -176,20 +193,18 @@ Schema di ogni elemento:
 }
 Se non identifichi operazioni chiare, restituisci [].`
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
-          max_tokens: 2000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+      const raw = await callClaude(prompt, {
+        funzione: 'aggiornamento_anagrafica',
+        condominio_id: condominioId,
+        maxTokens: 2000
       })
-      const data = await res.json()
-      const raw = (data.content?.map(b => b.text || '').join('') || '')
-        .trim()
-        .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
-      const parsed = JSON.parse(raw)
+      const parsed = JSON.parse(
+        raw.trim()
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/i, '')
+          .replace(/```\s*$/i, '')
+          .trim()
+      )
       if (!Array.isArray(parsed)) throw new Error('Risposta non valida')
       if (parsed.length === 0) {
         setError('Nessuna modifica rilevata. Prova ad essere più specifico (es: "dal 01/03/2025 int.4 nuovo proprietario Mario Rossi").')
@@ -298,7 +313,7 @@ Se non identifichi operazioni chiare, restituisci [].`
             <h2 style={S.title}>Aggiornamento Anagrafica</h2>
             <p style={S.subtitle}>Incolla qualsiasi testo — l'AI rileva le modifiche e chiede conferma prima di procedere</p>
           </div>
-          <button style={S.closeBtn} onClick={onClose}>✕</button>
+          <button style={S.closeBtn} onClick={onClose} type="button"><X size={18} /></button>
         </div>
 
         {/* Steps */}
@@ -333,8 +348,8 @@ Se non identifichi operazioni chiare, restituisci [].`
             {/* Anteprima anagrafica attuale */}
             {unita.length > 0 && (
               <div style={S.contextBox}>
-                <span style={{ color:'#475569', fontSize:11, fontWeight:600 }}>
-                  📋 ANAGRAFICA ATTUALE — {unita.length} unità
+                <span style={{ color:'#475569', fontSize:11, fontWeight:600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <ClipboardList size={14} /> ANAGRAFICA ATTUALE — {unita.length} unità
                 </span>
                 <div style={S.contextGrid}>
                   {unita.slice(0, 8).map(u => {
@@ -358,7 +373,7 @@ Se non identifichi operazioni chiare, restituisci [].`
               <button style={S.btnPrimary} onClick={analizzaTesto} disabled={loading || !testo.trim()}>
                 {loading
                   ? <><span style={S.spin}/> Analisi AI in corso…</>
-                  : '🔍 Analizza modifiche →'}
+                  : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Search size={14} /> Analizza modifiche →</span>}
               </button>
             </div>
           </div>
@@ -381,8 +396,8 @@ Se non identifichi operazioni chiare, restituisci [].`
 
             <DiffBanner operazioni={operazioni} />
 
-            <div style={S.warningBox}>
-              <span style={{ fontSize:16 }}>⚠️</span>
+            <div style={{ ...S.warningBox, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <AlertTriangle size={16} style={{ color: '#fbbf24', flexShrink: 0 }} />
               <span style={{ color:'#fbbf24', fontSize:12, lineHeight:1.6 }}>
                 Confermando, l'anagrafica verrà aggiornata immediatamente. Gli occupanti precedenti
                 vengono archiviati con data di uscita — <strong>lo storico è sempre consultabile</strong>.
@@ -398,7 +413,7 @@ Se non identifichi operazioni chiare, restituisci [].`
               <button style={S.btnConfirm} onClick={applicaModifiche} disabled={applying}>
                 {applying
                   ? <><span style={S.spin}/> Aggiornamento…</>
-                  : '✅ Conferma e aggiorna anagrafica'}
+                  : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Check size={16} /> Conferma e aggiorna anagrafica</span>}
               </button>
             </div>
           </div>
@@ -407,8 +422,14 @@ Se non identifichi operazioni chiare, restituisci [].`
         {/* ──────────── STEP 3 ──────────── */}
         {step === 3 && risultato && (
           <div style={{ ...S.body, textAlign:'center', paddingTop:32 }}>
-            <div style={{ fontSize:54, marginBottom:12 }}>
-              {risultato.errori.length === 0 ? '✅' : risultato.ok.length > 0 ? '⚠️' : '❌'}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom:12 }}>
+              {risultato.errori.length === 0 ? (
+                <CheckCircle2 size={54} style={{ color: '#16a34a' }} />
+              ) : risultato.ok.length > 0 ? (
+                <AlertTriangle size={54} style={{ color: '#f59e0b' }} />
+              ) : (
+                <XCircle size={54} style={{ color: '#dc2626' }} />
+              )}
             </div>
             <h3 style={{ color:'#e2e8f0', fontSize:19, marginBottom:4 }}>
               {risultato.errori.length === 0 ? 'Anagrafica aggiornata' : 'Aggiornamento parziale'}
@@ -420,12 +441,12 @@ Se non identifichi operazioni chiare, restituisci [].`
 
             {risultato.ok.length > 0 && (
               <div style={{ ...S.resultBox, borderColor:'#16a34a', background:'#052e16', marginBottom:10 }}>
-                {risultato.ok.map((m,i) => <div key={i} style={{ color:'#4ade80', fontSize:13, padding:'3px 0' }}>✓ {m}</div>)}
+                {risultato.ok.map((m,i) => <div key={i} style={{ color:'#4ade80', fontSize:13, padding:'3px 0', display: 'flex', alignItems: 'center', gap: 6 }}><Check size={12} /> {m}</div>)}
               </div>
             )}
             {risultato.errori.length > 0 && (
               <div style={{ ...S.resultBox, borderColor:'#dc2626', background:'#2d0a0a' }}>
-                {risultato.errori.map((m,i) => <div key={i} style={{ color:'#f87171', fontSize:13, padding:'3px 0' }}>⚠ {m}</div>)}
+                {risultato.errori.map((m,i) => <div key={i} style={{ color:'#f87171', fontSize:13, padding:'3px 0', display: 'flex', alignItems: 'center', gap: 6 }}><AlertTriangle size={12} /> {m}</div>)}
               </div>
             )}
 

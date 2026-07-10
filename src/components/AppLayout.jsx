@@ -21,7 +21,8 @@ import {
   Send,
   LifeBuoy,
   Landmark,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Bot
 } from 'lucide-react';
 
 
@@ -89,10 +90,8 @@ function AiBanner() {
       lineHeight: 1.5,
       flexShrink: 0,
     }}>
-      <span>
-        🤖 <strong>CondoSmart utilizza intelligenza artificiale</strong> (Anthropic Claude) per
-        alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati
-        dall'amministratore. Conforme AI Act UE 2024/1689.
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Bot size={16} style={{ flexShrink: 0 }} /> <span><strong>CondoSmart utilizza intelligenza artificiale</strong> (Anthropic Claude) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689.</span>
       </span>
       <button
         onClick={() => setDismissed(true)}
@@ -868,7 +867,11 @@ export default function AppLayout() {
                     onMouseEnter={e => { e.currentTarget.style.color = '#f1f5f9'; e.currentTarget.style.borderColor = '#475569' }}
                     onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = '#334155' }}
                   >
-                    {loadingPortal ? 'Apertura in corso...' : '⚙️ Gestisci abbonamento e fatture'}
+                    {loadingPortal ? 'Apertura in corso...' : (
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        <Settings size={16} /> Gestisci abbonamento e fatture
+                      </span>
+                    )}
                   </button>
                 )}
               </div>

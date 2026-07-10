@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import ExcelJS from 'exceljs'
 import Papa from 'papaparse'
 import { estraiAnagraficaDaFile, fileToText } from '../lib/fileExtractor'
+import { FolderOpen, Lightbulb, FileText, CheckCircle2, X } from 'lucide-react'
 
 // ── Colonne attese (flessibili — l'AI normalizza i nomi) ──────────────────
 const CAMPI_ATTESI = ['nome','cognome','email','telefono','indirizzo','citta','cap','provincia','codice_fiscale','ruolo','unita']
@@ -239,7 +240,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
             <h2 style={styles.title}>Importa Anagrafica</h2>
             <p style={styles.subtitle}>Carica un file con i dati di proprietari e inquilini</p>
           </div>
-          <button style={styles.closeBtn} onClick={onClose}>✕</button>
+          <button style={styles.closeBtn} onClick={onClose}><X size={18} /></button>
         </div>
 
         {step === 'upload' && (
@@ -258,7 +259,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
                 </div>
               ) : (
                 <>
-                  <div style={styles.uploadIcon}>📂</div>
+                  <div style={styles.uploadIcon}><FolderOpen size={48} style={{ color: '#3b82f6', margin: '0 auto' }} /></div>
                   <p style={styles.dropText}>Trascina qui il file o <span style={styles.link}>clicca per sfogliare</span></p>
                   <p style={styles.dropSub}>Formati supportati: <strong>XLSX, XLS, CSV</strong> (Excel/tabelle) · <strong>PDF, DOCX (Word)</strong> (estrazione AI)</p>
                 </>
@@ -275,7 +276,9 @@ export default function AnagraficaImport({ onImport, onClose }) {
             {error && <div style={styles.errorBox}>{error}</div>}
 
             <div style={styles.templateHint}>
-              <span style={{ color: '#94a3b8' }}>💡 Formato consigliato colonne XLSX/CSV:</span>
+              <span style={{ color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Lightbulb size={14} style={{ color: '#fbbf24', flexShrink: 0 }} /> <span>Formato consigliato colonne XLSX/CSV:</span>
+              </span>
               <code style={styles.code}>nome · cognome · email · telefono · indirizzo · citta · cap · provincia · codice_fiscale · ruolo · unita</code>
             </div>
           </div>
@@ -284,7 +287,9 @@ export default function AnagraficaImport({ onImport, onClose }) {
         {step === 'preview' && (
           <div style={styles.body}>
             <div style={styles.previewHeader}>
-              <span style={{ color: '#94a3b8' }}>📄 {fileName}</span>
+              <span style={{ color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <FileText size={14} /> <span>{fileName}</span>
+              </span>
               <span style={styles.badge}>{rows.length} persone trovate</span>
             </div>
 
@@ -310,7 +315,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
                         </td>
                       ))}
                       <td style={styles.td}>
-                        <button style={styles.removeBtn} onClick={() => removeRow(i)}>✕</button>
+                        <button style={styles.removeBtn} onClick={() => removeRow(i)}><X size={14} /></button>
                       </td>
                     </tr>
                   ))}
@@ -340,7 +345,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
 
         {step === 'done' && importResult && (
           <div style={{ ...styles.body, textAlign: 'center', padding: '40px' }}>
-            <div style={styles.doneIcon}>✅</div>
+            <div style={styles.doneIcon}><CheckCircle2 size={48} style={{ color: '#10b981', margin: '0 auto' }} /></div>
             <h3 style={{ color: '#e2e8f0', marginBottom: 8 }}>Importazione completata</h3>
             <p style={{ color: '#60a5fa', fontSize: 20, marginBottom: 4 }}>
               <strong>{importResult.created}</strong> persone importate

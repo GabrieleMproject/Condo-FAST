@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { Save, Home, User, Info } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 /**
@@ -130,15 +131,19 @@ export default function ConfigPagantePage() {
           onClick={salva}
           disabled={!isDirty || saving}
         >
-          {saving ? 'Salvataggio...' : '💾 Salva Configurazione'}
+          {saving ? 'Salvataggio...' : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Save size={16} /> Salva Configurazione
+            </span>
+          )}
         </button>
       </div>
 
       {/* Alert unità senza config */}
       {uniteSenzaConfig > 0 && (
-        <div style={styles.alert}>
-          ℹ️ {uniteSenzaConfig} {uniteSenzaConfig === 1 ? 'unità non ha' : 'unità non hanno'} ancora una configurazione.
-          Il default è <strong>proprietario</strong>.
+        <div style={{ ...styles.alert, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Info size={14} style={{ flexShrink: 0 }} />
+          <span>{uniteSenzaConfig} {uniteSenzaConfig === 1 ? 'unità non ha' : 'unità non hanno'} ancora una configurazione. Il default è <strong>proprietario</strong>.</span>
         </div>
       )}
 
@@ -217,7 +222,7 @@ export default function ConfigPagantePage() {
               <div style={styles.occupanti}>
                 {/* Proprietario */}
                 <div style={{ ...styles.occupanteRow, ...(pagante === 'proprietario' ? styles.occupanteActive : {}) }}>
-                  <div style={styles.occupanteIcon}>🏠</div>
+                  <div style={styles.occupanteIcon}><Home size={16} /></div>
                   <div style={styles.occupanteInfo}>
                     <span style={styles.occupanteLabel}>Proprietario</span>
                     <span style={styles.occupanteNome}>{prop?.nominativo || '—'}</span>
@@ -236,7 +241,7 @@ export default function ConfigPagantePage() {
                   ...(pagante === 'inquilino' ? styles.occupanteActive : {}),
                   opacity: hasInquilino ? 1 : 0.4,
                 }}>
-                  <div style={styles.occupanteIcon}>👤</div>
+                  <div style={styles.occupanteIcon}><User size={16} /></div>
                   <div style={styles.occupanteInfo}>
                     <span style={styles.occupanteLabel}>Inquilino</span>
                     <span style={styles.occupanteNome}>

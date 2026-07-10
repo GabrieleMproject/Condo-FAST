@@ -1,13 +1,29 @@
 import { useEffect, useState } from 'react'
 import { useAuditLog } from '../hooks/useAuditLog'
 import { supabase } from '../lib/supabaseClient'
+import { User, DollarSign, BarChart2, FileText, Calendar, Calculator, Folder } from 'lucide-react'
 
 const CATEGORIE = ['anagrafica', 'spese', 'ripartizioni', 'documenti', 'esercizi', 'millesimi', 'altro']
 const AZIONI = ['INSERT', 'UPDATE', 'DELETE']
 
 const CATEGORIA_ICONS = {
-  anagrafica: '👤', spese: '💸', ripartizioni: '📊',
-  documenti: '📄', esercizi: '📅', millesimi: '🔢', altro: '📁'
+  anagrafica: User,
+  spese: DollarSign,
+  ripartizioni: BarChart2,
+  documenti: FileText,
+  esercizi: Calendar,
+  millesimi: Calculator,
+  altro: Folder
+}
+
+const CATEGORIA_LABELS = {
+  anagrafica: 'Anagrafica',
+  spese: 'Spese',
+  ripartizioni: 'Ripartizioni',
+  documenti: 'Documenti',
+  esercizi: 'Esercizi',
+  millesimi: 'Millesimi',
+  altro: 'Altro'
 }
 const AZIONE_COLORI = {
   INSERT: { bg: '#10b98122', color: '#10b981', label: 'Creazione' },
@@ -130,7 +146,7 @@ export default function StoricoOperazioniPage() {
           <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 5 }}>Categoria</div>
           <select style={{ ...inputStyle, width: '100%' }} value={filtri.categoria} onChange={e => setFiltro('categoria', e.target.value)}>
             <option value="">Tutte</option>
-            {CATEGORIE.map(c => <option key={c} value={c}>{CATEGORIA_ICONS[c]} {c}</option>)}
+            {CATEGORIE.map(c => <option key={c} value={c}>{CATEGORIA_LABELS[c] || c}</option>)}
           </select>
         </div>
         <div style={{ flex: '1 1 130px' }}>
@@ -188,7 +204,12 @@ export default function StoricoOperazioniPage() {
                     <span style={{ background: azioneInfo.bg, color: azioneInfo.color, borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 700, minWidth: 80, textAlign: 'center', flexShrink: 0 }}>
                       {azioneInfo.label}
                     </span>
-                    <span style={{ fontSize: 16, flexShrink: 0 }}>{CATEGORIA_ICONS[evento.categoria] || '📁'}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, color: '#94a3b8' }}>
+                      {(() => {
+                        const Icon = CATEGORIA_ICONS[evento.categoria] || Folder
+                        return <Icon size={16} />
+                      })()}
+                    </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 500 }}>{evento.tabella_modificata.replace(/_/g, ' ')}</span>

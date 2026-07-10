@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiMovimentiBancari, getTipoFile } from '../lib/fileExtractor';
 import { useDocumenti } from '../hooks/useDocumenti';
+import { Trash2, Building2, User, Check, AlertTriangle } from 'lucide-react';
 
 const TIPI_ACCETTATI = '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png';
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—');
@@ -267,7 +268,11 @@ export default function EstrattoContoPage() {
         </label>
       </div>
 
-      {erroreUpload && <div style={styles.errMsg}>⚠️ {erroreUpload}</div>}
+      {erroreUpload && (
+        <div style={{ ...styles.errMsg, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AlertTriangle size={14} /> {erroreUpload}
+        </div>
+      )}
 
       {/* Filtri */}
       <div style={styles.toolbar}>
@@ -308,15 +313,23 @@ export default function EstrattoContoPage() {
                 <div>
                   <div style={styles.movCausale}>{m.causale}</div>
                   {m.fornitore_rilevato && (
-                    <div style={styles.movFornitore}>🏢 {m.fornitore_rilevato}</div>
+                    <div style={{ ...styles.movFornitore, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Building2 size={12} /> {m.fornitore_rilevato}
+                    </div>
                   )}
                   {m.pagante_rilevato && (
-                    <div style={styles.movPagante}>👤 {m.pagante_rilevato}</div>
+                    <div style={{ ...styles.movPagante, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <User size={12} /> {m.pagante_rilevato}
+                    </div>
                   )}
                   <div style={styles.movMeta}>
                     {formattaData(m.data_movimento)}
                     {m.riferimento_esterno && ` · Rif: ${m.riferimento_esterno}`}
-                    {m.riconciliato && <span style={styles.ricBadge}>✓ Riconciliato</span>}
+                    {m.riconciliato && (
+                      <span style={{ ...styles.ricBadge, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Check size={12} /> Riconciliato
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -330,7 +343,7 @@ export default function EstrattoContoPage() {
                 {m.saldo != null && m.saldo !== '' && (
                   <div style={styles.movSaldo}>Saldo: € {Number(m.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</div>
                 )}
-                <button style={styles.delBtn} onClick={() => eliminaMovimento(m.id)} title="Elimina">✕</button>
+                <button style={styles.delBtn} onClick={() => eliminaMovimento(m.id)} title="Elimina" type="button"><Trash2 size={12} /></button>
               </div>
             </div>
           ))}

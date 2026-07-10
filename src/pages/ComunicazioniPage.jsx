@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useCondomini } from '../hooks/useCondomini';
 import { useComunicazioni } from '../hooks/useComunicazioni';
-import { Mail, RefreshCw, Calendar, Eye, Filter, CheckCircle2, AlertTriangle, Send } from 'lucide-react';
+import { Mail, RefreshCw, Calendar, Eye, Filter, CheckCircle2, AlertTriangle, Send, X } from 'lucide-react';
 
 export default function ComunicazioniPage() {
   const { condomini, loading: loadingCondo } = useCondomini();
@@ -196,7 +196,7 @@ export default function ComunicazioniPage() {
           <div style={styles.modal}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Dettaglio Email Inviata</h3>
-              <button onClick={() => setSelectedMsg(null)} style={styles.btnClose}>✕</button>
+              <button onClick={() => setSelectedMsg(null)} style={styles.btnClose}><X size={18} /></button>
             </div>
             <div style={styles.modalBody}>
               <div style={styles.metaRow}>

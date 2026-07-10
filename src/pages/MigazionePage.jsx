@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCondomini } from '../hooks/useCondomini'
 import toast from 'react-hot-toast'
 import { classificaEStraiFileGestionale, aggregaDatiGestionale, validaMimeType } from '../lib/fileExtractor'
+import { User, Home, Calculator, ClipboardList, CreditCard, Coins, Folder, HelpCircle, Users, Check, AlertTriangle, Play, CheckCircle2, ArrowRight, Loader2, XCircle, Clock, Minus, Plus, Settings, X, FileText } from 'lucide-react'
 
 // ─── Palette dark ─────────────────────────────────────────────
 const C = {
@@ -27,23 +28,23 @@ const C = {
 }
 
 const TIPO_BADGE = {
-  anagrafica:   { label: '👤 Anagrafica',   bg: 'rgba(99,102,241,0.2)',  color: '#a5b4fc' },
-  unita:        { label: '🏠 Unità',         bg: 'rgba(34,197,94,0.2)',  color: '#86efac' },
-  millesimi:    { label: '📐 Millesimi',     bg: 'rgba(245,158,11,0.2)', color: '#fcd34d' },
-  spese:        { label: '📋 Spese',         bg: 'rgba(239,68,68,0.2)',  color: '#fca5a5' },
-  rate:         { label: '💳 Rate',          bg: 'rgba(59,130,246,0.2)', color: '#93c5fd' },
-  saldo_cassa:  { label: '💰 Saldi',         bg: 'rgba(16,185,129,0.2)', color: '#6ee7b7' },
-  misto:        { label: '📁 Misto',         bg: 'rgba(139,92,246,0.2)', color: '#c4b5fd' },
-  sconosciuto:  { label: '❓ Sconosciuto',   bg: 'rgba(100,116,139,0.2)',color: '#cbd5e1' },
+  anagrafica:   { label: 'Anagrafica',   bg: 'rgba(99,102,241,0.2)',  color: '#a5b4fc', icon: User },
+  unita:        { label: 'Unità',         bg: 'rgba(34,197,94,0.2)',  color: '#86efac', icon: Home },
+  millesimi:    { label: 'Millesimi',     bg: 'rgba(245,158,11,0.2)', color: '#fcd34d', icon: Calculator },
+  spese:        { label: 'Spese',         bg: 'rgba(239,68,68,0.2)',  color: '#fca5a5', icon: ClipboardList },
+  rate:         { label: 'Rate',          bg: 'rgba(59,130,246,0.2)', color: '#93c5fd', icon: CreditCard },
+  saldo_cassa:  { label: 'Saldi',         bg: 'rgba(16,185,129,0.2)', color: '#6ee7b7', icon: Coins },
+  misto:        { label: 'Misto',         bg: 'rgba(139,92,246,0.2)', color: '#c4b5fd', icon: Folder },
+  sconosciuto:  { label: 'Sconosciuto',   bg: 'rgba(100,116,139,0.2)',color: '#cbd5e1', icon: HelpCircle },
 }
 
 const BLOCCHI_DEF = [
-  { key: 'persone',        label: '🧑‍💼 Anagrafica condòmini', campi: ['cognome','nome','codice_fiscale','email','telefono','ruolo','unita_rif'] },
-  { key: 'unita',          label: '🏠 Unità',                  campi: ['numero','tipo','scala','piano','mq','proprietario_nome','proprietario_cognome'] },
-  { key: 'millesimi',      label: '📐 Millesimi',              campi: ['tabella','unita_rif','valore','proprietario_nome'] },
-  { key: 'saldi_iniziali', label: '💰 Saldi iniziali',         campi: ['anno','unita_rif','proprietario_nome','saldo'] },
-  { key: 'spese',          label: '📋 Spese',                  campi: ['anno','data','descrizione','categoria','importo','fornitore'] },
-  { key: 'rate',           label: '💳 Rate',                   campi: ['anno','numero_rata','scadenza','unita_rif','importo','importo_pagato','stato'] },
+  { key: 'persone',        label: 'Anagrafica condòmini', icon: Users, campi: ['cognome','nome','codice_fiscale','email','telefono','ruolo','unita_rif'] },
+  { key: 'unita',          label: 'Unità',                  icon: Home, campi: ['numero','tipo','scala','piano','mq','proprietario_nome','proprietario_cognome'] },
+  { key: 'millesimi',      label: 'Millesimi',              icon: Calculator, campi: ['tabella','unita_rif','valore','proprietario_nome'] },
+  { key: 'saldi_iniziali', label: 'Saldi iniziali',         icon: Coins, campi: ['anno','unita_rif','proprietario_nome','saldo'] },
+  { key: 'spese',          label: 'Spese',                  icon: ClipboardList, campi: ['anno','data','descrizione','categoria','importo','fornitore'] },
+  { key: 'rate',           label: 'Rate',                   icon: CreditCard, campi: ['anno','numero_rata','scadenza','unita_rif','importo','importo_pagato','stato'] },
 ]
 
 const BLOCCO_STATE_INIT = () => Object.fromEntries(BLOCCHI_DEF.map(b => [b.key, true]))
@@ -94,14 +95,29 @@ function StepIndicator({ step, total }) {
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
 const fmt = (n) => typeof n === 'number' ? n.toLocaleString('it-IT', { minimumFractionDigits: 2 }) : (n ?? '—')
 
-function Badge({ label, bg, color }) {
+function Badge({ label, bg, color, icon: Icon }) {
   return (
-    <span style={{ background: bg, color, borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 600 }}>
-      {label}
+    <span style={{ background: bg, color, borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      {Icon && <Icon size={12} />}
+      <span>{label}</span>
     </span>
   )
 }
-
+function renderStatoImportIcon(stato, size = 20) {
+  switch (stato) {
+    case 'in_corso':
+      return <Loader2 size={size} style={{ color: C.warning, animation: 'spin 1s linear infinite' }} />;
+    case 'completato':
+      return <CheckCircle2 size={size} style={{ color: C.success }} />;
+    case 'errore':
+      return <XCircle size={size} style={{ color: C.error }} />;
+    case 'saltato':
+      return <Minus size={size} style={{ color: C.muted }} />;
+    case 'attesa':
+    default:
+      return <Clock size={size} style={{ color: C.muted }} />;
+  }
+}
 // ─── Componente principale ────────────────────────────────────
 export default function MigazionePage() {
   const navigate = useNavigate()
@@ -213,10 +229,10 @@ export default function MigazionePage() {
         updatedFiles[i] = { ...updatedFiles[i], analisi: res, loading: false }
         if (res?.gestionale && !gestRilevato) gestRilevato = res.gestionale
         results.push(res)
-        setProgressLog(prev => [...prev, `✅ ${item.file.name} — tipo: ${res?.tipo || 'sconosciuto'}`])
+        setProgressLog(prev => [...prev, `[OK] ${item.file.name} — tipo: ${res?.tipo || 'sconosciuto'}`])
       } catch (e) {
         updatedFiles[i] = { ...updatedFiles[i], errore: e.message || 'Errore analisi', loading: false }
-        setProgressLog(prev => [...prev, `❌ ${item.file.name} — ${e.message || 'errore'}`])
+        setProgressLog(prev => [...prev, `[ERRORE] ${item.file.name} — ${e.message || 'errore'}`])
         results.push(null)
       }
       setFiles([...updatedFiles])
@@ -374,9 +390,9 @@ export default function MigazionePage() {
             if (error) throw error
             idMap.esercizi[anno] = newEx.id
           }
-          addLog(`✅ Esercizio ${anno} pronto`)
+          addLog(`[OK] Esercizio ${anno} pronto`)
         } catch (e) {
-          addLog(`❌ Esercizio ${anno}: ${e.message}`)
+          addLog(`[ERRORE] Esercizio ${anno}: ${e.message}`)
         }
       }
     }
@@ -445,7 +461,7 @@ export default function MigazionePage() {
           }
         } catch (e) {
           addError('persone', `${p.cognome} ${p.nome}: ${e.message}`)
-          addLog(`❌ Persona ${p.cognome} ${p.nome}: ${e.message}`)
+          addLog(`[ERRORE] Persona ${p.cognome} ${p.nome}: ${e.message}`)
         }
       }
       setStato('persone', 'completato')
@@ -702,7 +718,7 @@ export default function MigazionePage() {
     }
 
     // Fine import
-    addLog('✅ Importazione completata!')
+    addLog('[OK] Importazione completata!')
     setCondominioImportatoId(condId)
     setProgressoImport(prev => {
       const fin = { ...prev }
@@ -903,10 +919,20 @@ export default function MigazionePage() {
                   onClick={handleCreaCondominio}
                   disabled={creandoCondo || !nomeNuovo.trim()}
                 >
-                  {creandoCondo ? '⏳ Creazione...' : '✅ Crea condominio'}
+                  {creandoCondo ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Creazione...
+                    </span>
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Plus size={14} /> Crea condominio
+                    </span>
+                  )}
                 </button>
                 {condominioId && nuovoCondo === false && (
-                  <div style={{ color: C.success, fontWeight: 600 }}>✅ Condominio creato e selezionato!</div>
+                  <div style={{ color: C.success, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <CheckCircle2 size={16} /> Condominio creato e selezionato!
+                  </div>
                 )}
               </div>
             )}
@@ -1009,8 +1035,16 @@ export default function MigazionePage() {
                       background: C.cardLight, borderRadius: 10, padding: '10px 14px',
                       border: `1px solid ${item.errore ? C.error : C.border}`,
                     }}>
-                      <span style={{ fontSize: 20 }}>
-                        {item.loading ? '⏳' : item.errore ? '❌' : item.analisi ? '✅' : '📄'}
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {item.loading ? (
+                          <Loader2 size={20} style={{ color: C.warning, animation: 'spin 1s linear infinite' }} />
+                        ) : item.errore ? (
+                          <XCircle size={20} style={{ color: C.error }} />
+                        ) : item.analisi ? (
+                          <CheckCircle2 size={20} style={{ color: C.success }} />
+                        ) : (
+                          <FileText size={20} style={{ color: C.muted }} />
+                        )}
                       </span>
                       <span style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {item.file.name}
@@ -1105,12 +1139,15 @@ export default function MigazionePage() {
                       onChange={e => { e.stopPropagation(); setBlocchiAbilitati(prev => ({ ...prev, [blocco.key]: e.target.checked })) }}
                       style={{ width: 16, height: 16, accentColor: C.accent, cursor: 'pointer' }}
                     />
-                    <span style={{ flex: 1, fontWeight: 700, fontSize: 15 }}>{blocco.label}</span>
+                    <span style={{ flex: 1, fontWeight: 700, fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      {blocco.icon && <blocco.icon size={16} style={{ color: C.accent }} />}
+                      {blocco.label}
+                    </span>
                     <Badge label={`${rows.length}`} bg="rgba(99,102,241,0.2)" color="#a5b4fc" />
                     {hasConflicts && (
-                      <Badge label={`🟡 ${conflittiBlk.length} conflitti`} bg={C.warningBg} color={C.warning} />
+                      <Badge label={`${conflittiBlk.length} conflitti`} bg={C.warningBg} color={C.warning} icon={AlertTriangle} />
                     )}
-                    <span style={{ color: C.muted, fontSize: 14 }}>{isOpen ? '▲' : '▼'}</span>
+                    <span style={{ color: C.muted, fontSize: 14, display: 'inline-flex', alignItems: 'center' }}>{isOpen ? '▲' : '▼'}</span>
                   </div>
 
                   {/* Accordion body */}
@@ -1201,7 +1238,7 @@ export default function MigazionePage() {
             {/* Messaggio se nessun dato */}
             {BLOCCHI_DEF.every(b => !getRowsForBlocco(b.key, datiAggregati).length) && (
               <div style={{ textAlign: 'center', padding: '40px 20px', color: C.muted }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>🤷</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><HelpCircle size={40} style={{ color: C.muted }} /></div>
                 <div>Nessun dato estratto. Torna al passo precedente e verifica i file caricati.</div>
               </div>
             )}
@@ -1218,14 +1255,15 @@ export default function MigazionePage() {
         {/* ── STEP 4 ── */}
         {step === 4 && (
           <div style={card}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}>⚙️ Importazione in corso...</h2>
+            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Settings size={22} style={{ color: C.accent }} /> Importazione in corso...
+            </h2>
             <p style={{ color: C.muted, margin: '0 0 28px', fontSize: 14 }}>
               Non chiudere questa pagina. L'importazione è automatica e rispetta l'ordine delle dipendenze.
             </p>
 
             {BLOCCHI_DEF.map(blocco => {
               const p = progressoImport[blocco.key] || { stato: 'attesa', created: 0, updated: 0, skipped: 0, errors: [] }
-              const statoIcon = { attesa: '⏳', in_corso: '🔄', completato: '✅', errore: '❌', saltato: '—' }
               const statoColor = { attesa: C.muted, in_corso: C.warning, completato: C.success, errore: C.error, saltato: C.muted }
               const isInProgress = p.stato === 'in_corso'
 
@@ -1235,8 +1273,11 @@ export default function MigazionePage() {
                   border: `1px solid ${p.stato === 'completato' ? 'rgba(34,197,94,0.3)' : p.stato === 'errore' ? 'rgba(239,68,68,0.3)' : C.border}`,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 20 }}>{statoIcon[p.stato] || '⏳'}</span>
-                    <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>{blocco.label}</span>
+                    <span style={{ fontSize: 20, display: 'flex', alignItems: 'center' }}>{renderStatoImportIcon(p.stato)}</span>
+                    <span style={{ flex: 1, fontWeight: 600, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      {blocco.icon && <blocco.icon size={16} style={{ color: C.accent }} />}
+                      {blocco.label}
+                    </span>
                     <span style={{ color: statoColor[p.stato], fontSize: 13, fontWeight: 600 }}>
                       {p.stato === 'in_corso' ? 'In corso...' : p.stato === 'completato' ? `${p.created} creati · ${p.updated} aggiornati · ${p.skipped} saltati` : p.stato}
                     </span>
@@ -1287,8 +1328,8 @@ export default function MigazionePage() {
         {/* ── STEP 5 ── */}
         {step === 5 && (
           <div style={card}>
-            <div style={{ textAlign: 'center', marginBottom: 28 }}>
-              <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
+            <div style={{ textAlign: 'center', marginBottom: 28, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, color: C.success }}><CheckCircle2 size={56} /></div>
               <h2 style={{ margin: '0 0 8px', fontSize: 26, fontWeight: 800 }}>Migrazione completata!</h2>
               <p style={{ color: C.muted, fontSize: 15 }}>Ecco il riepilogo dell'importazione.</p>
             </div>
@@ -1312,12 +1353,21 @@ export default function MigazionePage() {
                     const hasErr = (p.errors?.length || 0) > 0
                     return (
                       <tr key={blocco.key} style={{ borderBottom: `1px solid ${C.border}` }}>
-                        <td style={{ padding: '12px 16px', fontWeight: 600 }}>{blocco.label}</td>
+                        <td style={{ padding: '12px 16px', fontWeight: 600 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                            {blocco.icon && <blocco.icon size={14} style={{ color: C.muted }} />}
+                            {blocco.label}
+                          </span>
+                        </td>
                         <td style={{ padding: '12px 16px', color: C.success }}>{p.created || 0}</td>
                         <td style={{ padding: '12px 16px', color: C.warning }}>{p.updated || 0}</td>
                         <td style={{ padding: '12px 16px', color: C.muted }}>{p.skipped || 0}</td>
                         <td style={{ padding: '12px 16px', color: hasErr ? C.error : C.muted }}>
-                          {hasErr ? `⚠️ ${p.errors.length}` : '—'}
+                          {hasErr ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <AlertTriangle size={12} /> {p.errors.length}
+                            </span>
+                          ) : '—'}
                         </td>
                       </tr>
                     )
@@ -1332,7 +1382,9 @@ export default function MigazionePage() {
                 background: C.warningBg, border: `1px solid ${C.warning}`,
                 borderRadius: 12, padding: '16px 20px', marginBottom: 24,
               }}>
-                <div style={{ fontWeight: 700, color: C.warning, marginBottom: 10 }}>⚠️ Avvertenze</div>
+                <div style={{ fontWeight: 700, color: C.warning, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <AlertTriangle size={16} /> Avvertenze
+                </div>
                 {BLOCCHI_DEF.map(b => {
                   const errs = progressoImport[b.key]?.errors || []
                   if (!errs.length) return null

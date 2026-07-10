@@ -1,14 +1,34 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDocumenti } from '../hooks/useDocumenti'
+import { FileText, FileSpreadsheet, FileSignature, Award, Landmark, Folder, FolderOpen, Paperclip, CheckCircle2, AlertTriangle, Trash2, Download, Plus, X, File } from 'lucide-react'
+
+function renderTipoIcon(tipo, size = 20) {
+  switch (tipo) {
+    case 'regolamento':
+      return <FileText size={size} style={{ color: '#3b82f6' }} />
+    case 'tabella_millesimale_doc':
+      return <FileSpreadsheet size={size} style={{ color: '#8b5cf6' }} />
+    case 'verbale':
+      return <FileSignature size={size} style={{ color: '#10b981' }} />
+    case 'contratto':
+      return <File size={size} style={{ color: '#f59e0b' }} />
+    case 'certificazione':
+      return <Award size={size} style={{ color: '#06b6d4' }} />
+    case 'estratto_conto_archivio':
+      return <Landmark size={size} style={{ color: '#0ea5e9' }} />
+    default:
+      return <Folder size={size} style={{ color: '#6b7280' }} />
+  }
+}
 
 const TIPI = [
-  { value: 'regolamento', label: 'Regolamento condominiale', icon: '📋' },
-  { value: 'tabella_millesimale_doc', label: 'Tabella millesimale', icon: '📊' },
-  { value: 'verbale', label: 'Verbale assemblea', icon: '📝' },
-  { value: 'contratto', label: 'Contratto/Appalto', icon: '📄' },
-  { value: 'certificazione', label: 'Certificazione', icon: '🏆' },
-  { value: 'estratto_conto_archivio', label: 'Estratto Conto (Archivio)', icon: '🏛️' },
-  { value: 'altro', label: 'Altro', icon: '📁' },
+  { value: 'regolamento', label: 'Regolamento condominiale', icon: 'regolamento' },
+  { value: 'tabella_millesimale_doc', label: 'Tabella millesimale', icon: 'tabella_millesimale_doc' },
+  { value: 'verbale', label: 'Verbale assemblea', icon: 'verbale' },
+  { value: 'contratto', label: 'Contratto/Appalto', icon: 'contratto' },
+  { value: 'certificazione', label: 'Certificazione', icon: 'certificazione' },
+  { value: 'estratto_conto_archivio', label: 'Estratto Conto (Archivio)', icon: 'estratto_conto_archivio' },
+  { value: 'altro', label: 'Altro', icon: 'altro' },
 ]
 
 const CATEGORIE_LABEL = {
@@ -153,7 +173,7 @@ export default function DocumentiCondominio({ condominioId }) {
           background: '#1e293b', border: '2px dashed #334155', borderRadius: 12,
           padding: 48, textAlign: 'center'
         }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📂</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><FolderOpen size={40} style={{ color: '#475569' }} /></div>
           <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>
             {filtroTipo === 'tutti' ? 'Nessun documento caricato' : `Nessun documento di tipo "${TIPI.find(t => t.value === filtroTipo)?.label}"`}
           </p>
@@ -181,7 +201,7 @@ export default function DocumentiCondominio({ condominioId }) {
                   background: '#0f172a', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', fontSize: 20, flexShrink: 0
                 }}>
-                  {TIPI.find(t => t.value === doc.tipo)?.icon || '📁'}
+                  {renderTipoIcon(doc.tipo)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -193,13 +213,13 @@ export default function DocumentiCondominio({ condominioId }) {
                       {cat.label}
                     </span>
                     {hasTesto && (
-                      <span style={{ background: '#10b98122', color: '#10b981', borderRadius: 4, padding: '2px 8px', fontSize: 11 }}>
-                        ✓ Testo estratto
+                      <span style={{ background: '#10b98122', color: '#10b981', borderRadius: 4, padding: '2px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle2 size={11} /> Testo estratto
                       </span>
                     )}
                     {isNormativo && !hasTesto && (
-                      <span style={{ background: '#f59e0b22', color: '#f59e0b', borderRadius: 4, padding: '2px 8px', fontSize: 11 }}>
-                        ⚠ Testo non estratto
+                      <span style={{ background: '#f59e0b22', color: '#f59e0b', borderRadius: 4, padding: '2px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <AlertTriangle size={11} /> Testo non estratto
                       </span>
                     )}
                   </div>
@@ -297,7 +317,9 @@ export default function DocumentiCondominio({ condominioId }) {
                   }}
                 >
                   {selectedFile ? (
-                    <span style={{ color: '#60a5fa', fontSize: 14 }}>📎 {selectedFile.name}</span>
+                    <span style={{ color: '#60a5fa', fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Paperclip size={14} /> {selectedFile.name}
+                    </span>
                   ) : (
                     <span style={{ color: '#64748b', fontSize: 14 }}>Clicca per selezionare un file</span>
                   )}

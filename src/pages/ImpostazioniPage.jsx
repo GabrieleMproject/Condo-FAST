@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { generaExportGDPR } from '../lib/exportDatiGdpr'
+import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock } from 'lucide-react'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
 async function avviaCheckout({ piano, userId, userEmail }) {
@@ -367,7 +368,11 @@ export default function ImpostazioniPage() {
                   onClick={handlePortale}
                   disabled={loadingPortale}
                 >
-                  {loadingPortale ? 'Caricamento…' : '⚙️ Gestisci fatturazione e metodo pagamento'}
+                  {loadingPortale ? 'Caricamento…' : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Settings size={14} /> Gestisci fatturazione e metodo pagamento
+                    </span>
+                  )}
                 </button>
               )}
             </div>
@@ -477,7 +482,7 @@ export default function ImpostazioniPage() {
             {brandingErr && <div style={{ ...styles.errorBox, marginTop: 16, marginBottom: 0 }}>{brandingErr}</div>}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
-              {brandingSaved && <span style={{ color: '#4ade80', fontSize: 13 }}>✓ Salvato</span>}
+              {brandingSaved && <span style={{ color: '#4ade80', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Salvato</span>}
               <button style={styles.brandingBtnSave} onClick={salvaBranding} disabled={savingBranding}>
                 {savingBranding ? 'Salvataggio…' : 'Salva branding'}
               </button>
@@ -598,7 +603,7 @@ export default function ImpostazioniPage() {
             {emailErr && <div style={{ ...styles.errorBox, marginTop: 16, marginBottom: 0 }}>{emailErr}</div>}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
-              {emailSaved && <span style={{ color: '#4ade80', fontSize: 13 }}>✓ Impostazioni email salvate</span>}
+              {emailSaved && <span style={{ color: '#4ade80', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Impostazioni email salvate</span>}
               <button style={styles.brandingBtnSave} onClick={salvaEmailConfig} disabled={savingEmail}>
                 {savingEmail ? 'Salvataggio…' : 'Salva configurazione email'}
               </button>
@@ -660,7 +665,7 @@ export default function ImpostazioniPage() {
             {partnerErr && <div style={{ ...styles.errorBox, marginTop: 16, marginBottom: 0 }}>{partnerErr}</div>}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
-              {partnerSaved && <span style={{ color: '#4ade80', fontSize: 13 }}>✓ Impostazioni partner postale salvate</span>}
+              {partnerSaved && <span style={{ color: '#4ade80', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Impostazioni partner postale salvate</span>}
               <button style={styles.brandingBtnSave} onClick={salvaPartnerConfig} disabled={savingPartner}>
                 {savingPartner ? 'Salvataggio…' : 'Salva impostazioni partner'}
               </button>
@@ -715,12 +720,17 @@ export default function ImpostazioniPage() {
                     {/* SEPA sconto */}
                     {(key === 'studio' || key === 'professional') && (
                       <div style={styles.sepaHint}>
-                        💳 -5€/mese con addebito SEPA
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <CreditCard size={12} />
+                          <span>-5€/mese con addebito SEPA</span>
+                        </span>
                       </div>
                     )}
 
                     {key === piano && isStripeAttivo ? (
-                      <div style={styles.pianoAttivoLabel}>✓ Piano attuale</div>
+                      <div style={{ ...styles.pianoAttivoLabel, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Check size={14} /> Piano attuale
+                      </div>
                     ) : (
                       <button
                         style={styles.btnUpgrade}
@@ -741,7 +751,9 @@ export default function ImpostazioniPage() {
             </div>
 
             <p style={styles.trialNote}>
-              🔒 Pagamento sicuro via Stripe · Carta EU e SEPA Debit accettati · Disdici quando vuoi
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Lock size={12} /> Pagamento sicuro via Stripe · Carta EU e SEPA Debit accettati · Disdici quando vuoi
+              </span>
             </p>
           </section>
         )}
@@ -799,7 +811,7 @@ export default function ImpostazioniPage() {
                 onClick={() => setShowDeleteModal(true)} 
                 style={{ background: '#7f1d1d', color: '#fecaca', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
               >
-                🗑️ Elimina Account
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Trash2 size={16} /> Elimina Account</span>
               </button>
             </div>
 
@@ -812,7 +824,7 @@ export default function ImpostazioniPage() {
             <div style={{ background: '#1e293b', width: 440, borderRadius: 16, padding: 32, border: '1px solid #7f1d1d', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
               
               <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#450a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                <span style={{ fontSize: 24 }}>⚠️</span>
+                <AlertTriangle size={24} style={{ color: '#ef4444' }} />
               </div>
               
               <h2 style={{ color: '#f87171', fontSize: 22, margin: '0 0 12px', textAlign: 'center', fontFamily: 'Sora, sans-serif' }}>Danger Zone</h2>
@@ -862,8 +874,8 @@ export default function ImpostazioniPage() {
 function FeatureRow({ ok, label }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-      <span style={{ color: ok ? '#22c55e' : '#475569', fontSize: 13 }}>
-        {ok ? '✓' : '✗'}
+      <span style={{ color: ok ? '#22c55e' : '#475569', fontSize: 13, display: 'flex', alignItems: 'center' }}>
+        {ok ? <Check size={14} /> : <span style={{ fontFamily: 'monospace', width: 14, textAlign: 'center' }}>✗</span>}
       </span>
       <span style={{ color: ok ? '#94a3b8' : '#475569', fontSize: 13 }}>{label}</span>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callClaude } from '../lib/claudeClient';
 
@@ -185,7 +186,15 @@ Abbina i movimenti alle fatture.`;
           onClick={avviaAnalisiAI}
           disabled={analizzando}
         >
-          {analizzando ? '⏳ Analisi...' : '🤖 Avvia Analisi AI'}
+          {analizzando ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analisi...
+            </span>
+          ) : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Bot size={14} /> Avvia Analisi AI
+            </span>
+          )}
         </button>
       </div>
 
@@ -214,22 +223,23 @@ Abbina i movimenti alle fatture.`;
       {/* Filtri */}
       <div style={styles.toolbar}>
         {[
-          { val: '', label: 'Tutti' },
-          { val: 'suggerita', label: '🤖 Da confermare' },
-          { val: 'confermata', label: '✓ Confermati' },
-          { val: 'rifiutata', label: '✕ Rifiutati' },
-          { val: 'orfani', label: `⚠️ Senza Fattura (${movOrfani.length})`, isAlert: movOrfani.length > 0 },
-        ].map(({ val, label, isAlert }) => (
+          { val: '', label: 'Tutti', icon: null },
+          { val: 'suggerita', label: 'Da confermare', icon: Bot },
+          { val: 'confermata', label: 'Confermati', icon: Check },
+          { val: 'rifiutata', label: 'Rifiutati', icon: X },
+          { val: 'orfani', label: `Senza Fattura (${movOrfani.length})`, icon: AlertTriangle, isAlert: movOrfani.length > 0 },
+        ].map(({ val, label, icon: Icon, isAlert }) => (
           <button
             key={val}
             style={{ 
               ...styles.tBtn, 
               ...(filtroStato === val ? styles.tBtnActive : {}),
-              ...(isAlert && val === 'orfani' && filtroStato !== 'orfani' ? { background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440' } : {}) 
+              ...(isAlert && val === 'orfani' && filtroStato !== 'orfani' ? { background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440' } : {}),
+              display: 'inline-flex', alignItems: 'center', gap: 6
             }}
             onClick={() => setFiltroStato(val)}
           >
-            {label}
+            {Icon && <Icon size={14} />} {label}
           </button>
         ))}
       </div>
@@ -238,7 +248,7 @@ Abbina i movimenti alle fatture.`;
       {filtroStato === 'orfani' ? (
         movOrfani.length === 0 ? (
           <div style={styles.empty}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><CheckCircle2 size={40} style={{ color: '#16a34a' }} /></div>
             <p>Nessun movimento in uscita senza fattura.</p>
           </div>
         ) : (
@@ -279,19 +289,19 @@ Abbina i movimenti alle fatture.`;
         <div style={styles.modalOverlay}>
           <div style={styles.modalBox}>
             <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>⚠️ Rilevati Movimenti senza Fattura ({movOrfani.length})</h3>
-              <button style={styles.modalCloseBtn} onClick={() => setShowOrfaniModal(false)}>✕</button>
+              <h3 style={{ ...styles.modalTitle, display: 'flex', alignItems: 'center', gap: 8 }}><AlertTriangle size={18} style={{ color: '#fbbf24' }} /> Rilevati Movimenti senza Fattura ({movOrfani.length})</h3>
+              <button style={styles.modalCloseBtn} onClick={() => setShowOrfaniModal(false)} type="button"><X size={20} /></button>
             </div>
             <p style={styles.modalText}>
-              L'AI ha terminato l'analisi ma ha rilevato <b>{movOrfani.length} movimenti bancari in uscita</b> che non hanno alcuna fattura associata in archivio. Puoi inserire le spese mancanti ora (con precompilazione automatica dai dati del bonifico) oppure consultare la scheda <b>"⚠️ Senza Fattura"</b> in qualsiasi momento.
+              L'AI ha terminato l'analisi ma ha rilevato <b>{movOrfani.length} movimenti bancari in uscita</b> che non hanno alcuna fattura associata in archivio. Puoi inserire le spese mancanti ora (con precompilazione automatica dai dati del bonifico) oppure consultare la scheda <b>"Senza Fattura"</b> in qualsiasi momento.
             </p>
             <div style={styles.modalList}>
               {movOrfani.map(m => (
                 <div key={m.id} style={styles.modalItem}>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 13, color: '#e2e8f0' }}>{m.causale || '—'}</div>
-                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3 }}>
-                      📅 {formattaData(m.data_movimento)} · {m.fornitore_rilevato ? `🏢 ${m.fornitore_rilevato}` : 'Fornitore non rilevato'}
+                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Calendar size={12} /> {formattaData(m.data_movimento)} · {m.fornitore_rilevato ? <><Building2 size={12} /> {m.fornitore_rilevato}</> : 'Fornitore non rilevato'}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
@@ -305,7 +315,9 @@ Abbina i movimenti alle fatture.`;
                         navigate(`/condomini/${condominioId}/spese`, { state: { prefillSpesa: { importo: Math.abs(m.importo), data_spesa: m.data_movimento, descrizione: m.causale || '', fornitore: m.fornitore_rilevato || '' } } });
                       }}
                     >
-                      ➕ Inserisci Spesa
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Plus size={12} /> Inserisci Spesa
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -375,25 +387,25 @@ function RiconciliazioneCard({ ric, onConferma, onRifiuta }) {
       {/* Motivazione AI + Azioni */}
       <div style={styles.bottomRow}>
         {ric.note && (
-          <div style={styles.motivazione}>💡 {ric.note}</div>
+          <div style={{ ...styles.motivazione, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Lightbulb size={14} style={{ color: '#fbbf24', flexShrink: 0 }} /> {ric.note}</div>
         )}
 
         {ric.stato === 'suggerita' && (
           <div style={styles.actions}>
-            <button style={styles.btnConferma} onClick={onConferma}>✓ Conferma</button>
-            <button style={styles.btnRifiuta} onClick={onRifiuta}>✕ Rifiuta</button>
+            <button style={{ ...styles.btnConferma, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={onConferma}><Check size={14} /> Conferma</button>
+            <button style={{ ...styles.btnRifiuta, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={onRifiuta}><X size={14} /> Rifiuta</button>
           </div>
         )}
 
         {ric.stato === 'confermata' && (
-          <span style={{ ...styles.statoBadge, background: '#16a34a20', color: '#16a34a' }}>
-            ✓ Confermata {ric.confermata_at ? new Date(ric.confermata_at).toLocaleDateString('it-IT') : ''}
+          <span style={{ ...styles.statoBadge, background: '#16a34a20', color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <CheckCircle2 size={12} /> Confermata {ric.confermata_at ? new Date(ric.confermata_at).toLocaleDateString('it-IT') : ''}
           </span>
         )}
 
         {ric.stato === 'rifiutata' && (
-          <span style={{ ...styles.statoBadge, background: '#64748b20', color: '#64748b' }}>
-            ✕ Rifiutata
+          <span style={{ ...styles.statoBadge, background: '#64748b20', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <XCircle size={12} /> Rifiutata
           </span>
         )}
       </div>
@@ -474,10 +486,16 @@ function MovimentoOrfanoCard({ mov, onInserisci }) {
   return (
     <div style={{ ...styles.card, borderColor: '#ef444440', background: '#ef444408', justifyContent: 'space-between', alignItems: 'center' }}>
       <div>
-        <div style={{ fontSize: 11, color: '#f87171', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>⚠️ MOVIMENTO IN USCITA SENZA FATTURA</div>
+        <div style={{ fontSize: 11, color: '#f87171', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AlertTriangle size={14} /> MOVIMENTO IN USCITA SENZA FATTURA
+        </div>
         <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>{mov.causale || '—'}</div>
-        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>
-          📅 {formattaData(mov.data_movimento)} · {mov.fornitore_rilevato ? `🏢 ${mov.fornitore_rilevato}` : 'Fornitore non rilevato'}
+        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {formattaData(mov.data_movimento)}</span>
+          <span>·</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Building2 size={12} /> {mov.fornitore_rilevato || 'Fornitore non rilevato'}
+          </span>
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
@@ -485,7 +503,9 @@ function MovimentoOrfanoCard({ mov, onInserisci }) {
           -€ {Math.abs(mov.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
         </span>
         <button style={styles.btnAction} onClick={onInserisci}>
-          ➕ Inserisci Spesa / Fattura
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Plus size={14} /> Inserisci Spesa / Fattura
+          </span>
         </button>
       </div>
     </div>

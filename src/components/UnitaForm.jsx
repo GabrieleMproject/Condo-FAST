@@ -1,5 +1,6 @@
 // src/components/UnitaForm.jsx
 import { useState } from 'react'
+import { X } from 'lucide-react'
 
 const TIPI = ['appartamento','box','cantina','negozio','ufficio','altro']
 const STATI = ['attiva','venduta','sfitta','altro']
@@ -47,7 +48,7 @@ export default function UnitaForm({ unita, onSave, onClose }) {
       <div style={modal}>
         <div style={hdr}>
           <h2 style={ttl}>{unita ? 'Modifica Unità' : 'Nuova Unità'}</h2>
-          <button style={cls} onClick={onClose}>✕</button>
+          <button style={cls} onClick={onClose} type="button"><X size={18} /></button>
         </div>
         <div style={body}>
           <div style={grid2}>

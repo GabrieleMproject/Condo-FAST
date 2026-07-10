@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useComunicazioni } from '../hooks/useComunicazioni';
-import { Mail, Calendar, Eye, Send, Plus, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { Mail, Calendar, Eye, Send, Plus, CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
 
 export default function ComunicazioniTab({ condominioId }) {
   const { comunicazioni, loading, fetchComunicazioni, inviaComunicazione } = useComunicazioni();
@@ -292,8 +292,8 @@ L'Amministratore`;
                     </span>
                   </div>
                   <div style={styles.cardOggetto}>{c.oggetto}</div>
-                  <div style={styles.cardDate}>
-                    📅 {new Date(c.created_at).toLocaleDateString('it-IT')} alle ore {new Date(c.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                  <div style={{ ...styles.cardDate, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Calendar size={12} /> <span>{new Date(c.created_at).toLocaleDateString('it-IT')} alle ore {new Date(c.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
                 <button onClick={() => setSelectedMsg(c)} style={styles.btnView} title="Leggi Messaggio">
@@ -311,11 +311,15 @@ L'Amministratore`;
           <div style={{ ...styles.modal, maxWidth: 800 }}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Invia Comunicazione / Sollecito via Email</h3>
-              <button onClick={() => setShowModal(false)} style={styles.btnClose}>✕</button>
+              <button onClick={() => setShowModal(false)} style={styles.btnClose} type="button"><X size={18} /></button>
             </div>
             <form onSubmit={handleInvia} style={{ display: 'contents' }}>
               <div style={styles.modalBody}>
-                {erroreForm && <div style={styles.errBanner}>⚠️ {erroreForm}</div>}
+                {erroreForm && (
+                  <div style={{ ...styles.errBanner, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertTriangle size={14} style={{ flexShrink: 0 }} /> <span>{erroreForm}</span>
+                  </div>
+                )}
 
                 <div style={styles.formGrid}>
                   {/* Sezione Sinistra: Opzioni e Destinatari */}
@@ -430,7 +434,7 @@ L'Amministratore`;
           <div style={styles.modal}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Dettaglio Email Inviata</h3>
-              <button onClick={() => setSelectedMsg(null)} style={styles.btnClose}>✕</button>
+              <button onClick={() => setSelectedMsg(null)} style={styles.btnClose}><X size={18} /></button>
             </div>
             <div style={styles.modalBody}>
               <div style={styles.metaRow}>

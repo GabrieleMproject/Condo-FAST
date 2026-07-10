@@ -983,7 +983,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     onChange={e => setSearchQuery(e.target.value)}
                   />
                   {searchQuery && (
-                    <button style={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>✕</button>
+                    <button style={styles.clearSearchBtn} onClick={() => setSearchQuery('')}><X size={14} /></button>
                   )}
                 </div>
 
@@ -1184,8 +1184,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#f1f5f9' }}>📥 Importa Tabelle Millesimali da File</h3>
-              <button style={styles.closeBtn} onClick={() => setShowImportModal(false)}>✕</button>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}><Download size={18} /> Importa Tabelle Millesimali da File</h3>
+              <button style={styles.closeBtn} onClick={() => setShowImportModal(false)} type="button"><X size={18} /></button>
             </div>
             <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 12, lineHeight: 1.4 }}>
               Carica un file PDF, Excel (.xlsx, .csv), Word o Immagine. L'AI estrarrà le colonne e i valori associandoli alle unità (o creando le unità mancanti).
@@ -1218,7 +1218,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
                 {importError && (
                   <div style={{ background: '#ef444415', border: '1px solid #ef444430', borderRadius: 8, padding: 10, color: '#f87171', fontSize: 12 }}>
-                    ⚠️ {importError}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><AlertCircle size={14} /> {importError}</span>
                   </div>
                 )}
               </div>
@@ -1236,7 +1236,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                           <strong style={{ color: '#f1f5f9', fontSize: 12 }}>{tab.nome}</strong>
                           <span style={{ fontSize: 11, fontWeight: 700, color: ok ? '#4ade80' : '#facc15' }}>
-                            Somma: {totale.toFixed(2)} {ok ? '✓' : '(≠ 1000)'}
+                            Somma: {totale.toFixed(2)} {ok ? <Check size={12} style={{ display: 'inline' }} /> : '(≠ 1000)'}
                           </span>
                         </div>
                         <div style={{ fontSize: 11, color: '#94a3b8' }}>
@@ -1251,7 +1251,11 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     Carica altro file
                   </button>
                   <button style={styles.btnPrimary} onClick={confermaImport} disabled={saving}>
-                    {saving ? 'Salvataggio...' : '✓ Conferma e Applica in Griglia'}
+                    {saving ? 'Salvataggio...' : (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <Check size={16} /> Conferma e Applica in Griglia
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1265,8 +1269,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#f1f5f9' }}>➕ Aggiungi Nuova Unità Immobiliare</h3>
-              <button style={styles.closeBtn} onClick={() => setShowAddUnitModal(false)}>✕</button>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Aggiungi Nuova Unità Immobiliare</h3>
+              <button style={styles.closeBtn} onClick={() => setShowAddUnitModal(false)} type="button"><X size={18} /></button>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>

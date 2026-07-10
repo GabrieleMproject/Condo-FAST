@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
-import { Building2, Mail, ArrowLeft, ArrowRight } from 'lucide-react'
+import { Building2, Mail, ArrowLeft, ArrowRight, Check } from 'lucide-react'
 import BrandLogo from '../components/BrandLogo'
 
 export default function ForgotPasswordPage() {
@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
 
           {sent ? (
             <div className="success-state">
-              <div className="success-icon">✓</div>
+              <div className="success-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={32} /></div>
               <h2>Email inviata</h2>
               <p>Controlla la tua casella <strong>{email}</strong> e segui le istruzioni per reimpostare la password.</p>
               <Link to="/login" className="btn-primary" style={{ display: 'inline-flex', marginTop: '1.5rem' }}>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { callClaude, callClaudeDocument } from '../lib/claudeClient'
 import { estraiFattura, fileToBase64 } from '../lib/fileExtractor'
 import { supabase } from '../lib/supabaseClient'
+import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet } from 'lucide-react'
 
 const CATEGORIE = [
   { value: 'ordinaria', label: 'Ordinaria' },
@@ -163,7 +164,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
         await onRefreshTabelle()
       }
       setField('tabella_millesimale_id', tabellaId)
-      alert("✅ Tabella strutturata e salvata con successo nei Millesimi!")
+      alert("Tabella strutturata e salvata con successo nei Millesimi!")
     } catch (err) {
       console.error("Errore strutturazione AI:", err)
       alert("Errore durante la strutturazione automatica: " + (err.message || "Risposta AI non valida"))
@@ -491,12 +492,12 @@ Formato JSON:
             />
             {loadingFattura ? (
               <div>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
+                <Loader2 size={24} style={{ margin: '0 auto 8px', color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
                 <div style={{ color: '#94a3b8', fontSize: 14 }}>Estrazione dati in corso...</div>
               </div>
             ) : fatturaImportata ? (
               <div>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>✅</div>
+                <CheckCircle2 size={24} style={{ margin: '0 auto 8px', color: '#10b981' }} />
                 <div style={{ color: '#10b981', fontSize: 14, fontWeight: 600 }}>Dati estratti dalla fattura</div>
                 <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
                   Verifica e modifica i campi pre-compilati qui sotto
@@ -514,7 +515,7 @@ Formato JSON:
               </div>
             ) : (
               <div>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>🧾</div>
+                <Receipt size={28} style={{ margin: '0 auto 8px', color: '#475569' }} />
                 <div style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>
                   Trascina la fattura qui oppure clicca per selezionarla
                 </div>
@@ -528,9 +529,10 @@ Formato JSON:
           {errFattura && (
             <div style={{
               marginTop: 8, background: '#ef444422', border: '1px solid #ef444444',
-              borderRadius: 6, padding: '8px 12px', color: '#ef4444', fontSize: 13
+              borderRadius: 6, padding: '8px 12px', color: '#ef4444', fontSize: 13,
+              display: 'flex', alignItems: 'center', gap: 6
             }}>
-              ⚠️ {errFattura}
+              <AlertTriangle size={14} style={{ flexShrink: 0 }} /> <span>{errFattura}</span>
             </div>
           )}
 
@@ -567,7 +569,7 @@ Formato JSON:
                 display: 'flex', alignItems: 'center', gap: 6
               }}
             >
-              {loadingAi ? '⏳' : '🤖'} {loadingAi ? 'Analisi...' : 'Suggerisci'}
+              {loadingAi ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Sparkles size={14} />} {loadingAi ? 'Analisi...' : 'Suggerisci'}
             </button>
           </div>
           {errors.descrizione && <span style={{ color: '#ef4444', fontSize: 12 }}>{errors.descrizione}</span>}
@@ -644,7 +646,7 @@ Formato JSON:
                   marginTop: 10, fontSize: 13, color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: 10
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 18 }}>✨</span>
+                    <Sparkles size={18} style={{ color: '#fbbf24', flexShrink: 0 }} />
                     <span>
                       <strong>{tabSel.nome}</strong> {tabSel.is_doc ? 'è caricata nei Documenti ma non è ancora strutturata nei Millesimi' : 'non ha ancora valori millesimali assegnati alle unità'}.
                     </span>
@@ -660,7 +662,11 @@ Formato JSON:
                         opacity: strutturandoDoc ? 0.7 : 1
                       }}
                     >
-                      {strutturandoDoc ? '⏳ Estrazione AI in corso...' : '⚡ Struttura automaticamente con AI e Salva'}
+                      {strutturandoDoc ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> Estrazione AI in corso...</span>
+                      ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Sparkles size={12} /> Struttura automaticamente con AI e Salva</span>
+                      )}
                     </button>
                     <span style={{ color: '#94a3b8', fontSize: 12 }}>
                       L'AI assegnerà automaticamente le quote alle {unita?.length || 0} unità del condominio.
@@ -762,8 +768,8 @@ Formato JSON:
             </div>
           ) : (
             (parseFloat(form.importo) > 0) && (
-              <div style={{ color: '#10b981', fontSize: 12, marginTop: 8 }}>
-                ✓ La somma corrisponde al totale
+              <div style={{ color: '#10b981', fontSize: 12, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Check size={14} /> La somma corrisponde al totale
               </div>
             )
           )}
@@ -825,8 +831,8 @@ Formato JSON:
 
       {/* Azioni */}
       {errors.ripartizioni && (
-        <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 16, background: '#ef444410', padding: '10px 14px', borderRadius: 8, border: '1px solid #ef444430' }}>
-          ⚠ {errors.ripartizioni}
+        <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 16, background: '#ef444410', padding: '10px 14px', borderRadius: 8, border: '1px solid #ef444430', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AlertTriangle size={14} style={{ flexShrink: 0 }} /> <span>{errors.ripartizioni}</span>
         </div>
       )}
       <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 28 }}>
@@ -859,7 +865,7 @@ Formato JSON:
             width: '100%', border: '1px solid #7c3aed66'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-              <span style={{ fontSize: 28 }}>🤖</span>
+              <Bot size={28} style={{ color: '#8b5cf6' }} />
               <div>
                 <h3 style={{ margin: 0, color: '#f1f5f9', fontSize: 17 }}>Suggerimento AI</h3>
                 <p style={{ margin: 0, color: '#64748b', fontSize: 12 }}>
@@ -883,8 +889,13 @@ Formato JSON:
                   background: '#7c3aed22', color: '#a78bfa', borderRadius: 8,
                   padding: '8px 16px', fontSize: 15, fontWeight: 700
                 }}>
-                  {aiSuggerimento.criterio === 'millesimi' ? '📊 Millesimi' :
-                    aiSuggerimento.criterio === 'quota_fissa' ? '⚖️ Quota fissa' : '🔀 Mista'}
+                  {aiSuggerimento.criterio === 'millesimi' ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><FileSpreadsheet size={14} /> Millesimi</span>
+                  ) : aiSuggerimento.criterio === 'quota_fissa' ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Scale size={14} /> Quota fissa</span>
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Split size={14} /> Mista</span>
+                  )}
                 </span>
                 {aiSuggerimento.tabella_consigliata && (
                   <span style={{ color: '#64748b', fontSize: 13 }}>
@@ -904,7 +915,7 @@ Formato JSON:
                 background: '#f59e0b1a', border: '1px solid #f59e0b66', borderRadius: 8, padding: '10px 14px',
                 marginBottom: 16, fontSize: 12, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 8
               }}>
-                <span>⚠</span>
+                <AlertTriangle size={14} style={{ flexShrink: 0 }} />
                 <span>
                   La tabella consigliata "<strong>{aiSuggerimento.tabella_consigliata}</strong>" non corrisponde a nessuna tabella strutturata in sezione Millesimi. Valuta se crearla o selezionare manualmente la tabella.
                 </span>
@@ -956,10 +967,11 @@ Formato JSON:
                 style={{
                   flex: 1, background: '#7c3aed', color: '#fff', border: 'none',
                   borderRadius: 8, padding: '11px 16px', fontSize: 14, fontWeight: 600,
-                  cursor: 'pointer', fontFamily: 'Sora, sans-serif'
+                  cursor: 'pointer', fontFamily: 'Sora, sans-serif',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6
                 }}
               >
-                ✓ Usa questo criterio
+                <Check size={16} /> Usa questo criterio
               </button>
             </div>
           </div>

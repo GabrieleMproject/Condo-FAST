@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { AlertTriangle, Clock, Link2, Landmark, ArrowUp, ArrowDown, Receipt, Check, Bot, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 /**
@@ -116,17 +117,17 @@ export default function DashboardFinanziaria() {
       {(computed.rateScadute > 0 || computed.fattureInScadenza.length > 0 || computed.movNonRic > 0) && (
         <div style={styles.alertBar}>
           {computed.rateScadute > 0 && (
-            <AlertChip color="#ef4444" icon="⚠️">
+            <AlertChip color="#ef4444" icon={AlertTriangle}>
               {computed.rateScadute} rate scadute
             </AlertChip>
           )}
           {computed.fattureInScadenza.length > 0 && (
-            <AlertChip color="#f59e0b" icon="⏰">
+            <AlertChip color="#f59e0b" icon={Clock}>
               {computed.fattureInScadenza.length} fatture in scadenza (14gg)
             </AlertChip>
           )}
           {computed.movNonRic > 0 && (
-            <AlertChip color="#8b5cf6" icon="🔗">
+            <AlertChip color="#8b5cf6" icon={Link2}>
               {computed.movNonRic} movimenti da riconciliare
               {computed.suggerimentiPendenti > 0 && ` · ${computed.suggerimentiPendenti} suggerimenti AI`}
             </AlertChip>
@@ -143,28 +144,28 @@ export default function DashboardFinanziaria() {
             : 'N/D'}
           sub="Ultimo saldo registrato"
           color="#2563eb"
-          icon="🏦"
+          icon={<Landmark size={22} style={{ color: '#2563eb' }} />}
         />
         <KpiCard
           titolo="Entrate"
           valore={`+€ ${computed.entrate.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`}
           sub={`Ultimi ${mesiViz} mesi`}
           color="#16a34a"
-          icon="↑"
+          icon={<ArrowUp size={22} style={{ color: '#16a34a' }} />}
         />
         <KpiCard
           titolo="Uscite"
           valore={`-€ ${computed.uscite.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`}
           sub={`Ultimi ${mesiViz} mesi`}
           color="#ef4444"
-          icon="↓"
+          icon={<ArrowDown size={22} style={{ color: '#ef4444' }} />}
         />
         <KpiCard
           titolo="Fatture da Pagare"
           valore={`€ ${computed.totaleAttesa.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`}
           sub={`${computed.fattureAttesa.length} fatture in attesa`}
           color="#f59e0b"
-          icon="🧾"
+          icon={<Receipt size={22} style={{ color: '#f59e0b' }} />}
         />
       </div>
 
@@ -190,7 +191,11 @@ export default function DashboardFinanziaria() {
                 <div style={styles.movMeta}>
                   {new Date(m.data_movimento).toLocaleDateString('it-IT')}
                   {m.fornitore_rilevato && ` · ${m.fornitore_rilevato}`}
-                  {m.riconciliato && <span style={styles.ricTag}>✓ ric.</span>}
+                  {m.riconciliato && (
+                    <span style={{ ...styles.ricTag, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                      <Check size={10} /> ric.
+                    </span>
+                  )}
                 </div>
               </div>
               <span style={{ ...styles.movImporto, color: m.importo >= 0 ? '#16a34a' : '#ef4444' }}>
@@ -215,15 +220,19 @@ export default function DashboardFinanziaria() {
                   ...styles.movDot,
                   background: f.stato === 'pagata' ? '#16a34a20' : f.stato === 'attesa' ? '#f59e0b20' : '#ef444420',
                   color: f.stato === 'pagata' ? '#16a34a' : f.stato === 'attesa' ? '#f59e0b' : '#ef4444',
-                  fontSize: 14,
-                }}>🧾</div>
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}><Receipt size={14} /></div>
                 <div style={styles.movInfo}>
                   <div style={styles.movCausale}>{f.fornitore}</div>
                   <div style={styles.movMeta}>
                     {new Date(f.data_fattura).toLocaleDateString('it-IT')}
                     {f.data_scadenza && ` · Scad: ${new Date(f.data_scadenza).toLocaleDateString('it-IT')}`}
-                    {f.riconciliata && <span style={styles.ricTag}>✓ ric.</span>}
-                    {isScadenza && <span style={{ color: '#f59e0b', marginLeft: 4 }}>⏰</span>}
+                    {f.riconciliata && (
+                      <span style={{ ...styles.ricTag, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                        <Check size={10} /> ric.
+                      </span>
+                    )}
+                    {isScadenza && <Clock size={12} style={{ color: '#f59e0b', marginLeft: 4, display: 'inline-block', verticalAlign: 'middle' }} />}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -245,7 +254,7 @@ export default function DashboardFinanziaria() {
       {computed.suggerimentiPendenti > 0 && (
         <div style={styles.ricBox}>
           <div style={styles.ricLeft}>
-            <div style={{ fontSize: 28 }}>🤖</div>
+            <div style={{ display: 'flex', alignItems: 'center' }}><Bot size={28} style={{ color: '#8b5cf6' }} /></div>
             <div>
               <div style={{ fontWeight: 700, color: '#a78bfa', fontSize: 16 }}>
                 {computed.suggerimentiPendenti} abbinamenti AI da confermare
@@ -279,10 +288,10 @@ function KpiCard({ titolo, valore, sub, color, icon }) {
   );
 }
 
-function AlertChip({ color, icon, children }) {
+function AlertChip({ color, icon: Icon, children }) {
   return (
-    <div style={{ ...styles.alertChip, background: color + '15', borderColor: color + '30', color }}>
-      {icon} {children}
+    <div style={{ ...styles.alertChip, background: color + '15', borderColor: color + '30', color, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      {Icon && <Icon size={14} />} {children}
     </div>
   );
 }

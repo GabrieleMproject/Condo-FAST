@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { Bot, Check, X, AlertTriangle, Lightbulb, CheckCircle2, XCircle, Calendar, User, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callClaude } from '../lib/claudeClient';
 
@@ -331,7 +332,15 @@ Abbina i bonifici alle celle.`;
           onClick={avviaAnalisiAI}
           disabled={analizzando}
         >
-          {analizzando ? '⏳ Analisi...' : '🤖 Avvia Analisi AI'}
+          {analizzando ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analisi...
+            </span>
+          ) : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Bot size={14} /> Avvia Analisi AI
+            </span>
+          )}
         </button>
       </div>
 
@@ -358,22 +367,23 @@ Abbina i bonifici alle celle.`;
 
       <div style={styles.toolbar}>
         {[
-          { val: '',           label: 'Tutti' },
-          { val: 'suggerita',  label: '🤖 Da confermare' },
-          { val: 'confermata', label: '✓ Confermati' },
-          { val: 'rifiutata',  label: '✕ Rifiutati' },
-          { val: 'orfani',     label: `⚠️ Senza Rata (${entrateOrfane.length})`, isAlert: entrateOrfane.length > 0 },
-        ].map(({ val, label, isAlert }) => (
+          { val: '',           label: 'Tutti', icon: null },
+          { val: 'suggerita',  label: 'Da confermare', icon: Bot },
+          { val: 'confermata', label: 'Confermati', icon: Check },
+          { val: 'rifiutata',  label: 'Rifiutati', icon: X },
+          { val: 'orfani',     label: `Senza Rata (${entrateOrfane.length})`, icon: AlertTriangle, isAlert: entrateOrfane.length > 0 },
+        ].map(({ val, label, icon: Icon, isAlert }) => (
           <button
             key={val}
             style={{ 
               ...styles.tBtn, 
               ...(filtroStato === val ? styles.tBtnActive : {}),
-              ...(isAlert && val === 'orfani' && filtroStato !== 'orfani' ? { background: '#f59e0b20', color: '#fbbf24', border: '1px solid #f59e0b40' } : {})
+              ...(isAlert && val === 'orfani' && filtroStato !== 'orfani' ? { background: '#f59e0b20', color: '#fbbf24', border: '1px solid #f59e0b40' } : {}),
+              display: 'inline-flex', alignItems: 'center', gap: 6
             }}
             onClick={() => setFiltroStato(val)}
           >
-            {label}
+            {Icon && <Icon size={14} />} {label}
           </button>
         ))}
       </div>
@@ -423,11 +433,13 @@ Abbina i bonifici alle celle.`;
         <div style={styles.modalOverlay || { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
           <div style={styles.modalBox || { background: '#1e293b', borderRadius: 16, border: '1px solid #334155', width: '100%', maxWidth: 680, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
             <div style={{ padding: '18px 24px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fbbf24' }}>⚠️ Rilevati Bonifici senza Rata ({entrateOrfane.length})</h3>
-              <button style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 20, cursor: 'pointer' }} onClick={() => setShowOrfaniModal(false)}>✕</button>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertTriangle size={18} /> Rilevati Bonifici senza Rata ({entrateOrfane.length})
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => setShowOrfaniModal(false)} type="button"><X size={20} /></button>
             </div>
             <p style={{ padding: '16px 24px', margin: 0, fontSize: 14, color: '#cbd5e1', lineHeight: 1.5 }}>
-              L'AI ha terminato l'analisi ma ha rilevato <b>{entrateOrfane.length} bonifici in entrata</b> non associabili ad alcuna rata in modo automatico. Puoi abbinarli manualmente ora a una delle rate aperte oppure consultare la scheda <b>"⚠️ Senza Rata"</b>.
+              L'AI ha terminato l'analisi ma ha rilevato <b>{entrateOrfane.length} bonifici in entrata</b> non associabili ad alcuna rata in modo automatico. Puoi abbinarli manualmente ora a una delle rate aperte oppure consultare la scheda <b>"Senza Rata"</b>.
             </p>
             <div style={{ padding: '0 24px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
               {entrateOrfane.map(m => (
@@ -519,21 +531,25 @@ function AbbinamentoIncassoCard({ ab, onConferma, onRifiuta }) {
       </div>
 
       <div style={styles.bottomRow}>
-        {ab.note && <div style={styles.motivazione}>💡 {ab.note}</div>}
+        {ab.note && (
+          <div style={{ ...styles.motivazione, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Lightbulb size={14} style={{ color: '#fbbf24', flexShrink: 0 }} /> {ab.note}
+          </div>
+        )}
 
         {ab.stato === 'suggerita' && (
           <div style={styles.actions}>
-            <button style={styles.btnConferma} onClick={onConferma}>✓ Conferma</button>
-            <button style={styles.btnRifiuta} onClick={onRifiuta}>✕ Rifiuta</button>
+            <button style={{ ...styles.btnConferma, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={onConferma}><Check size={14} /> Conferma</button>
+            <button style={{ ...styles.btnRifiuta, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={onRifiuta}><X size={14} /> Rifiuta</button>
           </div>
         )}
         {ab.stato === 'confermata' && (
-          <span style={{ ...styles.statoBadge, background: '#16a34a20', color: '#16a34a' }}>
-            ✓ Confermato {dataIt(ab.confermata_at)}
+          <span style={{ ...styles.statoBadge, background: '#16a34a20', color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <CheckCircle2 size={12} /> Confermato {dataIt(ab.confermata_at)}
           </span>
         )}
         {ab.stato === 'rifiutata' && (
-          <span style={{ ...styles.statoBadge, background: '#64748b20', color: '#64748b' }}>✕ Rifiutato</span>
+          <span style={{ ...styles.statoBadge, background: '#64748b20', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4 }}><XCircle size={12} /> Rifiutato</span>
         )}
       </div>
     </div>
@@ -583,10 +599,16 @@ function EntrataOrfanaCard({ mov, celleAperte, onAbbina }) {
   return (
     <div style={{ ...styles.card, borderColor: '#f59e0b40', background: '#f59e0b08', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
       <div style={{ flex: '1 1 250px' }}>
-        <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>⚠️ BONIFICO IN ENTRATA SENZA RATA ASSOCIATA</div>
+        <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AlertTriangle size={14} /> BONIFICO IN ENTRATA SENZA RATA ASSOCIATA
+        </div>
         <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>{mov.causale || '—'}</div>
-        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>
-          📅 {dataIt(mov.data_movimento)} · {mov.pagante_rilevato ? `👤 ${mov.pagante_rilevato}` : 'Pagante non rilevato'}
+        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {dataIt(mov.data_movimento)}</span>
+          <span>·</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <User size={12} /> {mov.pagante_rilevato || 'Pagante non rilevato'}
+          </span>
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>

@@ -7,7 +7,7 @@ import { useMillesimi } from '../hooks/useMillesimi'
 import { estraiStrutturaConsuntivo } from '../lib/fileExtractor'
 import { exportConsuntivoPdf } from '../lib/exportConsuntivo'
 import { useWatermark } from '../hooks/useWatermark'
-import { FileText, Upload, Download, RefreshCw } from 'lucide-react'
+import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react'
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const sgn = (n) => (Number(n) < 0 ? '-' : '') + '€ ' + Math.abs(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })
@@ -19,28 +19,43 @@ export default function ConsuntivoTab({ condominioId }) {
   const [tabellaMillId, setTabellaMillId] = useState(null)
   const [uploadingTpl, setUploadingTpl] = useState(false)
   const [tplMsg, setTplMsg] = useState('')
-
+  const [template, setTemplate] = useState(null)
+  const { data, loading, error, fetch } = useConsuntivo(esercizioId, tabellaMillId)
   const { unita, getProprietario } = useUnita(condominioId)
-  const { tabelle, fetch: fetchMill, getMillesimiUnita, getTotaleTabella } = useMillesimi(condominioId)
-  const { data, template, loading, error, fetch } = useConsuntivo(condominioId, esercizioId)
-  const { checkWatermark, WatermarkModal } = useWatermark()
+  const { tabelle, getMillesimiUnita, getTotaleTabella } = useMillesimi(condominioId)
+  const { WatermarkModal, checkWatermark } = useWatermark()
 
   useEffect(() => {
-    supabase.from('condomini').select('*').eq('id', condominioId).single()
-      .then(({ data }) => setCondominio(data))
-    supabase.from('esercizi').select('id, anno, stato').eq('condominio_id', condominioId)
-      .order('anno', { ascending: false })
-      .then(({ data }) => { setEsercizi(data || []); setEsercizioId(data?.find(e => e.stato === 'aperto')?.id || data?.[0]?.id || null) })
-    fetchMill()
-  }, [condominioId]) // eslint-disable-line
+    if (condominioId) {
+      supabase.from('condomini').select('*').eq('id', condominioId).single().then(({ data }) => setCondominio(data))
+      supabase.from('esercizi').select('*').eq('condominio_id', condominioId).order('anno', { ascending: false }).then(({ data }) => {
+        setEsercizi(data || [])
+        if (data?.length) {
+          const active = data.find(e => e.stato === 'aperto') || data[0]
+          setEsercizioId(active.id)
+        }
+      })
+      fetchTemplate()
+    }
+  }, [condominioId])
 
-  useEffect(() => { if (tabelle.length && !tabellaMillId) setTabellaMillId(tabelle[0].id) }, [tabelle]) // eslint-disable-line
-  useEffect(() => { if (esercizioId) fetch() }, [esercizioId, fetch])
+  useEffect(() => {
+    if (tabelle?.length && !tabellaMillId) {
+      setTabellaMillId(tabelle[0].id)
+    }
+  }, [tabelle])
+
+  async function fetchTemplate() {
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data } = await supabase.from('consuntivo_template').select('*').eq('amministratore_id', user.id).eq('attivo', true).maybeSingle()
+    setTemplate(data)
+  }
 
   async function onTemplateFile(e) {
-    const file = e.target.files?.[0]; e.target.value = ''
+    const file = e.target.files?.[0]
     if (!file) return
-    setUploadingTpl(true); setTplMsg('Analisi modello con AI…')
+    setUploadingTpl(true)
+    setTplMsg('Analisi modello in corso…')
     try {
       const struttura = await estraiStrutturaConsuntivo(file)
       const { data: { user } } = await supabase.auth.getUser()
@@ -50,7 +65,7 @@ export default function ConsuntivoTab({ condominioId }) {
         amministratore_id: user.id, nome: file.name, struttura, attivo: true,
       })
       if (e1) throw e1
-      setTplMsg('✅ Modello salvato e applicato')
+      setTplMsg('Modello salvato e applicato')
       await fetch()
       setTimeout(() => setTplMsg(''), 3000)
     } catch (err) {
@@ -102,8 +117,17 @@ export default function ConsuntivoTab({ condominioId }) {
         </div>
       </div>
 
-      {tplMsg && <div style={st.msg}>{tplMsg}</div>}
-      {error && <div style={st.err}>⚠️ {error}</div>}
+      {tplMsg && (
+        <div style={{ ...st.msg, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {tplMsg.includes('Errore') ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
+          <span>{tplMsg}</span>
+        </div>
+      )}
+      {error && (
+        <div style={{ ...st.err, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AlertCircle size={14} style={{ flexShrink: 0 }} /> <span>{error}</span>
+        </div>
+      )}
       {loading && <div style={st.empty}>Calcolo consuntivo…</div>}
 
       {data && !loading && (

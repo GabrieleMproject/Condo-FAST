@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiFattura, getTipoFile } from '../lib/fileExtractor';
 import { useFornitori } from '../hooks/useFornitori';
+import { Edit3, Trash2, AlertTriangle, Upload, Paperclip } from 'lucide-react';
 
 const STATI = {
   attesa:     { label: 'In attesa',  color: '#f59e0b', bg: '#f59e0b20' },
@@ -398,7 +399,11 @@ export default function FattureFornitoriPage() {
         </label>
       </div>
 
-      {erroreUpload && <div style={styles.errMsg}>⚠️ {erroreUpload}</div>}
+      {erroreUpload && (
+        <div style={{ ...styles.errMsg, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AlertTriangle size={14} /> {erroreUpload}
+        </div>
+      )}
 
       {/* Filtri */}
       <div style={styles.toolbar}>
@@ -472,12 +477,16 @@ export default function FattureFornitoriPage() {
                           f.f24_url
                             ? <button
                                 onClick={() => visualizzaFile(f.f24_url, 'fatture')}
-                                style={{ ...styles.pdfLink, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+                                style={{ ...styles.pdfLink, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                               >
-                                📎 F24
+                                <Paperclip size={12} /> F24
                               </button>
                             : <button style={styles.f24Btn} disabled={f24Busy} onClick={() => pickF24(f.id)}>
-                                {f24Busy ? '…' : '⬆️ Carica F24'}
+                                {f24Busy ? '…' : (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    <Upload size={12} /> Carica F24
+                                  </span>
+                                )}
                               </button>
                         )}
                       </div>
@@ -486,8 +495,8 @@ export default function FattureFornitoriPage() {
                       <span style={styles.importo}>€ {(f.importo_totale || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
                       {f.importo_iva > 0 && <span style={styles.iva}>IVA: € {f.importo_iva.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>}
                       <div style={styles.cardActions}>
-                        <button style={styles.btnEdit} onClick={() => startEdit(f)}>✏️</button>
-                        <button style={styles.btnDel}  onClick={() => eliminaFattura(f.id)}>✕</button>
+                        <button style={styles.btnEdit} onClick={() => startEdit(f)} type="button"><Edit3 size={12} /></button>
+                        <button style={styles.btnDel}  onClick={() => eliminaFattura(f.id)} type="button"><Trash2 size={12} /></button>
                       </div>
                     </div>
                   </div>

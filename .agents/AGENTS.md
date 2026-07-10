@@ -457,3 +457,43 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 
 
+## Verifica finale
+
+- **Test Smoke:** Eseguiti con successo (`npm run smoke`). Nessun errore riscontrato.
+- **Bug Triager:** Analisi completa dei file modificati. Non sono stati trovati bug critici; sono state segnalate alcune osservazioni di livello medio (es. miglioramento parsing JSON in `fileExtractor.js`). Le correzioni sono già state applicate.
+- **Stato:** Modulo fiscale implementato, pronto per il rilascio.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S19 (10 Luglio 2026)
+
+### 1. Funzionalità Implementate — Migrazione da Gestionali
+
+- **Wizard `/migrazione` a 5 step (`MigazionePage.jsx`):** Nuova pagina completa accessibile dalla sidebar con badge `NEW`. Permette di importare **tutti i dati** da qualsiasi gestionale condominiale (Danea Domustudio prioritario + qualsiasi export generico).
+- **Multi-upload intelligente (Step 2):** La dropzone accetta più file contemporaneamente (drag multiplo o selezione multipla). Ogni file viene analizzato separatamente da Claude AI che lo classifica per tipo (`anagrafica`, `unita`, `millesimi`, `spese`, `rate`, `saldo_cassa`, `misto`, `sconosciuto`) e rileva il gestionale di origine.
+- **Aggregazione FK-safe (Step 4):** Import massivo in ordine esatto: esercizi → persone → unità → occupanti_unita → millesimi → saldi_iniziali → spese → rate. Ogni errore per singolo record viene loggato senza interrompere l'import degli altri.
+- **Gestione conflitti (Step 3):** Rilevamento duplicati tramite query read-only su Supabase (match CF o nome+cognome per persone, match numero per unità). L'utente sceglie per ogni conflitto: Aggiorna / Salta / Crea nuovo.
+
+### 2. Funzioni Aggiunte a `fileExtractor.js`
+
+- **`classificaEStraiFileGestionale(file)`:** Async, usa `preparaContenuto` + firme canoniche claudeClient (`callClaudeDocument`/`callClaudeVision`/`callClaude`), `maxTokens: 6000`. Riconosce Danea Domustudio per colonne caratteristiche ("Nominativo", "Scala", "Interno", "Millesimi proprietà", "Versato", "Da versare").
+- **`aggregaDatiGestionale(risultatiPerFile[])`:** Sincrona pura (no AI). Merge con deduplicazione leggera: CF esatto per persone, numero esatto per unità, nome tabella per millesimi. Spese/rate/saldi: concatenate senza dedup per non perdere mai dati.
+
+### 3. Decisioni di Prodotto
+
+- **Danea non ha ZIP unico:** Esporta per sezione separata (Persone → xlsx, Unità → xlsx, Tabelle → xlsx). Il multi-upload risolve questa limitazione nativamente.
+- **Wizard sempre disponibile:** Non bloccato al primo setup, richiamabile per aggiungere anni storici.
+- **Storico multi-anno:** L'import crea automaticamente gli esercizi per ogni anno trovato nelle spese/rate/saldi.
+- **ZIP Danea:** Rinviato a sessione futura. Ora solo file singoli multipli.
+
+### 4. Bug Risolti
+
+- **State stale nel report finale (Step 5):** `setRiepilogo({ ...progressoImport })` leggeva la closure stale. Corretto con cattura esplicita di `riepilogoFinal` dentro il `setProgressoImport` callback prima di chiamare `setRiepilogo(riepilogoFinal)`.
+
+### 5. Fatti Verificati — Realtà Export Danea Domustudio
+
+- Export "Copia di sicurezza" → `.bds` (binario proprietario, inutilizzabile da terzi)
+- Export "Passaggio di consegne" → formato proprietario, solo per re-importazione in altro Danea
+- Export "Excel per sezione" → `.xlsx/.xls` per sezione singola (Persone, Unità, Tabelle, Fornitori) → **questo è il percorso di migrazione corretto**
+- Non esiste un "esporta tutto" nativo
+

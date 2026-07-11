@@ -54,6 +54,17 @@ export function useNotifiche() {
     try {
       const settings = profile?.notification_settings || {}
 
+      // Pre-fetch IDs condomini dell'amministratore (necessario per il .in() su esercizi).
+      // Estratto prima di Promise.all per evitare await annidato che rompe la parallelizzazione.
+      let condominiIds = []
+      if (settings.esercizio_in_scadenza?.enabled) {
+        const { data: cData } = await supabase
+          .from('condomini')
+          .select('id')
+          .eq('amministratore_id', user.id)
+        condominiIds = (cData || []).map(c => c.id)
+      }
+
       // Query parallele read-only sui dati necessari
       const [
         { data: fatture },
@@ -65,7 +76,7 @@ export function useNotifiche() {
         settings.f24_ritenute?.enabled
           ? supabase
               .from('fatture_fornitori')
-              .select('id, condominio_id, ritenuta_acconto, stato_pagamento, f24_presentato, data_pagamento, condomini(nome)')
+              .select('id, condominio_id, ritenuta_acconto, stato, f24_presentato, data_pagamento, condomini(nome)')
               .eq('amministratore_id', user.id)
               .gt('ritenuta_acconto', 0)
               .neq('f24_presentato', true)
@@ -85,23 +96,17 @@ export function useNotifiche() {
                   )
                 )
               `)
-              .neq('stato', 'pagato')
+              .neq('stato', 'pagata')
               .not('scadenza', 'is', null)
           : Promise.resolve({ data: [] }),
 
-        // Esercizi aperti con data_fine
-        settings.esercizio_in_scadenza?.enabled
+        // Esercizi aperti con data_fine (usa condominiIds pre-calcolati fuori da Promise.all)
+        settings.esercizio_in_scadenza?.enabled && condominiIds.length > 0
           ? supabase
               .from('esercizi')
               .select('id, anno, condominio_id, data_fine, condomini(nome)')
               .not('data_fine', 'is', null)
-              .in('condominio_id',
-                await supabase
-                  .from('condomini')
-                  .select('id')
-                  .eq('amministratore_id', user.id)
-                  .then(r => (r.data || []).map(c => c.id))
-              )
+              .in('condominio_id', condominiIds)
           : Promise.resolve({ data: [] }),
 
         // Movimenti non riconciliati

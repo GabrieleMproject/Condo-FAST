@@ -146,6 +146,7 @@ export default function NotificheDropdown({
   onSegnaAllLette,
 }) {
   const dropdownRef = useRef(null)
+  const navigate = useNavigate()
 
   // Chiudi su click fuori
   useEffect(() => {
@@ -354,7 +355,15 @@ export default function NotificheDropdown({
         </span>
         <a
           href="/impostazioni"
-          onClick={e => { e.preventDefault(); window.location.href = '/impostazioni#notifiche' }}
+          onClick={e => {
+            e.preventDefault()
+            navigate('/impostazioni')
+            onClose()
+            // Scroll sull'anchor dopo il render della pagina
+            setTimeout(() => {
+              document.getElementById('notifiche')?.scrollIntoView({ behavior: 'smooth' })
+            }, 100)
+          }}
           style={{
             color: '#475569', fontSize: 11, textDecoration: 'none',
             display: 'inline-flex', alignItems: 'center', gap: 4,

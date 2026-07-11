@@ -41,7 +41,7 @@ export function calcolaF24Ritenute(settings, fatture, oggi = new Date()) {
   const fattureConRitenuta = fatture.filter(f => {
     if (!f.ritenuta_acconto || parseFloat(f.ritenuta_acconto) <= 0) return false
     if (f.f24_presentato === true) return false
-    if (f.stato_pagamento !== 'pagato' && f.stato_pagamento !== 'parziale') return false
+    if (f.stato !== 'pagata') return false
 
     // Verifica che la data di pagamento sia nel mese precedente
     const dataPag = f.data_pagamento ? new Date(f.data_pagamento) : null
@@ -102,7 +102,7 @@ export function calcolaRateScadute(settings, rateUnita, oggi = new Date()) {
   const perCondominio = {}
 
   rateUnita.forEach(ru => {
-    if (ru.stato === 'pagato') return
+    if (ru.stato === 'pagata') return
     if (!ru.scadenza) return
 
     const scadenza = new Date(ru.scadenza)

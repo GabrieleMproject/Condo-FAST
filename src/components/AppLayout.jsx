@@ -290,12 +290,12 @@ export default function AppLayout() {
             display: 'flex', alignItems: 'center', gap: 12,
             padding: collapsed ? '10px 16px' : '10px 12px',
             borderRadius: 8, border: 'none', background: 'transparent',
-            color: '#475569', cursor: 'pointer', fontSize: 14,
+            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
             justifyContent: collapsed ? 'center' : 'flex-start',
             whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', transition: 'color 0.15s',
           }}
             onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-            onMouseLeave={e => e.currentTarget.style.color = '#475569'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
           >
             {collapsed ? <ChevronRight size={18} /> : <><ChevronLeft size={18} /><span>Riduci</span></>}
           </button>
@@ -303,12 +303,12 @@ export default function AppLayout() {
             display: 'flex', alignItems: 'center', gap: 12,
             padding: collapsed ? '10px 16px' : '10px 12px',
             borderRadius: 8, border: 'none', background: 'transparent',
-            color: '#475569', cursor: 'pointer', fontSize: 14,
+            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
             justifyContent: collapsed ? 'center' : 'flex-start',
             whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', transition: 'color 0.15s',
           }}
             onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
-            onMouseLeave={e => e.currentTarget.style.color = '#475569'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
           >
             <LogOut size={18} style={{ flexShrink: 0 }} />
             {!collapsed && 'Esci'}
@@ -333,7 +333,7 @@ export default function AppLayout() {
                 style={{
                   background: dropdownNotificheOpen ? 'rgba(37,99,235,0.15)' : 'none',
                   border: 'none',
-                  color: dropdownNotificheOpen ? '#60a5fa' : (notificheCount > 0 ? '#f59e0b' : '#475569'),
+                  color: dropdownNotificheOpen ? '#60a5fa' : (notificheCount > 0 ? '#f59e0b' : 'var(--text-muted)'),
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -344,7 +344,7 @@ export default function AppLayout() {
                 }}
                 aria-label={`Promemoria${notificheCount > 0 ? ` (${notificheCount} nuovi)` : ''}`}
                 onMouseEnter={e => { if (!dropdownNotificheOpen) { e.currentTarget.style.background = 'var(--border-color-2)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
-                onMouseLeave={e => { if (!dropdownNotificheOpen) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = notificheCount > 0 ? '#f59e0b' : '#475569'; } }}
+                onMouseLeave={e => { if (!dropdownNotificheOpen) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = notificheCount > 0 ? '#f59e0b' : 'var(--text-muted)'; } }}
               >
                 <Bell size={18} />
                 {notificheCount > 0 && (
@@ -431,7 +431,7 @@ export default function AppLayout() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(15, 23, 42, 0.65)',
+            background: 'var(--backdrop)',
             backdropFilter: 'blur(4px)',
             zIndex: 999,
             transition: 'opacity 0.3s ease',
@@ -610,16 +610,16 @@ export default function AppLayout() {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Nome Studio / Amministratore</label>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Nome Studio / Amministratore</label>
                 <input
                   type="text"
                   value={studioNome}
                   onChange={e => setStudioNome(e.target.value)}
                   style={{
                     width: '100%',
-                    background: '#0f172a',
-                    color: '#f1f5f9',
-                    border: '1px solid #334155',
+                    background: 'var(--input-bg)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: 8,
                     padding: '8px 12px',
                     fontSize: 13,
@@ -631,16 +631,16 @@ export default function AppLayout() {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Ragione Sociale Azienda</label>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Ragione Sociale Azienda</label>
                 <input
                   type="text"
                   value={ragioneSociale}
                   onChange={e => setRagioneSociale(e.target.value)}
                   style={{
                     width: '100%',
-                    background: '#0f172a',
-                    color: '#f1f5f9',
-                    border: '1px solid #334155',
+                    background: 'var(--input-bg)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: 8,
                     padding: '8px 12px',
                     fontSize: 13,
@@ -653,16 +653,16 @@ export default function AppLayout() {
 
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Partita IVA</label>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Partita IVA</label>
                   <input
                     type="text"
                     value={partitaIva}
                     onChange={e => setPartitaIva(e.target.value)}
                     style={{
                       width: '100%',
-                      background: '#0f172a',
-                      color: '#f1f5f9',
-                      border: '1px solid #334155',
+                      background: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
                       borderRadius: 8,
                       padding: '8px 12px',
                       fontSize: 13,
@@ -673,16 +673,16 @@ export default function AppLayout() {
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Codice Fiscale</label>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Codice Fiscale</label>
                   <input
                     type="text"
                     value={codiceFiscale}
                     onChange={e => setCodiceFiscale(e.target.value)}
                     style={{
                       width: '100%',
-                      background: '#0f172a',
-                      color: '#f1f5f9',
-                      border: '1px solid #334155',
+                      background: 'var(--input-bg)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
                       borderRadius: 8,
                       padding: '8px 12px',
                       fontSize: 13,
@@ -695,16 +695,16 @@ export default function AppLayout() {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Indirizzo</label>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Indirizzo</label>
                 <input
                   type="text"
                   value={studioIndirizzo}
                   onChange={e => setStudioIndirizzo(e.target.value)}
                   style={{
                     width: '100%',
-                    background: '#0f172a',
-                    color: '#f1f5f9',
-                    border: '1px solid #334155',
+                    background: 'var(--input-bg)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: 8,
                     padding: '8px 12px',
                     fontSize: 13,
@@ -716,15 +716,15 @@ export default function AppLayout() {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Contatti</label>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Contatti</label>
                 <textarea
                   value={studioContatti}
                   onChange={e => setStudioContatti(e.target.value)}
                   style={{
                     width: '100%',
-                    background: '#0f172a',
-                    color: '#f1f5f9',
-                    border: '1px solid #334155',
+                    background: 'var(--input-bg)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: 8,
                     padding: '8px 12px',
                     fontSize: 13,
@@ -762,8 +762,8 @@ export default function AppLayout() {
                   style={{
                     flex: 1,
                     background: 'transparent',
-                    border: '1px solid #334155',
-                    color: '#94a3b8',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-secondary)',
                     borderRadius: 8,
                     padding: '10px 16px',
                     fontSize: 13,

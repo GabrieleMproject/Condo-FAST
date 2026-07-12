@@ -52,6 +52,14 @@ function fileToResizedDataUrl(file, maxW = 400) {
   })
 }
 
+// ── Configurazione Notifiche & Promemoria default ────────────────────────
+const DEFAULT_NOTIFICHE = {
+  f24_ritenute:               { enabled: true },
+  rate_scadute:               { enabled: true,  giorni_dopo_scadenza: 10 },
+  esercizio_in_scadenza:      { enabled: true,  giorni_prima: 30 },
+  movimenti_non_riconciliati: { enabled: false, giorni_tolleranza: 15 },
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 export default function ImpostazioniPage() {
   const { user } = useAuth()
@@ -180,12 +188,6 @@ export default function ImpostazioniPage() {
   const [partnerErr, setPartnerErr]       = useState(null)
 
   // ── Configurazione Notifiche & Promemoria ────────────────────────────────
-  const DEFAULT_NOTIFICHE = {
-    f24_ritenute:               { enabled: true },
-    rate_scadute:               { enabled: true,  giorni_dopo_scadenza: 10 },
-    esercizio_in_scadenza:      { enabled: true,  giorni_prima: 30 },
-    movimenti_non_riconciliati: { enabled: false, giorni_tolleranza: 15 },
-  }
   const [notificheConfig, setNotificheConfig] = useState(DEFAULT_NOTIFICHE)
   const [savingNotifiche, setSavingNotifiche] = useState(false)
   const [notificheSaved, setNotificheSaved]   = useState(false)
@@ -537,7 +539,7 @@ export default function ImpostazioniPage() {
                     type="text"
                     readOnly
                     value={`${window.location.origin}/register?ref=${profile?.referral_code || ''}`}
-                    style={{ ...styles.brandingInput, flex: 1, fontFamily: 'monospace', color: '#3b82f6', background: '#0f172a' }}
+                    style={{ ...styles.brandingInput, flex: 1, fontFamily: 'monospace', color: '#3b82f6', background: 'var(--input-bg)' }}
                   />
                   <button
                     onClick={() => {
@@ -564,42 +566,42 @@ export default function ImpostazioniPage() {
 
               {/* Tabella Storico Inviti */}
               <div>
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9', marginBottom: 10 }}>Storico dei tuoi inviti</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10 }}>Storico dei tuoi inviti</h3>
                 
                 {loadingReferrals ? (
-                  <div style={{ color: '#64748b', fontSize: 13, padding: '10px 0' }}>Caricamento inviti...</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '10px 0' }}>Caricamento inviti...</div>
                 ) : userReferrals.length > 0 ? (
-                  <div style={{ overflowX: 'auto', border: '1px solid #334155', borderRadius: 8 }}>
+                  <div style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: 8 }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
-                        <tr style={{ background: '#0f172a', borderBottom: '1px solid #334155' }}>
-                          <th style={{ padding: '10px 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Amico Invitato</th>
-                          <th style={{ padding: '10px 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Stato</th>
-                          <th style={{ padding: '10px 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Sconto Valore</th>
-                          <th style={{ padding: '10px 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Invitato il</th>
+                        <tr style={{ background: 'var(--app-bg)', borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Amico Invitato</th>
+                          <th style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Stato</th>
+                          <th style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Sconto Valore</th>
+                          <th style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Invitato il</th>
                         </tr>
                       </thead>
                       <tbody>
                         {userReferrals.map(ref => (
-                          <tr key={ref.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                            <td style={{ padding: '12px', fontSize: 13, color: '#e2e8f0' }}>
+                          <tr key={ref.id} style={{ borderBottom: '1px solid var(--border-color-2)' }}>
+                            <td style={{ padding: '12px', fontSize: 13, color: 'var(--text-primary)' }}>
                               {formattaEmailMascherata(ref.referred_email)}
                             </td>
                             <td style={{ padding: '12px', fontSize: 13 }}>
                               {ref.stato === 'registrato' && (
-                                <span style={{ color: '#94a3b8', background: '#1e293b', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>Registrato</span>
+                                <span style={{ color: 'var(--text-muted)', background: 'var(--border-color-2)', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>Registrato</span>
                               )}
                               {ref.stato === 'convalidato' && (
-                                <span style={{ color: '#3b82f6', background: '#1e3a8a', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>Abbonato (In attesa)</span>
+                                <span style={{ color: 'var(--accent)', background: 'var(--accent-glow)', border: '1px solid var(--accent)', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>Abbonato (In attesa)</span>
                               )}
                               {ref.stato === 'applicato' && (
-                                <span style={{ color: '#10b981', background: '#064e3b', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>Sconto Applicato</span>
+                                <span style={{ color: 'var(--success)', background: 'rgba(16,185,129,0.15)', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>Sconto Applicato</span>
                               )}
                             </td>
                             <td style={{ padding: '12px', fontSize: 13, color: '#10b981', fontWeight: 600 }}>
                               {ref.sconto_valore}€
                             </td>
-                            <td style={{ padding: '12px', fontSize: 12, color: '#94a3b8' }}>
+                            <td style={{ padding: '12px', fontSize: 12, color: 'var(--text-muted)' }}>
                               {new Date(ref.created_at).toLocaleDateString()}
                             </td>
                           </tr>
@@ -608,8 +610,8 @@ export default function ImpostazioniPage() {
                     </table>
                   </div>
                 ) : (
-                  <div style={{ background: '#0f172a', padding: 20, borderRadius: 8, textAlign: 'center', border: '1px solid #1e293b' }}>
-                    <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Non hai ancora invitato nessun amico. Condividi il tuo link per iniziare a risparmiare!</p>
+                  <div style={{ background: 'var(--app-bg)', padding: 20, borderRadius: 8, textAlign: 'center', border: '1px solid var(--border-color-2)' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>Non hai ancora invitato nessun amico. Condividi il tuo link per iniziare a risparmiare!</p>
                   </div>
                 )}
               </div>
@@ -855,8 +857,8 @@ export default function ImpostazioniPage() {
               </div>
 
               {emailConfig.mail_invio_tipo === 'smtp' && (
-                <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <p style={{ color: '#64748b', fontSize: 11, margin: '0 0 4px', fontWeight: 700, letterSpacing: '0.05em' }}>PARAMETRI SERVER SMTP</p>
+                <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 11, margin: '0 0 4px', fontWeight: 700, letterSpacing: '0.05em' }}>PARAMETRI SERVER SMTP</p>
                   
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ flex: 2 }}>
@@ -905,8 +907,8 @@ export default function ImpostazioniPage() {
               )}
 
               {emailConfig.mail_invio_tipo === 'resend_custom' && (
-                <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <p style={{ color: '#64748b', fontSize: 11, margin: '0 0 4px', fontWeight: 700, letterSpacing: '0.05em' }}>PARAMETRI RESEND</p>
+                <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 11, margin: '0 0 4px', fontWeight: 700, letterSpacing: '0.05em' }}>PARAMETRI RESEND</p>
                   <div>
                     <label style={styles.brandingLabel}>API Key Resend Personalizzata</label>
                     <input
@@ -955,8 +957,8 @@ export default function ImpostazioniPage() {
               </div>
 
               {partnerConfig.partner_postale_nome !== 'nessuno' && (
-                <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <p style={{ color: '#64748b', fontSize: 11, margin: '0 0 4px', fontWeight: 700, letterSpacing: '0.05em' }}>PARAMETRI PARTNER POSTALE</p>
+                <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 11, margin: '0 0 4px', fontWeight: 700, letterSpacing: '0.05em' }}>PARAMETRI PARTNER POSTALE</p>
                   
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ flex: 2 }}>
@@ -1046,8 +1048,8 @@ export default function ImpostazioniPage() {
                   <div
                     key={key}
                     style={{
-                      background: '#0f172a',
-                      border: `1px solid ${enabled ? '#2563eb' : '#1e293b'}`,
+                      background: 'var(--app-bg)',
+                      border: `1px solid ${enabled ? 'var(--accent)' : 'var(--border-color-2)'}`,
                       borderRadius: 12,
                       padding: 20,
                       transition: 'border-color 0.2s',
@@ -1057,12 +1059,12 @@ export default function ImpostazioniPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: desc ? 8 : 0 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <Bell size={14} color={enabled ? '#3b82f6' : '#475569'} />
-                          <span style={{ color: enabled ? '#e2e8f0' : '#64748b', fontSize: 14, fontWeight: 600 }}>
+                          <Bell size={14} color={enabled ? 'var(--accent)' : 'var(--text-muted)'} />
+                          <span style={{ color: enabled ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: 14, fontWeight: 600 }}>
                             {label}
                           </span>
                         </div>
-                        <p style={{ color: '#475569', fontSize: 12, margin: 0, lineHeight: 1.5 }}>{desc}</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 12, margin: 0, lineHeight: 1.5 }}>{desc}</p>
                       </div>
 
                       {/* Toggle switch */}
@@ -1073,7 +1075,7 @@ export default function ImpostazioniPage() {
                         }))}
                         style={{
                           width: 44, height: 24, borderRadius: 12,
-                          background: enabled ? '#2563eb' : '#334155',
+                          background: enabled ? 'var(--accent)' : 'var(--border-color)',
                           border: 'none', cursor: 'pointer', position: 'relative',
                           flexShrink: 0, transition: 'background 0.2s',
                           padding: 0,
@@ -1095,11 +1097,11 @@ export default function ImpostazioniPage() {
 
                     {/* Slider giorni (solo se la notifica ha timing configurabile) */}
                     {timing && enabled && (
-                      <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #1e293b' }}>
+                      <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-color-2)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                          <label style={{ color: '#94a3b8', fontSize: 12 }}>{timingLabel}</label>
+                          <label style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{timingLabel}</label>
                           <span style={{
-                            background: '#1e293b', color: '#60a5fa',
+                            background: 'var(--border-color-2)', color: 'var(--accent)',
                             padding: '2px 10px', borderRadius: 6,
                             fontSize: 13, fontWeight: 700,
                           }}>
@@ -1116,7 +1118,7 @@ export default function ImpostazioniPage() {
                             [key]: { ...prev[key], [timing]: parseInt(e.target.value) },
                           }))}
                           style={{
-                            width: '100%', accentColor: '#2563eb',
+                            width: '100%', accentColor: 'var(--accent)',
                             height: 4, cursor: 'pointer',
                           }}
                         />

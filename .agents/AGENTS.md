@@ -638,6 +638,8 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Variabile CSS Gradiente Card**: Introdotta in `index.css` la variabile `--gradient-card` (che si adatta a seconda del tema a gradienti scuri o chiari) ed applicata a componenti complessi (come `PassaggioConsegneSection.jsx`) per garantire l'armonia estetica.
 - **Risoluzione Bug di Contrasto**: Corretti i testi chiari hardcoded (`#f8fafc`) e gli sfondi scuri hardcoded (`#090d16`) nel componente `PassaggioConsegneSection.jsx` e `SpeseForm.jsx` per evitare testi invisibili e disallineamenti di lettura in tema chiaro.
 - **Bonifica Testi Chiari Residui**: Rilevate ed eliminate a tappeto le rimanenti occorrenze di colori di testo chiari hardcoded (`#cbd5e1`, `#f8fafc`, `#f1f5f9` e `#e2e8f0` in condizionali o variabili di stile) in 14 file JSX (tra cui `ModuloFiscalePage.jsx`, `FattureFornitoriPage.jsx`, `MillesimiEditor.jsx`, `NotificheDropdown.jsx`, `AssistenzaPage.jsx`), convertendoli nelle variabili CSS del tema per garantire la piena leggibilità (evitando testi bianchi su sfondo chiaro).
+- **Adeguamento Grafico Chatbot**: Modificata l'interfaccia della chat in `AssistenzaPage.jsx`. Lo sfondo dei messaggi del bot (`#0f172a`), il bordo (`#334155`) e lo sfondo verde scuro delle risposte dei ticket (`#064e3b`) sono stati sostituiti con le rispettive variabili CSS (`var(--app-bg)`, `var(--border-color)`) e opacità coerenti con il tema chiaro per garantirne la leggibilità e l'armonia estetica. Allineati anche i pulsanti d'azione (Apri Ticket, Termina Chat) per usare l'accento ed evitare scarso contrasto in modalità chiara.
+
 
 
 

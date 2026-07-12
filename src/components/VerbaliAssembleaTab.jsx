@@ -262,18 +262,19 @@ export default function VerbaliAssembleaTab({ condominioId }) {
       }
 
       // 2. Applica l'ottimizzatore di contesto basato su parole chiave
-      const { verbaliFiltrati, metodo, keywords, risparmioPercentuale } = filtraContestoOttimizzato(
+      let optimized = filtraContestoOttimizzato(
         verbaliDaCercare, 
         query, 
         forceAll
       );
 
-      // Se non ci sono verbali corrispondenti e non abbiamo forzato la ricerca globale
-      if (verbaliFiltrati.length === 0 && !forceAll && keywords.length > 0) {
-        setNoMatchWarning(true);
-        setSearching(false);
-        return;
+      // Fallback automatico se non ci sono corrispondenze di keyword e non abbiamo forzato la ricerca globale
+      if (optimized.verbaliFiltrati.length === 0 && !forceAll && optimized.keywords.length > 0) {
+        optimized = filtraContestoOttimizzato(verbaliDaCercare, query, true);
+        optimized.metodo = 'full_text_fallback_automatico';
       }
+
+      const { verbaliFiltrati, metodo, risparmioPercentuale } = optimized;
 
       // 3. Prepara il prompt per Claude
       const systemPrompt = `Sei un assistente virtuale esperto di gestione condominiale CondoSmart. Rispondi alle domande dell'amministratore basandoti ESCLUSIVAMENTE sui verbali delle assemblee forniti.
@@ -494,31 +495,29 @@ Formato JSON atteso:
               </div>
             </div>
 
-            {/* Avviso Ottimizzazione Costi */}
+            {/* Informazioni Ottimizzazione Costi */}
             {optimizationLog && (
-              <div style={S.optimizationBadge}>
-                ⚡ <strong>Ottimizzazione AI attiva:</strong> analizzati solo i paragrafi pertinenti ({optimizationLog.numVerbaliInviati}/{optimizationLog.numVerbaliTotali} verbali).
-                {optimizationLog.risparmioPercentuale > 0 && (
-                  <span style={{ color: '#10b981', fontWeight: 600 }}> Risparmio token: ~{optimizationLog.risparmioPercentuale}%</span>
+              <div style={{
+                ...S.optimizationBadge,
+                background: optimizationLog.metodo === 'keyword_chunks' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(96, 165, 250, 0.08)',
+                borderColor: optimizationLog.metodo === 'keyword_chunks' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(96, 165, 250, 0.2)',
+              }}>
+                {optimizationLog.metodo === 'keyword_chunks' ? (
+                  <>
+                    ⚡ <strong>Ottimizzazione attiva:</strong> analizzati solo i paragrafi pertinenti ({optimizationLog.numVerbaliInviati}/{optimizationLog.numVerbaliTotali} verbali).
+                    {optimizationLog.risparmioPercentuale > 0 && (
+                      <span style={{ color: '#10b981', fontWeight: 600 }}> Risparmio token: ~{optimizationLog.risparmioPercentuale}%</span>
+                    )}
+                  </>
+                ) : optimizationLog.metodo === 'full_text_fallback_automatico' ? (
+                  <>
+                    🔍 <strong>Ricerca estesa automatica:</strong> nessuna corrispondenza esatta per le parole chiave, analizzato il testo completo dei verbali per sicurezza.
+                  </>
+                ) : (
+                  <>
+                    🔍 <strong>Ricerca completa:</strong> analizzato il testo completo di tutti i verbali selezionati.
+                  </>
                 )}
-              </div>
-            )}
-
-            {/* Warning di Nessuna Corrispondenza */}
-            {noMatchWarning && (
-              <div style={S.warningBox}>
-                <AlertTriangle size={18} color="#f59e0b" style={{ flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontWeight: 600, color: '#f59e0b', fontSize: 13 }}>
-                    Nessuna parola chiave rilevante trovata
-                  </p>
-                  <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: 12 }}>
-                    Le parole cercate non compaiono in nessun paragrafo dei verbali selezionati. Vuoi forzare la ricerca sull'intero testo di tutti i verbali?
-                  </p>
-                  <button onClick={() => handleAiSearch(true)} style={S.btnForceSearch}>
-                    Sì, effettua ricerca completa (consuma più crediti)
-                  </button>
-                </div>
               </div>
             )}
 

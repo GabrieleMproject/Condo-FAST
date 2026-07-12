@@ -618,5 +618,12 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Retrocompatibilità Totale:** L'Edge Function `claude-proxy` traduce la risposta di Gemini nel formato Anthropic (content ed usage), evitando modifiche a cascata e mantenendo intatta la compatibilità e la logica di telemetria (`logAiCall`).
 - **Verifica con Smoke Test:** Validata la connessione ed il corretto funzionamento end-to-end con esito verde e risposta corretta tramite `npm run smoke`.
 
+### 3. Bug Risolti
+- **Bug Layout a Colonna Singola (Verbali):** Risolto il problema per cui il layout della griglia verbali rimaneva fisso a colonna singola su desktop a causa di una media query inline in React. Spostato sulla gestione dinamica di stato `isLargeScreen` via resize listener.
+- **Leak di Popup su Errori dei Signed URL:** Avvolte le chiamate asincrone di recupero dei Signed URL in `VerbaliAssembleaTab.jsx` e `DocumentiCondominio.jsx` in blocchi `try/catch` per garantire che il popup vuoto provvisorio venga chiuso (`newWindow.close()`) in caso di errore di caricamento.
+- **Auto-selezione Verbali Caricati:** Corretto il flusso UX in `VerbaliAssembleaTab.jsx` in modo che il verbale appena caricato con successo venga aggiunto istantaneamente all'insieme dei verbali selezionati per la ricerca AI.
+- **Fail-Open su Inserimento Rate Limit (Proxy):** Protetta l'operazione di log del rate limit in `claude-proxy/index.ts` con un blocco `try/catch` per evitare blocchi ed errori 500 sul client in caso di problemi di connessione temporanei verso Supabase DB.
+
+
 
 

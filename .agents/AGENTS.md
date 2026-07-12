@@ -609,7 +609,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Nuovo Tab Verbali:** Aggiunto un tab dedicato "Verbali" (`VerbaliAssembleaTab.jsx`) per raccogliere cronologicamente le assemblee del condominio, consentendo l'upload diretto (PDF/DOCX) con indicazione della data dell'assemblea e note.
 - **Esclusione da Documenti Generici:** I verbali di tipo `verbale` sono stati esclusi dal componente `DocumentiCondominio.jsx` per evitare duplicazioni visive.
 - **Motore di Ricerca AI Ottimizzato:** Implementato un sistema di potatura del contesto basato su estrazione di parole chiave (escludendo stop words italiane). Suddivide il testo estratto dei verbali in paragrafi e trasmette a Claude solo le sezioni contenenti le parole cercate (+1 paragrafo adiacente per contesto), riducendo i token inviati e i costi del 90-95%.
-- **Fallback di Ricerca Completa:** Qualora non vi siano rispondenze per parole chiave, l'utente viene avvisato e può forzare la ricerca completa sull'intero testo di tutti i verbali (con un click su un pulsante dedicato).
+- **Fallback di Ricerca Completa Automatico:** La verifica della pertinenza delle parole chiave avviene **interamente client-side ed è gratis** (in JavaScript). In caso di mancata corrispondenza, il sistema esegue **automaticamente e istantaneamente** la chiamata a Claude sul testo completo (senza doppi passaggi o secondi clic per l'utente, mantenendo sempre una sola chiamata AI totale).
 - **Estensione Schema DB:** Creata la migrazione `sql/s34_documenti_date.sql` per introdurre il campo `data_documento` in `documenti_condominio` per storicizzare la data reale del verbale/assemblea.
 
 

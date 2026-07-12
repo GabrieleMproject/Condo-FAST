@@ -509,7 +509,7 @@ const styles = {
     borderBottom: '1px solid var(--border-color)', minWidth: 100,
   },
   td: {
-    padding: '8px 14px', borderBottom: '1px solid #1e293b40',
+    padding: '8px 14px', borderBottom: '1px solid var(--border-color-2)',
     color: 'var(--text-secondary)',
   },
 };

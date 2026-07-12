@@ -191,7 +191,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
               }}>
                 <Package size={20} />
               </div>
-              <h3 style={{ margin: 0, color: '#f8fafc', fontSize: 16, fontWeight: 700, fontFamily: 'Sora, sans-serif' }}>
+              <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, fontFamily: 'Sora, sans-serif' }}>
                 Passaggio di Consegne & Conformità Normativa
               </h3>
             </div>
@@ -259,7 +259,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
                 <ShieldCheck size={24} />
               </div>
               <div>
-                <h3 style={{ margin: 0, color: '#f8fafc', fontSize: 18, fontWeight: 700, fontFamily: 'Sora, sans-serif' }}>
+                <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 18, fontWeight: 700, fontFamily: 'Sora, sans-serif' }}>
                   Checklist Normativa Passaggio di Consegne
                 </h3>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>
@@ -311,7 +311,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
             </div>
 
             {/* Cosa contiene il pacchetto */}
-            <div style={{ background: '#090d16', border: '1px solid var(--border-color-2)', borderRadius: 10, padding: 14, marginBottom: 24 }}>
+            <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color-2)', borderRadius: 10, padding: 14, marginBottom: 24 }}>
               <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Contenuto della Cartella (.ZIP)
               </p>
@@ -331,7 +331,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
             {downloading ? (
               <div style={{ textAlign: 'center', padding: '16px 0' }}>
                 <Loader2 size={28} color="#3b82f6" style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-                <p style={{ margin: 0, color: '#f8fafc', fontSize: 14, fontWeight: 600 }}>{progressMsg || 'Generazione pacchetto ZIP...'}</p>
+                <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>{progressMsg || 'Generazione pacchetto ZIP...'}</p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 12 }}>Attendere il completamento della compressione</p>
               </div>
             ) : (

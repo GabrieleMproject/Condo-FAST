@@ -734,7 +734,7 @@ Formato JSON:
               </thead>
               <tbody>
                 {unita.map((u, i) => (
-                  <tr key={u.id} style={{ borderTop: i > 0 ? '1px solid #1e293b' : 'none' }}>
+                  <tr key={u.id} style={{ borderTop: i > 0 ? '1px solid var(--border-color-2)' : 'none' }}>
                     <td style={{ padding: '7px 12px', color: 'var(--text-primary)' }}>{u.interno || u.numero || '—'}</td>
                     <td style={{ padding: '7px 12px', color: 'var(--text-secondary)' }}>{u.piano ?? '—'}</td>
                     <td style={{ padding: '6px 12px', textAlign: 'right' }}>
@@ -800,7 +800,7 @@ Formato JSON:
               </thead>
               <tbody>
                 {ripartizioni.map((r, i) => (
-                  <tr key={r.unita_id} style={{ borderTop: i > 0 ? '1px solid #1e293b' : 'none' }}>
+                  <tr key={r.unita_id} style={{ borderTop: i > 0 ? '1px solid var(--border-color-2)' : 'none' }}>
                     <td style={{ padding: '7px 12px', color: 'var(--text-primary)' }}>{r.interno || '—'}</td>
                     <td style={{ padding: '7px 12px', color: 'var(--text-secondary)' }}>{r.piano ?? '—'}</td>
                     {form.criterio !== 'quota_fissa' && (
@@ -886,7 +886,7 @@ Formato JSON:
               <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8 }}>Criterio suggerito</div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <span style={{
-                  background: '#7c3aed22', color: '#a78bfa', borderRadius: 8,
+                  background: '#7c3aed22', color: '#7c3aed', borderRadius: 8,
                   padding: '8px 16px', fontSize: 15, fontWeight: 700
                 }}>
                   {aiSuggerimento.criterio === 'millesimi' ? (
@@ -913,7 +913,7 @@ Formato JSON:
             {aiSuggerimento.tabella_consigliata && !trovaTabellaFuzzy(tabelleAssociate, aiSuggerimento.tabella_consigliata, aiSuggerimento.criterio) && (
               <div style={{
                 background: '#f59e0b1a', border: '1px solid #f59e0b66', borderRadius: 8, padding: '10px 14px',
-                marginBottom: 16, fontSize: 12, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 8
+                marginBottom: 16, fontSize: 12, color: 'var(--sepa-yellow)', display: 'flex', alignItems: 'center', gap: 8
               }}>
                 <AlertTriangle size={14} style={{ flexShrink: 0 }} />
                 <span>

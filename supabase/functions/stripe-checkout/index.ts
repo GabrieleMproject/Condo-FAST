@@ -108,6 +108,36 @@ Deno.serve(async (req) => {
         .eq('id', userId)
     }
 
+    // Controlla se ci sono crediti referral pendenti da applicare a Stripe
+    const { data: pendingReferrals } = await supabase
+      .from('referrals')
+      .select('id, sconto_valore, referred_email')
+      .eq('referrer_id', userId)
+      .eq('stato', 'convalidato')
+
+    if (pendingReferrals && pendingReferrals.length > 0) {
+      for (const ref of pendingReferrals) {
+        const amountCents = Math.round(Number(ref.sconto_valore) * 100)
+        try {
+          await stripe.customers.createBalanceTransaction(customerId, {
+            amount: -amountCents, // Negativo per accreditare
+            currency: 'eur',
+            description: `Bonus invito amico: ${ref.referred_email}`,
+          })
+          
+          await supabase
+            .from('referrals')
+            .update({ 
+              stato: 'applicato', 
+              applied_at: new Date().toISOString() 
+            })
+            .eq('id', ref.id)
+        } catch (e) {
+          console.error(`Errore applicazione sconto referral ${ref.id}:`, e)
+        }
+      }
+    }
+
     // Crea sessione Checkout
     const appUrl = Deno.env.get('APP_URL') ?? 'http://localhost:5173'
 

@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { generaExportGDPR } from '../lib/exportDatiGdpr'
-import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell } from 'lucide-react'
+import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink } from 'lucide-react'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
 async function avviaCheckout({ piano, userId, userEmail }) {
@@ -67,6 +67,55 @@ export default function ImpostazioniPage() {
   const [loadingCheckout, setLoadingCheckout] = useState(null)
   const [loadingPortale, setLoadingPortale]   = useState(false)
   const [error, setError]                     = useState(null)
+
+  // Stati Referral Program
+  const [userReferrals, setUserReferrals] = useState([])
+  const [activeCampagna, setActiveCampagna] = useState(null)
+  const [loadingReferrals, setLoadingReferrals] = useState(true)
+  const [copiedLink, setCopiedLink] = useState(false)
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchReferralData()
+    }
+  }, [user])
+
+  async function fetchReferralData() {
+    try {
+      const { data: refs, error: refsErr } = await supabase
+        .from('referrals')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (refsErr) throw refsErr
+      setUserReferrals(refs || [])
+
+      const { data: camp, error: campErr } = await supabase
+        .from('referral_campaigns')
+        .select('*')
+        .eq('attiva', true)
+        .maybeSingle()
+
+      if (campErr) throw campErr
+      setActiveCampagna(camp || null)
+    } catch (e) {
+      console.error('Errore caricamento dati referral:', e)
+    } finally {
+      setLoadingReferrals(false)
+    }
+  }
+
+  function formattaEmailMascherata(email) {
+    if (!email) return ''
+    const parts = email.split('@')
+    if (parts.length !== 2) return email
+    const name = parts[0]
+    const domain = parts[1]
+    if (name.length <= 2) {
+      return `${name[0]}***@${domain}`
+    }
+    return `${name[0]}${'*'.repeat(name.length - 2)}${name[name.length - 1]}@${domain}`
+  }
 
   // Stati GDPR Oblio e Portabilità
   const [isExporting, setIsExporting] = useState(false)
@@ -414,6 +463,136 @@ export default function ImpostazioniPage() {
                   )}
                 </button>
               )}
+            </div>
+          </div>
+        </section>
+
+        {/* ── REFERRAL PROGRAM / PORTA UN AMICO ────────────────────────── */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>Porta un amico</h2>
+          <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
+            Invita un collega ad iscriversi a CondoSmart. Ricevi uno sconto sulla tua prossima fatturazione per ogni amico abbonato.
+          </p>
+
+          <div style={styles.brandingCard}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              
+              {/* Box Campagna Attiva */}
+              {activeCampagna ? (
+                <div style={{ background: '#1e293b', border: '1px dashed #3b82f6', borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ background: '#1e3a8a', padding: 10, borderRadius: 8, color: '#3b82f6' }}>
+                    <Gift size={24} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>
+                      Campagna Promozionale Attiva: {activeCampagna.nome}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                      Ottieni <strong style={{ color: '#10b981' }}>{activeCampagna.sconto_importo}€</strong> di sconto sul tuo abbonamento per ogni amministratore invitato che attiva un piano.
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ background: '#334155', padding: 10, borderRadius: 8, color: '#94a3b8' }}>
+                    <Gift size={24} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>
+                      Nessuna campagna attiva al momento
+                    </div>
+                    <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                      Puoi comunque condividere il tuo link di invito. Gli sconti verranno applicati in base alle future campagne promozionali.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Link di invito */}
+              <div>
+                <label style={styles.brandingLabel}>Il tuo link di invito unico</label>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${window.location.origin}/register?ref=${profile?.referral_code || ''}`}
+                    style={{ ...styles.brandingInput, flex: 1, fontFamily: 'monospace', color: '#3b82f6', background: '#0f172a' }}
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/register?ref=${profile?.referral_code || ''}`)
+                      setCopiedLink(true)
+                      toast.success('Link copiato negli appunti!')
+                      setTimeout(() => setCopiedLink(false), 2000)
+                    }}
+                    style={{
+                      ...styles.brandingBtn,
+                      background: copiedLink ? '#10b981' : '#2563eb',
+                      width: 120,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6
+                    }}
+                  >
+                    {copiedLink ? <Check size={14} /> : <Copy size={14} />}
+                    {copiedLink ? 'Copiato' : 'Copia'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Tabella Storico Inviti */}
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9', marginBottom: 10 }}>Storico dei tuoi inviti</h3>
+                
+                {loadingReferrals ? (
+                  <div style={{ color: '#64748b', fontSize: 13, padding: '10px 0' }}>Caricamento inviti...</div>
+                ) : userReferrals.length > 0 ? (
+                  <div style={{ overflowX: 'auto', border: '1px solid #334155', borderRadius: 8 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: '#0f172a', borderBottom: '1px solid #334155' }}>
+                          <th style={{ padding: '10px 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Amico Invitato</th>
+                          <th style={{ padding: '10px 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Stato</th>
+                          <th style={{ padding: '10px 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Sconto Valore</th>
+                          <th style={{ padding: '10px 12px', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>Invitato il</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userReferrals.map(ref => (
+                          <tr key={ref.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                            <td style={{ padding: '12px', fontSize: 13, color: '#e2e8f0' }}>
+                              {formattaEmailMascherata(ref.referred_email)}
+                            </td>
+                            <td style={{ padding: '12px', fontSize: 13 }}>
+                              {ref.stato === 'registrato' && (
+                                <span style={{ color: '#94a3b8', background: '#1e293b', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>Registrato</span>
+                              )}
+                              {ref.stato === 'convalidato' && (
+                                <span style={{ color: '#3b82f6', background: '#1e3a8a', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>Abbonato (In attesa)</span>
+                              )}
+                              {ref.stato === 'applicato' && (
+                                <span style={{ color: '#10b981', background: '#064e3b', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>Sconto Applicato</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '12px', fontSize: 13, color: '#10b981', fontWeight: 600 }}>
+                              {ref.sconto_valore}€
+                            </td>
+                            <td style={{ padding: '12px', fontSize: 12, color: '#94a3b8' }}>
+                              {new Date(ref.created_at).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ background: '#0f172a', padding: 20, borderRadius: 8, textAlign: 'center', border: '1px solid #1e293b' }}>
+                    <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Non hai ancora invitato nessun amico. Condividi il tuo link per iniziare a risparmiare!</p>
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
         </section>

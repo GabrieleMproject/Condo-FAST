@@ -572,3 +572,33 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build:** `npm run build` eseguito con successo, build completata senza alcun errore di compilazione o warning.
 - **Git status ed origin push:** Modifiche caricate sul ramo principale ed eseguito il push a `origin/main`.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S32 (11 Luglio 2026)
+
+### 1. Sistema Notifiche Temporali
+- **Architettura:** promemoria calcolati lato client da dati DB esistenti. Nessuna nuova tabella. Stato "letto" in `localStorage` con chiavi deterministiche per utente.
+- **Colonna DB:** `profiles.notification_settings JSONB` (script `sql/s32_notification_settings.sql`). Default su riga singola per compatibilità Dashboard Supabase.
+- **4 tipologie implementate:**
+  1. F24 ritenute — attivo dal 1° al 16 del mese successivo al pagamento (scadenza legale art. 25 DPR 600/73, verificata con Agenzia delle Entrate). Solo on/off, timing fisso per legge.
+  2. Rate scadute — N giorni dopo scadenza `rate_unita` (default 10 gg, slider 1-60)
+  3. Esercizio in scadenza — N giorni prima `data_fine` esercizio (default 30 gg, slider 7-90)
+  4. Movimenti non riconciliati — N giorni tolleranza (default 15 gg, slider 1-60, disabled di default)
+- **File nuovi:** `src/lib/notificheEngine.js`, `src/hooks/useNotifiche.js`, `src/components/NotificheDropdown.jsx`
+- **File modificati:** `src/components/AppLayout.jsx` (campanella → badge rosso pulsante + dropdown), `src/pages/ImpostazioniPage.jsx` (sezione "Notifiche & Promemoria" con toggle switch + slider)
+- **⚠️ Attenzione:** `DEFAULT_NOTIFICHE` è dichiarato dentro il corpo di `ImpostazioniPage` — non causa loop perché l'`useEffect` dipende da `profile` (non da `DEFAULT_NOTIFICHE`), ma se in futuro si aggiunge `DEFAULT_NOTIFICHE` come dipendenza dell'effect, va spostato fuori dal componente o in `useMemo`.
+- **Commit:** `034a035` (implementazione) + `836474c` (fix JSON SQL)
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S33 (12 Luglio 2026 - Programma "Invita un Amico" Referral)
+
+### 1. Programma Referral "Invita un Amico"
+- **Architettura:** Tabelle `referrals` (collegata a referrer e referred) e `referral_campaigns` (gestione sconti promozionali). Colonna `referral_code` (8 char unique) aggiunta a `profiles`.
+- **Integrazione Stripe:** Gli sconti si convalidano quando l'utente referred si abbona (webhook: `checkout.session.completed` e `customer.subscription.updated`). Vengono applicati sotto forma di credito negativo sul saldo cliente Stripe del referrer (`createBalanceTransaction`), o tenuti in stato `convalidato` se il referrer non ha ancora configurato Stripe (applicati poi in `stripe-checkout`).
+- **Controllo GDPR:** Nei log personali dell'utente, le email degli invitati sono parzialmente mascherate (es. `g***@e***.com`). Nel Backoffice del SuperAdmin sono visualizzate in chiaro per controllo antifrode.
+- **Backoffice SuperAdmin:** Consente al gestore (Gabriele) di creare nuove campagne promozionali, impostare importo sconti e attivare una singola campagna corrente in esclusiva. Offre inoltre la convalida e applicazione manuale dei referral come fallback di emergenza.
+- **Risoluzione Bug:** Risolto bug di compilazione per l'importazione mancante dell'icona `Send` in `BackofficePage.jsx`.
+- **Commit:** `S33 step1: implementa invita un amico con sconti Stripe e campagne`
+
+

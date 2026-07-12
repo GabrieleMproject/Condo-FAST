@@ -28,10 +28,17 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const referralCode = searchParams.get('ref');
+
       const { error: signUpError } = await signUp(
         form.email,
         form.password,
-        { nome: form.nome, cognome: form.cognome }
+        { 
+          nome: form.nome, 
+          cognome: form.cognome,
+          ref: referralCode || undefined
+        }
       );
       if (signUpError) throw signUpError;
 

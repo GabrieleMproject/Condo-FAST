@@ -45,6 +45,96 @@ async function userIdFromCustomer(customerId: string): Promise<string | null> {
   return data?.id ?? null
 }
 
+// ── Controlla e convalida referral all'abbonamento ─────────────────────────
+async function checkAndApplyReferral(referredUserId: string) {
+  // Trova se c'è un referral registrato per questo utente
+  const { data: referral, error: refError } = await supabase
+    .from('referrals')
+    .select('id, referrer_id, sconto_valore, referred_email, stato')
+    .eq('referred_id', referredUserId)
+    .eq('stato', 'registrato')
+    .maybeSingle()
+
+  if (!referral || refError) {
+    if (refError) console.error('Errore ricerca referral:', refError)
+    return
+  }
+
+  // Verifica se l'utente referred ha attivato un piano a pagamento
+  const { data: referredProfile, error: profError } = await supabase
+    .from('profiles')
+    .select('piano, stripe_status')
+    .eq('id', referredUserId)
+    .single()
+
+  if (profError || !referredProfile) {
+    console.error('Errore caricamento profilo referred:', profError)
+    return
+  }
+
+  const { piano, stripe_status } = referredProfile
+  if (piano && piano !== 'trial' && (stripe_status === 'active' || stripe_status === 'trialing')) {
+    // Recupera il referrer
+    const { data: referrerProfile, error: referrerError } = await supabase
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('id', referral.referrer_id)
+      .single()
+
+    if (referrerError || !referrerProfile) {
+      console.error('Errore caricamento profilo referrer:', referrerError)
+      return
+    }
+
+    const referrerCustomerId = referrerProfile.stripe_customer_id
+
+    if (referrerCustomerId) {
+      // Il referrer ha già Stripe. Applichiamo il credito su Stripe
+      const amountCents = Math.round(Number(referral.sconto_valore) * 100)
+      try {
+        await stripe.customers.createBalanceTransaction(referrerCustomerId, {
+          amount: -amountCents, // Negativo per accreditare
+          currency: 'eur',
+          description: `Sconto referral per invito di ${referral.referred_email}`,
+        })
+
+        // Segna come applicato
+        await supabase
+          .from('referrals')
+          .update({
+            stato: 'applicato',
+            validated_at: new Date().toISOString(),
+            applied_at: new Date().toISOString()
+          })
+          .eq('id', referral.id)
+
+        console.log(`Referral ${referral.id} applicato con successo a Stripe del referrer.`)
+      } catch (err) {
+        console.error('Errore Stripe balance transaction:', err)
+        // Se Stripe fallisce, lo segnamo comunque come convalidato
+        await supabase
+          .from('referrals')
+          .update({
+            stato: 'convalidato',
+            validated_at: new Date().toISOString()
+          })
+          .eq('id', referral.id)
+      }
+    } else {
+      // Il referrer non ha Stripe. Segna solo come convalidato.
+      await supabase
+        .from('referrals')
+        .update({
+          stato: 'convalidato',
+          validated_at: new Date().toISOString()
+        })
+        .eq('id', referral.id)
+      
+      console.log(`Referral ${referral.id} convalidato (referrer non ha stripe_customer_id).`)
+    }
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   // Solo POST
@@ -115,6 +205,9 @@ Deno.serve(async (req) => {
           stripe_condomini_item_id: extraItem?.id ?? null,
         })
 
+        // Convalida / applica eventuale sconto referral
+        await checkAndApplyReferral(userId)
+
         console.log(`Piano attivato: ${piano} per user ${userId}`)
         break
       }
@@ -145,6 +238,9 @@ Deno.serve(async (req) => {
           stripe_subscription_id: subscription.id,
           stripe_condomini_item_id: extraItem?.id ?? null,
         })
+
+        // Convalida / applica eventuale sconto referral
+        await checkAndApplyReferral(userId)
 
         console.log(`Subscription aggiornata: ${piano} status=${subscription.status}`)
         break

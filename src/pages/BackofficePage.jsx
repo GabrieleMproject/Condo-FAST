@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { Users, Ticket, CheckCircle, Search, Save, MessageSquare } from 'lucide-react'
+import { Users, Ticket, CheckCircle, Search, Save, MessageSquare, Send, Gift, Plus, RefreshCw } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 export default function BackofficePage() {
@@ -13,6 +13,12 @@ export default function BackofficePage() {
   const [rispostaText, setRispostaText] = useState('')
   const [selectedTicket, setSelectedTicket] = useState(null)
 
+  // Referral & Campagne states
+  const [campagne, setCampagne] = useState([])
+  const [referrals, setReferrals] = useState([])
+  const [newCampagna, setNewCampagna] = useState({ nome: '', codice_campagna: '', sconto_importo: 10, attiva: false })
+  const [creatingCampagna, setCreatingCampagna] = useState(false)
+
   useEffect(() => {
     fetchData()
   }, [])
@@ -22,12 +28,8 @@ export default function BackofficePage() {
     try {
       const { data: prof, error: profErr } = await supabase
         .from('profiles')
-        .select('id, piano, is_superadmin, studio_nome, ragione_sociale, email:id') // Actually email is in auth.users, which we can't easily query without edge function or raw_user_meta_data.
-        // Profiles doesn't store email by default, but we can just show the id. We'll fetch it.
+        .select('id, piano, is_superadmin, studio_nome, ragione_sociale, email')
       
-      // But we can get email from auth.users only if we are superadmin? Wait, we can't do that easily unless we join, but auth.users is in a different schema.
-      // Let's just use what we have in profiles for now.
-
       if (profErr) throw profErr
       setUtenti(prof || [])
 
@@ -38,6 +40,29 @@ export default function BackofficePage() {
 
       if (tickErr) throw tickErr
       setTickets(tick || [])
+
+      // Fetch Campagne
+      const { data: camp, error: campErr } = await supabase
+        .from('referral_campaigns')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (campErr) throw campErr
+      setCampagne(camp || [])
+
+      // Fetch Referrals
+      const { data: refs, error: refsErr } = await supabase
+        .from('referrals')
+        .select(`
+          *,
+          referrer:profiles!referrer_id(id, email, nome, cognome),
+          referred:profiles!referred_id(id, email, nome, cognome),
+          campaign:referral_campaigns(nome, codice_campagna)
+        `)
+        .order('created_at', { ascending: false })
+
+      if (refsErr) throw refsErr
+      setReferrals(refs || [])
 
     } catch (err) {
       toast.error('Errore caricamento dati: ' + err.message)
@@ -79,6 +104,96 @@ export default function BackofficePage() {
     }
   }
 
+  const handleCreateCampagna = async (e) => {
+    e.preventDefault()
+    if (!newCampagna.nome || !newCampagna.codice_campagna || newCampagna.sconto_importo <= 0) {
+      return toast.error('Inserisci tutti i dati della campagna correttamente')
+    }
+    setCreatingCampagna(true)
+    try {
+      if (newCampagna.attiva) {
+        await supabase
+          .from('referral_campaigns')
+          .update({ attiva: false })
+          .eq('attiva', true)
+      }
+
+      const { error } = await supabase
+        .from('referral_campaigns')
+        .insert({
+          nome: newCampagna.nome,
+          codice_campagna: newCampagna.codice_campagna.toUpperCase().trim(),
+          sconto_importo: Number(newCampagna.sconto_importo),
+          attiva: newCampagna.attiva
+        })
+
+      if (error) throw error
+      toast.success('Campagna creata con successo')
+      setNewCampagna({ nome: '', codice_campagna: '', sconto_importo: 10, attiva: false })
+      fetchData()
+    } catch (err) {
+      toast.error('Errore creazione campagna: ' + err.message)
+    } finally {
+      setCreatingCampagna(false)
+    }
+  }
+
+  const handleAttivaCampagna = async (campagnaId) => {
+    try {
+      await supabase
+        .from('referral_campaigns')
+        .update({ attiva: false })
+        .neq('id', campagnaId)
+
+      const { error } = await supabase
+        .from('referral_campaigns')
+        .update({ attiva: true })
+        .eq('id', campagnaId)
+
+      if (error) throw error
+      toast.success('Campagna attivata')
+      fetchData()
+    } catch (err) {
+      toast.error('Errore attivazione campagna: ' + err.message)
+    }
+  }
+
+  const handleValidaReferral = async (referralId) => {
+    try {
+      const { error } = await supabase
+        .from('referrals')
+        .update({ 
+          stato: 'convalidato', 
+          validated_at: new Date().toISOString() 
+        })
+        .eq('id', referralId)
+
+      if (error) throw error
+      toast.success('Referral convalidato manualmente')
+      fetchData()
+    } catch (err) {
+      toast.error('Errore validazione: ' + err.message)
+    }
+  }
+
+  const handleApplicaReferral = async (referralId) => {
+    try {
+      const { error } = await supabase
+        .from('referrals')
+        .update({ 
+          stato: 'applicato', 
+          applied_at: new Date().toISOString() 
+        })
+        .eq('id', referralId)
+
+      if (error) throw error
+      toast.success('Referral applicato manualmente')
+      fetchData()
+    } catch (err) {
+      toast.error('Errore applicazione: ' + err.message)
+    }
+  }
+
   const handlePromuovi = async (id, currentVal) => {
     if (!window.confirm('Sei sicuro di voler cambiare i permessi di superadmin per questo utente?')) return
     try {
@@ -113,6 +228,12 @@ export default function BackofficePage() {
           onClick={() => setActiveTab('tickets')}
         >
           <Ticket size={16} /> Ticket Assistenza ({tickets.filter(t => t.stato === 'aperto').length})
+        </button>
+        <button
+          style={{ ...styles.tabButton, ...(activeTab === 'referral' ? styles.tabActive : {}) }}
+          onClick={() => setActiveTab('referral')}
+        >
+          <Gift size={16} /> Referral & Campagne
         </button>
       </div>
 
@@ -248,6 +369,197 @@ export default function BackofficePage() {
                 )}
               </div>
             )}
+
+            {activeTab === 'referral' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {/* Gestione Campagne */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 20 }}>
+                  {/* Form Nuova Campagna */}
+                  <div style={styles.card}>
+                    <h2 style={styles.cardTitle}>Nuova Campagna Marketing</h2>
+                    <form onSubmit={handleCreateCampagna} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Nome Campagna</label>
+                        <input
+                          type="text"
+                          value={newCampagna.nome}
+                          onChange={e => setNewCampagna(prev => ({ ...prev, nome: e.target.value }))}
+                          placeholder="es. Campagna Estate 2026"
+                          style={styles.input}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Codice Unico (Alfanumerico)</label>
+                        <input
+                          type="text"
+                          value={newCampagna.codice_campagna}
+                          onChange={e => setNewCampagna(prev => ({ ...prev, codice_campagna: e.target.value }))}
+                          placeholder="es. ESTATE26"
+                          style={styles.input}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Importo Sconto (€)</label>
+                        <input
+                          type="number"
+                          value={newCampagna.sconto_importo}
+                          onChange={e => setNewCampagna(prev => ({ ...prev, sconto_importo: parseFloat(e.target.value) }))}
+                          placeholder="10.00"
+                          min="1"
+                          step="0.01"
+                          style={styles.input}
+                          required
+                        />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                        <input
+                          type="checkbox"
+                          id="campagna_attiva"
+                          checked={newCampagna.attiva}
+                          onChange={e => setNewCampagna(prev => ({ ...prev, attiva: e.target.checked }))}
+                        />
+                        <label htmlFor="campagna_attiva" style={{ fontSize: 13, color: '#e2e8f0', cursor: 'pointer' }}>
+                          Attiva questa campagna immediatamente
+                        </label>
+                      </div>
+                      <button type="submit" disabled={creatingCampagna} style={{ ...styles.btnSubmit, marginTop: 12 }}>
+                        <Plus size={16} /> {creatingCampagna ? 'Creazione...' : 'Crea Campagna'}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Lista Campagne */}
+                  <div style={styles.card}>
+                    <h2 style={styles.cardTitle}>Campagne Attive & Storico</h2>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={styles.table}>
+                        <thead>
+                          <tr>
+                            <th style={styles.th}>Nome</th>
+                            <th style={styles.th}>Codice</th>
+                            <th style={styles.th}>Sconto</th>
+                            <th style={styles.th}>Stato</th>
+                            <th style={styles.th}>Azioni</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {campagne.map(c => (
+                            <tr key={c.id} style={styles.tr}>
+                              <td style={styles.td} style={{ fontWeight: 600 }}>{c.nome}</td>
+                              <td style={styles.td}><span style={{ fontFamily: 'monospace', color: '#3b82f6', background: '#1e3a8a', padding: '2px 6px', borderRadius: 4 }}>{c.codice_campagna}</span></td>
+                              <td style={styles.td}>{c.sconto_importo}€</td>
+                              <td style={styles.td}>
+                                {c.attiva ? (
+                                  <span style={{ color: '#10b981', fontWeight: 600, fontSize: 13 }}>Attiva</span>
+                                ) : (
+                                  <span style={{ color: '#64748b', fontSize: 13 }}>Inattiva</span>
+                                )}
+                              </td>
+                              <td style={styles.td}>
+                                {!c.attiva && (
+                                  <button
+                                    onClick={() => handleAttivaCampagna(c.id)}
+                                    style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                                  >
+                                    Attiva
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                          {campagne.length === 0 && (
+                            <tr>
+                              <td colSpan="5" style={{ ...styles.td, color: '#64748b', textAlign: 'center' }}>Nessuna campagna creata.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Storico Referral */}
+                <div style={styles.card}>
+                  <h2 style={styles.cardTitle}>Storico Inviti & Referral</h2>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={styles.table}>
+                      <thead>
+                        <tr>
+                          <th style={styles.th}>Invitante (Referrer)</th>
+                          <th style={styles.th}>Invitato (Referred)</th>
+                          <th style={styles.th}>Campagna</th>
+                          <th style={styles.th}>Sconto</th>
+                          <th style={styles.th}>Stato</th>
+                          <th style={styles.th}>Data Creazione</th>
+                          <th style={styles.th}>Azioni</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {referrals.map(r => (
+                          <tr key={r.id} style={styles.tr}>
+                            <td style={styles.td}>
+                              <div style={{ fontWeight: 600 }}>{r.referrer?.nome} {r.referrer?.cognome}</div>
+                              <div style={{ fontSize: 11, color: '#64748b' }}>{r.referrer?.email || r.referrer_id.substring(0,8)}</div>
+                            </td>
+                            <td style={styles.td}>
+                              <div style={{ fontWeight: 600 }}>{r.referred ? `${r.referred.nome} ${r.referred.cognome}` : '—'}</div>
+                              <div style={{ fontSize: 11, color: '#64748b' }}>{r.referred_email}</div>
+                            </td>
+                            <td style={styles.td}>
+                              <span style={{ fontSize: 13 }}>{r.campaign?.nome || '—'}</span>
+                              <div style={{ fontSize: 10, color: '#64748b', fontFamily: 'monospace' }}>{r.campaign?.codice_campagna}</div>
+                            </td>
+                            <td style={styles.td} style={{ color: '#10b981', fontWeight: 600 }}>{r.sconto_valore}€</td>
+                            <td style={styles.td}>
+                              {r.stato === 'registrato' && (
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: '#1e293b', color: '#94a3b8', fontSize: 12 }}>Registrato</span>
+                              )}
+                              {r.stato === 'convalidato' && (
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: '#1e3a8a', color: '#93c5fd', fontSize: 12 }}>Convalidato</span>
+                              )}
+                              {r.stato === 'applicato' && (
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: '#064e3b', color: '#6ee7b7', fontSize: 12 }}>Applicato</span>
+                              )}
+                            </td>
+                            <td style={styles.td} style={{ fontSize: 12, color: '#94a3b8' }}>
+                              {new Date(r.created_at).toLocaleDateString()}
+                            </td>
+                            <td style={styles.td}>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                {r.stato === 'registrato' && (
+                                  <button
+                                    onClick={() => handleValidaReferral(r.id)}
+                                    style={{ background: '#10b981', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                                  >
+                                    Convalida
+                                  </button>
+                                )}
+                                {r.stato === 'convalidato' && (
+                                  <button
+                                    onClick={() => handleApplicaReferral(r.id)}
+                                    style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                                  >
+                                    Segna Applicato
+                                  </button>
+                                )}
+                                {r.stato === 'applicato' && <span style={{ color: '#64748b', fontSize: 12 }}>—</span>}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {referrals.length === 0 && (
+                          <tr>
+                            <td colSpan="7" style={{ ...styles.td, color: '#64748b', textAlign: 'center' }}>Nessun invito registrato nel sistema.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -272,6 +584,7 @@ const styles = {
   td: { padding: '14px 16px', color: '#e2e8f0', fontSize: 14 },
   ticketCard: { background: '#0f172a', padding: 16, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s' },
   textarea: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '12px 14px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', minHeight: 120, resize: 'vertical' },
+  input: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '10px 12px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box' },
   btnSubmit: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 2 },
   btnSecondary: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 1 },
 }

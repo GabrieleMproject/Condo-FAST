@@ -511,7 +511,7 @@ export default function FattureFornitoriPage() {
       {pendingNewFornitore && (
         <div style={styles.modalOverlay}>
           <div style={{ ...styles.modalContent, width: 450 }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: 18, color: '#f8fafc' }}>Nuovo Fornitore Rilevato</h3>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: 18, color: 'var(--text-primary)' }}>Nuovo Fornitore Rilevato</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 20 }}>
               L'AI ha rilevato un nuovo fornitore nella fattura. Vuoi salvarlo in rubrica per utilizzarlo nelle <b>Certificazioni Fiscali (CU/770)</b>?
             </p>

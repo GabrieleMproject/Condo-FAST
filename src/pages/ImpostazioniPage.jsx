@@ -1271,7 +1271,7 @@ export default function ImpostazioniPage() {
               <button 
                 onClick={handleExportGDPR} 
                 disabled={isExporting}
-                style={{ background: 'var(--border-color)', color: '#f8fafc', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+                style={{ background: 'var(--border-color)', color: 'var(--text-primary)', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
               >
                 {isExporting ? 'Generazione in corso...' : '📥 Esporta Dati'}
               </button>

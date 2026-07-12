@@ -251,8 +251,8 @@ function Table({ head, rows, foot = [], alignRight = [], congCol = -1 }) {
         <tbody>
           {rows.map((r, ri) => (
             <tr key={ri}>{r.map((c, ci) => {
-              let color = '#e2e8f0'
-              if (ci === congCol) color = String(c).includes('-') ? '#ef4444' : (c !== '€ 0,00' ? '#10b981' : '#e2e8f0')
+              let color = 'var(--text-primary)'
+              if (ci === congCol) color = String(c).includes('-') ? '#ef4444' : (c !== '€ 0,00' ? '#10b981' : 'var(--text-primary)')
               return <td key={ci} style={{ ...st.td, textAlign: alignRight.includes(ci) ? 'right' : 'left', color }}>{c}</td>
             })}</tr>
           ))}

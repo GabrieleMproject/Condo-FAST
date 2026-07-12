@@ -105,7 +105,7 @@ const styles = {
     margin: '0 auto 20px auto'
   },
   title: {
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
     fontSize: 22,
     fontWeight: 700,
     marginBottom: 12,

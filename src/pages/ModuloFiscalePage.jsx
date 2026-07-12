@@ -486,7 +486,7 @@ export default function ModuloFiscalePage() {
                               />
                             )}
                             <div>
-                              <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: 15 }}>{condo.nome}</div>
+                              <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 15 }}>{condo.nome}</div>
                               <div style={{ display: 'flex', gap: 12, marginTop: 4, alignItems: 'center' }}>
                                 <span style={styles.dateLabel}>
                                   <Calendar size={12} /> Scadenza: {formattaData(delega.data_scadenza)}
@@ -521,7 +521,7 @@ export default function ModuloFiscalePage() {
                                 <div key={t.id} style={styles.tributoChip}>
                                   <span style={{ fontWeight: 700, color: '#60a5fa' }}>Cod. {t.codice_tributo}</span>
                                   <span style={{ color: 'var(--text-secondary)' }}>({String(t.mese_riferimento).padStart(2, '0')}/{t.anno_riferimento})</span>
-                                  <span style={{ fontWeight: 600, color: '#f8fafc' }}>€ {t.importo.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+                                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>€ {t.importo.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
                                 </div>
                               ))}
                             </div>
@@ -624,20 +624,20 @@ export default function ModuloFiscalePage() {
 const styles = {
   page: { padding: '28px 32px', background: 'var(--app-bg)', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  title: { color: '#f8fafc', fontSize: 24, fontWeight: 700, margin: 0 },
+  title: { color: 'var(--text-primary)', fontSize: 24, fontWeight: 700, margin: 0 },
   subtitle: { color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 },
   toolbar: { display: 'flex', gap: 16, marginBottom: 24, background: 'var(--card-bg)', padding: '16px 20px', borderRadius: 12, border: '1px solid var(--border-color)' },
   label: { display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', marginBottom: 6 },
-  select: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 12px', color: '#f8fafc', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
+  select: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 12px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
   tabsContainer: { display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color-2)', paddingBottom: 12, marginBottom: 24 },
   tabButton: { background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 14, fontWeight: 600, padding: '8px 16px', cursor: 'pointer', borderRadius: 6, transition: 'all 0.2s', fontFamily: 'Sora, sans-serif' },
-  tabButtonActive: { background: 'var(--card-bg)', color: '#f8fafc', border: '1px solid var(--border-color)' },
+  tabButtonActive: { background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' },
   alertBanner: { display: 'flex', gap: 12, alignItems: 'center', background: '#f59e0b15', border: '1px solid #f59e0b30', padding: '14px 18px', borderRadius: 10 },
   empty: { background: 'var(--card-bg)', border: '1px dashed var(--border-color)', borderRadius: 12, padding: 40, textAlign: 'center', color: 'var(--text-muted)' },
   section: { background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)', overflow: 'hidden' },
   sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--app-bg)' },
   sectionTitle: { color: 'var(--text-primary)', fontSize: 15, fontWeight: 600, margin: 0 },
-  btnAction: { display: 'flex', alignItems: 'center', gap: 6, background: 'var(--card-bg)', color: '#f8fafc', border: '1px solid #475569', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 600, fontFamily: 'Sora, sans-serif' },
+  btnAction: { display: 'flex', alignItems: 'center', gap: 6, background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid #475569', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 600, fontFamily: 'Sora, sans-serif' },
   btnActionPrimary: { display: 'flex', alignItems: 'center', gap: 6, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 700, fontFamily: 'Sora, sans-serif' },
   tableContainer: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13.5 },
@@ -649,7 +649,7 @@ const styles = {
   cardF24: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 18, transition: 'all 0.2s' },
   cardF24Header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   dateLabel: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: 'var(--text-secondary)' },
-  f24Importo: { fontSize: 19, fontWeight: 800, color: '#f8fafc' },
+  f24Importo: { fontSize: 19, fontWeight: 800, color: 'var(--text-primary)' },
   statoBadge: { borderRadius: 20, padding: '3px 12px', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', display: 'inline-block', marginTop: 4 },
   cardF24Body: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-color)' },
   subTitleF24: { fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' },

@@ -37,7 +37,7 @@ function StepDot({ active, done, label, n }) {
       }}>
         {done ? <Check size={14} /> : n}
       </div>
-      <span style={{ fontSize:10, color: active ? '#e2e8f0' : '#475569', fontWeight: active ? 600 : 400 }}>
+      <span style={{ fontSize:10, color: active ? 'var(--text-primary)' : '#475569', fontWeight: active ? 600 : 400 }}>
         {label}
       </span>
     </div>

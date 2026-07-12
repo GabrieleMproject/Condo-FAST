@@ -106,7 +106,7 @@ export default function RateGridTab({ condominioId }) {
             <div 
               key={o.id} 
               style={{ 
-                color: o.attivo ? '#cbd5e1' : '#64748b', 
+                color: o.attivo ? 'var(--text-secondary)' : '#64748b', 
                 fontSize: 10,
                 fontWeight: o.attivo ? 600 : 400,
                 display: 'flex',
@@ -1125,7 +1125,7 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                       <label style={{
                         display: 'flex',
                         alignItems: 'center',
-                        color: partnerPostale === 'nessuno' ? '#64748b' : '#cbd5e1',
+                        color: partnerPostale === 'nessuno' ? '#64748b' : 'var(--text-secondary)',
                         fontSize: 12,
                         cursor: partnerPostale === 'nessuno' ? 'not-allowed' : 'pointer'
                       }}>

@@ -15,7 +15,7 @@ const C = {
   cardLight: '#253047',
   border: 'var(--border-color)',
   borderFocus: '#6366f1',
-  text: '#e2e8f0',
+  text: 'var(--text-primary)',
   muted: '#94a3b8',
   accent: '#6366f1',
   accentHover: '#4f46e5',

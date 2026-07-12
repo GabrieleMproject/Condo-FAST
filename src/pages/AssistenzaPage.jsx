@@ -289,7 +289,7 @@ export default function AssistenzaPage() {
                       borderRadius: 12, 
                       borderTopRightRadius: isUser ? 0 : 12,
                       borderTopLeftRadius: isUser ? 12 : 0,
-                      color: isUser ? '#fff' : '#e2e8f0',
+                      color: isUser ? '#fff' : 'var(--text-primary)',
                       fontSize: 14,
                       lineHeight: 1.5,
                       maxWidth: '85%',

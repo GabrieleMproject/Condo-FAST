@@ -302,7 +302,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
                         padding: '2px 8px', borderRadius: 6, border: '1px solid var(--border-color)'
                       }}>{r.norma}</span>
                     </div>
-                    <p style={{ margin: 0, color: r.ok ? '#94a3b8' : '#cbd5e1', fontSize: 12, lineHeight: 1.4 }}>
+                    <p style={{ margin: 0, color: r.ok ? '#94a3b8' : 'var(--text-secondary)', fontSize: 12, lineHeight: 1.4 }}>
                       {r.ok ? r.dettaglioOk : r.dettaglioErr}
                     </p>
                   </div>

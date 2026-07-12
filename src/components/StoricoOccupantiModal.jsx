@@ -278,7 +278,7 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
                       <div style={st.timelineContent}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                           <div>
-                            <span style={{ fontWeight: 600, color: s.attivo ? '#f1f5f9' : '#94a3b8' }}>
+                            <span style={{ fontWeight: 600, color: s.attivo ? 'var(--text-primary)' : '#94a3b8' }}>
                               {p.cognome} {p.nome}
                             </span>
                             {s.attivo ? (

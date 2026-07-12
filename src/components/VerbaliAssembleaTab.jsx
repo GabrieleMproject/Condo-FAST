@@ -548,7 +548,7 @@ Formato JSON atteso:
                 <div style={S.resultTitle}>Risposta dell'AI:</div>
                 <div style={{
                   ...S.resultText,
-                  color: searchResult.trovato ? '#f1f5f9' : '#94a3b8'
+                  color: searchResult.trovato ? 'var(--text-primary)' : '#94a3b8'
                 }}>
                   {searchResult.risposta}
                 </div>

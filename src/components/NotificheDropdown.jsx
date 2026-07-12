@@ -65,7 +65,7 @@ function ItemNotifica({ notifica, letta, onSegna, onNavigate }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
             <span style={{
-              color: letta ? '#475569' : '#e2e8f0',
+              color: letta ? '#475569' : 'var(--text-primary)',
               fontSize: 13, fontWeight: 600, lineHeight: 1.3,
             }}>
               {notifica.titolo}
@@ -263,7 +263,7 @@ export default function NotificheDropdown({
               display: 'flex', alignItems: 'center',
               padding: '4px 8px', borderRadius: 6,
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#334155'; e.currentTarget.style.color = '#e2e8f0' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#334155'; e.currentTarget.style.color = 'var(--text-primary)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#475569' }}
           >
             <X size={14} />

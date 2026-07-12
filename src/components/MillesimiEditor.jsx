@@ -855,7 +855,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     }}
                   >
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? '#f1f5f9' : '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? 'var(--text-primary)' : 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {t.nome}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
@@ -902,8 +902,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-                <Search size={14} color={selectedTabellaId === 'diagnostica' ? '#38bdf8' : '#cbd5e1'} />
-                <span style={{ fontSize: 13, fontWeight: selectedTabellaId === 'diagnostica' ? 600 : 400, color: selectedTabellaId === 'diagnostica' ? '#f1f5f9' : '#cbd5e1' }}>
+                <Search size={14} color={selectedTabellaId === 'diagnostica' ? '#38bdf8' : 'var(--text-secondary)'} />
+                <span style={{ fontSize: 13, fontWeight: selectedTabellaId === 'diagnostica' ? 600 : 400, color: selectedTabellaId === 'diagnostica' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                   Diagnostica & Allineamento
                 </span>
               </div>

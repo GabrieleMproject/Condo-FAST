@@ -109,6 +109,12 @@ function filtraContestoOttimizzato(verbali, query, forceAll = false) {
   };
 }
 
+const formattaDataAi = (d) => {
+  if (!d) return '';
+  const parsed = new Date(d);
+  return !isNaN(parsed.getTime()) ? parsed.toLocaleDateString('it-IT') : d;
+};
+
 export default function VerbaliAssembleaTab({ condominioId }) {
   const { documenti, loading, error, fetch, upload, remove, getSignedUrl } = useDocumenti(condominioId);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -147,11 +153,14 @@ export default function VerbaliAssembleaTab({ condominioId }) {
     fetch();
   }, [fetch]);
 
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
-    if (verbali.length > 0 && selectedVerbaliIds.size === 0) {
+    if (verbali.length > 0 && !hasInitialized.current) {
       setSelectedVerbaliIds(new Set(verbali.map(v => v.id)));
+      hasInitialized.current = true;
     }
-  }, [verbali, selectedVerbaliIds]);
+  }, [verbali]);
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -533,7 +542,7 @@ Formato JSON atteso:
                           <FileText size={14} color="#60a5fa" />
                           <span style={S.refDocName}>
                             {ref.documento_nome} 
-                            {ref.documento_data && ` (Assemblea del ${new Date(ref.documento_data).toLocaleDateString('it-IT')})`}
+                            {ref.documento_data && ` (Assemblea del ${formattaDataAi(ref.documento_data)})`}
                           </span>
                         </div>
                         <blockquote style={S.blockquote}>

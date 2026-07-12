@@ -41,20 +41,15 @@ export function useDocumenti(condominioId) {
         .upload(path, file, { upsert: false })
       if (uploadError) throw uploadError
 
-      // 2. Ottieni URL firmato (privato)
-      const { data: urlData } = await supabase.storage
-        .from(BUCKET)
-        .createSignedUrl(path, 60 * 60 * 24 * 365) // 1 anno
-
-      // 3. Estrai testo se PDF o DOCX
+      // 2. Estrai testo se PDF o DOCX
       let testo_estratto = null
       if (ext === 'pdf') {
-        testo_estratto = await estraiTestoPDF(file)
+        testo_estratto = await estraiTestoPDF(file, condominioId)
       } else if (ext === 'docx') {
         try { testo_estratto = await docxToText(file) } catch (e) { console.error(e) }
       }
 
-      // 4. Salva record su DB
+      // 3. Salva record su DB
       const { data, error: dbError } = await supabase
         .from('documenti_condominio')
         .insert({
@@ -71,7 +66,7 @@ export function useDocumenti(condominioId) {
       if (dbError) throw dbError
 
       setDocumenti(prev => [data, ...prev])
-      return { data, signedUrl: urlData?.signedUrl }
+      return { data }
     } catch (e) {
       setError(e.message)
       throw e
@@ -123,7 +118,7 @@ export function useDocumenti(condominioId) {
 }
 
 // Estrae testo da PDF usando FileReader + Claude API
-async function estraiTestoPDF(file) {
+async function estraiTestoPDF(file, condominioId) {
   try {
     const base64 = await fileToBase64(file)
     const testo = await callClaudeDocument(
@@ -132,7 +127,8 @@ async function estraiTestoPDF(file) {
       {
         maxTokens: 4000,
         mediaType: 'application/pdf',
-        funzione: 'estrai_testo_pdf'
+        funzione: 'estrai_testo_pdf',
+        condominio_id: condominioId
       }
     )
     return testo || null

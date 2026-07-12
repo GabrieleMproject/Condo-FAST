@@ -24,7 +24,6 @@ function renderTipoIcon(tipo, size = 20) {
 const TIPI = [
   { value: 'regolamento', label: 'Regolamento condominiale', icon: 'regolamento' },
   { value: 'tabella_millesimale_doc', label: 'Tabella millesimale', icon: 'tabella_millesimale_doc' },
-  { value: 'verbale', label: 'Verbale assemblea', icon: 'verbale' },
   { value: 'contratto', label: 'Contratto/Appalto', icon: 'contratto' },
   { value: 'certificazione', label: 'Certificazione', icon: 'certificazione' },
   { value: 'estratto_conto_archivio', label: 'Estratto Conto (Archivio)', icon: 'estratto_conto_archivio' },
@@ -109,7 +108,7 @@ export default function DocumentiCondominio({ condominioId }) {
     }
   }
 
-  const documentiVisibili = documenti.filter(d => d.tipo !== 'estratto_conto')
+  const documentiVisibili = documenti.filter(d => d.tipo !== 'estratto_conto' && d.tipo !== 'verbale')
   const filtrati = filtroTipo === 'tutti' ? documentiVisibili : documentiVisibili.filter(d => d.tipo === filtroTipo)
 
   return (

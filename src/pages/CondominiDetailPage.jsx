@@ -20,8 +20,9 @@ import {
   ArrowLeft, Receipt, Users,
   CheckCircle2,
   ChevronRight, Building2,
-  Mail,
+  Mail, FileSignature,
 } from 'lucide-react'
+import VerbaliAssembleaTab from '../components/VerbaliAssembleaTab'
 
 // ── Helper date sicure ──────────────────────────────────────
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
@@ -58,6 +59,7 @@ const TABS = [
   { id: 'consuntivo', label: 'Consuntivo', icon: FileBarChart },
   { id: 'rate',       label: 'Rate',       icon: CreditCard },
   { id: 'comunicazioni', label: 'Comunicazioni', icon: Mail },
+  { id: 'verbali',    label: 'Verbali',    icon: FileSignature },
   { id: 'finanze',    label: 'Finanze',    icon: Wallet },        // ← nuovo: accesso pagine finanziarie
   { id: 'documenti',  label: 'Documenti',  icon: FileText },
   { id: 'storico',    label: 'Storico',    icon: FolderClock },
@@ -349,6 +351,8 @@ export default function CondominiDetailPage() {
         {activeTab === 'rate' && <RateGridTab condominioId={c.id} />}
 
         {activeTab === 'comunicazioni' && <ComunicazioniTab condominioId={c.id} />}
+
+        {activeTab === 'verbali' && <VerbaliAssembleaTab condominioId={c.id} />}
 
         {activeTab === 'finanze' && <FinanzeTab condominioId={c.id} />}
 

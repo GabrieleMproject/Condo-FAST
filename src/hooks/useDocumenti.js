@@ -29,7 +29,7 @@ export function useDocumenti(condominioId) {
     }
   }, [condominioId])
 
-  const upload = useCallback(async (file, tipo, nome, note = '') => {
+  const upload = useCallback(async (file, tipo, nome, note = '', dataDocumento = null) => {
     setLoading(true)
     setError(null)
     try {
@@ -64,6 +64,7 @@ export function useDocumenti(condominioId) {
           url_storage: path,
           testo_estratto,
           note,
+          data_documento: dataDocumento,
         })
         .select()
         .single()

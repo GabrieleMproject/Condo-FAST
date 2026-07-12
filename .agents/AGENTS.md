@@ -612,4 +612,11 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Fallback di Ricerca Completa Automatico:** La verifica della pertinenza delle parole chiave avviene **interamente client-side ed è gratis** (in JavaScript). In caso di mancata corrispondenza, il sistema esegue **automaticamente e istantaneamente** la chiamata a Claude sul testo completo (senza doppi passaggi o secondi clic per l'utente, mantenendo sempre una sola chiamata AI totale).
 - **Estensione Schema DB:** Creata la migrazione `sql/s34_documenti_date.sql` per introdurre il campo `data_documento` in `documenti_condominio` per storicizzare la data reale del verbale/assemblea.
 
+### 2. Migrazione AI a Gemini (Pro & Flash)
+- **Mappatura Strategica dei Modelli:** Configurato il proxy intelligente per instradare le chiamate a `gemini-pro-latest` (per compiti ad alta complessità cognitiva: ricerca nei verbali, scelta dei criteri di ripartizione e strutturazione millesimali) e `gemini-flash-latest` (per estrazioni dati standardizzate e veloci: analisi fatture, estratti conto e importazione anagrafica), ottimizzando costi e latenza senza alcuna perdita di accuratezza.
+- **Output JSON Garantito:** Abilitata la modalità nativa `responseMimeType: "application/json"` di Gemini per forzare risposte sintatticamente strutturate in JSON per tutte le operazioni di estrazione dati, azzerando i crash di parsing.
+- **Retrocompatibilità Totale:** L'Edge Function `claude-proxy` traduce la risposta di Gemini nel formato Anthropic (content ed usage), evitando modifiche a cascata e mantenendo intatta la compatibilità e la logica di telemetria (`logAiCall`).
+- **Verifica con Smoke Test:** Validata la connessione ed il corretto funzionamento end-to-end con esito verde e risposta corretta tramite `npm run smoke`.
+
+
 

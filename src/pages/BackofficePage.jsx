@@ -293,7 +293,7 @@ export default function BackofficePage() {
               <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
                 <div style={{ ...styles.card, flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                    <h2 style={styles.cardTitle} style={{ margin: 0 }}>Ticket Aperti</h2>
+                    <h2 style={{ ...styles.cardTitle, margin: 0 }}>Ticket Aperti</h2>
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -447,7 +447,7 @@ export default function BackofficePage() {
                         <tbody>
                           {campagne.map(c => (
                             <tr key={c.id} style={styles.tr}>
-                              <td style={styles.td} style={{ fontWeight: 600 }}>{c.nome}</td>
+                              <td style={{ ...styles.td, fontWeight: 600 }}>{c.nome}</td>
                               <td style={styles.td}><span style={{ fontFamily: 'monospace', color: '#3b82f6', background: '#1e3a8a', padding: '2px 6px', borderRadius: 4 }}>{c.codice_campagna}</span></td>
                               <td style={styles.td}>{c.sconto_importo}€</td>
                               <td style={styles.td}>
@@ -511,7 +511,7 @@ export default function BackofficePage() {
                               <span style={{ fontSize: 13 }}>{r.campaign?.nome || '—'}</span>
                               <div style={{ fontSize: 10, color: '#64748b', fontFamily: 'monospace' }}>{r.campaign?.codice_campagna}</div>
                             </td>
-                            <td style={styles.td} style={{ color: '#10b981', fontWeight: 600 }}>{r.sconto_valore}€</td>
+                            <td style={{ ...styles.td, color: '#10b981', fontWeight: 600 }}>{r.sconto_valore}€</td>
                             <td style={styles.td}>
                               {r.stato === 'registrato' && (
                                 <span style={{ padding: '2px 6px', borderRadius: 4, background: '#1e293b', color: '#94a3b8', fontSize: 12 }}>Registrato</span>
@@ -523,7 +523,7 @@ export default function BackofficePage() {
                                 <span style={{ padding: '2px 6px', borderRadius: 4, background: '#064e3b', color: '#6ee7b7', fontSize: 12 }}>Applicato</span>
                               )}
                             </td>
-                            <td style={styles.td} style={{ fontSize: 12, color: '#94a3b8' }}>
+                            <td style={{ ...styles.td, fontSize: 12, color: '#94a3b8' }}>
                               {new Date(r.created_at).toLocaleDateString()}
                             </td>
                             <td style={styles.td}>

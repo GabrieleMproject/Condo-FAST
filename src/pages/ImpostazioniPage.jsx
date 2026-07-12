@@ -111,10 +111,29 @@ export default function ImpostazioniPage() {
     if (parts.length !== 2) return email
     const name = parts[0]
     const domain = parts[1]
+    
+    let maskedName = ''
     if (name.length <= 2) {
-      return `${name[0]}***@${domain}`
+      maskedName = `${name[0]}***`
+    } else {
+      maskedName = `${name[0]}${'*'.repeat(name.length - 2)}${name[name.length - 1]}`
     }
-    return `${name[0]}${'*'.repeat(name.length - 2)}${name[name.length - 1]}@${domain}`
+
+    const domParts = domain.split('.')
+    let maskedDomain = domain
+    if (domParts.length >= 2) {
+      const domName = domParts[0]
+      const domExt = domParts.slice(1).join('.')
+      let maskedDomName = ''
+      if (domName.length <= 2) {
+        maskedDomName = `${domName[0]}***`
+      } else {
+        maskedDomName = `${domName[0]}${'*'.repeat(domName.length - 2)}${domName[domName.length - 1]}`
+      }
+      maskedDomain = `${maskedDomName}.${domExt}`
+    }
+
+    return `${maskedName}@${maskedDomain}`
   }
 
   // Stati GDPR Oblio e Portabilità

@@ -114,13 +114,15 @@ BEGIN
     END LOOP;
 
     -- Inserisci il profilo
-    INSERT INTO public.profiles (id, email, nome, cognome, referral_code)
+    INSERT INTO public.profiles (id, email, nome, cognome, referral_code, dpa_accepted_at, dpa_ip)
     VALUES (
         new.id,
         new.email,
         new.raw_user_meta_data->>'nome',
         new.raw_user_meta_data->>'cognome',
-        new_referral_code
+        new_referral_code,
+        (new.raw_user_meta_data->>'dpa_accepted_at')::timestamptz,
+        new.raw_user_meta_data->>'dpa_ip'
     );
 
     -- Se c'è un codice di invito 'ref' nei metadati

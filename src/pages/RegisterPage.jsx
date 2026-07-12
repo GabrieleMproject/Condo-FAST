@@ -31,17 +31,6 @@ export default function RegisterPage() {
       const searchParams = new URLSearchParams(window.location.search);
       const referralCode = searchParams.get('ref');
 
-      const { error: signUpError } = await signUp(
-        form.email,
-        form.password,
-        { 
-          nome: form.nome, 
-          cognome: form.cognome,
-          ref: referralCode || undefined
-        }
-      );
-      if (signUpError) throw signUpError;
-
       let clientIp = null;
       try {
         const ipRes = await fetch('https://api.ipify.org?format=json');
@@ -49,13 +38,18 @@ export default function RegisterPage() {
         clientIp = ipData.ip;
       } catch { /* non bloccante */ }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('profiles').update({
+      const { error: signUpError } = await signUp(
+        form.email,
+        form.password,
+        { 
+          nome: form.nome, 
+          cognome: form.cognome,
+          ref: referralCode || undefined,
           dpa_accepted_at: new Date().toISOString(),
-          dpa_ip: clientIp,
-        }).eq('id', user.id);
-      }
+          dpa_ip: clientIp
+        }
+      );
+      if (signUpError) throw signUpError;
 
       navigate('/login?registered=1');
     } catch (err) {

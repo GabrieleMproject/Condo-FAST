@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { LifeBuoy, ChevronDown, ChevronUp, Send, Ticket, Bot, User, ArrowRight } from 'lucide-react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { ChevronDown, ChevronUp, Send, Ticket, Bot, User, ArrowRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { callClaude, callClaudeWithHistory } from '../lib/claudeClient'
 import { toast } from 'react-hot-toast'
@@ -58,7 +58,7 @@ export default function AssistenzaPage() {
   const [isConvertingToTicket, setIsConvertingToTicket] = useState(false)
   const chatEndRef = useRef(null)
 
-  const salvaLogChat = async (historyToSave, risoltoConTicket = false) => {
+  const salvaLogChat = useCallback(async (historyToSave, risoltoConTicket = false) => {
     if (historyToSave.length <= 1) return;
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -74,7 +74,7 @@ export default function AssistenzaPage() {
     } catch (err) {
       console.error('Errore silent save log chat:', err)
     }
-  }
+  }, [])
 
   // Timer reset chat inattività (10 minuti = 600000 ms)
   useEffect(() => {
@@ -126,15 +126,56 @@ export default function AssistenzaPage() {
     e.preventDefault()
     if (!chatInput.trim() || isTyping) return
 
-    const userMsg = { role: 'user', content: chatInput }
+    const originalInput = chatInput
+    const userMsg = { role: 'user', content: originalInput }
     const newHistory = [...chatHistory, userMsg]
     setChatHistory(newHistory)
     setChatInput('')
     setIsTyping(true)
 
     try {
-      const aiResponse = await callClaudeWithHistory(newHistory, { 
-        system: SYSTEM_PROMPT, 
+      // ── RAG: Ricerca articoli pertinenti nella knowledge base ────────────────
+      let kbContext = ''
+      try {
+        const paroleSignificative = originalInput
+          .toLowerCase()
+          .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, '')
+          .split(/\s+/)
+          .filter(w => w.length > 3)
+
+        if (paroleSignificative.length > 0) {
+          // Costruiamo una query OR per cercare le parole chiave significative
+          const orFilter = paroleSignificative
+            .map(w => `domanda_sintesi.ilike.%${w}%,risoluzione.ilike.%${w}%`)
+            .join(',')
+
+          const { data: kbData } = await supabase
+            .from('assistenza_knowledge')
+            .select('*')
+            .or(orFilter)
+            .limit(3)
+
+          if (kbData && kbData.length > 0) {
+            kbContext = kbData
+              .map(k => `[Argomento: ${k.argomento}]\nDomanda: ${k.domanda_sintesi}\nRisoluzione: ${k.risoluzione}`)
+              .join('\n\n')
+          }
+        }
+      } catch (kbErr) {
+        console.error('Errore caricamento KB contestuale:', kbErr)
+      }
+
+      const systemPromptDinamico = kbContext
+        ? `${SYSTEM_PROMPT}\n\nKNOWLEDGE BASE CONTESTUALE (FAQ E CASI RISOLTI IN PRECEDENZA):\n${kbContext}\n\nUsa le informazioni qui sopra se sono pertinenti per formulare la tua risposta.`
+        : SYSTEM_PROMPT
+
+      // Escludiamo il messaggio iniziale dell'assistente per iniziare la cronologia Gemini con un messaggio 'user'
+      const historyToSend = newHistory[0]?.role === 'assistant' && newHistory[0]?.content.includes("Benvenuto")
+        ? newHistory.slice(1)
+        : (newHistory[0]?.role === 'assistant' ? newHistory.slice(1) : newHistory);
+
+      const aiResponse = await callClaudeWithHistory(historyToSend, { 
+        system: systemPromptDinamico, 
         funzione: 'assistenza_chat',
         maxTokens: 500
       })
@@ -269,7 +310,7 @@ export default function AssistenzaPage() {
               </div>
               <div>
                 <h2 style={{ color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, margin: 0 }}>Assistente Virtuale</h2>
-                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Powered by Claude AI</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Powered by Gemini AI</span>
               </div>
             </div>
 

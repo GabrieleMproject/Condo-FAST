@@ -640,11 +640,16 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Bonifica Testi Chiari Residui**: Rilevate ed eliminate a tappeto le rimanenti occorrenze di colori di testo chiari hardcoded (`#cbd5e1`, `#f8fafc`, `#f1f5f9` e `#e2e8f0` in condizionali o variabili di stile) in 14 file JSX (tra cui `ModuloFiscalePage.jsx`, `FattureFornitoriPage.jsx`, `MillesimiEditor.jsx`, `NotificheDropdown.jsx`, `AssistenzaPage.jsx`), convertendoli nelle variabili CSS del tema per garantire la piena leggibilità (evitando testi bianchi su sfondo chiaro).
 - **Adeguamento Grafico Chatbot**: Modificata l'interfaccia della chat in `AssistenzaPage.jsx`. Lo sfondo dei messaggi del bot (`#0f172a`), il bordo (`#334155`) e lo sfondo verde scuro delle risposte dei ticket (`#064e3b`) sono stati sostituiti con le rispettive variabili CSS (`var(--app-bg)`, `var(--border-color)`) e opacità coerenti con il tema chiaro per garantirne la leggibilità e l'armonia estetica. Allineati anche i pulsanti d'azione (Apri Ticket, Termina Chat) per usare l'accento ed evitare scarso contrasto in modalità chiara.
 
+---
 
+## Storico Decisioni e Fatti Verificati della Sessione S36 (12 Luglio 2026 - Gemini Chatbot & Knowledge Base)
 
+### 1. Decisioni Architetturali e di Prodotto
+- **Allineamento a Gemini:** Il chatbot dell'assistenza utilizza già Gemini (sia Pro per la chat che Flash per compiti veloci) tramite il proxy AI, ma l'etichetta dell'interfaccia utente è stata ora allineata indicando "Powered by Gemini AI" al posto di "Powered by Claude AI".
+- **Sistema di Knowledge Base Dinamico (RAG Leggero):** Progettata e implementata l'autorigenerazione della conoscenza dell'assistente. Alla chiusura di un ticket dal Backoffice, se l'opzione "Genera articolo di Knowledge Base con l'AI" è attiva, l'AI sintetizza il problema e la soluzione e li inserisce nella tabella `assistenza_knowledge`. All'invio dei messaggi in chat, il sistema effettua una ricerca contestuale (full-text con filtri OR ilike sulle parole chiave significative) e inietta gli articoli trovati direttamente nel prompt di sistema del chatbot.
+- **Tab Gestione Knowledge Base in SuperAdmin:** Aggiunto un tab dedicato "Knowledge Base" in `BackofficePage.jsx` che consente al SuperAdmin di visualizzare, filtrare, inserire manualmente, modificare ed eliminare gli articoli della Knowledge Base, garantendo il pieno controllo sulle informazioni in mano all'AI.
 
-
-
-
-
-
+### 2. Implementazione Tecnica e Database
+- **Tabella `assistenza_knowledge`:** Creata la migrazione `sql/s36_assistenza_knowledge.sql` che definisce la tabella con politiche RLS (lettura a tutti gli utenti autenticati per consentire il funzionamento del chatbot, scrittura riservata solo ai SuperAdmin via `public.is_superadmin`) e indice GIN `to_tsvector` per ricerche testuali performanti.
+- **Integrazione callClaude in Backoffice:** Importata la funzione `callClaude` in `BackofficePage.jsx` per gestire le chiamate di sintesi in modalità JSON strutturata con parsing robusto e fallback tramite regex in caso di stringhe non pulite restituite dall'AI.
+- **Interfaccia Utente e Gestione degli Stati:** Allineato il rendering dei tab grafici e introdotto lo stato `generaKB` con checkbox persistente sotto l'input di risposta dei ticket nel pannello laterale del Backoffice.

@@ -637,6 +637,8 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Adeguamento Globale del Codebase (Autofix)**: Creati ed eseguiti tre script di refactoring automatico per individuare e convertire ricorsivamente in tutti i 40+ file JSX dell'applicazione i colori hardcoded residui del tema scuro (sfondi `#0f172a`, `#1e293b` e relative varianti semi-trasparenti, bordi `#334155` e relative opacità, e i colori di testo chiari come `#e2e8f0` e `#cbd5e1`). Tutte le occorrenze sono state sostituite con le variabili CSS del tema (`var(--app-bg)`, `var(--card-bg)`, `var(--border-color)`, `var(--text-primary)`, `var(--text-secondary)`, ecc.).
 - **Variabile CSS Gradiente Card**: Introdotta in `index.css` la variabile `--gradient-card` (che si adatta a seconda del tema a gradienti scuri o chiari) ed applicata a componenti complessi (come `PassaggioConsegneSection.jsx`) per garantire l'armonia estetica.
 - **Risoluzione Bug di Contrasto**: Corretti i testi chiari hardcoded (`#f8fafc`) e gli sfondi scuri hardcoded (`#090d16`) nel componente `PassaggioConsegneSection.jsx` e `SpeseForm.jsx` per evitare testi invisibili e disallineamenti di lettura in tema chiaro.
+- **Bonifica Testi Chiari Residui**: Rilevate ed eliminate a tappeto le rimanenti occorrenze di colori di testo chiari hardcoded (`#cbd5e1`, `#f8fafc`, `#f1f5f9` e `#e2e8f0` in condizionali o variabili di stile) in 14 file JSX (tra cui `ModuloFiscalePage.jsx`, `FattureFornitoriPage.jsx`, `MillesimiEditor.jsx`, `NotificheDropdown.jsx`, `AssistenzaPage.jsx`), convertendoli nelle variabili CSS del tema per garantire la piena leggibilità (evitando testi bianchi su sfondo chiaro).
+
 
 
 

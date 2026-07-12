@@ -33,7 +33,7 @@ if (authErr) { console.error('❌ Login fallito:', authErr.message); process.exi
 const token = auth.session.access_token;
 
 // Body identico a quello che invia il frontend (callClaude → type:'text').
-const payload = { type: 'text', prompt: 'Rispondi solo con la parola: OK', maxTokens: 16 };
+const payload = { type: 'text', prompt: 'Rispondi solo con la parola: OK', maxTokens: 512 };
 
 const t0 = Date.now();
 const r = await fetch(`${URL}/functions/v1/claude-proxy`, {
@@ -57,7 +57,7 @@ if (/invalid_request|not_found_error|"error"/i.test(txt)) {
   process.exit(1);
 }
 
-let modello = '?';
-try { modello = JSON.parse(txt).model ?? '?'; } catch {}
-console.log(`✅ Proxy OK (${ms}ms). Modello: ${modello}. Risposta:`, txt.slice(0, 120));
+let risposta = '';
+try { risposta = JSON.parse(txt).content?.[0]?.text ?? ''; } catch {}
+console.log(`✅ Proxy OK (${ms}ms). Risposta: "${risposta}"`);
 process.exit(0);

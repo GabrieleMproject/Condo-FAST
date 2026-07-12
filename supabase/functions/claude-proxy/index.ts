@@ -58,9 +58,9 @@ function getModel(funzione?: string): string {
     'assistenza_chat'
   ];
   if (funzione && proFunctions.includes(funzione)) {
-    return 'gemini-1.5-pro';
+    return 'gemini-pro-latest';
   }
-  return 'gemini-1.5-flash';
+  return 'gemini-flash-latest';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

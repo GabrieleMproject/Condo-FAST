@@ -88,13 +88,15 @@ async function callEdge(body) {
  * @throws {RateLimitError} se il rate limit è raggiunto
  */
 export async function callClaude(prompt, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 1000, system } = opts;
+  const { funzione, condominio_id, maxTokens = 1000, system, jsonMode } = opts;
 
   const data = await callEdge({
     type:      'text',
     prompt:    sanitizeInput(prompt),
     maxTokens,
     system:    system ? sanitizeInput(system, 4000) : undefined,
+    funzione,
+    jsonMode,
   });
 
   logAiCall({
@@ -114,13 +116,15 @@ export async function callClaude(prompt, opts = {}) {
  * @param {object} [opts]
  */
 export async function callClaudeWithHistory(messages, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 1000, system } = opts;
+  const { funzione, condominio_id, maxTokens = 1000, system, jsonMode } = opts;
 
   const data = await callEdge({
     type:     'history',
     messages: messages.map(m => ({ role: m.role, content: sanitizeInput(m.content) })),
     maxTokens,
     system:   system ? sanitizeInput(system, 4000) : undefined,
+    funzione,
+    jsonMode,
   });
 
   logAiCall({
@@ -143,7 +147,7 @@ export async function callClaudeWithHistory(messages, opts = {}) {
  * NB: il path vision NON inoltra `system` → il chiamante accorpa system+user nel prompt.
  */
 export async function callClaudeVision(prompt, base64Image, mediaType, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 1000 } = opts;
+  const { funzione, condominio_id, maxTokens = 1000, jsonMode } = opts;
 
   const data = await callEdge({
     type:      'vision',
@@ -151,6 +155,8 @@ export async function callClaudeVision(prompt, base64Image, mediaType, opts = {}
     image:     base64Image,
     mediaType,
     maxTokens,
+    funzione,
+    jsonMode,
   });
 
   logAiCall({
@@ -183,7 +189,7 @@ export async function callClaudeVision(prompt, base64Image, mediaType, opts = {}
 export async function callClaudeDocument(prompt, base64Document, opts = {}) {
   const {
     funzione, condominio_id, maxTokens = 1000, system,
-    mediaType = 'application/pdf',
+    mediaType = 'application/pdf', jsonMode,
   } = opts;
 
   const data = await callEdge({
@@ -193,6 +199,8 @@ export async function callClaudeDocument(prompt, base64Document, opts = {}) {
     mediaType,
     maxTokens,
     system:    system ? sanitizeInput(system, 4000) : undefined,
+    funzione,
+    jsonMode,
   });
 
   logAiCall({

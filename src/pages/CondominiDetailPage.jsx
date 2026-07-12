@@ -107,11 +107,11 @@ function StoricoTab({ condominioId }) {
   const { log, loading, fetch } = useAuditLog()
   useEffect(() => { fetch({ condominioId, perPagina: 30 }) }, [condominioId])
 
-  if (loading) return <div style={{ color: '#64748b', padding: 24, textAlign: 'center' }}>Caricamento storico...</div>
+  if (loading) return <div style={{ color: 'var(--text-muted)', padding: 24, textAlign: 'center' }}>Caricamento storico...</div>
   if (!log.length) return (
     <div style={{ textAlign: 'center', padding: 40 }}>
-      <FolderClock size={32} color="#334155" style={{ marginBottom: 10 }} />
-      <p style={{ color: '#64748b', margin: 0 }}>Nessuna modifica registrata</p>
+      <FolderClock size={32} color="var(--text-muted)" style={{ marginBottom: 10 }} />
+      <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessuna modifica registrata</p>
     </div>
   )
 
@@ -121,17 +121,17 @@ function StoricoTab({ condominioId }) {
         const az = AZIONE_COLORI[ev.azione] || AZIONE_COLORI.UPDATE
         return (
           <div key={ev.id} style={{
-            background: '#0f172a', borderRadius: 8, padding: '11px 14px',
-            border: '1px solid #334155', display: 'flex', alignItems: 'center', gap: 12
+            background: 'var(--app-bg)', borderRadius: 8, padding: '11px 14px',
+            border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 12
           }}>
             <span style={{
               background: az.bg, color: az.color, borderRadius: 5,
               padding: '2px 8px', fontSize: 11, fontWeight: 700, minWidth: 72, textAlign: 'center'
             }}>{az.label}</span>
-            <span style={{ color: '#94a3b8', fontSize: 13, flex: 1 }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13, flex: 1 }}>
               {ev.tabella_modificata.replace(/_/g, ' ')}
             </span>
-            <span style={{ color: '#475569', fontSize: 12 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
               {formattaDataOra(ev.created_at)}
             </span>
           </div>
@@ -196,7 +196,7 @@ export default function CondominiDetailPage() {
       <div style={S.breadcrumb}>
         <Link to="/condomini" style={S.breadLink}>Condomini</Link>
         <ChevronRight size={13} color="#475569" style={{ verticalAlign: 'middle', margin: '0 2px' }} />
-        <span style={{ color: '#94a3b8' }}>{c.nome}</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{c.nome}</span>
       </div>
 
       {/* Header */}
@@ -286,7 +286,7 @@ export default function CondominiDetailPage() {
                     {saldoConto ? (
                       <>
                         <span style={{ fontWeight: 700 }}>€ {Number(saldoConto.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
-                        <span style={{ fontSize: 12, color: '#64748b', fontWeight: 400 }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>
                           (al {formattaData(saldoConto.data)})
                         </span>
                       </>
@@ -336,7 +336,7 @@ export default function CondominiDetailPage() {
             {c.note && (
               <div style={S.section}>
                 <p style={S.sectionTitle}>Note</p>
-                <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.7, margin: 0 }}>{c.note}</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7, margin: 0 }}>{c.note}</p>
               </div>
             )}
 
@@ -367,37 +367,37 @@ export default function CondominiDetailPage() {
 
 const S = {
   page:        { padding: '28px 32px', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
-  loading:     { color: '#64748b', textAlign: 'center', padding: '80px', fontFamily: 'Sora, sans-serif' },
+  loading:     { color: 'var(--text-muted)', textAlign: 'center', padding: '80px', fontFamily: 'Sora, sans-serif' },
   breadcrumb:  { fontSize: 13, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 4 },
   breadLink:   { color: '#3b82f6', textDecoration: 'none' },
   header:      { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 },
   headerLeft:  { display: 'flex', gap: 16, alignItems: 'flex-start' },
   bigIcon:     { width: 52, height: 52, borderRadius: 12, background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  title:       { color: '#e2e8f0', fontSize: 24, fontWeight: 700, margin: '0 0 4px' },
-  addr:        { color: '#64748b', fontSize: 14, margin: '0 0 2px' },
-  cf:          { color: '#475569', fontSize: 12, margin: 0 },
+  title:       { color: 'var(--text-primary)', fontSize: 24, fontWeight: 700, margin: '0 0 4px' },
+  addr:        { color: 'var(--text-muted)', fontSize: 14, margin: '0 0 2px' },
+  cf:          { color: 'var(--text-muted)', fontSize: 12, margin: 0 },
   headerActions: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' },
   kpiRow:      { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px,1fr))', gap: 14, marginBottom: 20 },
-  kpiCard:     { background: '#1e293b', borderRadius: 12, padding: '16px', display: 'flex', gap: 12, alignItems: 'center', border: '1px solid #334155' },
+  kpiCard:     { background: 'var(--card-bg)', borderRadius: 12, padding: '16px', display: 'flex', gap: 12, alignItems: 'center', border: '1px solid var(--border-color)' },
   kpiIconWrap: { width: 36, height: 36, borderRadius: 8, background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  kpiValue:    { color: '#e2e8f0', fontSize: 18, fontWeight: 700 },
-  kpiLabel:    { color: '#64748b', fontSize: 11 },
-  tabBar:      { display: 'flex', gap: 2, borderBottom: '1px solid #334155', marginBottom: 20, flexWrap: 'wrap' },
+  kpiValue:    { color: 'var(--text-primary)', fontSize: 18, fontWeight: 700 },
+  kpiLabel:    { color: 'var(--text-muted)', fontSize: 11 },
+  tabBar:      { display: 'flex', gap: 2, borderBottom: '1px solid var(--border-color)', marginBottom: 20, flexWrap: 'wrap' },
   tabBtn:      { padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', borderRadius: '8px 8px 0 0', fontFamily: 'Sora, sans-serif', transition: 'all 0.15s', display: 'flex', alignItems: 'center' },
   tabContent:  {},
-  section:     { background: '#1e293b', borderRadius: 12, padding: '20px 24px', marginBottom: 14, border: '1px solid #334155' },
-  sectionTitle:{ color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px' },
-  featureBadge:{ background: '#0f172a', color: '#60a5fa', fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '1px solid #1e3a5f', display: 'inline-flex', alignItems: 'center' },
+  section:     { background: 'var(--card-bg)', borderRadius: 12, padding: '20px 24px', marginBottom: 14, border: '1px solid var(--border-color)' },
+  sectionTitle:{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px' },
+  featureBadge:{ background: 'var(--app-bg)', color: '#60a5fa', fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '1px solid #1e3a5f', display: 'inline-flex', alignItems: 'center' },
   infoGrid:    { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px,1fr))', gap: 14 },
   infoItem:    { display: 'flex', flexDirection: 'column', gap: 4 },
-  infoLabel:   { color: '#64748b', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  infoValue:   { color: '#e2e8f0', fontSize: 15, fontWeight: 500 },
+  infoLabel:   { color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  infoValue:   { color: 'var(--text-primary)', fontSize: 15, fontWeight: 500 },
   btnPrimary:  { background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center' },
   btnSuccess:  { background: '#059669', color: 'white', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center' },
-  btnSecondary:{ background: 'transparent', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, padding: '9px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center' },
+  btnSecondary:{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '9px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center' },
   // ── Tab Finanze ──
-  finCard:     { background: '#1e293b', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'center', border: '1px solid #334155', cursor: 'pointer', fontFamily: 'Sora, sans-serif', textAlign: 'left', transition: 'border-color 0.15s' },
+  finCard:     { background: 'var(--card-bg)', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'center', border: '1px solid var(--border-color)', cursor: 'pointer', fontFamily: 'Sora, sans-serif', textAlign: 'left', transition: 'border-color 0.15s' },
   finIconWrap: { width: 40, height: 40, borderRadius: 10, background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  finLabel:    { color: '#e2e8f0', fontSize: 14, fontWeight: 600 },
-  finDesc:     { color: '#64748b', fontSize: 12, marginTop: 2 },
+  finLabel:    { color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 },
+  finDesc:     { color: 'var(--text-muted)', fontSize: 12, marginTop: 2 },
 }

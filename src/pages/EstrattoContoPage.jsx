@@ -287,12 +287,12 @@ export default function EstrattoContoPage() {
             </button>
           ))}
         </div>
-        <span style={{ color: '#475569', fontSize: 13 }}>{movFiltrati.length} movimenti</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{movFiltrati.length} movimenti</span>
       </div>
 
       {/* Lista movimenti */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#475569' }}>Caricamento...</div>
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>Caricamento...</div>
       ) : movFiltrati.length === 0 ? (
         <div style={styles.emptyState}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🏦</div>
@@ -354,43 +354,43 @@ export default function EstrattoContoPage() {
 }
 
 const styles = {
-  page: { fontFamily: "'Sora', sans-serif", color: '#e2e8f0', padding: 24 },
+  page: { fontFamily: "'Sora', sans-serif", color: 'var(--text-primary)', padding: 24 },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  title: { margin: 0, fontSize: 22, fontWeight: 700, color: '#f1f5f9' },
-  subtitle: { margin: '4px 0 0', fontSize: 13, color: '#64748b' },
+  title: { margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' },
+  subtitle: { margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' },
   kpiRow: { display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' },
-  kpiCard: { flex: '1 1 140px', background: '#1e293b', borderRadius: 12, padding: '16px 20px', border: '1px solid #334155' },
+  kpiCard: { flex: '1 1 140px', background: 'var(--card-bg)', borderRadius: 12, padding: '16px 20px', border: '1px solid var(--border-color)' },
   kpiVal: { fontSize: 20, fontWeight: 700 },
-  kpiLabel: { fontSize: 11, color: '#64748b', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  kpiLabel: { fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
 dropZone: {
-    borderWidth: '2px', borderStyle: 'dashed', borderColor: '#334155',
+    borderWidth: '2px', borderStyle: 'dashed', borderColor: 'var(--border-color)',
     borderRadius: 16, padding: '36px 20px',
     textAlign: 'center', marginBottom: 20, transition: 'all 0.2s',
     background: '#1e293b10',
   },
   dropZoneActive: { borderColor: '#2563eb', background: '#2563eb10' },
   dropIcon: { fontSize: 40, marginBottom: 10 },
-  dropTitle: { fontSize: 16, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 },
-  dropSub: { fontSize: 13, color: '#64748b' },
+  dropTitle: { fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 },
+  dropSub: { fontSize: 13, color: 'var(--text-muted)' },
   errMsg: {
     background: '#ef444415', border: '1px solid #ef444440',
     borderRadius: 10, padding: '10px 16px', color: '#ef4444',
     fontSize: 13, marginBottom: 16,
   },
   toolbar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  viewToggle: { display: 'flex', background: '#1e293b', borderRadius: 8, padding: 2 },
+  viewToggle: { display: 'flex', background: 'var(--card-bg)', borderRadius: 8, padding: 2 },
   tBtn: {
-    background: 'none', border: 'none', color: '#64748b', padding: '6px 16px',
+    background: 'none', border: 'none', color: 'var(--text-muted)', padding: '6px 16px',
     borderRadius: 6, cursor: 'pointer', fontFamily: "'Sora', sans-serif",
     fontSize: 13, fontWeight: 600, transition: 'all 0.2s',
   },
   tBtnActive: { background: '#2563eb', color: '#fff' },
-  emptyState: { textAlign: 'center', padding: 60, color: '#475569' },
+  emptyState: { textAlign: 'center', padding: 60, color: 'var(--text-muted)' },
   lista: { display: 'flex', flexDirection: 'column', gap: 1 },
   movRow: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    background: '#1e293b', padding: '12px 16px', gap: 12,
-    borderBottom: '1px solid #334155', transition: 'background 0.15s',
+    background: 'var(--card-bg)', padding: '12px 16px', gap: 12,
+    borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s',
   },
   movLeft: { display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 },
   movTipo: {
@@ -398,25 +398,25 @@ dropZone: {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontWeight: 700, fontSize: 16, flexShrink: 0,
   },
-  movCausale: { fontSize: 14, color: '#e2e8f0', fontWeight: 500, wordBreak: 'break-word' },
+  movCausale: { fontSize: 14, color: 'var(--text-primary)', fontWeight: 500, wordBreak: 'break-word' },
   movFornitore: { fontSize: 12, color: '#60a5fa', marginTop: 2 },
   movPagante: { fontSize: 12, color: '#34d399', marginTop: 2 },
-  movMeta: { fontSize: 11, color: '#64748b', marginTop: 3, display: 'flex', alignItems: 'center', gap: 8 },
+  movMeta: { fontSize: 11, color: 'var(--text-muted)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 8 },
   ricBadge: {
     background: '#16a34a20', color: '#16a34a',
     borderRadius: 20, padding: '1px 8px', fontSize: 10,
   },
   movRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 },
   movImporto: { fontSize: 16, fontWeight: 700 },
-  movSaldo: { fontSize: 11, color: '#475569' },
+  movSaldo: { fontSize: 11, color: 'var(--text-muted)' },
   delBtn: {
-    background: 'none', border: 'none', color: '#475569', cursor: 'pointer',
+    background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
     fontSize: 14, padding: '2px 4px', marginTop: 4, opacity: 0.6,
     transition: 'opacity 0.2s',
   },
   docBadgeContainer: {
     display: 'inline-flex', alignItems: 'center', gap: 10,
-    background: '#1e293b', border: '1px solid #38bdf850',
+    background: 'var(--card-bg)', border: '1px solid #38bdf850',
     borderRadius: 8, padding: '4px 12px',
   },
   docDateBadge: {

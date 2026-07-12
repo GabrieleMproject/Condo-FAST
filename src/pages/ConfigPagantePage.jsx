@@ -245,7 +245,7 @@ export default function ConfigPagantePage() {
                   <div style={styles.occupanteInfo}>
                     <span style={styles.occupanteLabel}>Inquilino</span>
                     <span style={styles.occupanteNome}>
-                      {inq?.nominativo || <em style={{ color: '#475569' }}>Nessun inquilino attivo</em>}
+                      {inq?.nominativo || <em style={{ color: 'var(--text-muted)' }}>Nessun inquilino attivo</em>}
                     </span>
                     {inq?.email && <span style={styles.occupanteEmail}>{inq.email}</span>}
                   </div>
@@ -271,14 +271,14 @@ export default function ConfigPagantePage() {
 }
 
 const styles = {
-  page: { fontFamily: "'Sora', sans-serif", color: '#e2e8f0', padding: 24 },
-  loading: { textAlign: 'center', padding: 60, color: '#475569' },
+  page: { fontFamily: "'Sora', sans-serif", color: 'var(--text-primary)', padding: 24 },
+  loading: { textAlign: 'center', padding: 60, color: 'var(--text-muted)' },
   header: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
     marginBottom: 20, flexWrap: 'wrap', gap: 16,
   },
-  title: { margin: 0, fontSize: 22, fontWeight: 700, color: '#f1f5f9' },
-  subtitle: { margin: '4px 0 0', fontSize: 13, color: '#64748b' },
+  title: { margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' },
+  subtitle: { margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' },
   alert: {
     background: '#2563eb10', border: '1px solid #2563eb30',
     borderRadius: 10, padding: '10px 16px', marginBottom: 16,
@@ -286,18 +286,18 @@ const styles = {
   },
   defaultBar: {
     display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16,
-    background: '#1e293b', borderRadius: 10, padding: '12px 16px',
-    border: '1px solid #334155',
+    background: 'var(--card-bg)', borderRadius: 10, padding: '12px 16px',
+    border: '1px solid var(--border-color)',
   },
-  defaultLabel: { fontSize: 13, color: '#94a3b8', whiteSpace: 'nowrap' },
+  defaultLabel: { fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' },
   select: {
-    background: '#0f172a', border: '1px solid #334155',
-    borderRadius: 8, padding: '7px 12px', color: '#e2e8f0',
+    background: 'var(--app-bg)', border: '1px solid var(--border-color)',
+    borderRadius: 8, padding: '7px 12px', color: 'var(--text-primary)',
     fontFamily: "'Sora', sans-serif", fontSize: 13, cursor: 'pointer',
   },
   legend: {
     display: 'flex', gap: 20, marginBottom: 20, flexWrap: 'wrap',
-    fontSize: 12, color: '#64748b', alignItems: 'center',
+    fontSize: 12, color: 'var(--text-muted)', alignItems: 'center',
   },
   legendItem: { display: 'flex', alignItems: 'center', gap: 8 },
   badge: {
@@ -310,26 +310,26 @@ const styles = {
     gap: 16,
   },
   card: {
-    background: '#1e293b', borderRadius: 14, border: '1px solid #334155',
+    background: 'var(--card-bg)', borderRadius: 14, border: '1px solid var(--border-color)',
     overflow: 'hidden', transition: 'border-color 0.2s',
   },
   cardInquilino: { borderColor: '#8b5cf640' },
   cardHeader: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-    padding: '14px 16px', borderBottom: '1px solid #334155', gap: 12, flexWrap: 'wrap',
+    padding: '14px 16px', borderBottom: '1px solid var(--border-color)', gap: 12, flexWrap: 'wrap',
   },
   cardTitle: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  unitNum: { fontWeight: 700, color: '#f1f5f9', fontSize: 15 },
+  unitNum: { fontWeight: 700, color: 'var(--text-primary)', fontSize: 15 },
   unitTipo: {
-    background: '#334155', color: '#94a3b8',
+    background: 'var(--border-color)', color: 'var(--text-secondary)',
     borderRadius: 20, padding: '2px 8px', fontSize: 11,
   },
   toggleGroup: {
-    display: 'flex', background: '#0f172a',
-    borderRadius: 8, padding: 2, border: '1px solid #334155',
+    display: 'flex', background: 'var(--app-bg)',
+    borderRadius: 8, padding: 2, border: '1px solid var(--border-color)',
   },
   toggleBtn: {
-    background: 'none', border: 'none', color: '#64748b',
+    background: 'none', border: 'none', color: 'var(--text-muted)',
     padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
     fontFamily: "'Sora', sans-serif", fontSize: 12, fontWeight: 600,
     transition: 'all 0.2s', whiteSpace: 'nowrap',
@@ -341,19 +341,19 @@ const styles = {
     display: 'flex', alignItems: 'flex-start', gap: 10,
     padding: '8px 10px', borderRadius: 8, transition: 'background 0.2s',
   },
-  occupanteActive: { background: '#0f172a' },
+  occupanteActive: { background: 'var(--app-bg)' },
   occupanteIcon: { fontSize: 18, marginTop: 1 },
   occupanteInfo: { display: 'flex', flexDirection: 'column', gap: 1, flex: 1 },
-  occupanteLabel: { fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  occupanteNome: { fontSize: 14, fontWeight: 600, color: '#e2e8f0' },
-  occupanteEmail: { fontSize: 11, color: '#64748b' },
+  occupanteLabel: { fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  occupanteNome: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' },
+  occupanteEmail: { fontSize: 11, color: 'var(--text-muted)' },
   btnPrimary: {
     background: '#2563eb', color: '#fff', border: 'none',
     borderRadius: 8, padding: '10px 22px',
     fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer',
   },
   btnSecondary: {
-    background: '#334155', color: '#94a3b8', border: 'none',
+    background: 'var(--border-color)', color: 'var(--text-secondary)', border: 'none',
     borderRadius: 8, padding: '7px 16px',
     fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13, cursor: 'pointer',
   },

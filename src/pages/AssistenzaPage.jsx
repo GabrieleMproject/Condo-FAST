@@ -228,20 +228,20 @@ export default function AssistenzaPage() {
             </div>
             
             {loadingTickets ? (
-              <p style={{ color: '#64748b', fontSize: 13 }}>Caricamento in corso...</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Caricamento in corso...</p>
             ) : tickets.length === 0 ? (
-              <p style={{ color: '#64748b', fontSize: 13 }}>Nessun ticket aperto. La cronologia delle richieste apparirà qui.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nessun ticket aperto. La cronologia delle richieste apparirà qui.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {tickets.map(t => (
                   <div key={t.id} style={{ ...styles.ticketCard, borderLeft: t.stato === 'aperto' ? '4px solid #fef08a' : '4px solid #10b981' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 14 }}>{t.titolo}</span>
-                      <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{t.titolo}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                         {t.stato.toUpperCase()} • {new Date(t.created_at).toLocaleDateString()}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: 13, color: '#cbd5e1', marginBottom: t.risposta_admin ? 12 : 0, whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' }}>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', marginBottom: t.risposta_admin ? 12 : 0, whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' }}>
                       {t.messaggio}
                     </p>
                     
@@ -263,23 +263,23 @@ export default function AssistenzaPage() {
           <div style={{...styles.card, height: 'calc(100vh - 180px)', display: 'flex', flexDirection: 'column', position: 'sticky', top: 20, padding: 0, overflow: 'hidden'}}>
             
             {/* Chat Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: '1px solid #334155', background: '#0f172a' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--app-bg)' }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Bot size={20} color="#fff" />
               </div>
               <div>
-                <h2 style={{ color: '#e2e8f0', fontSize: 16, fontWeight: 700, margin: 0 }}>Assistente Virtuale</h2>
-                <span style={{ color: '#64748b', fontSize: 12 }}>Powered by Claude AI</span>
+                <h2 style={{ color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, margin: 0 }}>Assistente Virtuale</h2>
+                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Powered by Claude AI</span>
               </div>
             </div>
 
             {/* Chat Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16, background: '#1e293b' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16, background: 'var(--card-bg)' }}>
               {chatHistory.map((msg, i) => {
                 const isUser = msg.role === 'user'
                 return (
                   <div key={i} style={{ display: 'flex', gap: 12, flexDirection: isUser ? 'row-reverse' : 'row' }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: isUser ? '#2563eb' : '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: isUser ? '#2563eb' : 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       {isUser ? <User size={16} color="#fff" /> : <Bot size={16} color="#fff" />}
                     </div>
                     <div style={{ 
@@ -303,10 +303,10 @@ export default function AssistenzaPage() {
               
               {isTyping && (
                 <div style={{ display: 'flex', gap: 12, flexDirection: 'row' }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Bot size={16} color="#fff" />
                   </div>
-                  <div style={{ background: '#0f172a', border: '1px solid #334155', padding: '12px 16px', borderRadius: 12, borderTopLeftRadius: 0, color: '#94a3b8', fontSize: 14, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', padding: '12px 16px', borderRadius: 12, borderTopLeftRadius: 0, color: 'var(--text-secondary)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span className="dot-pulse">●</span><span className="dot-pulse delay-1">●</span><span className="dot-pulse delay-2">●</span>
                   </div>
                 </div>
@@ -315,7 +315,7 @@ export default function AssistenzaPage() {
             </div>
 
             {/* Chat Fallback & Input Area */}
-            <div style={{ padding: 16, borderTop: '1px solid #334155', background: '#0f172a' }}>
+            <div style={{ padding: 16, borderTop: '1px solid var(--border-color)', background: 'var(--app-bg)' }}>
               
               {/* Fallback to ticket e Reset Chat */}
               {chatHistory.length > 1 && (
@@ -353,12 +353,12 @@ export default function AssistenzaPage() {
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   disabled={isTyping || isConvertingToTicket}
-                  style={{ flex: 1, background: '#1e293b', border: '1px solid #334155', borderRadius: 24, padding: '12px 20px', color: '#e2e8f0', fontSize: 14, outline: 'none' }} 
+                  style={{ flex: 1, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 24, padding: '12px 20px', color: 'var(--text-primary)', fontSize: 14, outline: 'none' }} 
                 />
                 <button 
                   type="submit" 
                   disabled={!chatInput.trim() || isTyping || isConvertingToTicket}
-                  style={{ width: 44, height: 44, borderRadius: '50%', background: chatInput.trim() && !isTyping ? '#2563eb' : '#334155', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: chatInput.trim() && !isTyping ? 'pointer' : 'not-allowed', flexShrink: 0, transition: 'background 0.2s' }}
+                  style={{ width: 44, height: 44, borderRadius: '50%', background: chatInput.trim() && !isTyping ? '#2563eb' : 'var(--border-color)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: chatInput.trim() && !isTyping ? 'pointer' : 'not-allowed', flexShrink: 0, transition: 'background 0.2s' }}
                 >
                   <Send size={18} style={{ marginLeft: 2 }} />
                 </button>
@@ -380,17 +380,17 @@ export default function AssistenzaPage() {
 }
 
 const styles = {
-  page: { padding: '28px 32px', background: '#0f172a', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
+  page: { padding: '28px 32px', background: 'var(--app-bg)', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
   header: { marginBottom: 30 },
-  title: { color: '#e2e8f0', fontSize: 26, fontWeight: 700, margin: 0, textAlign: 'left' },
-  subtitle: { color: '#64748b', fontSize: 13, marginTop: 4, textAlign: 'left' },
+  title: { color: 'var(--text-primary)', fontSize: 26, fontWeight: 700, margin: 0, textAlign: 'left' },
+  subtitle: { color: 'var(--text-muted)', fontSize: 13, marginTop: 4, textAlign: 'left' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, alignItems: 'start' },
   col: { display: 'flex', flexDirection: 'column', gap: 24 },
-  card: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 24, textAlign: 'left' },
-  cardTitle: { color: '#e2e8f0', fontSize: 18, fontWeight: 700, marginBottom: 20, marginTop: 0 },
+  card: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 14, padding: 24, textAlign: 'left' },
+  cardTitle: { color: 'var(--text-primary)', fontSize: 18, fontWeight: 700, marginBottom: 20, marginTop: 0 },
   faqList: { display: 'flex', flexDirection: 'column', gap: 12 },
-  faqItem: { background: '#0f172a', border: '1px solid #334155', borderRadius: 10, overflow: 'hidden' },
-  faqQuestion: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', cursor: 'pointer', color: '#e2e8f0', fontSize: 14, userSelect: 'none' },
-  faqAnswer: { padding: '0 20px 16px', color: '#94a3b8', fontSize: 13, lineHeight: 1.6 },
-  ticketCard: { background: '#0f172a', padding: 16, borderRadius: 8, border: '1px solid #334155' }
+  faqItem: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 10, overflow: 'hidden' },
+  faqQuestion: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 14, userSelect: 'none' },
+  faqAnswer: { padding: '0 20px 16px', color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6 },
+  ticketCard: { background: 'var(--app-bg)', padding: 16, borderRadius: 8, border: '1px solid var(--border-color)' }
 }

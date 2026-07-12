@@ -502,29 +502,29 @@ export default function ImpostazioniPage() {
               
               {/* Box Campagna Attiva */}
               {activeCampagna ? (
-                <div style={{ background: '#1e293b', border: '1px dashed #3b82f6', borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ background: 'var(--card-bg)', border: '1px dashed #3b82f6', borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ background: '#1e3a8a', padding: 10, borderRadius: 8, color: '#3b82f6' }}>
                     <Gift size={24} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
                       Campagna Promozionale Attiva: {activeCampagna.nome}
                     </div>
-                    <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
                       Ottieni <strong style={{ color: '#10b981' }}>{activeCampagna.sconto_importo}€</strong> di sconto sul tuo abbonamento per ogni amministratore invitato che attiva un piano.
                     </div>
                   </div>
                 </div>
               ) : (
-                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ background: '#334155', padding: 10, borderRadius: 8, color: '#94a3b8' }}>
+                <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ background: 'var(--border-color)', padding: 10, borderRadius: 8, color: 'var(--text-secondary)' }}>
                     <Gift size={24} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
                       Nessuna campagna attiva al momento
                     </div>
-                    <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
                       Puoi comunque condividere il tuo link di invito. Gli sconti verranno applicati in base alle future campagne promozionali.
                     </div>
                   </div>
@@ -717,7 +717,7 @@ export default function ImpostazioniPage() {
                 <div style={styles.logoBox}>
                   {branding.logo_base64
                     ? <img src={branding.logo_base64} alt="Logo studio" style={styles.logoImg} />
-                    : <span style={{ color: '#475569', fontSize: 12 }}>Nessun logo</span>}
+                    : <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Nessun logo</span>}
                 </div>
                 <input
                   ref={logoInputRef} type="file" accept=".png,.jpg,.jpeg,.webp"
@@ -736,7 +736,7 @@ export default function ImpostazioniPage() {
                     </button>
                   )}
                 </div>
-                <div style={{ color: '#475569', fontSize: 11, marginTop: 6 }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 6 }}>
                   PNG/JPG/WEBP · ridimensionato a 400px
                 </div>
               </div>
@@ -1122,7 +1122,7 @@ export default function ImpostazioniPage() {
                             height: 4, cursor: 'pointer',
                           }}
                         />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#334155', fontSize: 11, marginTop: 4 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--border-color)', fontSize: 11, marginTop: 4 }}>
                           <span>{min} gg</span>
                           <span>{max} gg</span>
                         </div>
@@ -1263,15 +1263,15 @@ export default function ImpostazioniPage() {
           <h2 style={{ ...styles.sectionTitle, color: '#f87171' }}>Dati e Privacy (GDPR)</h2>
           <div style={{ ...styles.pianoCard, border: '1px solid #7f1d1d' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid #334155' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border-color)' }}>
               <div>
-                <h3 style={{ color: '#e2e8f0', fontSize: 16, margin: '0 0 4px' }}>Esporta i tuoi dati (Art. 20 GDPR)</h3>
-                <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>Scarica una copia JSON di tutte le anagrafiche, condomini e spese collegate al tuo account.</p>
+                <h3 style={{ color: 'var(--text-primary)', fontSize: 16, margin: '0 0 4px' }}>Esporta i tuoi dati (Art. 20 GDPR)</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Scarica una copia JSON di tutte le anagrafiche, condomini e spese collegate al tuo account.</p>
               </div>
               <button 
                 onClick={handleExportGDPR} 
                 disabled={isExporting}
-                style={{ background: '#334155', color: '#f8fafc', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+                style={{ background: 'var(--border-color)', color: '#f8fafc', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
               >
                 {isExporting ? 'Generazione in corso...' : '📥 Esporta Dati'}
               </button>
@@ -1296,19 +1296,19 @@ export default function ImpostazioniPage() {
         {/* ── MODALE DOPPIA CONFERMA ELIMINAZIONE ───────────────────── */}
         {showDeleteModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(4px)' }}>
-            <div style={{ background: '#1e293b', width: 440, borderRadius: 16, padding: 32, border: '1px solid #7f1d1d', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+            <div style={{ background: 'var(--card-bg)', width: 440, borderRadius: 16, padding: 32, border: '1px solid #7f1d1d', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
               
               <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#450a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                 <AlertTriangle size={24} style={{ color: '#ef4444' }} />
               </div>
               
               <h2 style={{ color: '#f87171', fontSize: 22, margin: '0 0 12px', textAlign: 'center', fontFamily: 'Sora, sans-serif' }}>Danger Zone</h2>
-              <p style={{ color: '#cbd5e1', fontSize: 14, textAlign: 'center', lineHeight: 1.5, marginBottom: 24 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14, textAlign: 'center', lineHeight: 1.5, marginBottom: 24 }}>
                 Stai per eliminare il tuo account. Verranno distrutti <strong>immediatamente</strong> e <strong>definitivamente</strong> tutti i condomini, i pagamenti e le anagrafiche legate al tuo profilo.
               </p>
               
               <div style={{ marginBottom: 24 }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 8, textAlign: 'center' }}>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 8, textAlign: 'center' }}>
                   Digita <strong>ELIMINA</strong> per confermare:
                 </label>
                 <input 
@@ -1316,14 +1316,14 @@ export default function ImpostazioniPage() {
                   value={deleteConfirmWord}
                   onChange={e => setDeleteConfirmWord(e.target.value)}
                   placeholder="ELIMINA"
-                  style={{ width: '100%', background: '#0f172a', border: '1px solid #7f1d1d', borderRadius: 8, padding: '12px', color: '#f87171', fontSize: 16, textAlign: 'center', outline: 'none', fontWeight: 600, textTransform: 'uppercase', boxSizing: 'border-box' }}
+                  style={{ width: '100%', background: 'var(--app-bg)', border: '1px solid #7f1d1d', borderRadius: 8, padding: '12px', color: '#f87171', fontSize: 16, textAlign: 'center', outline: 'none', fontWeight: 600, textTransform: 'uppercase', boxSizing: 'border-box' }}
                 />
               </div>
 
               <div style={{ display: 'flex', gap: 12 }}>
                 <button 
                   onClick={() => { setShowDeleteModal(false); setDeleteConfirmWord(''); }}
-                  style={{ flex: 1, background: 'transparent', color: '#94a3b8', border: '1px solid #334155', padding: 12, borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+                  style={{ flex: 1, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: 12, borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
                 >
                   Annulla
                 </button>
@@ -1441,7 +1441,7 @@ const styles = {
     textAlign: 'center', color: '#4ade80', fontSize: 14,
     fontWeight: 600, padding: '11px 0',
   },
-  trialNote: { color: '#475569', fontSize: 12, textAlign: 'center', marginTop: 16 },
+  trialNote: { color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', marginTop: 16 },
   infoCard: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: '4px 0' },
   infoRow: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',

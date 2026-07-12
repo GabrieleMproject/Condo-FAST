@@ -393,7 +393,7 @@ Formato JSON atteso:
           <div style={S.cardHeader}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <FileSignature size={18} color="#60a5fa" />
-              <span style={{ fontWeight: 600, color: '#f1f5f9' }}>Archivio Verbali ({verbali.length})</span>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Archivio Verbali ({verbali.length})</span>
             </div>
             {verbali.length > 0 && (
               <label style={S.selectAllLabel}>
@@ -412,9 +412,9 @@ Formato JSON atteso:
             <div style={S.loadingState}>Caricamento verbali...</div>
           ) : verbali.length === 0 ? (
             <div style={S.emptyState}>
-              <FileSignature size={32} style={{ color: '#475569', marginBottom: 12 }} />
-              <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Nessun verbale presente in questo condominio.</p>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#475569' }}>
+              <FileSignature size={32} style={{ color: 'var(--text-muted)', marginBottom: 12 }} />
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>Nessun verbale presente in questo condominio.</p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
                 Carica i verbali in formato PDF o DOCX per abilitare la ricerca AI.
               </p>
             </div>
@@ -472,7 +472,7 @@ Formato JSON atteso:
           <div style={S.aiSearchCard}>
             <div style={S.aiCardHeader}>
               <Sparkles size={18} color="#10b981" />
-              <span style={{ fontWeight: 600, color: '#f1f5f9' }}>Ricerca AI nei Verbali</span>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Ricerca AI nei Verbali</span>
             </div>
 
             <p style={S.aiHelpText}>
@@ -585,7 +585,7 @@ Formato JSON atteso:
         <div style={S.overlay}>
           <div style={S.modalCard}>
             <div style={S.modalHeader}>
-              <h3 style={{ margin: 0, color: '#f1f5f9', fontSize: 16 }}>Carica verbale di assemblea</h3>
+              <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 16 }}>Carica verbale di assemblea</h3>
               <button onClick={() => { setShowUploadModal(false); setSelectedFile(null); }} style={S.closeModalBtn}>
                 <X size={18} />
               </button>
@@ -623,7 +623,7 @@ Formato JSON atteso:
                   onClick={() => fileInputRef.current?.click()}
                   style={{
                     ...S.fileDropArea,
-                    borderColor: selectedFile ? '#2563eb' : '#334155'
+                    borderColor: selectedFile ? '#2563eb' : 'var(--border-color)'
                   }}
                 >
                   {selectedFile ? (
@@ -631,7 +631,7 @@ Formato JSON atteso:
                       <Paperclip size={14} /> {selectedFile.name}
                     </span>
                   ) : (
-                    <span style={{ color: '#64748b', fontSize: 13 }}>Clicca qui per scegliere il file</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Clicca qui per scegliere il file</span>
                   )}
                 </div>
                 <input 
@@ -692,9 +692,9 @@ Formato JSON atteso:
       {confirmDelete && (
         <div style={S.overlay}>
           <div style={S.confirmCard}>
-            <h4 style={{ margin: '0 0 10px', color: '#f1f5f9' }}>Elimina verbale</h4>
-            <p style={{ color: '#94a3b8', margin: '0 0 20px', fontSize: 13, lineHeight: 1.5 }}>
-              Sei sicuro di voler eliminare definitivamente il verbale "<strong style={{ color: '#f1f5f9' }}>{confirmDelete.nome}</strong>"?
+            <h4 style={{ margin: '0 0 10px', color: 'var(--text-primary)' }}>Elimina verbale</h4>
+            <p style={{ color: 'var(--text-secondary)', margin: '0 0 20px', fontSize: 13, lineHeight: 1.5 }}>
+              Sei sicuro di voler eliminare definitivamente il verbale "<strong style={{ color: 'var(--text-primary)' }}>{confirmDelete.nome}</strong>"?
               Questa azione cancellerà anche il testo indicizzato e non potrà essere annullata.
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -721,13 +721,13 @@ const S = {
   },
   sectionTitle: {
     margin: 0,
-    color: '#f1f5f9',
+    color: 'var(--text-primary)',
     fontSize: 18,
     fontWeight: 600
   },
   sectionSubTitle: {
     margin: '4px 0 0',
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     fontSize: 13
   },
   btnPrimary: {
@@ -751,28 +751,28 @@ const S = {
     alignItems: 'start',
   },
   leftColumn: {
-    background: '#1e293b',
+    background: 'var(--card-bg)',
     borderRadius: 12,
-    border: '1px solid #334155',
+    border: '1px solid var(--border-color)',
     padding: 16,
     minHeight: 300
   },
   rightColumn: {
-    background: '#1e293b',
+    background: 'var(--card-bg)',
     borderRadius: 12,
-    border: '1px solid #334155',
+    border: '1px solid var(--border-color)',
     padding: 16
   },
   cardHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottom: '1px solid #334155',
+    borderBottom: '1px solid var(--border-color)',
     paddingBottom: 12,
     marginBottom: 12
   },
   selectAllLabel: {
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     fontSize: 11,
     fontWeight: 500,
     cursor: 'pointer',
@@ -781,14 +781,14 @@ const S = {
   },
   loadingState: {
     textAlign: 'center',
-    color: '#64748b',
+    color: 'var(--text-muted)',
     padding: 40,
     fontSize: 13
   },
   emptyState: {
     textAlign: 'center',
     padding: '40px 16px',
-    border: '1px dashed #334155',
+    border: '1px dashed var(--border-color)',
     borderRadius: 8
   },
   verbaliList: {
@@ -806,13 +806,13 @@ const S = {
     transition: 'border-color 0.15s, background-color 0.15s'
   },
   verbName: {
-    color: '#f1f5f9',
+    color: 'var(--text-primary)',
     fontWeight: 600,
     fontSize: 13,
     display: 'block'
   },
   verbMeta: {
-    color: '#64748b',
+    color: 'var(--text-muted)',
     fontSize: 11,
     marginTop: 4,
     display: 'flex',
@@ -842,9 +842,9 @@ const S = {
     gap: 3
   },
   btnRowAction: {
-    background: '#0f172a',
-    color: '#94a3b8',
-    border: '1px solid #334155',
+    background: 'var(--app-bg)',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-color)',
     borderRadius: 5,
     padding: '4px 10px',
     fontSize: 11,
@@ -853,7 +853,7 @@ const S = {
   },
   btnRowDelete: {
     background: 'transparent',
-    color: '#64748b',
+    color: 'var(--text-muted)',
     border: 'none',
     fontSize: 16,
     cursor: 'pointer',
@@ -873,21 +873,21 @@ const S = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    borderBottom: '1px solid #334155',
+    borderBottom: '1px solid var(--border-color)',
     paddingBottom: 12,
     fontSize: 14,
     fontWeight: 600,
-    color: '#f1f5f9'
+    color: 'var(--text-primary)'
   },
   aiHelpText: {
     margin: 0,
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     fontSize: 12,
     lineHeight: 1.5
   },
   searchBoxContainer: {
-    background: '#0f172a',
-    border: '1px solid #334155',
+    background: 'var(--app-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: 8,
     padding: 12,
     display: 'flex',
@@ -897,7 +897,7 @@ const S = {
   searchTextArea: {
     width: '100%',
     background: 'transparent',
-    color: '#f1f5f9',
+    color: 'var(--text-primary)',
     border: 'none',
     resize: 'none',
     outline: 'none',
@@ -910,11 +910,11 @@ const S = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTop: '1px solid #1e293b',
+    borderTop: '1px solid var(--border-color-2)',
     paddingTop: 8
   },
   selectedCount: {
-    color: '#64748b',
+    color: 'var(--text-muted)',
     fontSize: 11
   },
   btnSearch: {
@@ -935,7 +935,7 @@ const S = {
     borderRadius: 6,
     padding: '8px 12px',
     fontSize: 11,
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     lineHeight: 1.5
   },
   warningBox: {
@@ -959,8 +959,8 @@ const S = {
     fontFamily: 'Sora, sans-serif'
   },
   resultArea: {
-    background: '#0f172a',
-    border: '1px solid #334155',
+    background: 'var(--app-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: 8,
     padding: 16,
     marginTop: 8
@@ -988,9 +988,9 @@ const S = {
     marginBottom: 8
   },
   refCard: {
-    background: '#1e293b',
+    background: 'var(--card-bg)',
     borderRadius: 6,
-    border: '1px solid #334155',
+    border: '1px solid var(--border-color)',
     padding: 10,
     marginBottom: 8
   },
@@ -1001,7 +1001,7 @@ const S = {
     marginBottom: 6
   },
   refDocName: {
-    color: '#e2e8f0',
+    color: 'var(--text-primary)',
     fontSize: 11,
     fontWeight: 600
   },
@@ -1009,7 +1009,7 @@ const S = {
     margin: 0,
     paddingLeft: 8,
     borderLeft: '2px solid #60a5fa',
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     fontSize: 12,
     fontStyle: 'italic',
     lineHeight: 1.5
@@ -1027,12 +1027,12 @@ const S = {
     padding: 20
   },
   modalCard: {
-    background: '#1e293b',
+    background: 'var(--card-bg)',
     borderRadius: 12,
     padding: 24,
     width: '100%',
     maxWidth: 480,
-    border: '1px solid #334155'
+    border: '1px solid var(--border-color)'
   },
   modalHeader: {
     display: 'flex',
@@ -1042,22 +1042,22 @@ const S = {
   },
   closeModalBtn: {
     background: 'transparent',
-    color: '#64748b',
+    color: 'var(--text-muted)',
     border: 'none',
     cursor: 'pointer',
     padding: 4
   },
   fieldLabel: {
     display: 'block',
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     fontSize: 12,
     marginBottom: 6
   },
   inputField: {
     width: '100%',
-    background: '#0f172a',
-    color: '#f1f5f9',
-    border: '1px solid #334155',
+    background: 'var(--app-bg)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)',
     borderRadius: 6,
     padding: '9px 12px',
     fontSize: 13,
@@ -1065,15 +1065,15 @@ const S = {
     boxSizing: 'border-box'
   },
   fileDropArea: {
-    background: '#0f172a',
-    border: '2px dashed #334155',
+    background: 'var(--app-bg)',
+    border: '2px dashed var(--border-color)',
     borderRadius: 8,
     padding: 20,
     textAlign: 'center',
     cursor: 'pointer'
   },
   uploadProgressBox: {
-    background: '#0f172a',
+    background: 'var(--app-bg)',
     border: '1px solid #2563eb',
     borderRadius: 6,
     padding: '8px 12px',
@@ -1089,8 +1089,8 @@ const S = {
   },
   btnModalSecondary: {
     background: 'transparent',
-    color: '#94a3b8',
-    border: '1px solid #334155',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-color)',
     borderRadius: 6,
     padding: '9px 16px',
     fontSize: 13,
@@ -1107,12 +1107,12 @@ const S = {
     fontFamily: 'Sora, sans-serif'
   },
   confirmCard: {
-    background: '#1e293b',
+    background: 'var(--card-bg)',
     borderRadius: 12,
     padding: 24,
     maxWidth: 400,
     width: '100%',
-    border: '1px solid #334155'
+    border: '1px solid var(--border-color)'
   },
   btnDeleteConfirm: {
     background: '#dc2626',

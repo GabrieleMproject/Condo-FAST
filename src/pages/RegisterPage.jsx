@@ -61,7 +61,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: '#0f172a' }}>
+      style={{ background: 'var(--app-bg)' }}>
       <div className="w-full max-w-md">
 
         <div className="text-center mb-8">
@@ -69,7 +69,7 @@ export default function RegisterPage() {
           <p className="text-slate-400 mt-2 text-sm">30 giorni gratuiti — nessuna carta richiesta</p>
         </div>
 
-        <div className="rounded-xl p-8" style={{ background: '#1e293b' }}>
+        <div className="rounded-xl p-8" style={{ background: 'var(--card-bg)' }}>
           <h2 className="text-white font-semibold text-lg mb-6">Crea account</h2>
 
           {error && (
@@ -86,7 +86,7 @@ export default function RegisterPage() {
                 <input
                   name="nome" value={form.nome} onChange={handleChange} required
                   className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
-                  style={{ background: '#0f172a', border: '1px solid #334155' }}
+                  style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}
                 />
               </div>
               <div>
@@ -94,7 +94,7 @@ export default function RegisterPage() {
                 <input
                   name="cognome" value={form.cognome} onChange={handleChange} required
                   className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
-                  style={{ background: '#0f172a', border: '1px solid #334155' }}
+                  style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}
                 />
               </div>
             </div>
@@ -104,7 +104,7 @@ export default function RegisterPage() {
               <input
                 name="email" type="email" value={form.email} onChange={handleChange} required
                 className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
-                style={{ background: '#0f172a', border: '1px solid #334155' }}
+                style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}
               />
             </div>
 
@@ -114,13 +114,13 @@ export default function RegisterPage() {
                 name="password" type="password" value={form.password} onChange={handleChange}
                 required minLength={8}
                 className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
-                style={{ background: '#0f172a', border: '1px solid #334155' }}
+                style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}
               />
               <p className="text-slate-500 text-xs mt-1">Minimo 8 caratteri</p>
             </div>
 
             {/* ── DPA Checkbox ── */}
-            <div className="rounded-lg p-4" style={{ background: '#0f172a', border: '1px solid #334155' }}>
+            <div className="rounded-lg p-4" style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -145,7 +145,7 @@ export default function RegisterPage() {
             </div>
 
             {/* ── Termini & Privacy Checkbox ── */}
-            <div className="rounded-lg p-4" style={{ background: '#0f172a', border: '1px solid #334155' }}>
+            <div className="rounded-lg p-4" style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -171,7 +171,7 @@ export default function RegisterPage() {
               disabled={loading || !dpaAccepted || !tosAccepted}
               className="w-full py-2.5 rounded-lg text-white font-medium text-sm transition-opacity"
               style={{
-                background: (dpaAccepted && tosAccepted) ? '#2563eb' : '#334155',
+                background: (dpaAccepted && tosAccepted) ? '#2563eb' : 'var(--border-color)',
                 cursor: (dpaAccepted && tosAccepted) ? 'pointer' : 'not-allowed',
                 opacity: loading ? 0.7 : 1,
               }}

@@ -119,9 +119,9 @@ export default function PreventivoSection({ condominioId }) {
   if (!esercizio) {
     return (
       <div style={st.empty}>
-        <AlertCircle size={34} color="#334155" style={{ marginBottom: 12 }} />
-        <p style={{ color: '#64748b', margin: 0 }}>Nessun esercizio contabile</p>
-        <p style={{ color: '#475569', fontSize: 13, marginTop: 6 }}>Crea un esercizio dalla sezione Spese per impostare il preventivo</p>
+        <AlertCircle size={34} color="var(--text-muted)" style={{ marginBottom: 12 }} />
+        <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessun esercizio contabile</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 6 }}>Crea un esercizio dalla sezione Spese per impostare il preventivo</p>
       </div>
     )
   }
@@ -145,7 +145,7 @@ export default function PreventivoSection({ condominioId }) {
 
       {!prev.preventivo ? (
         <div style={st.empty}>
-          <p style={{ color: '#94a3b8', margin: '0 0 14px' }}>Nessun preventivo per l'esercizio {esercizio.anno}.</p>
+          <p style={{ color: 'var(--text-secondary)', margin: '0 0 14px' }}>Nessun preventivo per l'esercizio {esercizio.anno}.</p>
           <button style={st.btnPrimary} onClick={() => prev.creaPreventivo().catch((e) => setErr(e.message))}>
             <Plus size={15} style={{ marginRight: 6 }} /> Crea preventivo {esercizio.anno}
           </button>
@@ -160,7 +160,7 @@ export default function PreventivoSection({ condominioId }) {
             </div>
 
             {prev.voci.length === 0 ? (
-              <p style={{ color: '#64748b', fontSize: 13, margin: '4px 0 14px' }}>Aggiungi le voci di spesa e scegli per ognuna il criterio di ripartizione.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '4px 0 14px' }}>Aggiungi le voci di spesa e scegli per ognuna il criterio di ripartizione.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                 {prev.voci.map((v) => (
@@ -213,7 +213,7 @@ export default function PreventivoSection({ condominioId }) {
                   const p = getProprietario(u)
                   return (
                     <div key={u.id} style={st.previewRow}>
-                      <span style={{ color: '#e2e8f0' }}>Unità {u.numero}{p ? ` · ${p.cognome} ${p.nome}` : ''}</span>
+                      <span style={{ color: 'var(--text-primary)' }}>Unità {u.numero}{p ? ` · ${p.cognome} ${p.nome}` : ''}</span>
                       <span style={{ color: '#60a5fa', fontWeight: 600 }}>{eur(perUnita[u.id] || 0)}</span>
                     </div>
                   )
@@ -302,25 +302,25 @@ function VoceRow({ voce, tabelle, onSave, onDelete }) {
 }
 
 const st = {
-  empty: { textAlign: 'center', padding: 40, background: '#1e293b', borderRadius: 12, border: '1px solid #334155' },
-  section: { background: '#1e293b', borderRadius: 12, padding: '18px 20px', marginBottom: 14, border: '1px solid #334155' },
+  empty: { textAlign: 'center', padding: 40, background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)' },
+  section: { background: 'var(--card-bg)', borderRadius: 12, padding: '18px 20px', marginBottom: 14, border: '1px solid var(--border-color)' },
   sectionHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 },
-  sectionTitle: { color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' },
+  sectionTitle: { color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' },
   totBadge: { fontSize: 13, fontWeight: 700, color: '#60a5fa', border: '1px solid #2563eb55', borderRadius: 8, padding: '4px 12px' },
-  input: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '8px 10px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 13, outline: 'none' },
+  input: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 13, outline: 'none' },
   voceRow: { display: 'flex', gap: 8, alignItems: 'center' },
-  addRow: { display: 'flex', gap: 8, alignItems: 'center', borderTop: '1px dashed #334155', paddingTop: 14 },
+  addRow: { display: 'flex', gap: 8, alignItems: 'center', borderTop: '1px dashed var(--border-color)', paddingTop: 14 },
   scadRow: { display: 'flex', gap: 8, alignItems: 'center' },
   scadNum: { width: 26, height: 26, borderRadius: 6, background: 'rgba(37,99,235,0.15)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 },
   previewBox: { maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 },
-  previewRow: { display: 'flex', justifyContent: 'space-between', background: '#0f172a', borderRadius: 8, padding: '8px 12px', fontSize: 13 },
+  previewRow: { display: 'flex', justifyContent: 'space-between', background: 'var(--app-bg)', borderRadius: 8, padding: '8px 12px', fontSize: 13 },
   btnPrimary: { background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'inline-flex', alignItems: 'center' },
   btnGenera: { background: 'linear-gradient(135deg, #2563eb, #8b5cf6)', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'inline-flex', alignItems: 'center' },
-  btnGhost: { background: 'transparent', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'inline-flex', alignItems: 'center' },
+  btnGhost: { background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'inline-flex', alignItems: 'center' },
   btnAdd: { background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, width: 38, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  btnIcon: { background: 'transparent', color: '#64748b', border: '1px solid #334155', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  btnIcon: { background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-color)', borderRadius: 8, width: 34, height: 34, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   okMsg: { display: 'flex', alignItems: 'center', gap: 8, background: '#10b98115', border: '1px solid #10b98140', borderRadius: 10, padding: '10px 14px', color: '#10b981', fontSize: 13, marginBottom: 14 },
   errMsg: { display: 'flex', alignItems: 'center', gap: 8, background: '#ef444415', border: '1px solid #ef444440', borderRadius: 10, padding: '10px 14px', color: '#ef4444', fontSize: 13, marginBottom: 14 },
-  esBtn: (active) => ({ padding: '6px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: `1px solid ${active ? '#2563eb' : '#334155'}`, background: active ? 'rgba(37,99,235,0.15)' : 'transparent', color: active ? '#60a5fa' : '#64748b', fontFamily: 'Sora, sans-serif', fontWeight: active ? 600 : 400 }),
+  esBtn: (active) => ({ padding: '6px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: `1px solid ${active ? '#2563eb' : 'var(--border-color)'}`, background: active ? 'rgba(37,99,235,0.15)' : 'transparent', color: active ? '#60a5fa' : '#64748b', fontFamily: 'Sora, sans-serif', fontWeight: active ? 600 : 400 }),
   esTag: (aperto) => ({ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 4, background: aperto ? '#10b98122' : '#64748b22', color: aperto ? '#10b981' : '#64748b' }),
 }

@@ -634,6 +634,9 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Supporto Variabili CSS in Stili Inline:** Refattorizzati gli stili inline dei componenti centrali di layout e configurazione (`AppLayout.jsx`, `ImpostazioniPage.jsx`) sostituendo i colori hardcoded (es. `#0f172a`, `#1e293b`) con variabili CSS (es. `var(--app-bg)`, `var(--card-bg)`).
 - **Adattamento Logo del Brand:** Aggiornate le variabili del testo del logo in `BrandLogo.jsx` per puntare a costanti CSS definite in `index.css`. Questo permette al logo di adattarsi dinamicamente in base al tema attivo (usando tonalità chiare e scure adeguate) senza richiedere logica condizionale o ricaricamento dei componenti in JavaScript.
 - **Interfaccia Grafica:** Inserita la sezione "Aspetto & Tema" in `ImpostazioniPage.jsx` con switch grafici (Sole per Tema Chiaro e Luna per Tema Scuro) dotati di micro-transizioni.
+- **Adeguamento Globale del Codebase (Autofix)**: Creati ed eseguiti tre script di refactoring automatico per individuare e convertire ricorsivamente in tutti i 40+ file JSX dell'applicazione i colori hardcoded residui del tema scuro (sfondi `#0f172a`, `#1e293b` e relative varianti semi-trasparenti, bordi `#334155` e relative opacità, e i colori di testo chiari come `#e2e8f0` e `#cbd5e1`). Tutte le occorrenze sono state sostituite con le variabili CSS del tema (`var(--app-bg)`, `var(--card-bg)`, `var(--border-color)`, `var(--text-primary)`, `var(--text-secondary)`, ecc.).
+- **Variabile CSS Gradiente Card**: Introdotta in `index.css` la variabile `--gradient-card` (che si adatta a seconda del tema a gradienti scuri o chiari) ed applicata a componenti complessi (come `PassaggioConsegneSection.jsx`) per garantire l'armonia estetica.
+
 
 
 

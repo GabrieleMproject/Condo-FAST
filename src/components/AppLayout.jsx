@@ -544,14 +544,14 @@ export default function AppLayout() {
 
               {/* Logo Preview and selector */}
               <div>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Logo Studio</label>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Logo Studio</label>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <div style={{
                     width: 70,
                     height: 70,
                     borderRadius: 8,
-                    background: '#0f172a',
-                    border: '1px solid #334155',
+                    background: 'var(--app-bg)',
+                    border: '1px solid var(--border-color)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -560,15 +560,15 @@ export default function AppLayout() {
                     {logoBase64 ? (
                       <img src={logoBase64} alt="Preview Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                     ) : (
-                      <span style={{ color: '#475569', fontSize: 10 }}>No Logo</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>No Logo</span>
                     )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <button
                       onClick={() => logoInputRef.current?.click()}
                       style={{
-                        background: '#334155',
-                        color: '#f1f5f9',
+                        background: 'var(--border-color)',
+                        color: 'var(--text-primary)',
                         border: 'none',
                         borderRadius: 6,
                         padding: '6px 12px',
@@ -781,7 +781,7 @@ export default function AppLayout() {
               {/* Branding Section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h4 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <h4 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Dati Studio / Branding
                   </h4>
                   <button

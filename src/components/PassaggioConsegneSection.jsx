@@ -175,8 +175,8 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
     <>
       {/* Card UI nella Panoramica */}
       <div style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        border: '1px solid #334155',
+        background: 'var(--gradient-card)',
+        border: '1px solid var(--border-color)',
         borderRadius: 12,
         padding: '20px 24px',
         marginTop: 24,
@@ -195,7 +195,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
                 Passaggio di Consegne & Conformità Normativa
               </h3>
             </div>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: 13, lineHeight: 1.5 }}>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.5 }}>
               Esporta in un unico pacchetto compresso (<strong>.ZIP</strong>) il Registro Anagrafico e Contabile multifoglio Excel e tutti i documenti istituzionali del condominio richiesti dalla normativa italiana (Artt. 1129, 1130 e 1130-bis c.c.).
             </p>
           </div>
@@ -234,7 +234,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
           zIndex: 1000, padding: 20
         }}>
           <div style={{
-            background: '#0f172a', border: '1px solid #334155', borderRadius: 16,
+            background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
             width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto',
             padding: 24, boxShadow: '0 20px 50px rgba(0,0,0,0.5)', position: 'relative'
           }}>
@@ -243,7 +243,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
               disabled={downloading}
               style={{
                 position: 'absolute', top: 20, right: 20, background: 'transparent',
-                border: 'none', color: '#64748b', cursor: downloading ? 'not-allowed' : 'pointer'
+                border: 'none', color: 'var(--text-muted)', cursor: downloading ? 'not-allowed' : 'pointer'
               }}
             >
               <X size={20} />
@@ -262,7 +262,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
                 <h3 style={{ margin: 0, color: '#f8fafc', fontSize: 18, fontWeight: 700, fontFamily: 'Sora, sans-serif' }}>
                   Checklist Normativa Passaggio di Consegne
                 </h3>
-                <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: 13 }}>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>
                   Verifica di conformità prima della generazione dell'archivio digitale
                 </p>
               </div>
@@ -275,7 +275,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
               borderRadius: 10, padding: 14, marginBottom: 20, display: 'flex', gap: 12, alignItems: 'flex-start'
             }}>
               {allOk ? <CheckCircle2 size={18} color="#10b981" style={{ flexShrink: 0, marginTop: 2 }} /> : <AlertTriangle size={18} color="#f59e0b" style={{ flexShrink: 0, marginTop: 2 }} />}
-              <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.4 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.4 }}>
                 {allOk ? (
                   <span><strong>Conformità Eccellente:</strong> Tutti i requisiti e i documenti di legge sono presenti nel gestionale. L'archivio conterrà una documentazione completa ai sensi del Codice Civile.</span>
                 ) : (
@@ -288,7 +288,7 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
               {requisiti.map((r, i) => (
                 <div key={i} style={{
-                  background: '#1e293b', border: '1px solid #334155', borderRadius: 10,
+                  background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 10,
                   padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 12
                 }}>
                   <div style={{ marginTop: 2 }}>
@@ -296,10 +296,10 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                      <span style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>{r.titolo}</span>
+                      <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>{r.titolo}</span>
                       <span style={{
-                        background: '#0f172a', color: '#64748b', fontSize: 11, fontWeight: 600,
-                        padding: '2px 8px', borderRadius: 6, border: '1px solid #334155'
+                        background: 'var(--app-bg)', color: 'var(--text-muted)', fontSize: 11, fontWeight: 600,
+                        padding: '2px 8px', borderRadius: 6, border: '1px solid var(--border-color)'
                       }}>{r.norma}</span>
                     </div>
                     <p style={{ margin: 0, color: r.ok ? '#94a3b8' : '#cbd5e1', fontSize: 12, lineHeight: 1.4 }}>
@@ -311,11 +311,11 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
             </div>
 
             {/* Cosa contiene il pacchetto */}
-            <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: 10, padding: 14, marginBottom: 24 }}>
-              <p style={{ margin: '0 0 8px', color: '#94a3b8', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ background: '#090d16', border: '1px solid var(--border-color-2)', borderRadius: 10, padding: 14, marginBottom: 24 }}>
+              <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Contenuto della Cartella (.ZIP)
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#cbd5e1' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <FileSpreadsheet size={16} color="#3b82f6" />
                   <span><strong>1_REGISTRO_CONTABILE_E_ANAGRAFICO.xlsx</strong> (6 fogli contabili e anagrafici completi)</span>
@@ -332,14 +332,14 @@ export default function PassaggioConsegneSection({ condominioId, condominio }) {
               <div style={{ textAlign: 'center', padding: '16px 0' }}>
                 <Loader2 size={28} color="#3b82f6" style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
                 <p style={{ margin: 0, color: '#f8fafc', fontSize: 14, fontWeight: 600 }}>{progressMsg || 'Generazione pacchetto ZIP...'}</p>
-                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 12 }}>Attendere il completamento della compressione</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 12 }}>Attendere il completamento della compressione</p>
               </div>
             ) : (
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
                 <button
                   onClick={() => setShowModal(false)}
                   style={{
-                    background: 'transparent', border: '1px solid #334155', color: '#cbd5e1',
+                    background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)',
                     borderRadius: 8, padding: '10px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer'
                   }}
                 >

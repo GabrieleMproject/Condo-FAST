@@ -352,7 +352,7 @@ export default function ModuloFiscalePage() {
       </div>
 
       {loading ? (
-        <div style={{ color: '#94a3b8' }}>Caricamento dati fiscali in corso...</div>
+        <div style={{ color: 'var(--text-secondary)' }}>Caricamento dati fiscali in corso...</div>
       ) : (
         <>
           {/* TAB 1: CERTIFICAZIONE UNICA & 770 */}
@@ -362,7 +362,7 @@ export default function ModuloFiscalePage() {
               {/* Alert Informativo Desktop Telematico */}
               <div style={styles.alertBanner}>
                 <AlertTriangle size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
-                <div style={{ fontSize: 13.5, color: '#e2e8f0', lineHeight: '1.4' }}>
+                <div style={{ fontSize: 13.5, color: 'var(--text-primary)', lineHeight: '1.4' }}>
                   <b>Avviso di Conformità AdE:</b> I file telematici scaricati (.txt da 1900 caratteri) rispettano rigorosamente le specifiche tecniche ministeriali. Prima della trasmissione reale all'Agenzia delle Entrate, è <b>obbligatorio</b> validarli tramite il software <b>Desktop Telematico (moduli di controllo Sogei)</b> per verificare la presenza di anomalie anagrafiche dei percipienti.
                 </div>
               </div>
@@ -414,7 +414,7 @@ export default function ModuloFiscalePage() {
                                 <td style={styles.td}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     <User size={14} color="#64748b" />
-                                    <span style={{ fontWeight: 600, color: '#e2e8f0' }}>{fData.fornitore.ragione_sociale}</span>
+                                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fData.fornitore.ragione_sociale}</span>
                                   </div>
                                 </td>
                                 <td style={styles.td}>
@@ -451,7 +451,7 @@ export default function ModuloFiscalePage() {
               {/* Esportazione cumulativa CBI */}
               {delegheFiltrare.some(d => d.stato === 'da_pagare') && (
                 <div style={styles.massivePanel}>
-                  <div style={{ color: '#cbd5e1', fontSize: 14 }}>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
                     Seleziona le deleghe "Da Pagare" e scarica la distinta F24 CBI per l'addebito massivo in banca.
                   </div>
                   <button onClick={handleExportMassiveCBI} style={styles.btnActionPrimary}>
@@ -520,12 +520,12 @@ export default function ModuloFiscalePage() {
                               {dettagli.map(t => (
                                 <div key={t.id} style={styles.tributoChip}>
                                   <span style={{ fontWeight: 700, color: '#60a5fa' }}>Cod. {t.codice_tributo}</span>
-                                  <span style={{ color: '#94a3b8' }}>({String(t.mese_riferimento).padStart(2, '0')}/{t.anno_riferimento})</span>
+                                  <span style={{ color: 'var(--text-secondary)' }}>({String(t.mese_riferimento).padStart(2, '0')}/{t.anno_riferimento})</span>
                                   <span style={{ fontWeight: 600, color: '#f8fafc' }}>€ {t.importo.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
                                 </div>
                               ))}
                             </div>
-                            <div style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
                               Fatture collegate: {fattureAbbinate.length} documenti
                             </div>
                           </div>
@@ -590,7 +590,7 @@ export default function ModuloFiscalePage() {
                           return (
                             <tr key={fat.id} style={styles.tr}>
                               <td style={styles.td}>
-                                <span style={{ fontWeight: 600, color: '#e2e8f0' }}>{fName}</span>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fName}</span>
                               </td>
                               <td style={styles.td}>
                                 <span style={styles.badge}>{fIva}</span>
@@ -622,37 +622,37 @@ export default function ModuloFiscalePage() {
 }
 
 const styles = {
-  page: { padding: '28px 32px', background: '#0f172a', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
+  page: { padding: '28px 32px', background: 'var(--app-bg)', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   title: { color: '#f8fafc', fontSize: 24, fontWeight: 700, margin: 0 },
-  subtitle: { color: '#94a3b8', fontSize: 14, marginTop: 4 },
-  toolbar: { display: 'flex', gap: 16, marginBottom: 24, background: '#1e293b', padding: '16px 20px', borderRadius: 12, border: '1px solid #334155' },
-  label: { display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', marginBottom: 6 },
-  select: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '8px 12px', color: '#f8fafc', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
-  tabsContainer: { display: 'flex', gap: 8, borderBottom: '1px solid #1e293b', paddingBottom: 12, marginBottom: 24 },
-  tabButton: { background: 'none', border: 'none', color: '#64748b', fontSize: 14, fontWeight: 600, padding: '8px 16px', cursor: 'pointer', borderRadius: 6, transition: 'all 0.2s', fontFamily: 'Sora, sans-serif' },
-  tabButtonActive: { background: '#1e293b', color: '#f8fafc', border: '1px solid #334155' },
+  subtitle: { color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 },
+  toolbar: { display: 'flex', gap: 16, marginBottom: 24, background: 'var(--card-bg)', padding: '16px 20px', borderRadius: 12, border: '1px solid var(--border-color)' },
+  label: { display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', marginBottom: 6 },
+  select: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 12px', color: '#f8fafc', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
+  tabsContainer: { display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color-2)', paddingBottom: 12, marginBottom: 24 },
+  tabButton: { background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 14, fontWeight: 600, padding: '8px 16px', cursor: 'pointer', borderRadius: 6, transition: 'all 0.2s', fontFamily: 'Sora, sans-serif' },
+  tabButtonActive: { background: 'var(--card-bg)', color: '#f8fafc', border: '1px solid var(--border-color)' },
   alertBanner: { display: 'flex', gap: 12, alignItems: 'center', background: '#f59e0b15', border: '1px solid #f59e0b30', padding: '14px 18px', borderRadius: 10 },
-  empty: { background: '#1e293b', border: '1px dashed #334155', borderRadius: 12, padding: 40, textAlign: 'center', color: '#64748b' },
-  section: { background: '#1e293b', borderRadius: 12, border: '1px solid #334155', overflow: 'hidden' },
-  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #334155', background: '#0f172a' },
-  sectionTitle: { color: '#e2e8f0', fontSize: 15, fontWeight: 600, margin: 0 },
-  btnAction: { display: 'flex', alignItems: 'center', gap: 6, background: '#1e293b', color: '#f8fafc', border: '1px solid #475569', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 600, fontFamily: 'Sora, sans-serif' },
+  empty: { background: 'var(--card-bg)', border: '1px dashed var(--border-color)', borderRadius: 12, padding: 40, textAlign: 'center', color: 'var(--text-muted)' },
+  section: { background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)', overflow: 'hidden' },
+  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-color)', background: 'var(--app-bg)' },
+  sectionTitle: { color: 'var(--text-primary)', fontSize: 15, fontWeight: 600, margin: 0 },
+  btnAction: { display: 'flex', alignItems: 'center', gap: 6, background: 'var(--card-bg)', color: '#f8fafc', border: '1px solid #475569', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 600, fontFamily: 'Sora, sans-serif' },
   btnActionPrimary: { display: 'flex', alignItems: 'center', gap: 6, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 700, fontFamily: 'Sora, sans-serif' },
   tableContainer: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13.5 },
-  th: { padding: '12px 20px', textAlign: 'left', color: '#94a3b8', fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', borderBottom: '1px solid #334155' },
-  td: { padding: '12px 20px', borderBottom: '1px solid #334155', color: '#cbd5e1' },
-  tr: { transition: 'background 0.2s', borderBottom: '1px solid #1e293b' },
-  badge: { background: '#334155', color: '#e2e8f0', padding: '4px 8px', borderRadius: 4, fontSize: 11.5, fontFamily: 'monospace' },
-  massivePanel: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1e293b', border: '1px solid #334155', padding: '14px 20px', borderRadius: 10 },
-  cardF24: { background: '#1e293b', border: '1px solid #334155', borderRadius: 10, padding: 18, transition: 'all 0.2s' },
+  th: { padding: '12px 20px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11.5, textTransform: 'uppercase', borderBottom: '1px solid var(--border-color)' },
+  td: { padding: '12px 20px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' },
+  tr: { transition: 'background 0.2s', borderBottom: '1px solid var(--border-color-2)' },
+  badge: { background: 'var(--border-color)', color: 'var(--text-primary)', padding: '4px 8px', borderRadius: 4, fontSize: 11.5, fontFamily: 'monospace' },
+  massivePanel: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--border-color)', padding: '14px 20px', borderRadius: 10 },
+  cardF24: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 18, transition: 'all 0.2s' },
   cardF24Header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  dateLabel: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#94a3b8' },
+  dateLabel: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: 'var(--text-secondary)' },
   f24Importo: { fontSize: 19, fontWeight: 800, color: '#f8fafc' },
   statoBadge: { borderRadius: 20, padding: '3px 12px', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', display: 'inline-block', marginTop: 4 },
-  cardF24Body: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14, paddingTop: 14, borderTop: '1px solid #334155' },
-  subTitleF24: { fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' },
-  tributoChip: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0f172a', border: '1px solid #334155', borderRadius: 20, padding: '4px 12px', fontSize: 12 },
+  cardF24Body: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-color)' },
+  subTitleF24: { fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' },
+  tributoChip: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 20, padding: '4px 12px', fontSize: 12 },
   btnUpload: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#2563eb', color: '#fff', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 700, fontFamily: 'Sora, sans-serif' }
 }

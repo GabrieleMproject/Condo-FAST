@@ -120,8 +120,8 @@ export default function CondominiPage() {
         <div style={S.empty}>Caricamento…</div>
       ) : filtered.length === 0 ? (
         <div style={S.empty}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Building2 size={48} style={{ color: '#475569' }} /></div>
-          <p style={{ color:'#94a3b8' }}>Nessun condominio trovato</p>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Building2 size={48} style={{ color: 'var(--text-muted)' }} /></div>
+          <p style={{ color: 'var(--text-secondary)' }}>Nessun condominio trovato</p>
           <button style={S.btnPrimary} onClick={() => setShowForm(true)}>+ Aggiungi il primo</button>
         </div>
       ) : (
@@ -183,29 +183,29 @@ export default function CondominiPage() {
 }
 
 const S = {
-  page:       { padding:'28px 32px', background:'#0f172a', minHeight:'100vh', fontFamily:'Sora, sans-serif' },
+  page:       { padding:'28px 32px', background: 'var(--app-bg)', minHeight:'100vh', fontFamily:'Sora, sans-serif' },
   toast:      { position:'fixed', top:20, right:20, zIndex:2000, color:'white', padding:'12px 20px', borderRadius:10, fontSize:14, fontWeight:600, boxShadow:'0 8px 24px rgba(0,0,0,0.4)' },
   header:     { display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24 },
-  title:      { color:'#e2e8f0', fontSize:26, fontWeight:700, margin:0 },
-  subtitle:   { color:'#64748b', fontSize:13, marginTop:4 },
+  title:      { color: 'var(--text-primary)', fontSize:26, fontWeight:700, margin:0 },
+  subtitle:   { color: 'var(--text-muted)', fontSize:13, marginTop:4 },
   kpiRow:     { display:'flex', gap:14, marginBottom:24 },
-  kpiCard:    { flex:1, background:'#1e293b', borderRadius:12, padding:'16px 20px', display:'flex', gap:14, alignItems:'center', border:'1px solid #334155' },
-  kpiValue:   { color:'#e2e8f0', fontSize:22, fontWeight:700 },
-  kpiLabel:   { color:'#64748b', fontSize:12 },
+  kpiCard:    { flex:1, background: 'var(--card-bg)', borderRadius:12, padding:'16px 20px', display:'flex', gap:14, alignItems:'center', border: '1px solid var(--border-color)' },
+  kpiValue:   { color: 'var(--text-primary)', fontSize:22, fontWeight:700 },
+  kpiLabel:   { color: 'var(--text-muted)', fontSize:12 },
   filters:    { display:'flex', gap:12, marginBottom:20 },
-  search:     { flex:1, background:'#1e293b', border:'1px solid #334155', color:'#e2e8f0', borderRadius:10, padding:'10px 16px', fontSize:14, outline:'none' },
-  select:     { background:'#1e293b', border:'1px solid #334155', color:'#e2e8f0', borderRadius:10, padding:'10px 14px', fontSize:14, outline:'none' },
-  empty:      { textAlign:'center', padding:'80px 20px', color:'#64748b' },
+  search:     { flex:1, background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius:10, padding:'10px 16px', fontSize:14, outline:'none' },
+  select:     { background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius:10, padding:'10px 14px', fontSize:14, outline:'none' },
+  empty:      { textAlign:'center', padding:'80px 20px', color: 'var(--text-muted)' },
   grid:       { display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:16 },
-  card:       { background:'#1e293b', borderRadius:14, padding:'18px 20px', border:'1px solid #334155', cursor:'pointer', transition:'border-color .2s, transform .15s' },
+  card:       { background: 'var(--card-bg)', borderRadius:14, padding:'18px 20px', border: '1px solid var(--border-color)', cursor:'pointer', transition:'border-color .2s, transform .15s' },
   cardHeader: { display:'flex', gap:12, alignItems:'flex-start', marginBottom:12 },
   cardIcon:   { fontSize:28, flexShrink:0 },
-  cardTitle:  { color:'#e2e8f0', fontSize:15, fontWeight:700, marginBottom:2 },
-  cardAddr:   { color:'#64748b', fontSize:12 },
+  cardTitle:  { color: 'var(--text-primary)', fontSize:15, fontWeight:700, marginBottom:2 },
+  cardAddr:   { color: 'var(--text-muted)', fontSize:12 },
   cardStats:  { display:'flex', gap:12, flexWrap:'wrap' },
-  stat:       { color:'#94a3b8', fontSize:12 },
-  menuBtn:    { background:'none', border:'none', color:'#64748b', fontSize:20, cursor:'pointer', padding:'2px 8px', borderRadius:6 },
-  dropdown:   { position:'absolute', right:0, top:'100%', background:'#1e293b', border:'1px solid #334155', borderRadius:10, zIndex:100, minWidth:160, boxShadow:'0 8px 24px rgba(0,0,0,0.4)', overflow:'hidden' },
-  ddItem:     { display:'block', width:'100%', background:'none', border:'none', color:'#cbd5e1', fontSize:13, padding:'10px 16px', textAlign:'left', cursor:'pointer' },
+  stat:       { color: 'var(--text-secondary)', fontSize:12 },
+  menuBtn:    { background:'none', border:'none', color: 'var(--text-muted)', fontSize:20, cursor:'pointer', padding:'2px 8px', borderRadius:6 },
+  dropdown:   { position:'absolute', right:0, top:'100%', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius:10, zIndex:100, minWidth:160, boxShadow:'0 8px 24px rgba(0,0,0,0.4)', overflow:'hidden' },
+  ddItem:     { display:'block', width:'100%', background:'none', border:'none', color: 'var(--text-secondary)', fontSize:13, padding:'10px 16px', textAlign:'left', cursor:'pointer' },
   btnPrimary: { background:'#2563eb', color:'white', border:'none', borderRadius:8, padding:'10px 20px', fontSize:14, fontWeight:600, cursor:'pointer' },
 }

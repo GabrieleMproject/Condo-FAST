@@ -8,7 +8,7 @@ function renderPianoIcon(piano, size = 32) {
     case 'base': return <Zap size={size} style={{ color: '#fbbf24' }} />;
     case 'studio': return <Building2 size={size} style={{ color: '#3b82f6' }} />;
     case 'professional': return <Rocket size={size} style={{ color: '#8b5cf6' }} />;
-    default: return <Lock size={size} style={{ color: '#64748b' }} />;
+    default: return <Lock size={size} style={{ color: 'var(--text-muted)' }} />;
   }
 }
 
@@ -46,7 +46,7 @@ function UpgradePrompt({ feature, pianoMinimo, compact = false }) {
           {getUpgradeFeatures(pianoMinimo).map((f, i) => (
             <div key={i} style={styles.upgradeFeatureItem}>
               <Check size={14} style={{ color: '#22c55e', marginRight: 4, flexShrink: 0 }} />
-              <span style={{ color: '#94a3b8', fontSize: 13 }}>{f}</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{f}</span>
             </div>
           ))}
         </div>
@@ -157,8 +157,8 @@ export function PlanBadge({ piano }) {
 // ── Stili ─────────────────────────────────────────────────────────────────
 const styles = {
   upgradeBox: {
-    background: '#1e293b',
-    border: '1px solid #334155',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: 16,
     padding: '32px',
     textAlign: 'center',
@@ -167,15 +167,15 @@ const styles = {
   },
   upgradeIcon: { fontSize: 48, marginBottom: 16 },
   upgradeTitle: {
-    color: '#e2e8f0', fontSize: 18, fontWeight: 700,
+    color: 'var(--text-primary)', fontSize: 18, fontWeight: 700,
     margin: '0 0 10px', fontFamily: 'Sora, sans-serif',
   },
   upgradeDesc: {
-    color: '#94a3b8', fontSize: 14, lineHeight: 1.6,
+    color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6,
     margin: '0 0 24px',
   },
   upgradeDetails: {
-    background: '#0f172a', borderRadius: 10,
+    background: 'var(--app-bg)', borderRadius: 10,
     padding: '16px 20px', marginBottom: 24,
     display: 'flex', gap: 24, alignItems: 'flex-start',
     textAlign: 'left',
@@ -184,9 +184,9 @@ const styles = {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     minWidth: 80,
   },
-  priceLabel: { color: '#64748b', fontSize: 11, marginBottom: 4 },
-  priceValue: { color: '#e2e8f0', fontSize: 28, fontWeight: 700 },
-  pricePer: { fontSize: 14, color: '#64748b' },
+  priceLabel: { color: 'var(--text-muted)', fontSize: 11, marginBottom: 4 },
+  priceValue: { color: 'var(--text-primary)', fontSize: 28, fontWeight: 700 },
+  pricePer: { fontSize: 14, color: 'var(--text-muted)' },
   upgradeFeatures: { flex: 1, display: 'flex', flexDirection: 'column', gap: 6 },
   upgradeFeatureItem: { display: 'flex', gap: 8, alignItems: 'center' },
   upgradeBtn: {
@@ -197,13 +197,13 @@ const styles = {
     textDecoration: 'none',
     marginBottom: 12,
   },
-  trialNote: { color: '#475569', fontSize: 12, margin: 0 },
+  trialNote: { color: 'var(--text-muted)', fontSize: 12, margin: 0 },
   compactPrompt: {
     display: 'inline-flex', alignItems: 'center', gap: 6,
-    background: '#1e293b', border: '1px solid #334155',
+    background: 'var(--card-bg)', border: '1px solid var(--border-color)',
     borderRadius: 6, padding: '4px 10px',
   },
   lockIcon: { fontSize: 12 },
-  compactText: { color: '#64748b', fontSize: 12 },
+  compactText: { color: 'var(--text-muted)', fontSize: 12 },
   upgradeLink: { color: '#3b82f6', textDecoration: 'none' },
 }

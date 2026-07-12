@@ -12,7 +12,7 @@ export default function ProtectedRoute() {
         justifyContent: 'center',
         height: '100vh',
         background: '#0f1117',
-        color: '#94a3b8',
+        color: 'var(--text-secondary)',
         fontFamily: 'Sora, sans-serif',
       }}>
         <div style={{ textAlign: 'center' }}>

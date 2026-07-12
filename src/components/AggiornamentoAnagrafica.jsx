@@ -32,7 +32,7 @@ function StepDot({ active, done, label, n }) {
         alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700,
         background: done ? '#16a34a' : active ? '#2563eb' : '#1e293b',
         color: (done || active) ? 'white' : '#475569',
-        border:`2px solid ${done ? '#16a34a' : active ? '#3b82f6' : '#334155'}`,
+        border:`2px solid ${done ? '#16a34a' : active ? '#3b82f6' : 'var(--border-color)'}`,
         transition:'all .3s',
       }}>
         {done ? <Check size={14} /> : n}
@@ -86,9 +86,9 @@ function DiffBanner({ operazioni }) {
                   background:st.border, color:'white', fontSize:9,
                   fontWeight:800, padding:'2px 8px', borderRadius:20, letterSpacing:'0.08em',
                 }}>{st.label}</span>
-                <span style={{ color:'#e2e8f0', fontSize:14, fontWeight:700 }}>Unità {op.unita}</span>
+                <span style={{ color: 'var(--text-primary)', fontSize:14, fontWeight:700 }}>Unità {op.unita}</span>
                 {op.ruolo && (
-                  <span style={{ color:'#64748b', fontSize:12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize:12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                     · {op.ruolo === 'proprietario' ? <Home size={12} /> : <Key size={12} />} <span>{op.ruolo === 'proprietario' ? 'Proprietario' : 'Inquilino'}</span>
                   </span>
                 )}
@@ -109,7 +109,7 @@ function DiffBanner({ operazioni }) {
                 </>}
                 {op.tipo === 'modifica' && <>
                   Aggiornamento dati di <strong>{op.nominativo}</strong>
-                  {op.dettaglio && <span style={{ color:'#94a3b8' }}> — {op.dettaglio}</span>}
+                  {op.dettaglio && <span style={{ color: 'var(--text-secondary)' }}> — {op.dettaglio}</span>}
                 </>}
                 {op.tipo === 'rimozione' && <>
                   Rimozione di <strong>{op.nominativo}</strong>
@@ -124,8 +124,8 @@ function DiffBanner({ operazioni }) {
                   borderRadius:8, display:'flex', flexWrap:'wrap', gap:'4px 18px',
                 }}>
                   {datiClean.map(([k, v]) => (
-                    <span key={k} style={{ fontSize:11, color:'#94a3b8' }}>
-                      <span style={{ color:'#475569' }}>{k}:</span> {String(v)}
+                    <span key={k} style={{ fontSize:11, color: 'var(--text-secondary)' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>{k}:</span> {String(v)}
                     </span>
                   ))}
                 </div>
@@ -348,7 +348,7 @@ Se non identifichi operazioni chiare, restituisci [].`
             {/* Anteprima anagrafica attuale */}
             {unita.length > 0 && (
               <div style={S.contextBox}>
-                <span style={{ color:'#475569', fontSize:11, fontWeight:600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize:11, fontWeight:600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <ClipboardList size={14} /> ANAGRAFICA ATTUALE — {unita.length} unità
                 </span>
                 <div style={S.contextGrid}>
@@ -357,11 +357,11 @@ Se non identifichi operazioni chiare, restituisci [].`
                     return (
                       <div key={u.id} style={S.contextItem}>
                         <span style={{ color:'#3b82f6', fontWeight:700 }}>Int.{u.numero}</span>
-                        <span style={{ color:'#64748b' }}>{prop ? `${prop.cognome} ${prop.nome}` : '—'}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>{prop ? `${prop.cognome} ${prop.nome}` : '—'}</span>
                       </div>
                     )
                   })}
-                  {unita.length > 8 && <div style={{ color:'#475569', fontSize:11, gridColumn:'1/-1' }}>…e altre {unita.length-8} unità</div>}
+                  {unita.length > 8 && <div style={{ color: 'var(--text-muted)', fontSize:11, gridColumn:'1/-1' }}>…e altre {unita.length-8} unità</div>}
                 </div>
               </div>
             )}
@@ -385,11 +385,11 @@ Se non identifichi operazioni chiare, restituisci [].`
             <div style={{ marginBottom:16 }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
                 <span style={S.badge}>{operazioni.length}</span>
-                <span style={{ color:'#e2e8f0', fontSize:16, fontWeight:700 }}>
+                <span style={{ color: 'var(--text-primary)', fontSize:16, fontWeight:700 }}>
                   operazion{operazioni.length !== 1 ? 'i rilevate' : 'e rilevata'}
                 </span>
               </div>
-              <p style={{ color:'#64748b', fontSize:12, margin:0 }}>
+              <p style={{ color: 'var(--text-muted)', fontSize:12, margin:0 }}>
                 Verifica le modifiche qui sotto. Puoi tornare indietro se qualcosa non è corretto.
               </p>
             </div>
@@ -431,10 +431,10 @@ Se non identifichi operazioni chiare, restituisci [].`
                 <XCircle size={54} style={{ color: '#dc2626' }} />
               )}
             </div>
-            <h3 style={{ color:'#e2e8f0', fontSize:19, marginBottom:4 }}>
+            <h3 style={{ color: 'var(--text-primary)', fontSize:19, marginBottom:4 }}>
               {risultato.errori.length === 0 ? 'Anagrafica aggiornata' : 'Aggiornamento parziale'}
             </h3>
-            <p style={{ color:'#64748b', fontSize:13, marginBottom:20 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize:13, marginBottom:20 }}>
               {risultato.ok.length} operazion{risultato.ok.length!==1?'i':'e'} completata{risultato.ok.length!==1?'e':''}
               {risultato.errori.length > 0 && ` · ${risultato.errori.length} errore${risultato.errori.length!==1?'i':''}`}
             </p>
@@ -468,18 +468,18 @@ Se non identifichi operazioni chiare, restituisci [].`
 // ═══════════════════════════════════════════════════════════════════════════
 const S = {
   overlay:     { position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, backdropFilter:'blur(6px)' },
-  modal:       { background:'#1e293b', borderRadius:18, width:'92vw', maxWidth:680, maxHeight:'92vh', display:'flex', flexDirection:'column', border:'1px solid #334155', boxShadow:'0 32px 80px rgba(0,0,0,0.6)', fontFamily:'Sora, sans-serif' },
-  header:      { display:'flex', justifyContent:'space-between', alignItems:'flex-start', padding:'22px 26px 18px', borderBottom:'1px solid #334155' },
-  title:       { color:'#e2e8f0', fontSize:19, fontWeight:700, margin:0 },
-  subtitle:    { color:'#64748b', fontSize:12, margin:'4px 0 0' },
-  closeBtn:    { background:'none', border:'none', color:'#64748b', fontSize:20, cursor:'pointer', padding:'2px 6px' },
+  modal:       { background: 'var(--card-bg)', borderRadius:18, width:'92vw', maxWidth:680, maxHeight:'92vh', display:'flex', flexDirection:'column', border: '1px solid var(--border-color)', boxShadow:'0 32px 80px rgba(0,0,0,0.6)', fontFamily:'Sora, sans-serif' },
+  header:      { display:'flex', justifyContent:'space-between', alignItems:'flex-start', padding:'22px 26px 18px', borderBottom: '1px solid var(--border-color)' },
+  title:       { color: 'var(--text-primary)', fontSize:19, fontWeight:700, margin:0 },
+  subtitle:    { color: 'var(--text-muted)', fontSize:12, margin:'4px 0 0' },
+  closeBtn:    { background:'none', border:'none', color: 'var(--text-muted)', fontSize:20, cursor:'pointer', padding:'2px 6px' },
   steps:       { display:'flex', alignItems:'center', padding:'18px 44px 0', gap:0 },
   body:        { padding:'20px 26px 24px', overflowY:'auto', flex:1 },
   labelRow:    { display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:8 },
-  label:       { color:'#94a3b8', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em' },
-  hint:        { color:'#475569', fontSize:11 },
-  textarea:    { width:'100%', background:'#0f172a', border:'1px solid #334155', color:'#e2e8f0', borderRadius:10, padding:'14px 16px', fontSize:13, outline:'none', resize:'vertical', lineHeight:1.7, fontFamily:'Sora, sans-serif', boxSizing:'border-box', minHeight:190 },
-  contextBox:  { marginTop:14, padding:'12px 16px', background:'#0f172a', borderRadius:8, border:'1px solid #1e293b' },
+  label:       { color: 'var(--text-secondary)', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em' },
+  hint:        { color: 'var(--text-muted)', fontSize:11 },
+  textarea:    { width:'100%', background: 'var(--app-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius:10, padding:'14px 16px', fontSize:13, outline:'none', resize:'vertical', lineHeight:1.7, fontFamily:'Sora, sans-serif', boxSizing:'border-box', minHeight:190 },
+  contextBox:  { marginTop:14, padding:'12px 16px', background: 'var(--app-bg)', borderRadius:8, border: '1px solid var(--border-color-2)' },
   contextGrid: { display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px,1fr))', gap:'6px 12px', marginTop:8 },
   contextItem: { display:'flex', flexDirection:'column', fontSize:11 },
   errorBox:    { marginTop:12, padding:'10px 14px', background:'#450a0a', border:'1px solid #991b1b', color:'#fca5a5', borderRadius:8, fontSize:13 },
@@ -488,7 +488,7 @@ const S = {
   actions:     { display:'flex', justifyContent:'flex-end', gap:10, marginTop:18 },
   badge:       { background:'#2563eb', color:'white', borderRadius:'50%', width:28, height:28, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:800, flexShrink:0 },
   btnPrimary:  { background:'#2563eb', color:'white', border:'none', borderRadius:9, padding:'11px 22px', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:8 },
-  btnSecondary:{ background:'transparent', color:'#94a3b8', border:'1px solid #334155', borderRadius:9, padding:'11px 22px', fontSize:13, cursor:'pointer' },
+  btnSecondary:{ background:'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius:9, padding:'11px 22px', fontSize:13, cursor:'pointer' },
   btnConfirm:  { background:'#16a34a', color:'white', border:'none', borderRadius:9, padding:'11px 24px', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:8 },
   spin:        { width:13, height:13, border:'2px solid rgba(255,255,255,0.3)', borderTop:'2px solid white', borderRadius:'50%', animation:'spin 0.7s linear infinite', display:'inline-block', flexShrink:0 },
 }

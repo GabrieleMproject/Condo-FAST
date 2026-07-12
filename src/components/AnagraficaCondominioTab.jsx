@@ -413,8 +413,8 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
         <div style={styles.loading}>Caricamento anagrafica...</div>
       ) : personeFiltrate.length === 0 ? (
         <div style={styles.empty}>
-          <Search size={32} color="#334155" style={{ marginBottom: 10 }} />
-          <p style={{ color: '#64748b', margin: 0 }}>Nessun condòmino corrispondente ai filtri impostati</p>
+          <Search size={32} color="var(--text-muted)" style={{ marginBottom: 10 }} />
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessun condòmino corrispondente ai filtri impostati</p>
         </div>
       ) : (
         <div style={styles.tableWrap}>
@@ -439,7 +439,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
                         <div style={styles.avatar}>{iniziali || '?'}</div>
                         <div style={{ textAlign: 'left' }}>
                           <div style={styles.fullName}>{p.cognome} {p.nome}</div>
-                          <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>ID: {p.id.slice(0, 8)}</div>
+                          <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>ID: {p.id.slice(0, 8)}</div>
                         </div>
                       </div>
                     </td>
@@ -456,8 +456,8 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
                       <div style={styles.contactItem}><Home size={12} color="#64748b" /> {p.unitaNomi || 'Nessuna'}</div>
                     </td>
                     <td style={styles.td}>
-                      <div style={{ fontSize: 13, color: '#e2e8f0' }}>{p.indirizzo || '—'}</div>
-                      {p.citta && <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{p.citta}</div>}
+                      <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{p.indirizzo || '—'}</div>
+                      {p.citta && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{p.citta}</div>}
                     </td>
                     <td style={{ ...styles.td, textAlign: 'center' }}>
                       <button onClick={() => apriModifica(p)} style={styles.btnEdit} title="Modifica Anagrafica">
@@ -479,7 +479,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
             <div style={styles.modalHead}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <UserCog size={18} color="#60a5fa" />
-                <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>Modifica Anagrafica Condòmino</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 15 }}>Modifica Anagrafica Condòmino</span>
               </div>
               <button style={styles.btnClose} onClick={() => setEditingPersona(null)}><X size={16} /></button>
             </div>
@@ -536,14 +536,14 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
             <div style={styles.modalHead}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Plus size={18} color="#60a5fa" />
-                <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>Nuovo Condòmino</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 15 }}>Nuovo Condòmino</span>
               </div>
               <button style={styles.btnClose} onClick={() => setShowNuovoModal(false)}><X size={16} /></button>
             </div>
             
             <form onSubmit={handleCreaNuovo}>
               <div style={{ ...styles.modalBody, maxHeight: '65vh', overflowY: 'auto', paddingRight: 6 }}>
-                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Dati Anagrafici</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Dati Anagrafici</div>
                 <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>Cognome *</label>
@@ -566,7 +566,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
                   </div>
                 </div>
 
-                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Contatti</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Contatti</div>
                 <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>Email</label>
@@ -582,7 +582,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
                   <input style={styles.input} type="text" value={nuovoTelefonoAlt} onChange={e => setNuovoTelefonoAlt(e.target.value)} placeholder="es. 02123456" />
                 </div>
 
-                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Residenza</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Residenza</div>
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Indirizzo</label>
                   <input style={styles.input} type="text" value={nuovoIndirizzo} onChange={e => setNuovoIndirizzo(e.target.value)} placeholder="es. Via Roma 10" />
@@ -604,7 +604,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
                   </div>
                 </div>
 
-                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Assegnazione Unità</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Assegnazione Unità</div>
                 <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>Unità</label>
@@ -654,33 +654,33 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
 const styles = {
   container: { display: 'flex', flexDirection: 'column', width: '100%' },
   filterRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 },
-  searchSec: { display: 'flex', alignItems: 'center', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, width: 340, maxWidth: '100%' },
-  searchInput: { background: 'transparent', border: 'none', padding: '9px 10px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 13, outline: 'none', width: '100%' },
-  tabFilters: { display: 'flex', gap: 6, background: '#0f172a', padding: 4, borderRadius: 8, border: '1px solid #1e293b' },
+  searchSec: { display: 'flex', alignItems: 'center', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, width: 340, maxWidth: '100%' },
+  searchInput: { background: 'transparent', border: 'none', padding: '9px 10px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 13, outline: 'none', width: '100%' },
+  tabFilters: { display: 'flex', gap: 6, background: 'var(--app-bg)', padding: 4, borderRadius: 8, border: '1px solid var(--border-color-2)' },
   filterBtn: (active) => ({ padding: '6px 14px', borderRadius: 6, fontSize: 13, cursor: 'pointer', border: 'none', background: active ? '#2563eb' : 'transparent', color: active ? '#fff' : '#64748b', fontFamily: 'Sora, sans-serif', fontWeight: active ? 600 : 400, transition: 'all 0.15s' }),
-  loading: { textAlign: 'center', padding: 40, color: '#64748b', fontSize: 14 },
-  empty: { textAlign: 'center', padding: 40, background: '#1e293b', borderRadius: 12, border: '1px solid #334155', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  tableWrap: { overflowX: 'auto', border: '1px solid #334155', borderRadius: 12 },
+  loading: { textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 14 },
+  empty: { textAlign: 'center', padding: 40, background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  tableWrap: { overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: 12 },
   table: { borderCollapse: 'separate', borderSpacing: 0, width: '100%', fontFamily: 'Sora, sans-serif' },
-  th: { background: '#0f172a', color: '#64748b', fontSize: 12, fontWeight: 700, padding: '14px 12px', textAlign: 'left', borderBottom: '1px solid #334155', whiteSpace: 'nowrap' },
-  tr: { background: '#1e293b', transition: 'background 0.15s' },
-  td: { padding: '12px 12px', borderBottom: '1px solid #1e293b', verticalAlign: 'middle' },
+  th: { background: 'var(--app-bg)', color: 'var(--text-muted)', fontSize: 12, fontWeight: 700, padding: '14px 12px', textAlign: 'left', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' },
+  tr: { background: 'var(--card-bg)', transition: 'background 0.15s' },
+  td: { padding: '12px 12px', borderBottom: '1px solid var(--border-color-2)', verticalAlign: 'middle' },
   profileRow: { display: 'flex', alignItems: 'center', gap: 10 },
   avatar: { width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  fullName: { color: '#e2e8f0', fontWeight: 600, fontSize: 14 },
+  fullName: { color: 'var(--text-primary)', fontWeight: 600, fontSize: 14 },
   roleBadge: (isProprietario) => ({ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: isProprietario ? 'rgba(37,99,235,0.15)' : 'rgba(16,185,129,0.15)', color: isProprietario ? '#60a5fa' : '#34d399' }),
-  contactItem: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#e2e8f0' },
-  btnEdit: { background: 'rgba(255,255,255,0.05)', border: '1px solid #334155', borderRadius: 6, padding: '6px 12px', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontWeight: 600, display: 'inline-flex', alignItems: 'center' },
+  contactItem: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-primary)' },
+  btnEdit: { background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '6px 12px', color: 'var(--text-primary)', fontSize: 12, cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontWeight: 600, display: 'inline-flex', alignItems: 'center' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 },
-  modal: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 22, width: 440, maxWidth: '90vw', fontFamily: 'Sora, sans-serif' },
+  modal: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 14, padding: 22, width: 440, maxWidth: '90vw', fontFamily: 'Sora, sans-serif' },
   modalHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  btnClose: { background: 'transparent', color: '#64748b', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+  btnClose: { background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
   modalBody: { display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 },
   formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
   formGroup: { display: 'flex', flexDirection: 'column', gap: 6 },
-  label: { color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  input: { width: '100%', boxSizing: 'border-box', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '9px 10px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
-  modalFooter: { display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid #334155', paddingTop: 14 },
-  btnCancel: { background: 'transparent', border: '1px solid #334155', borderRadius: 8, padding: '9px 20px', color: '#94a3b8', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: 13 },
+  label: { color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  input: { width: '100%', boxSizing: 'border-box', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '9px 10px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
+  modalFooter: { display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid var(--border-color)', paddingTop: 14 },
+  btnCancel: { background: 'transparent', border: '1px solid var(--border-color)', borderRadius: 8, padding: '9px 20px', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: 13 },
   btnSave: { background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
 }

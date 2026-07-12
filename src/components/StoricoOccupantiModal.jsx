@@ -443,20 +443,20 @@ const st = {
     zIndex: 1100, padding: 20,
   },
   modal: {
-    background: '#1e293b', border: '1px solid #334155', borderRadius: 16,
+    background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
     padding: 20, width: '100%', maxWidth: 750, boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
     maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: 14,
   },
   modalHeader: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    borderBottom: '1px solid #334155', paddingBottom: 10,
+    borderBottom: '1px solid var(--border-color)', paddingBottom: 10,
   },
-  modalTitle: { margin: 0, fontSize: 16, fontWeight: 700, color: '#f1f5f9' },
-  modalSub: { margin: '4px 0 0', fontSize: 12, color: '#94a3b8' },
+  modalTitle: { margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' },
+  modalSub: { margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)' },
   closeBtn: {
-    background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer',
+    background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer',
     padding: 6, display: 'flex', alignItems: 'center', borderRadius: '50%',
-    '&:hover': { background: '#334155', color: '#f1f5f9' }
+    '&:hover': { background: 'var(--border-color)', color: 'var(--text-primary)' }
   },
   errorBox: {
     background: '#ef444415', border: '1px solid #ef444430', borderRadius: 8,
@@ -473,19 +473,19 @@ const st = {
   // Left Panel
   leftPanel: {
     display: 'flex', flexDirection: 'column',
-    borderRight: '1px solid #334155', paddingRight: 20,
+    borderRight: '1px solid var(--border-color)', paddingRight: 20,
   },
   sectionTitle: {
     margin: '0 0 12px', fontSize: 13, textTransform: 'uppercase',
-    letterSpacing: '0.05em', color: '#94a3b8', borderBottom: '1px solid #33415550',
+    letterSpacing: '0.05em', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color-2)',
     paddingBottom: 6
   },
   loadingBox: {
-    fontSize: 13, color: '#64748b', textAlign: 'center', padding: 30
+    fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: 30
   },
   emptyTimeline: {
-    fontSize: 12, color: '#64748b', textAlign: 'center', padding: '40px 10px',
-    border: '1px dashed #334155', borderRadius: 8, background: '#0f172a20'
+    fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '40px 10px',
+    border: '1px dashed var(--border-color)', borderRadius: 8, background: 'var(--app-bg)'
   },
   timelineList: {
     display: 'flex', flexDirection: 'column', overflowY: 'auto', flex: 1, maxHeight: 300,
@@ -500,7 +500,7 @@ const st = {
     width: 8, height: 8, borderRadius: '50%', marginTop: 6, zIndex: 1
   },
   timelineLine: {
-    width: 2, flex: 1, background: '#334155', margin: '4px 0'
+    width: 2, flex: 1, background: 'var(--border-color)', margin: '4px 0'
   },
   timelineContent: {
     flex: 1, paddingBottom: 14,
@@ -511,18 +511,18 @@ const st = {
     textTransform: 'uppercase'
   },
   badgePast: {
-    fontSize: 9, color: '#94a3b8', background: '#33415530',
+    fontSize: 9, color: 'var(--text-secondary)', background: '#33415530',
     padding: '1px 5px', borderRadius: 4, fontWeight: 700, marginLeft: 6,
     textTransform: 'uppercase'
   },
   timelineDates: {
-    fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', marginTop: 4
+    fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', marginTop: 4
   },
   timelineContacts: {
-    fontSize: 11, color: '#64748b', marginTop: 3, wordBreak: 'break-all'
+    fontSize: 11, color: 'var(--text-muted)', marginTop: 3, wordBreak: 'break-all'
   },
   deleteBtn: {
-    background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
+    background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
     padding: 2, display: 'flex', alignItems: 'center', hover: { color: '#ef4444' }
   },
 
@@ -531,31 +531,31 @@ const st = {
     display: 'flex', flexDirection: 'column', gap: 12
   },
   formCard: {
-    background: '#0f172a30', border: '1px solid #334155', borderRadius: 8,
+    background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8,
     padding: 12, display: 'flex', flexDirection: 'column', gap: 8
   },
   formGroup: {
     display: 'flex', flexDirection: 'column', gap: 4,
   },
   formLabel: {
-    fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.03em'
+    fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.03em'
   },
   formInput: {
-    background: '#0f172a', border: '1px solid #334155', borderRadius: 6,
-    padding: '6px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif",
+    background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 6,
+    padding: '6px 10px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif",
     fontSize: 12, outline: 'none'
   },
   searchWrap: {
-    display: 'flex', alignItems: 'center', background: '#0f172a',
-    border: '1px solid #334155', borderRadius: 6
+    display: 'flex', alignItems: 'center', background: 'var(--app-bg)',
+    border: '1px solid var(--border-color)', borderRadius: 6
   },
   searchInput: {
-    background: 'none', border: 'none', color: '#e2e8f0', padding: '5px 8px',
+    background: 'none', border: 'none', color: 'var(--text-primary)', padding: '5px 8px',
     fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none', flex: 1
   },
   select: {
-    background: '#0f172a', border: '1px solid #334155', borderRadius: 6,
-    padding: '6px 8px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif",
+    background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 6,
+    padding: '6px 8px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif",
     fontSize: 12, outline: 'none', cursor: 'pointer'
   },
   textLinkBtn: {

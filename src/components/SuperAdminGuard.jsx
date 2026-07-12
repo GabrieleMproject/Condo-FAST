@@ -7,7 +7,7 @@ export default function SuperAdminGuard() {
 
   if (loading) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: '#64748b' }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--app-bg)', color: 'var(--text-muted)' }}>
         <p>Verifica permessi...</p>
       </div>
     )

@@ -317,7 +317,7 @@ Abbina i bonifici alle celle.`;
   }
 
   if (loading) {
-    return <div style={{ padding: 60, textAlign: 'center', color: '#475569', fontFamily: "'Sora', sans-serif" }}>Caricamento...</div>;
+    return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'Sora', sans-serif" }}>Caricamento...</div>;
   }
 
   return (
@@ -431,22 +431,22 @@ Abbina i bonifici alle celle.`;
       {/* Modal Avviso Entrate Orfane */}
       {showOrfaniModal && entrateOrfane.length > 0 && (
         <div style={styles.modalOverlay || { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-          <div style={styles.modalBox || { background: '#1e293b', borderRadius: 16, border: '1px solid #334155', width: '100%', maxWidth: 680, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={styles.modalBox || { background: 'var(--card-bg)', borderRadius: 16, border: '1px solid var(--border-color)', width: '100%', maxWidth: 680, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <AlertTriangle size={18} /> Rilevati Bonifici senza Rata ({entrateOrfane.length})
               </h3>
-              <button style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => setShowOrfaniModal(false)} type="button"><X size={20} /></button>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => setShowOrfaniModal(false)} type="button"><X size={20} /></button>
             </div>
-            <p style={{ padding: '16px 24px', margin: 0, fontSize: 14, color: '#cbd5e1', lineHeight: 1.5 }}>
+            <p style={{ padding: '16px 24px', margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               L'AI ha terminato l'analisi ma ha rilevato <b>{entrateOrfane.length} bonifici in entrata</b> non associabili ad alcuna rata in modo automatico. Puoi abbinarli manualmente ora a una delle rate aperte oppure consultare la scheda <b>"Senza Rata"</b>.
             </p>
             <div style={{ padding: '0 24px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
               {entrateOrfane.map(m => (
-                <div key={m.id} style={{ background: '#0f172a', padding: '14px 18px', borderRadius: 12, border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                <div key={m.id} style={{ background: 'var(--app-bg)', padding: '14px 18px', borderRadius: 12, border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: '#e2e8f0' }}>{m.causale || '—'}</div>
-                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{m.causale || '—'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
                       📅 {dataIt(m.data_movimento)} · {m.pagante_rilevato ? `👤 ${m.pagante_rilevato}` : 'Pagante non rilevato'}
                     </div>
                   </div>
@@ -467,8 +467,8 @@ Abbina i bonifici alle celle.`;
                 </div>
               ))}
             </div>
-            <div style={{ padding: '16px 24px', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end', background: '#0f172a', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
-              <button style={{ background: '#334155', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 }} onClick={() => setShowOrfaniModal(false)}>Ho capito, chiudi</button>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', background: 'var(--app-bg)', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
+              <button style={{ background: 'var(--border-color)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 }} onClick={() => setShowOrfaniModal(false)}>Ho capito, chiudi</button>
             </div>
           </div>
         </div>
@@ -497,7 +497,7 @@ function AbbinamentoIncassoCard({ ab, onConferma, onRifiuta }) {
     <div style={{ ...styles.card, ...(ab.stato === 'confermata' ? styles.cardConfermata : ab.stato === 'rifiutata' ? styles.cardRifiutata : {}) }}>
       <div style={styles.scoreWrap}>
         <div style={{ ...styles.score, color: scoreColor, borderColor: scoreColor + '40' }}>{score}%</div>
-        <div style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginTop: 2 }}>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2 }}>
           {ab.metodo === 'ai' ? 'AI' : 'Manuale'}
         </div>
       </div>
@@ -549,7 +549,7 @@ function AbbinamentoIncassoCard({ ab, onConferma, onRifiuta }) {
           </span>
         )}
         {ab.stato === 'rifiutata' && (
-          <span style={{ ...styles.statoBadge, background: '#64748b20', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4 }}><XCircle size={12} /> Rifiutato</span>
+          <span style={{ ...styles.statoBadge, background: '#64748b20', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><XCircle size={12} /> Rifiutato</span>
         )}
       </div>
     </div>
@@ -557,39 +557,39 @@ function AbbinamentoIncassoCard({ ab, onConferma, onRifiuta }) {
 }
 
 const styles = {
-  page: { fontFamily: "'Sora', sans-serif", color: '#e2e8f0', padding: 24 },
+  page: { fontFamily: "'Sora', sans-serif", color: 'var(--text-primary)', padding: 24 },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 16 },
-  title: { margin: 0, fontSize: 22, fontWeight: 700, color: '#f1f5f9' },
-  subtitle: { margin: '4px 0 0', fontSize: 13, color: '#64748b' },
+  title: { margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' },
+  subtitle: { margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' },
   btnAI: { background: 'linear-gradient(135deg, #16a34a, #2563eb)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer' },
   progressBar: { display: 'flex', alignItems: 'center', gap: 10, background: '#8b5cf620', border: '1px solid #8b5cf640', borderRadius: 10, padding: '10px 16px', marginBottom: 16, color: '#a78bfa', fontSize: 13 },
   progressDot: { width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6' },
   kpiRow: { display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' },
-  kpiCard: { flex: '1 1 140px', background: '#1e293b', borderRadius: 12, padding: '16px 20px', border: '1px solid #334155' },
+  kpiCard: { flex: '1 1 140px', background: 'var(--card-bg)', borderRadius: 12, padding: '16px 20px', border: '1px solid var(--border-color)' },
   kpiVal: { fontSize: 24, fontWeight: 700 },
-  kpiLabel: { fontSize: 11, color: '#64748b', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  toolbar: { display: 'flex', gap: 4, marginBottom: 16, background: '#1e293b', borderRadius: 8, padding: 2, flexWrap: 'wrap' },
-  tBtn: { background: 'none', border: 'none', color: '#64748b', padding: '6px 16px', borderRadius: 6, cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600 },
+  kpiLabel: { fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  toolbar: { display: 'flex', gap: 4, marginBottom: 16, background: 'var(--card-bg)', borderRadius: 8, padding: 2, flexWrap: 'wrap' },
+  tBtn: { background: 'none', border: 'none', color: 'var(--text-muted)', padding: '6px 16px', borderRadius: 6, cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600 },
   tBtnActive: { background: '#2563eb', color: '#fff' },
-  empty: { textAlign: 'center', padding: 60, color: '#475569' },
+  empty: { textAlign: 'center', padding: 60, color: 'var(--text-muted)' },
   lista: { display: 'flex', flexDirection: 'column', gap: 12 },
-  card: { background: '#1e293b', borderRadius: 14, border: '1px solid #334155', padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 16 },
+  card: { background: 'var(--card-bg)', borderRadius: 14, border: '1px solid var(--border-color)', padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 16 },
   cardConfermata: { borderColor: '#16a34a40', background: '#16a34a08' },
   cardRifiutata: { borderColor: '#33415560', opacity: 0.7 },
   scoreWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 },
   score: { width: 52, height: 52, borderRadius: '50%', border: '2px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 },
   matchWrap: { flex: 1, display: 'flex', alignItems: 'stretch', gap: 8, minWidth: 0 },
-  matchBox: { flex: 1, background: '#0f172a', borderRadius: 10, padding: '10px 14px', minWidth: 0 },
-  matchLabel: { fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 },
-  matchTitolo: { fontSize: 13, fontWeight: 600, color: '#e2e8f0', wordBreak: 'break-word' },
+  matchBox: { flex: 1, background: 'var(--app-bg)', borderRadius: 10, padding: '10px 14px', minWidth: 0 },
+  matchLabel: { fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 },
+  matchTitolo: { fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', wordBreak: 'break-word' },
   matchSub: { fontSize: 12, color: '#60a5fa', marginTop: 2 },
-  matchMeta: { display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: '#64748b' },
-  arrow: { fontSize: 20, color: '#334155', alignSelf: 'center', flexShrink: 0 },
+  matchMeta: { display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: 'var(--text-muted)' },
+  arrow: { fontSize: 20, color: 'var(--border-color)', alignSelf: 'center', flexShrink: 0 },
   bottomRow: { display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, minWidth: 120, alignItems: 'flex-end' },
-  motivazione: { fontSize: 11, color: '#64748b', maxWidth: 160, textAlign: 'right', lineHeight: 1.4 },
+  motivazione: { fontSize: 11, color: 'var(--text-muted)', maxWidth: 160, textAlign: 'right', lineHeight: 1.4 },
   actions: { display: 'flex', flexDirection: 'column', gap: 6 },
   btnConferma: { background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 13 },
-  btnRifiuta: { background: 'none', color: '#64748b', border: '1px solid #334155', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 },
+  btnRifiuta: { background: 'none', color: 'var(--text-muted)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 },
   statoBadge: { borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600 },
   btnAction: { background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' },
 };
@@ -602,8 +602,8 @@ function EntrataOrfanaCard({ mov, celleAperte, onAbbina }) {
         <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
           <AlertTriangle size={14} /> BONIFICO IN ENTRATA SENZA RATA ASSOCIATA
         </div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>{mov.causale || '—'}</div>
-        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{mov.causale || '—'}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {dataIt(mov.data_movimento)}</span>
           <span>·</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -618,7 +618,7 @@ function EntrataOrfanaCard({ mov, celleAperte, onAbbina }) {
         <select
           value={selectedCellaId}
           onChange={e => setSelectedCellaId(e.target.value)}
-          style={{ background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontFamily: "'Sora', sans-serif", maxWidth: 280 }}
+          style={{ background: 'var(--app-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontFamily: "'Sora', sans-serif", maxWidth: 280 }}
         >
           <option value="">-- Seleziona una rata aperta --</option>
           {celleAperte.map(c => {

@@ -172,7 +172,7 @@ Abbina i movimenti alle fatture.`;
   const movDaRic = movimenti.filter(m => !m.riconciliato).length;
   const movOrfani = movimenti.filter(m => !m.riconciliato && !riconciliazioni.some(r => r.movimento_id === m.id && (r.stato === 'suggerita' || r.stato === 'confermata')));
 
-  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#475569', fontFamily: "'Sora', sans-serif" }}>Caricamento...</div>;
+  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'Sora', sans-serif" }}>Caricamento...</div>;
 
   return (
     <div style={styles.page}>
@@ -211,7 +211,7 @@ Abbina i movimenti alle fatture.`;
           { label: 'Movimenti da riconciliare', value: movDaRic, color: '#f59e0b' },
           { label: 'Suggerimenti AI', value: kpiSuggerite, color: '#8b5cf6' },
           { label: 'Confermati', value: kpiConfermate, color: '#16a34a' },
-          { label: 'Rifiutati', value: kpiRifiutate, color: '#64748b' },
+          { label: 'Rifiutati', value: kpiRifiutate, color: 'var(--text-muted)' },
         ].map(k => (
           <div key={k.label} style={styles.kpiCard}>
             <div style={{ ...styles.kpiVal, color: k.color }}>{k.value}</div>
@@ -299,8 +299,8 @@ Abbina i movimenti alle fatture.`;
               {movOrfani.map(m => (
                 <div key={m.id} style={styles.modalItem}>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: '#e2e8f0' }}>{m.causale || '—'}</div>
-                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{m.causale || '—'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Calendar size={12} /> {formattaData(m.data_movimento)} · {m.fornitore_rilevato ? <><Building2 size={12} /> {m.fornitore_rilevato}</> : 'Fornitore non rilevato'}
                     </div>
                   </div>
@@ -348,7 +348,7 @@ function RiconciliazioneCard({ ric, onConferma, onRifiuta }) {
         <div style={{ ...styles.score, color: scoreColor, borderColor: scoreColor + '40' }}>
           {score}%
         </div>
-        <div style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginTop: 2 }}>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2 }}>
           {ric.metodo === 'ai' ? 'AI' : 'Manuale'}
         </div>
       </div>
@@ -404,7 +404,7 @@ function RiconciliazioneCard({ ric, onConferma, onRifiuta }) {
         )}
 
         {ric.stato === 'rifiutata' && (
-          <span style={{ ...styles.statoBadge, background: '#64748b20', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ ...styles.statoBadge, background: '#64748b20', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             <XCircle size={12} /> Rifiutata
           </span>
         )}
@@ -414,10 +414,10 @@ function RiconciliazioneCard({ ric, onConferma, onRifiuta }) {
 }
 
 const styles = {
-  page: { fontFamily: "'Sora', sans-serif", color: '#e2e8f0', padding: 24 },
+  page: { fontFamily: "'Sora', sans-serif", color: 'var(--text-primary)', padding: 24 },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 16 },
-  title: { margin: 0, fontSize: 22, fontWeight: 700, color: '#f1f5f9' },
-  subtitle: { margin: '4px 0 0', fontSize: 13, color: '#64748b' },
+  title: { margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' },
+  subtitle: { margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' },
   btnAI: {
     background: 'linear-gradient(135deg, #2563eb, #8b5cf6)',
     color: '#fff', border: 'none', borderRadius: 10,
@@ -435,16 +435,16 @@ const styles = {
     animation: 'pulse 1s ease-in-out infinite',
   },
   kpiRow: { display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' },
-  kpiCard: { flex: '1 1 140px', background: '#1e293b', borderRadius: 12, padding: '16px 20px', border: '1px solid #334155' },
+  kpiCard: { flex: '1 1 140px', background: 'var(--card-bg)', borderRadius: 12, padding: '16px 20px', border: '1px solid var(--border-color)' },
   kpiVal: { fontSize: 24, fontWeight: 700 },
-  kpiLabel: { fontSize: 11, color: '#64748b', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  toolbar: { display: 'flex', gap: 4, marginBottom: 16, background: '#1e293b', borderRadius: 8, padding: 2, flexWrap: 'wrap' },
-  tBtn: { background: 'none', border: 'none', color: '#64748b', padding: '6px 16px', borderRadius: 6, cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600, transition: 'all 0.2s' },
+  kpiLabel: { fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  toolbar: { display: 'flex', gap: 4, marginBottom: 16, background: 'var(--card-bg)', borderRadius: 8, padding: 2, flexWrap: 'wrap' },
+  tBtn: { background: 'none', border: 'none', color: 'var(--text-muted)', padding: '6px 16px', borderRadius: 6, cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600, transition: 'all 0.2s' },
   tBtnActive: { background: '#2563eb', color: '#fff' },
-  empty: { textAlign: 'center', padding: 60, color: '#475569' },
+  empty: { textAlign: 'center', padding: 60, color: 'var(--text-muted)' },
   lista: { display: 'flex', flexDirection: 'column', gap: 12 },
   card: {
-    background: '#1e293b', borderRadius: 14, border: '1px solid #334155',
+    background: 'var(--card-bg)', borderRadius: 14, border: '1px solid var(--border-color)',
     padding: '16px 20px', display: 'flex', alignItems: 'flex-start',
     gap: 16, transition: 'border-color 0.2s',
   },
@@ -457,28 +457,28 @@ const styles = {
     justifyContent: 'center', fontSize: 13, fontWeight: 700,
   },
   matchWrap: { flex: 1, display: 'flex', alignItems: 'stretch', gap: 8, minWidth: 0 },
-  matchBox: { flex: 1, background: '#0f172a', borderRadius: 10, padding: '10px 14px', minWidth: 0 },
-  matchLabel: { fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 },
-  matchTitolo: { fontSize: 13, fontWeight: 600, color: '#e2e8f0', wordBreak: 'break-word' },
+  matchBox: { flex: 1, background: 'var(--app-bg)', borderRadius: 10, padding: '10px 14px', minWidth: 0 },
+  matchLabel: { fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 },
+  matchTitolo: { fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', wordBreak: 'break-word' },
   matchSub: { fontSize: 12, color: '#60a5fa', marginTop: 2 },
-  matchMeta: { display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: '#64748b' },
-  arrow: { fontSize: 20, color: '#334155', alignSelf: 'center', flexShrink: 0 },
+  matchMeta: { display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: 'var(--text-muted)' },
+  arrow: { fontSize: 20, color: 'var(--border-color)', alignSelf: 'center', flexShrink: 0 },
   bottomRow: { display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, minWidth: 120, alignItems: 'flex-end' },
-  motivazione: { fontSize: 11, color: '#64748b', maxWidth: 160, textAlign: 'right', lineHeight: 1.4 },
+  motivazione: { fontSize: 11, color: 'var(--text-muted)', maxWidth: 160, textAlign: 'right', lineHeight: 1.4 },
   actions: { display: 'flex', flexDirection: 'column', gap: 6 },
   btnConferma: { background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 13 },
-  btnRifiuta: { background: 'none', color: '#64748b', border: '1px solid #334155', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 },
+  btnRifiuta: { background: 'none', color: 'var(--text-muted)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 },
   statoBadge: { borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600 },
   modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 },
-  modalBox: { background: '#1e293b', borderRadius: 16, border: '1px solid #334155', width: '100%', maxWidth: 640, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' },
-  modalHeader: { padding: '18px 24px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  modalBox: { background: 'var(--card-bg)', borderRadius: 16, border: '1px solid var(--border-color)', width: '100%', maxWidth: 640, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' },
+  modalHeader: { padding: '18px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   modalTitle: { margin: 0, fontSize: 18, fontWeight: 700, color: '#f87171' },
-  modalCloseBtn: { background: 'none', border: 'none', color: '#94a3b8', fontSize: 20, cursor: 'pointer' },
-  modalText: { padding: '16px 24px', margin: 0, fontSize: 14, color: '#cbd5e1', lineHeight: 1.5 },
+  modalCloseBtn: { background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 20, cursor: 'pointer' },
+  modalText: { padding: '16px 24px', margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 },
   modalList: { padding: '0 24px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 },
-  modalItem: { background: '#0f172a', padding: '14px 18px', borderRadius: 12, border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 },
-  modalFooter: { padding: '16px 24px', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end', background: '#0f172a', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
-  btnChiudiModal: { background: '#334155', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 },
+  modalItem: { background: 'var(--app-bg)', padding: '14px 18px', borderRadius: 12, border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 },
+  modalFooter: { padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', background: 'var(--app-bg)', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+  btnChiudiModal: { background: 'var(--border-color)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 },
   btnAction: { background: 'linear-gradient(135deg, #2563eb, #3b82f6)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' },
 };
 
@@ -489,8 +489,8 @@ function MovimentoOrfanoCard({ mov, onInserisci }) {
         <div style={{ fontSize: 11, color: '#f87171', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
           <AlertTriangle size={14} /> MOVIMENTO IN USCITA SENZA FATTURA
         </div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>{mov.causale || '—'}</div>
-        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{mov.causale || '—'}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {formattaData(mov.data_movimento)}</span>
           <span>·</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>

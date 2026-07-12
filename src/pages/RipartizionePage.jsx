@@ -319,7 +319,7 @@ function TabellaPerSpesa({ spese, unita, ripMap, tabelle }) {
                           € {(imp || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                           {r.override_manuale && <span style={styles.overrideBadge}>override</span>}
                         </td>
-                        <td style={{ ...styles.innerTd, color: '#64748b', fontSize: 12 }}>
+                        <td style={{ ...styles.innerTd, color: 'var(--text-muted)', fontSize: 12 }}>
                           {r.note_override || ''}
                           {r.giorni_competenza ? ` (${r.giorni_competenza}/${r.giorni_totali}gg)` : ''}
                         </td>
@@ -328,7 +328,7 @@ function TabellaPerSpesa({ spese, unita, ripMap, tabelle }) {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr style={{ background: '#1e293b' }}>
+                  <tr style={{ background: 'var(--card-bg)' }}>
                     <td style={{ ...styles.innerTd, fontWeight: 700 }} colSpan={2}>Totale ripartito</td>
                     <td style={{ ...styles.innerTd, fontWeight: 700, color: '#2563eb' }}>
                       € {totaleRip.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
@@ -366,9 +366,9 @@ function TabellaPerUnita({ unita, spese, ripMap, totalePerUnita, getProprietario
         </thead>
         <tbody>
           {unita.map((u, idx) => (
-            <tr key={u.id} style={{ background: idx % 2 === 0 ? '#0f172a' : 'transparent' }}>
+            <tr key={u.id} style={{ background: idx % 2 === 0 ? 'var(--app-bg)' : 'transparent' }}>
               <td style={styles.td}><strong>{u.numero}</strong></td>
-              <td style={{ ...styles.td, color: '#94a3b8', fontSize: 13 }}>{getProprietario(u)}</td>
+              <td style={{ ...styles.td, color: 'var(--text-secondary)', fontSize: 13 }}>{getProprietario(u)}</td>
               {spese.map(s => {
                 const rips = ripMap[s.id] || [];
                 const r = rips.find(r => r.unita_id === u.id);
@@ -376,11 +376,11 @@ function TabellaPerUnita({ unita, spese, ripMap, totalePerUnita, getProprietario
                 return (
                   <td key={s.id} style={{ ...styles.td, textAlign: 'right' }}>
                     {imp !== null ? (
-                      <span style={{ color: r?.override_manuale ? '#f59e0b' : '#e2e8f0' }}>
+                      <span style={{ color: r?.override_manuale ? '#f59e0b' : 'var(--text-primary)' }}>
                         € {imp.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                       </span>
                     ) : (
-                      <span style={{ color: '#334155' }}>—</span>
+                      <span style={{ color: 'var(--border-color)' }}>—</span>
                     )}
                   </td>
                 );
@@ -392,7 +392,7 @@ function TabellaPerUnita({ unita, spese, ripMap, totalePerUnita, getProprietario
           ))}
         </tbody>
         <tfoot>
-          <tr style={{ background: '#1e293b' }}>
+          <tr style={{ background: 'var(--card-bg)' }}>
             <td style={{ ...styles.td, fontWeight: 700 }} colSpan={2}>TOTALE SPESE</td>
             {spese.map(s => (
               <td key={s.id} style={{ ...styles.td, fontWeight: 700, textAlign: 'right', color: '#2563eb' }}>
@@ -411,7 +411,7 @@ function TabellaPerUnita({ unita, spese, ripMap, totalePerUnita, getProprietario
 
 function EmptyState({ msg }) {
   return (
-    <div style={{ textAlign: 'center', padding: 60, color: '#475569' }}>
+    <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
       <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
       {msg}
     </div>
@@ -420,18 +420,18 @@ function EmptyState({ msg }) {
 
 // ─── Stili ──────────────────────────────────────────────────────────────────
 const styles = {
-  page: { fontFamily: "'Sora', sans-serif", color: '#e2e8f0', padding: '24px' },
+  page: { fontFamily: "'Sora', sans-serif", color: 'var(--text-primary)', padding: '24px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 },
-  title: { margin: 0, fontSize: 22, fontWeight: 700, color: '#f1f5f9' },
-  subtitle: { margin: '4px 0 0', fontSize: 14, color: '#64748b' },
+  title: { margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' },
+  subtitle: { margin: '4px 0 0', fontSize: 14, color: 'var(--text-muted)' },
   headerRight: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' },
   kpiRow: { display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' },
   kpiCard: {
-    flex: '1 1 140px', background: '#1e293b', borderRadius: 12,
-    padding: '16px 20px', border: '1px solid #334155',
+    flex: '1 1 140px', background: 'var(--card-bg)', borderRadius: 12,
+    padding: '16px 20px', border: '1px solid var(--border-color)',
   },
   kpiValue: { fontSize: 24, fontWeight: 700, lineHeight: 1 },
-  kpiLabel: { fontSize: 12, color: '#64748b', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  kpiLabel: { fontSize: 12, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
   alert: {
     background: '#f59e0b15', border: '1px solid #f59e0b40',
     borderRadius: 10, padding: '12px 16px', marginBottom: 16,
@@ -439,40 +439,40 @@ const styles = {
   },
   toolbar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 },
   filtri: { display: 'flex', gap: 10 },
-  viewToggle: { display: 'flex', background: '#1e293b', borderRadius: 8, padding: 2 },
+  viewToggle: { display: 'flex', background: 'var(--card-bg)', borderRadius: 8, padding: 2 },
   toggleBtn: {
-    background: 'none', border: 'none', color: '#64748b',
+    background: 'none', border: 'none', color: 'var(--text-muted)',
     padding: '6px 16px', borderRadius: 6, cursor: 'pointer',
     fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600,
     transition: 'all 0.2s',
   },
   toggleActive: { background: '#2563eb', color: '#fff' },
   select: {
-    background: '#1e293b', border: '1px solid #334155',
-    borderRadius: 8, padding: '8px 12px', color: '#e2e8f0',
+    background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+    borderRadius: 8, padding: '8px 12px', color: 'var(--text-primary)',
     fontFamily: "'Sora', sans-serif", fontSize: 13, cursor: 'pointer',
   },
   btnSecondary: {
-    background: '#1e293b', color: '#94a3b8', border: '1px solid #334155',
+    background: 'var(--card-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
     borderRadius: 8, padding: '8px 16px', fontFamily: "'Sora', sans-serif",
     fontWeight: 600, fontSize: 13, cursor: 'pointer',
   },
   tableWrap: { overflowX: 'auto' },
-  loading: { textAlign: 'center', padding: 60, color: '#475569' },
+  loading: { textAlign: 'center', padding: 60, color: 'var(--text-muted)' },
   // Per spesa
   spesaBlock: {
-    background: '#1e293b', borderRadius: 12, border: '1px solid #334155',
+    background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)',
     marginBottom: 16, overflow: 'hidden',
   },
   spesaHeader: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '14px 20px', borderBottom: '1px solid #334155',
+    padding: '14px 20px', borderBottom: '1px solid var(--border-color)',
     flexWrap: 'wrap', gap: 8,
   },
   spesaInfo: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  spesaTitolo: { fontWeight: 700, color: '#f1f5f9', fontSize: 15 },
+  spesaTitolo: { fontWeight: 700, color: 'var(--text-primary)', fontSize: 15 },
   spesaCategoria: {
-    background: '#334155', color: '#94a3b8', borderRadius: 20,
+    background: 'var(--border-color)', color: 'var(--text-secondary)', borderRadius: 20,
     padding: '2px 10px', fontSize: 11,
   },
   spesaCriterio: {
@@ -483,18 +483,18 @@ const styles = {
   spesaImporto: { fontWeight: 700, color: '#2563eb', fontSize: 17 },
   spesaAlert: { color: '#f59e0b', fontSize: 12 },
   nonRipartita: {
-    padding: '16px 20px', color: '#64748b', fontSize: 13, fontStyle: 'italic',
+    padding: '16px 20px', color: 'var(--text-muted)', fontSize: 13, fontStyle: 'italic',
   },
   innerTable: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
   innerTh: {
-    background: '#0f172a', color: '#64748b', padding: '8px 16px',
+    background: 'var(--app-bg)', color: 'var(--text-muted)', padding: '8px 16px',
     textAlign: 'left', fontWeight: 600, fontSize: 11,
     textTransform: 'uppercase', letterSpacing: '0.05em',
-    borderBottom: '1px solid #334155',
+    borderBottom: '1px solid var(--border-color)',
   },
   innerTd: {
-    padding: '8px 16px', borderBottom: '1px solid #1e293b',
-    color: '#cbd5e1',
+    padding: '8px 16px', borderBottom: '1px solid var(--border-color-2)',
+    color: 'var(--text-secondary)',
   },
   overrideBadge: {
     marginLeft: 6, background: '#f59e0b20', color: '#f59e0b',
@@ -503,13 +503,13 @@ const styles = {
   // Per unità
   table: { borderCollapse: 'collapse', fontSize: 13 },
   th: {
-    background: '#1e293b', color: '#94a3b8', padding: '10px 14px',
+    background: 'var(--card-bg)', color: 'var(--text-secondary)', padding: '10px 14px',
     textAlign: 'center', fontWeight: 600, fontSize: 11,
     textTransform: 'uppercase', letterSpacing: '0.04em',
-    borderBottom: '1px solid #334155', minWidth: 100,
+    borderBottom: '1px solid var(--border-color)', minWidth: 100,
   },
   td: {
     padding: '8px 14px', borderBottom: '1px solid #1e293b40',
-    color: '#cbd5e1',
+    color: 'var(--text-secondary)',
   },
 };

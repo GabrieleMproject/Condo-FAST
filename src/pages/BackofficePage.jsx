@@ -239,7 +239,7 @@ export default function BackofficePage() {
 
       <div style={styles.content}>
         {loading ? (
-          <div style={{ color: '#94a3b8', padding: 20 }}>Caricamento in corso...</div>
+          <div style={{ color: 'var(--text-secondary)', padding: 20 }}>Caricamento in corso...</div>
         ) : (
           <>
             {activeTab === 'utenti' && (
@@ -259,7 +259,7 @@ export default function BackofficePage() {
                     <tbody>
                       {utenti.map(u => (
                         <tr key={u.id} style={styles.tr}>
-                          <td style={styles.td}><span style={{ fontFamily: 'monospace', color: '#94a3b8' }}>{u.id.substring(0, 8)}...</span></td>
+                          <td style={styles.td}><span style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{u.id.substring(0, 8)}...</span></td>
                           <td style={styles.td}>{u.ragione_sociale || u.studio_nome || '—'}</td>
                           <td style={styles.td}>
                             <span style={{ padding: '4px 8px', borderRadius: 4, background: '#1e3a8a', color: '#bfdbfe', fontSize: 12, fontWeight: 600 }}>
@@ -270,13 +270,13 @@ export default function BackofficePage() {
                             {u.is_superadmin ? (
                               <span style={{ color: '#10b981', fontWeight: 600 }}>SuperAdmin</span>
                             ) : (
-                              <span style={{ color: '#64748b' }}>Admin</span>
+                              <span style={{ color: 'var(--text-muted)' }}>Admin</span>
                             )}
                           </td>
                           <td style={styles.td}>
                             <button 
                               onClick={() => handlePromuovi(u.id, u.is_superadmin)}
-                              style={{ background: 'transparent', border: '1px solid #334155', color: '#cbd5e1', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
+                              style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
                             >
                               Toggle SuperAdmin
                             </button>
@@ -300,16 +300,16 @@ export default function BackofficePage() {
                     {tickets.filter(t => t.stato === 'aperto').map(t => (
                       <div key={t.id} style={{ ...styles.ticketCard, border: selectedTicket?.id === t.id ? '1px solid #3b82f6' : '1px solid #334155' }} onClick={() => setSelectedTicket(t)}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                          <span style={{ fontWeight: 600, color: '#f1f5f9' }}>{t.titolo}</span>
-                          <span style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(t.created_at).toLocaleDateString()}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t.titolo}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(t.created_at).toLocaleDateString()}</span>
                         </div>
-                        <p style={{ margin: 0, fontSize: 13, color: '#cbd5e1', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {t.messaggio}
                         </p>
                       </div>
                     ))}
                     {tickets.filter(t => t.stato === 'aperto').length === 0 && (
-                      <p style={{ color: '#64748b', fontSize: 13 }}>Nessun ticket aperto.</p>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nessun ticket aperto.</p>
                     )}
                   </div>
 
@@ -318,8 +318,8 @@ export default function BackofficePage() {
                     {tickets.filter(t => t.stato === 'chiuso').map(t => (
                       <div key={t.id} style={styles.ticketCard} onClick={() => setSelectedTicket(t)}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                          <span style={{ fontWeight: 600, color: '#94a3b8', textDecoration: 'line-through' }}>{t.titolo}</span>
-                          <span style={{ fontSize: 12, color: '#64748b' }}>{new Date(t.updated_at).toLocaleDateString()}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-secondary)', textDecoration: 'line-through' }}>{t.titolo}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{new Date(t.updated_at).toLocaleDateString()}</span>
                         </div>
                       </div>
                     ))}
@@ -330,20 +330,20 @@ export default function BackofficePage() {
                 {selectedTicket && (
                   <div style={{ ...styles.card, flex: 1, position: 'sticky', top: 20 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                      <h2 style={{ margin: 0, color: '#f1f5f9', fontSize: 18 }}>{selectedTicket.titolo}</h2>
+                      <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 18 }}>{selectedTicket.titolo}</h2>
                       <span style={{ padding: '4px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', background: selectedTicket.stato === 'aperto' ? '#fef08a' : '#10b981', color: selectedTicket.stato === 'aperto' ? '#854d0e' : '#fff' }}>
                         {selectedTicket.stato}
                       </span>
                     </div>
 
-                    <div style={{ marginBottom: 20, padding: 16, background: '#0f172a', borderRadius: 8, border: '1px solid #1e293b' }}>
-                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Messaggio Utente ({selectedTicket.utente_id.substring(0,8)})</div>
-                      <div style={{ color: '#cbd5e1', fontSize: 14, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedTicket.messaggio}</div>
+                    <div style={{ marginBottom: 20, padding: 16, background: 'var(--app-bg)', borderRadius: 8, border: '1px solid var(--border-color-2)' }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Messaggio Utente ({selectedTicket.utente_id.substring(0,8)})</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: 14, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedTicket.messaggio}</div>
                     </div>
 
                     {selectedTicket.stato === 'aperto' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <label style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>La tua risposta</label>
+                        <label style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>La tua risposta</label>
                         <textarea
                           value={rispostaText}
                           onChange={e => setRispostaText(e.target.value)}
@@ -379,7 +379,7 @@ export default function BackofficePage() {
                     <h2 style={styles.cardTitle}>Nuova Campagna Marketing</h2>
                     <form onSubmit={handleCreateCampagna} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Nome Campagna</label>
+                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Nome Campagna</label>
                         <input
                           type="text"
                           value={newCampagna.nome}
@@ -390,7 +390,7 @@ export default function BackofficePage() {
                         />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Codice Unico (Alfanumerico)</label>
+                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Codice Unico (Alfanumerico)</label>
                         <input
                           type="text"
                           value={newCampagna.codice_campagna}
@@ -401,7 +401,7 @@ export default function BackofficePage() {
                         />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Importo Sconto (€)</label>
+                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Importo Sconto (€)</label>
                         <input
                           type="number"
                           value={newCampagna.sconto_importo}
@@ -420,7 +420,7 @@ export default function BackofficePage() {
                           checked={newCampagna.attiva}
                           onChange={e => setNewCampagna(prev => ({ ...prev, attiva: e.target.checked }))}
                         />
-                        <label htmlFor="campagna_attiva" style={{ fontSize: 13, color: '#e2e8f0', cursor: 'pointer' }}>
+                        <label htmlFor="campagna_attiva" style={{ fontSize: 13, color: 'var(--text-primary)', cursor: 'pointer' }}>
                           Attiva questa campagna immediatamente
                         </label>
                       </div>
@@ -454,7 +454,7 @@ export default function BackofficePage() {
                                 {c.attiva ? (
                                   <span style={{ color: '#10b981', fontWeight: 600, fontSize: 13 }}>Attiva</span>
                                 ) : (
-                                  <span style={{ color: '#64748b', fontSize: 13 }}>Inattiva</span>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Inattiva</span>
                                 )}
                               </td>
                               <td style={styles.td}>
@@ -471,7 +471,7 @@ export default function BackofficePage() {
                           ))}
                           {campagne.length === 0 && (
                             <tr>
-                              <td colSpan="5" style={{ ...styles.td, color: '#64748b', textAlign: 'center' }}>Nessuna campagna creata.</td>
+                              <td colSpan="5" style={{ ...styles.td, color: 'var(--text-muted)', textAlign: 'center' }}>Nessuna campagna creata.</td>
                             </tr>
                           )}
                         </tbody>
@@ -501,20 +501,20 @@ export default function BackofficePage() {
                           <tr key={r.id} style={styles.tr}>
                             <td style={styles.td}>
                               <div style={{ fontWeight: 600 }}>{r.referrer?.nome} {r.referrer?.cognome}</div>
-                              <div style={{ fontSize: 11, color: '#64748b' }}>{r.referrer?.email || r.referrer_id.substring(0,8)}</div>
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.referrer?.email || r.referrer_id.substring(0,8)}</div>
                             </td>
                             <td style={styles.td}>
                               <div style={{ fontWeight: 600 }}>{r.referred ? `${r.referred.nome} ${r.referred.cognome}` : '—'}</div>
-                              <div style={{ fontSize: 11, color: '#64748b' }}>{r.referred_email}</div>
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.referred_email}</div>
                             </td>
                             <td style={styles.td}>
                               <span style={{ fontSize: 13 }}>{r.campaign?.nome || '—'}</span>
-                              <div style={{ fontSize: 10, color: '#64748b', fontFamily: 'monospace' }}>{r.campaign?.codice_campagna}</div>
+                              <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{r.campaign?.codice_campagna}</div>
                             </td>
                             <td style={{ ...styles.td, color: '#10b981', fontWeight: 600 }}>{r.sconto_valore}€</td>
                             <td style={styles.td}>
                               {r.stato === 'registrato' && (
-                                <span style={{ padding: '2px 6px', borderRadius: 4, background: '#1e293b', color: '#94a3b8', fontSize: 12 }}>Registrato</span>
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--card-bg)', color: 'var(--text-secondary)', fontSize: 12 }}>Registrato</span>
                               )}
                               {r.stato === 'convalidato' && (
                                 <span style={{ padding: '2px 6px', borderRadius: 4, background: '#1e3a8a', color: '#93c5fd', fontSize: 12 }}>Convalidato</span>
@@ -523,7 +523,7 @@ export default function BackofficePage() {
                                 <span style={{ padding: '2px 6px', borderRadius: 4, background: '#064e3b', color: '#6ee7b7', fontSize: 12 }}>Applicato</span>
                               )}
                             </td>
-                            <td style={{ ...styles.td, fontSize: 12, color: '#94a3b8' }}>
+                            <td style={{ ...styles.td, fontSize: 12, color: 'var(--text-secondary)' }}>
                               {new Date(r.created_at).toLocaleDateString()}
                             </td>
                             <td style={styles.td}>
@@ -544,14 +544,14 @@ export default function BackofficePage() {
                                     Segna Applicato
                                   </button>
                                 )}
-                                {r.stato === 'applicato' && <span style={{ color: '#64748b', fontSize: 12 }}>—</span>}
+                                {r.stato === 'applicato' && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>}
                               </div>
                             </td>
                           </tr>
                         ))}
                         {referrals.length === 0 && (
                           <tr>
-                            <td colSpan="7" style={{ ...styles.td, color: '#64748b', textAlign: 'center' }}>Nessun invito registrato nel sistema.</td>
+                            <td colSpan="7" style={{ ...styles.td, color: 'var(--text-muted)', textAlign: 'center' }}>Nessun invito registrato nel sistema.</td>
                           </tr>
                         )}
                       </tbody>
@@ -568,23 +568,23 @@ export default function BackofficePage() {
 }
 
 const styles = {
-  page: { padding: '28px 32px', background: '#0f172a', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
+  page: { padding: '28px 32px', background: 'var(--app-bg)', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
   header: { marginBottom: 30 },
-  title: { color: '#e2e8f0', fontSize: 26, fontWeight: 700, margin: 0, textAlign: 'left' },
-  subtitle: { color: '#64748b', fontSize: 13, marginTop: 4, textAlign: 'left' },
-  tabs: { display: 'flex', gap: 8, borderBottom: '1px solid #1e293b', paddingBottom: 16, marginBottom: 24 },
-  tabButton: { display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', color: '#64748b', padding: '8px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
-  tabActive: { background: '#1e293b', color: '#f1f5f9' },
+  title: { color: 'var(--text-primary)', fontSize: 26, fontWeight: 700, margin: 0, textAlign: 'left' },
+  subtitle: { color: 'var(--text-muted)', fontSize: 13, marginTop: 4, textAlign: 'left' },
+  tabs: { display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color-2)', paddingBottom: 16, marginBottom: 24 },
+  tabButton: { display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '8px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
+  tabActive: { background: 'var(--card-bg)', color: 'var(--text-primary)' },
   content: {},
-  card: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 24, textAlign: 'left' },
-  cardTitle: { color: '#e2e8f0', fontSize: 18, fontWeight: 700, marginBottom: 20, marginTop: 0 },
+  card: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 14, padding: 24, textAlign: 'left' },
+  cardTitle: { color: 'var(--text-primary)', fontSize: 18, fontWeight: 700, marginBottom: 20, marginTop: 0 },
   table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
-  th: { padding: '12px 16px', borderBottom: '1px solid #334155', color: '#94a3b8', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  tr: { borderBottom: '1px solid #1e293b' },
-  td: { padding: '14px 16px', color: '#e2e8f0', fontSize: 14 },
-  ticketCard: { background: '#0f172a', padding: 16, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s' },
-  textarea: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '12px 14px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', minHeight: 120, resize: 'vertical' },
-  input: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '10px 12px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box' },
+  th: { padding: '12px 16px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  tr: { borderBottom: '1px solid var(--border-color-2)' },
+  td: { padding: '14px 16px', color: 'var(--text-primary)', fontSize: 14 },
+  ticketCard: { background: 'var(--app-bg)', padding: 16, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s' },
+  textarea: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '12px 14px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', minHeight: 120, resize: 'vertical' },
+  input: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box' },
   btnSubmit: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 2 },
-  btnSecondary: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 1 },
+  btnSecondary: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 1 },
 }

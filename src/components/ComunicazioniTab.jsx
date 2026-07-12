@@ -268,11 +268,11 @@ L'Amministratore`;
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>Caricamento comunicazioni...</div>
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Caricamento comunicazioni...</div>
       ) : comunicazioni.length === 0 ? (
         <div style={styles.empty}>
-          <Mail size={32} color="#334155" style={{ marginBottom: 10 }} />
-          <p style={{ color: '#64748b', margin: 0 }}>Nessuna email o sollecito inviato per questo condominio</p>
+          <Mail size={32} color="var(--text-muted)" style={{ marginBottom: 10 }} />
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessuna email o sollecito inviato per questo condominio</p>
         </div>
       ) : (
         <div style={styles.list}>
@@ -345,9 +345,9 @@ L'Amministratore`;
                       
                       <div style={styles.destList}>
                         {loadingPersone ? (
-                          <div style={{ color: '#64748b', fontSize: 13, padding: 10 }}>Caricamento condòmini...</div>
+                          <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 10 }}>Caricamento condòmini...</div>
                         ) : persone.length === 0 ? (
-                          <div style={{ color: '#64748b', fontSize: 13, padding: 10 }}>
+                          <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 10 }}>
                             Nessun condòmino configurato con indirizzo email.
                           </div>
                         ) : (
@@ -362,8 +362,8 @@ L'Amministratore`;
                                   style={{ marginRight: 10 }}
                                 />
                                 <div style={{ fontSize: 13 }}>
-                                  <div style={{ fontWeight: 600, color: '#f1f5f9' }}>{p.nome}</div>
-                                  <div style={{ color: '#64748b', fontSize: 11 }}>{p.email} • Unità: {p.unita}</div>
+                                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.nome}</div>
+                                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{p.email} • Unità: {p.unita}</div>
                                 </div>
                               </label>
                             );
@@ -475,25 +475,25 @@ const styles = {
   container: { marginTop: 10 },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   titleSec: { display: 'flex', alignItems: 'center', gap: 8 },
-  titleText: { fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  titleText: { fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' },
   btnNew: { background: '#2563eb', border: 'none', borderRadius: 8, padding: '8px 16px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 700, fontFamily: "'Sora', sans-serif" },
-  empty: { textAlign: 'center', padding: 40, color: '#475569', background: '#0f172a', borderRadius: 8, border: '1px solid #334155' },
+  empty: { textAlign: 'center', padding: 40, color: 'var(--text-muted)', background: 'var(--app-bg)', borderRadius: 8, border: '1px solid var(--border-color)' },
   list: { display: 'flex', flexDirection: 'column', gap: 10 },
-  card: { background: '#0f172a', borderRadius: 8, padding: '14px 18px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  card: { background: 'var(--app-bg)', borderRadius: 8, padding: '14px 18px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   cardInfo: { flex: 1, minWidth: 0 },
   cardTop: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
-  destName: { fontWeight: 700, color: '#f1f5f9', fontSize: 14 },
-  destEmail: { color: '#64748b', fontSize: 12 },
+  destName: { fontWeight: 700, color: 'var(--text-primary)', fontSize: 14 },
+  destEmail: { color: 'var(--text-muted)', fontSize: 12 },
   badge: { borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 600 },
-  cardOggetto: { fontSize: 13, color: '#94a3b8', marginBottom: 4, fontWeight: 500 },
-  cardDate: { fontSize: 11, color: '#475569' },
-  btnView: { background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '6px 10px', color: '#cbd5e1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  cardOggetto: { fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 500 },
+  cardDate: { fontSize: 11, color: 'var(--text-muted)' },
+  btnView: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '6px 10px', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   // Modal & Form
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 },
-  modal: { background: '#1e293b', border: '1px solid #334155', borderRadius: 16, width: '100%', maxHeight: '95vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' },
-  modalHeader: { padding: '16px 20px', background: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  modalTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: '#f1f5f9' },
-  btnClose: { background: 'none', border: 'none', color: '#64748b', fontSize: 18, cursor: 'pointer' },
+  modal: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16, width: '100%', maxHeight: '95vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' },
+  modalHeader: { padding: '16px 20px', background: 'var(--app-bg)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  modalTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' },
+  btnClose: { background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 18, cursor: 'pointer' },
   modalBody: { padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, minHeight: 400 },
   errBanner: { background: '#ef444415', border: '1px solid #ef444430', borderRadius: 8, padding: '10px 14px', color: '#ef4444', fontSize: 13 },
   infoBanner: { background: '#3b82f615', border: '1px solid #3b82f630', borderRadius: 8, padding: '10px 14px', color: '#60a5fa', fontSize: 12, display: 'flex', alignItems: 'center' },
@@ -501,21 +501,21 @@ const styles = {
   formGrid: { display: 'flex', gap: 20, flex: 1, minHeight: 350 },
   formCol: { display: 'flex', flexDirection: 'column', gap: 14, flex: 1 },
   formGroup: { display: 'flex', flexDirection: 'column', gap: 4 },
-  label: { fontSize: 11, color: '#64748b', fontWeight: 600 },
-  select: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '8px 12px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13 },
-  input: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '8px 12px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13 },
-  textarea: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '12px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, lineHeight: 1.6, resize: 'none' },
+  label: { fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 },
+  select: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 12px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif", fontSize: 13 },
+  input: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 12px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif", fontSize: 13 },
+  textarea: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '12px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif", fontSize: 13, lineHeight: 1.6, resize: 'none' },
   btnLink: { background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: 0, fontFamily: "'Sora', sans-serif" },
-  destList: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, overflowY: 'auto', flex: 1, maxHeight: 250 },
-  destItem: { display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #1e293b', cursor: 'pointer', transition: 'background-color 0.15s' },
-  modalFooter: { padding: '14px 20px', background: '#0f172a', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end', gap: 10 },
-  btnCancel: { background: 'transparent', border: '1px solid #334155', borderRadius: 8, padding: '8px 20px', color: '#94a3b8', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontSize: 13 },
+  destList: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, overflowY: 'auto', flex: 1, maxHeight: 250 },
+  destItem: { display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border-color-2)', cursor: 'pointer', transition: 'background-color 0.15s' },
+  modalFooter: { padding: '14px 20px', background: 'var(--app-bg)', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: 10 },
+  btnCancel: { background: 'transparent', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 20px', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontSize: 13 },
   btnSubmit: { background: '#2563eb', border: 'none', borderRadius: 8, padding: '8px 20px', color: '#fff', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 700 },
   // Detail Meta
   metaRow: { display: 'grid', gridTemplateColumns: '120px 1fr', fontSize: 13 },
-  metaLabel: { color: '#64748b', fontWeight: 600 },
-  metaValue: { color: '#e2e8f0' },
-  msgContainer: { borderTop: '1px solid #334155', paddingTop: 14, marginTop: 6 },
-  msgLabel: { color: '#64748b', fontSize: 12, fontWeight: 600, marginBottom: 8 },
-  msgContent: { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '16px', color: '#e2e8f0', overflowX: 'auto', fontFamily: "'Sora', sans-serif", fontSize: 13, lineHeight: 1.6 }
+  metaLabel: { color: 'var(--text-muted)', fontWeight: 600 },
+  metaValue: { color: 'var(--text-primary)' },
+  msgContainer: { borderTop: '1px solid var(--border-color)', paddingTop: 14, marginTop: 6 },
+  msgLabel: { color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, marginBottom: 8 },
+  msgContent: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '16px', color: 'var(--text-primary)', overflowX: 'auto', fontFamily: "'Sora', sans-serif", fontSize: 13, lineHeight: 1.6 }
 };

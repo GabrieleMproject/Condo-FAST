@@ -181,7 +181,7 @@ export default function SubentroModal({ spesa, unita, ripartizione, esercizio, o
                 <span style={styles.proRataLabel}>Giorni precedente</span>
                 <span style={{ ...styles.proRataVal, color: '#f59e0b' }}>{calcoloProrata.giorniPrecedenti}gg</span>
               </div>
-              <div style={{ ...styles.proRataItem, borderTop: '1px solid #334155', paddingTop: 10, marginTop: 4, gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ ...styles.proRataItem, borderTop: '1px solid var(--border-color)', paddingTop: 10, marginTop: 4, gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between' }}>
                 <div>
                   <span style={styles.proRataLabel}>Quota nuovo occupante</span>
                   <span style={{ ...styles.proRataVal, color: '#16a34a', fontSize: 18, display: 'block' }}>
@@ -279,7 +279,7 @@ const styles = {
     zIndex: 1000, padding: 16,
   },
   modal: {
-    background: '#1e293b', borderRadius: 16, border: '1px solid #334155',
+    background: 'var(--card-bg)', borderRadius: 16, border: '1px solid var(--border-color)',
     padding: 28, width: '100%', maxWidth: 560,
     maxHeight: '90vh', overflowY: 'auto',
     fontFamily: "'Sora', sans-serif",
@@ -288,34 +288,34 @@ const styles = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
     marginBottom: 20,
   },
-  modalTitle: { margin: 0, fontSize: 18, fontWeight: 700, color: '#f1f5f9' },
-  modalSub: { margin: '4px 0 0', fontSize: 13, color: '#64748b' },
+  modalTitle: { margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' },
+  modalSub: { margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' },
   closeBtn: {
-    background: 'none', border: 'none', color: '#64748b',
+    background: 'none', border: 'none', color: 'var(--text-muted)',
     cursor: 'pointer', fontSize: 18, padding: 4,
   },
   infoBox: {
-    background: '#0f172a', borderRadius: 10, padding: '12px 16px',
-    marginBottom: 20, border: '1px solid #334155',
+    background: 'var(--app-bg)', borderRadius: 10, padding: '12px 16px',
+    marginBottom: 20, border: '1px solid var(--border-color)',
   },
   infoRow: {
     display: 'flex', justifyContent: 'space-between',
-    padding: '4px 0', fontSize: 13, borderBottom: '1px solid #1e293b',
+    padding: '4px 0', fontSize: 13, borderBottom: '1px solid var(--border-color-2)',
   },
-  infoLabel: { color: '#64748b' },
-  infoValue: { color: '#e2e8f0', fontWeight: 600 },
+  infoLabel: { color: 'var(--text-muted)' },
+  infoValue: { color: 'var(--text-primary)', fontWeight: 600 },
   field: { marginBottom: 16 },
-  label: { display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  label: { display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' },
   input: {
-    width: '100%', background: '#0f172a', border: '1px solid #334155',
-    borderRadius: 8, padding: '10px 14px', color: '#e2e8f0',
+    width: '100%', background: 'var(--app-bg)', border: '1px solid var(--border-color)',
+    borderRadius: 8, padding: '10px 14px', color: 'var(--text-primary)',
     fontFamily: "'Sora', sans-serif", fontSize: 14, outline: 'none',
     boxSizing: 'border-box',
     transition: 'border-color 0.2s',
   },
-  hint: { fontSize: 11, color: '#475569', marginTop: 4, display: 'block' },
+  hint: { fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'block' },
   proRataBox: {
-    background: '#0f172a', borderRadius: 12, border: '1px solid #2563eb30',
+    background: 'var(--app-bg)', borderRadius: 12, border: '1px solid #2563eb30',
     padding: '14px 18px', marginBottom: 20,
   },
   proRataTitle: { fontSize: 13, fontWeight: 700, color: '#60a5fa', marginBottom: 12 },
@@ -323,15 +323,15 @@ const styles = {
     display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12,
   },
   proRataItem: { display: 'flex', flexDirection: 'column', gap: 4 },
-  proRataLabel: { fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' },
-  proRataVal: { fontSize: 16, fontWeight: 700, color: '#e2e8f0' },
+  proRataLabel: { fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' },
+  proRataVal: { fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' },
   toggleRow: {},
   segmented: {
-    display: 'flex', background: '#0f172a', borderRadius: 8,
-    padding: 2, border: '1px solid #334155', marginTop: 6,
+    display: 'flex', background: 'var(--app-bg)', borderRadius: 8,
+    padding: 2, border: '1px solid var(--border-color)', marginTop: 6,
   },
   segBtn: {
-    flex: 1, background: 'none', border: 'none', color: '#64748b',
+    flex: 1, background: 'none', border: 'none', color: 'var(--text-muted)',
     padding: '7px 14px', borderRadius: 6, cursor: 'pointer',
     fontFamily: "'Sora', sans-serif", fontSize: 12, fontWeight: 600,
     transition: 'all 0.2s',
@@ -344,7 +344,7 @@ const styles = {
   },
   modalFooter: {
     display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 20,
-    paddingTop: 16, borderTop: '1px solid #334155',
+    paddingTop: 16, borderTop: '1px solid var(--border-color)',
   },
   btnPrimary: {
     background: '#2563eb', color: '#fff', border: 'none',
@@ -352,8 +352,8 @@ const styles = {
     fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 14, cursor: 'pointer',
   },
   btnSecondary: {
-    background: 'none', color: '#94a3b8',
-    border: '1px solid #334155', borderRadius: 8,
+    background: 'none', color: 'var(--text-secondary)',
+    border: '1px solid var(--border-color)', borderRadius: 8,
     padding: '10px 20px', fontFamily: "'Sora', sans-serif",
     fontWeight: 600, fontSize: 14, cursor: 'pointer',
   },

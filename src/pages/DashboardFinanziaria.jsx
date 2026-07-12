@@ -93,7 +93,7 @@ export default function DashboardFinanziaria() {
     };
   }, [dati]);
 
-  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#475569', fontFamily: "'Sora', sans-serif" }}>Caricamento dashboard...</div>;
+  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'Sora', sans-serif" }}>Caricamento dashboard...</div>;
   if (!dati || !computed) return null;
 
   const { movimenti, fatture, spese } = dati;
@@ -236,7 +236,7 @@ export default function DashboardFinanziaria() {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
                     € {(f.importo_totale || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                   </div>
                   <div style={{ fontSize: 11, color: f.stato === 'pagata' ? '#16a34a' : '#f59e0b', marginTop: 2 }}>
@@ -259,7 +259,7 @@ export default function DashboardFinanziaria() {
               <div style={{ fontWeight: 700, color: '#a78bfa', fontSize: 16 }}>
                 {computed.suggerimentiPendenti} abbinamenti AI da confermare
               </div>
-              <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
                 L'AI ha trovato possibili corrispondenze tra movimenti e fatture. Verifica e conferma.
               </div>
             </div>
@@ -297,35 +297,35 @@ function AlertChip({ color, icon: Icon, children }) {
 }
 
 function EmptyInSection({ msg }) {
-  return <div style={{ textAlign: 'center', padding: '24px 0', color: '#475569', fontSize: 13 }}>{msg}</div>;
+  return <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: 13 }}>{msg}</div>;
 }
 
 // ─── Stili ────────────────────────────────────────────────────────────────────
 const styles = {
-  page: { fontFamily: "'Sora', sans-serif", color: '#e2e8f0', padding: 24 },
+  page: { fontFamily: "'Sora', sans-serif", color: 'var(--text-primary)', padding: 24 },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 12 },
-  title: { margin: 0, fontSize: 22, fontWeight: 700, color: '#f1f5f9' },
-  subtitle: { margin: '4px 0 0', fontSize: 13, color: '#64748b' },
-  select: { background: '#1e293b', border: '1px solid #334155', borderRadius: 8, padding: '7px 12px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 13, cursor: 'pointer' },
+  title: { margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' },
+  subtitle: { margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' },
+  select: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '7px 12px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif", fontSize: 13, cursor: 'pointer' },
   alertBar: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 },
   alertChip: { borderRadius: 20, border: '1px solid', padding: '6px 14px', fontSize: 12, fontWeight: 600 },
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 24 },
-  kpiCard: { background: '#1e293b', borderRadius: 14, border: '1px solid #334155', padding: '18px 20px' },
+  kpiCard: { background: 'var(--card-bg)', borderRadius: 14, border: '1px solid var(--border-color)', padding: '18px 20px' },
   kpiIcon: { fontSize: 22, marginBottom: 8 },
   kpiVal: { fontSize: 22, fontWeight: 700, lineHeight: 1 },
-  kpiTitolo: { fontSize: 13, color: '#94a3b8', marginTop: 4, fontWeight: 600 },
-  kpiSub: { fontSize: 11, color: '#475569', marginTop: 2 },
+  kpiTitolo: { fontSize: 13, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 600 },
+  kpiSub: { fontSize: 11, color: 'var(--text-muted)', marginTop: 2 },
   twoCol: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 },
-  section: { background: '#1e293b', borderRadius: 14, border: '1px solid #334155', padding: '18px 20px' },
+  section: { background: 'var(--card-bg)', borderRadius: 14, border: '1px solid var(--border-color)', padding: '18px 20px' },
   sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: '#f1f5f9' },
+  sectionTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' },
   seeAll: { fontSize: 12, color: '#2563eb', textDecoration: 'none' },
-  movRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #0f172a', transition: 'background 0.15s' },
+  movRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border-color-2)', transition: 'background 0.15s' },
   movRowAlert: { background: '#f59e0b08' },
   movDot: { width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0, fontSize: 12 },
   movInfo: { flex: 1, minWidth: 0 },
-  movCausale: { fontSize: 13, color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  movMeta: { fontSize: 11, color: '#64748b', marginTop: 1, display: 'flex', alignItems: 'center', gap: 6 },
+  movCausale: { fontSize: 13, color: 'var(--text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  movMeta: { fontSize: 11, color: 'var(--text-muted)', marginTop: 1, display: 'flex', alignItems: 'center', gap: 6 },
   ricTag: { background: '#16a34a20', color: '#16a34a', borderRadius: 20, padding: '1px 6px', fontSize: 10 },
   movImporto: { fontSize: 14, fontWeight: 700, flexShrink: 0 },
   ricBox: {

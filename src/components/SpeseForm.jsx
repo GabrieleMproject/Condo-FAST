@@ -14,11 +14,11 @@ const CATEGORIE = [
 ]
 
 const inputStyle = {
-  width: '100%', background: '#0f172a', color: '#f1f5f9',
-  border: '1px solid #334155', borderRadius: 8, padding: '10px 12px',
+  width: '100%', background: 'var(--app-bg)', color: 'var(--text-primary)',
+  border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px',
   fontSize: 14, fontFamily: 'Sora, sans-serif', boxSizing: 'border-box'
 }
-const labelStyle = { display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }
+const labelStyle = { display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }
 
 const trovaTabellaFuzzy = (tabelleList, nomeConsigliato, criterio) => {
   if (!tabelleList || !tabelleList.length) return null
@@ -460,8 +460,8 @@ Formato JSON:
   const isManuale = form.criterio === 'manuale'
 
   return (
-    <div style={{ background: '#1e293b', borderRadius: 16, padding: 28, border: '1px solid #334155' }}>
-      <h3 style={{ margin: '0 0 24px', color: '#f1f5f9', fontSize: 18, fontWeight: 600 }}>
+    <div style={{ background: 'var(--card-bg)', borderRadius: 16, padding: 28, border: '1px solid var(--border-color)' }}>
+      <h3 style={{ margin: '0 0 24px', color: 'var(--text-primary)', fontSize: 18, fontWeight: 600 }}>
         {spesaInEdit ? 'Modifica spesa' : 'Nuova spesa'}
       </h3>
 
@@ -474,12 +474,12 @@ Formato JSON:
             onDrop={handleDrop}
             onClick={() => !loadingFattura && fileInputRef.current?.click()}
             style={{
-              border: `2px dashed ${dragOver ? '#7c3aed' : fatturaImportata ? '#10b981' : '#334155'}`,
+              border: `2px dashed ${dragOver ? '#7c3aed' : fatturaImportata ? '#10b981' : 'var(--border-color)'}`,
               borderRadius: 10,
               padding: '20px 24px',
               textAlign: 'center',
               cursor: loadingFattura ? 'not-allowed' : 'pointer',
-              background: dragOver ? '#7c3aed11' : fatturaImportata ? '#10b98111' : '#0f172a',
+              background: dragOver ? '#7c3aed11' : fatturaImportata ? '#10b98111' : 'var(--app-bg)',
               transition: 'all 0.2s',
             }}
           >
@@ -493,20 +493,20 @@ Formato JSON:
             {loadingFattura ? (
               <div>
                 <Loader2 size={24} style={{ margin: '0 auto 8px', color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
-                <div style={{ color: '#94a3b8', fontSize: 14 }}>Estrazione dati in corso...</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Estrazione dati in corso...</div>
               </div>
             ) : fatturaImportata ? (
               <div>
                 <CheckCircle2 size={24} style={{ margin: '0 auto 8px', color: '#10b981' }} />
                 <div style={{ color: '#10b981', fontSize: 14, fontWeight: 600 }}>Dati estratti dalla fattura</div>
-                <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
                   Verifica e modifica i campi pre-compilati qui sotto
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); setFatturaImportata(false); setFileCaricato(null); setAiDatiEstratti(null); fileInputRef.current?.click() }}
                   style={{
-                    marginTop: 8, background: 'transparent', color: '#64748b',
-                    border: '1px solid #334155', borderRadius: 6, padding: '4px 12px',
+                    marginTop: 8, background: 'transparent', color: 'var(--text-muted)',
+                    border: '1px solid var(--border-color)', borderRadius: 6, padding: '4px 12px',
                     fontSize: 12, cursor: 'pointer', fontFamily: 'Sora, sans-serif'
                   }}
                 >
@@ -515,11 +515,11 @@ Formato JSON:
               </div>
             ) : (
               <div>
-                <Receipt size={28} style={{ margin: '0 auto 8px', color: '#475569' }} />
-                <div style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>
+                <Receipt size={28} style={{ margin: '0 auto 8px', color: 'var(--text-muted)' }} />
+                <div style={{ color: 'var(--text-secondary)', fontSize: 14, fontWeight: 600 }}>
                   Trascina la fattura qui oppure clicca per selezionarla
                 </div>
-                <div style={{ color: '#475569', fontSize: 12, marginTop: 4 }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
                   PDF, immagine, DOCX, Excel · L'AI compilerà automaticamente i campi
                 </div>
               </div>
@@ -537,9 +537,9 @@ Formato JSON:
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20 }}>
-            <div style={{ flex: 1, height: 1, background: '#334155' }} />
-            <span style={{ color: '#475569', fontSize: 12 }}>oppure compila manualmente</span>
-            <div style={{ flex: 1, height: 1, background: '#334155' }} />
+            <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
+            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>oppure compila manualmente</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
           </div>
         </div>
       )}
@@ -550,7 +550,7 @@ Formato JSON:
           <label style={labelStyle}>Descrizione *</label>
           <div style={{ display: 'flex', gap: 10 }}>
             <input
-              style={{ ...inputStyle, flex: 1, borderColor: errors.descrizione ? '#ef4444' : '#334155' }}
+              style={{ ...inputStyle, flex: 1, borderColor: errors.descrizione ? '#ef4444' : 'var(--border-color)' }}
               placeholder="Es. Manutenzione ascensore, Pulizia scale..."
               value={form.descrizione}
               onChange={e => setField('descrizione', e.target.value)}
@@ -579,7 +579,7 @@ Formato JSON:
           <label style={labelStyle}>Importo (€) *</label>
           <input
             type="number" step="0.01" min="0"
-            style={{ ...inputStyle, borderColor: errors.importo ? '#ef4444' : '#334155' }}
+            style={{ ...inputStyle, borderColor: errors.importo ? '#ef4444' : 'var(--border-color)' }}
             placeholder="0.00"
             value={form.importo}
             onChange={e => setField('importo', e.target.value)}
@@ -591,7 +591,7 @@ Formato JSON:
           <label style={labelStyle}>Data spesa *</label>
           <input
             type="date"
-            style={{ ...inputStyle, borderColor: errors.data_spesa ? '#ef4444' : '#334155' }}
+            style={{ ...inputStyle, borderColor: errors.data_spesa ? '#ef4444' : 'var(--border-color)' }}
             value={form.data_spesa}
             onChange={e => setField('data_spesa', e.target.value)}
           />
@@ -626,7 +626,7 @@ Formato JSON:
           <div>
             <label style={labelStyle}>Tabella millesimale *</label>
             <select
-              style={{ ...inputStyle, borderColor: errors.tabella ? '#ef4444' : '#334155' }}
+              style={{ ...inputStyle, borderColor: errors.tabella ? '#ef4444' : 'var(--border-color)' }}
               value={form.tabella_millesimale_id}
               onChange={e => setField('tabella_millesimale_id', e.target.value)}
             >
@@ -643,7 +643,7 @@ Formato JSON:
               return (
                 <div style={{
                   background: '#8b5cf61a', border: '1px solid #8b5cf666', borderRadius: 8, padding: '12px 16px',
-                  marginTop: 10, fontSize: 13, color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: 10
+                  marginTop: 10, fontSize: 13, color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: 10
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Sparkles size={18} style={{ color: '#fbbf24', flexShrink: 0 }} />
@@ -668,7 +668,7 @@ Formato JSON:
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Sparkles size={12} /> Struttura automaticamente con AI e Salva</span>
                       )}
                     </button>
-                    <span style={{ color: '#94a3b8', fontSize: 12 }}>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
                       L'AI assegnerà automaticamente le quote alle {unita?.length || 0} unità del condominio.
                     </span>
                   </div>
@@ -687,7 +687,7 @@ Formato JSON:
               value={form.percentuale_millesimi}
               onChange={e => setField('percentuale_millesimi', e.target.value)}
             />
-            <span style={{ color: '#64748b', fontSize: 12 }}>Il resto ({100 - form.percentuale_millesimi}%) in parti uguali</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Il resto ({100 - form.percentuale_millesimi}%) in parti uguali</span>
           </div>
         )}
 
@@ -717,26 +717,26 @@ Formato JSON:
       {/* ── Griglia MANUALE editabile ── */}
       {isManuale && (
         <div style={{ marginTop: 24 }}>
-          <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
             Importi per unità ({unita.length}) — inserisci manualmente la quota di ciascuna unità
           </div>
           <div style={{
-            background: '#0f172a', borderRadius: 8, border: '1px solid #334155',
+            background: 'var(--app-bg)', borderRadius: 8, border: '1px solid var(--border-color)',
             maxHeight: 260, overflowY: 'auto'
           }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#1e293b' }}>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b' }}>Interno</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b' }}>Piano</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b', width: 160 }}>Importo €</th>
+                <tr style={{ background: 'var(--card-bg)' }}>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)' }}>Interno</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)' }}>Piano</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text-muted)', width: 160 }}>Importo €</th>
                 </tr>
               </thead>
               <tbody>
                 {unita.map((u, i) => (
                   <tr key={u.id} style={{ borderTop: i > 0 ? '1px solid #1e293b' : 'none' }}>
-                    <td style={{ padding: '7px 12px', color: '#f1f5f9' }}>{u.interno || u.numero || '—'}</td>
-                    <td style={{ padding: '7px 12px', color: '#94a3b8' }}>{u.piano ?? '—'}</td>
+                    <td style={{ padding: '7px 12px', color: 'var(--text-primary)' }}>{u.interno || u.numero || '—'}</td>
+                    <td style={{ padding: '7px 12px', color: 'var(--text-secondary)' }}>{u.piano ?? '—'}</td>
                     <td style={{ padding: '6px 12px', textAlign: 'right' }}>
                       <input
                         type="number" step="0.01" min="0"
@@ -750,8 +750,8 @@ Formato JSON:
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ borderTop: '1px solid #334155' }}>
-                  <td colSpan={2} style={{ padding: '8px 12px', color: '#94a3b8', fontSize: 12 }}>
+                <tr style={{ borderTop: '1px solid var(--border-color)' }}>
+                  <td colSpan={2} style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
                     Totale ripartito
                   </td>
                   <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700,
@@ -780,31 +780,31 @@ Formato JSON:
       {/* Anteprima ripartizioni (criteri automatici) */}
       {!isManuale && ripartizioni.length > 0 && (
         <div style={{ marginTop: 24 }}>
-          <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
             Anteprima ripartizione ({ripartizioni.length} unità)
           </div>
           <div style={{
-            background: '#0f172a', borderRadius: 8, border: '1px solid #334155',
+            background: 'var(--app-bg)', borderRadius: 8, border: '1px solid var(--border-color)',
             maxHeight: 200, overflowY: 'auto'
           }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#1e293b' }}>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b' }}>Interno</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b' }}>Piano</th>
+                <tr style={{ background: 'var(--card-bg)' }}>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)' }}>Interno</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)' }}>Piano</th>
                   {form.criterio !== 'quota_fissa' && (
-                    <th style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>Millesimi</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text-muted)' }}>Millesimi</th>
                   )}
-                  <th style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>Quota €</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text-muted)' }}>Quota €</th>
                 </tr>
               </thead>
               <tbody>
                 {ripartizioni.map((r, i) => (
                   <tr key={r.unita_id} style={{ borderTop: i > 0 ? '1px solid #1e293b' : 'none' }}>
-                    <td style={{ padding: '7px 12px', color: '#f1f5f9' }}>{r.interno || '—'}</td>
-                    <td style={{ padding: '7px 12px', color: '#94a3b8' }}>{r.piano ?? '—'}</td>
+                    <td style={{ padding: '7px 12px', color: 'var(--text-primary)' }}>{r.interno || '—'}</td>
+                    <td style={{ padding: '7px 12px', color: 'var(--text-secondary)' }}>{r.piano ?? '—'}</td>
                     {form.criterio !== 'quota_fissa' && (
-                      <td style={{ padding: '7px 12px', textAlign: 'right', color: '#64748b' }}>
+                      <td style={{ padding: '7px 12px', textAlign: 'right', color: 'var(--text-muted)' }}>
                         {r.millesimi?.toFixed(2) || '—'}
                       </td>
                     )}
@@ -815,11 +815,11 @@ Formato JSON:
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ borderTop: '1px solid #334155' }}>
-                  <td colSpan={form.criterio !== 'quota_fissa' ? 3 : 2} style={{ padding: '8px 12px', color: '#94a3b8', fontSize: 12 }}>
+                <tr style={{ borderTop: '1px solid var(--border-color)' }}>
+                  <td colSpan={form.criterio !== 'quota_fissa' ? 3 : 2} style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
                     Totale
                   </td>
-                  <td style={{ padding: '8px 12px', textAlign: 'right', color: '#f1f5f9', fontWeight: 700 }}>
+                  <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text-primary)', fontWeight: 700 }}>
                     €{ripartizioni.reduce((s, r) => s + r.importo, 0).toFixed(2)}
                   </td>
                 </tr>
@@ -837,7 +837,7 @@ Formato JSON:
       )}
       <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 28 }}>
         <button onClick={onCancel} style={{
-          background: 'transparent', color: '#94a3b8', border: '1px solid #334155',
+          background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
           borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer',
           fontFamily: 'Sora, sans-serif'
         }}>Annulla</button>
@@ -861,29 +861,29 @@ Formato JSON:
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
         }}>
           <div style={{
-            background: '#1e293b', borderRadius: 16, padding: 32, maxWidth: 540,
+            background: 'var(--card-bg)', borderRadius: 16, padding: 32, maxWidth: 540,
             width: '100%', border: '1px solid #7c3aed66'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
               <Bot size={28} style={{ color: '#8b5cf6' }} />
               <div>
-                <h3 style={{ margin: 0, color: '#f1f5f9', fontSize: 17 }}>Suggerimento AI</h3>
-                <p style={{ margin: 0, color: '#64748b', fontSize: 12 }}>
+                <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 17 }}>Suggerimento AI</h3>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 12 }}>
                   Basato su regolamento, tabelle millesimali e Codice Civile
                 </p>
               </div>
             </div>
 
             <div style={{
-              background: '#0f172a', borderRadius: 8, padding: '10px 14px',
-              marginBottom: 16, fontSize: 13, color: '#94a3b8'
+              background: 'var(--app-bg)', borderRadius: 8, padding: '10px 14px',
+              marginBottom: 16, fontSize: 13, color: 'var(--text-secondary)'
             }}>
-              Spesa: <strong style={{ color: '#f1f5f9' }}>{form.descrizione}</strong>
+              Spesa: <strong style={{ color: 'var(--text-primary)' }}>{form.descrizione}</strong>
               {form.importo && <span> · €{parseFloat(form.importo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>}
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>Criterio suggerito</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 8 }}>Criterio suggerito</div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <span style={{
                   background: '#7c3aed22', color: '#a78bfa', borderRadius: 8,
@@ -898,12 +898,12 @@ Formato JSON:
                   )}
                 </span>
                 {aiSuggerimento.tabella_consigliata && (
-                  <span style={{ color: '#64748b', fontSize: 13 }}>
-                    Tabella: <strong style={{ color: '#94a3b8' }}>{aiSuggerimento.tabella_consigliata}</strong>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                    Tabella: <strong style={{ color: 'var(--text-secondary)' }}>{aiSuggerimento.tabella_consigliata}</strong>
                   </span>
                 )}
                 {aiSuggerimento.criterio === 'mista' && (
-                  <span style={{ color: '#64748b', fontSize: 13 }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                     {aiSuggerimento.percentuale_millesimi}% millesimi
                   </span>
                 )}
@@ -923,11 +923,11 @@ Formato JSON:
             )}
 
             <div style={{
-              background: '#0f172a', borderRadius: 8, padding: '14px 16px',
+              background: 'var(--app-bg)', borderRadius: 8, padding: '14px 16px',
               marginBottom: 16, borderLeft: '3px solid #7c3aed'
             }}>
-              <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Motivazione</div>
-              <p style={{ color: '#e2e8f0', margin: 0, fontSize: 14, lineHeight: 1.6 }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Motivazione</div>
+              <p style={{ color: 'var(--text-primary)', margin: 0, fontSize: 14, lineHeight: 1.6 }}>
                 {aiSuggerimento.motivazione}
               </p>
             </div>
@@ -936,8 +936,8 @@ Formato JSON:
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {aiSuggerimento.fonti?.map((f, i) => (
                   <span key={i} style={{
-                    background: '#1e293b', color: '#64748b', borderRadius: 4,
-                    padding: '3px 8px', fontSize: 11, border: '1px solid #334155'
+                    background: 'var(--card-bg)', color: 'var(--text-muted)', borderRadius: 4,
+                    padding: '3px 8px', fontSize: 11, border: '1px solid var(--border-color)'
                   }}>{f}</span>
                 ))}
               </div>
@@ -954,8 +954,8 @@ Formato JSON:
               <button
                 onClick={() => { setShowAiModal(false); setField('criterio_override', true) }}
                 style={{
-                  flex: 1, background: 'transparent', color: '#94a3b8',
-                  border: '1px solid #334155', borderRadius: 8,
+                  flex: 1, background: 'transparent', color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-color)', borderRadius: 8,
                   padding: '11px 16px', fontSize: 14, cursor: 'pointer',
                   fontFamily: 'Sora, sans-serif'
                 }}

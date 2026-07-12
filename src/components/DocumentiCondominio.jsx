@@ -121,8 +121,8 @@ export default function DocumentiCondominio({ condominioId }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h3 style={{ margin: 0, color: '#f1f5f9', fontSize: 18, fontWeight: 600 }}>Documenti</h3>
-          <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: 13 }}>
+          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 18, fontWeight: 600 }}>Documenti</h3>
+          <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: 13 }}>
             Regolamento, tabelle millesimali, verbali e altri documenti del condominio
           </p>
         </div>
@@ -147,14 +147,14 @@ export default function DocumentiCondominio({ condominioId }) {
             style={{
               background: filtroTipo === tipo ? '#2563eb' : '#1e293b',
               color: filtroTipo === tipo ? '#fff' : '#94a3b8',
-              border: `1px solid ${filtroTipo === tipo ? '#2563eb' : '#334155'}`,
+              border: `1px solid ${filtroTipo === tipo ? '#2563eb' : 'var(--border-color)'}`,
               borderRadius: 20, padding: '5px 14px', fontSize: 12,
               cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontWeight: 500
             }}
           >
             {tipo === 'tutti' ? 'Tutti' : TIPI.find(t => t.value === tipo)?.label}
             {tipo !== 'tutti' && (
-              <span style={{ marginLeft: 6, color: '#64748b' }}>
+              <span style={{ marginLeft: 6, color: 'var(--text-muted)' }}>
                 {documentiVisibili.filter(d => d.tipo === tipo).length}
               </span>
             )}
@@ -171,17 +171,17 @@ export default function DocumentiCondominio({ condominioId }) {
 
       {/* Lista documenti */}
       {loading && !documenti.length ? (
-        <div style={{ textAlign: 'center', color: '#64748b', padding: 40 }}>Caricamento...</div>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Caricamento...</div>
       ) : filtrati.length === 0 ? (
         <div style={{
-          background: '#1e293b', border: '2px dashed #334155', borderRadius: 12,
+          background: 'var(--card-bg)', border: '2px dashed var(--border-color)', borderRadius: 12,
           padding: 48, textAlign: 'center'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><FolderOpen size={40} style={{ color: '#475569' }} /></div>
-          <p style={{ color: '#64748b', margin: 0, fontSize: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><FolderOpen size={40} style={{ color: 'var(--text-muted)' }} /></div>
+          <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: 14 }}>
             {filtroTipo === 'tutti' ? 'Nessun documento caricato' : `Nessun documento di tipo "${TIPI.find(t => t.value === filtroTipo)?.label}"`}
           </p>
-          <p style={{ color: '#475569', margin: '8px 0 0', fontSize: 12 }}>
+          <p style={{ color: 'var(--text-muted)', margin: '8px 0 0', fontSize: 12 }}>
             Carica il regolamento o le tabelle millesimali per abilitare i suggerimenti AI sulle spese
           </p>
         </div>
@@ -195,21 +195,21 @@ export default function DocumentiCondominio({ condominioId }) {
               <div
                 key={doc.id}
                 style={{
-                  background: '#1e293b', borderRadius: 10, padding: '14px 18px',
-                  border: `1px solid ${isNormativo ? '#2563eb44' : '#334155'}`,
+                  background: 'var(--card-bg)', borderRadius: 10, padding: '14px 18px',
+                  border: `1px solid ${isNormativo ? '#2563eb44' : 'var(--border-color)'}`,
                   display: 'flex', alignItems: 'center', gap: 16
                 }}
               >
                 <div style={{
                   width: 44, height: 44, borderRadius: 10,
-                  background: '#0f172a', display: 'flex', alignItems: 'center',
+                  background: 'var(--app-bg)', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', fontSize: 20, flexShrink: 0
                 }}>
                   {renderTipoIcon(doc.tipo)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 14 }}>{doc.nome}</span>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14 }}>{doc.nome}</span>
                     <span style={{
                       background: cat.color + '22', color: cat.color,
                       borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600
@@ -227,7 +227,7 @@ export default function DocumentiCondominio({ condominioId }) {
                       </span>
                     )}
                   </div>
-                  <div style={{ color: '#64748b', fontSize: 12 }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                     {new Date(doc.created_at).toLocaleDateString('it-IT')}
                     {doc.note && <span> · {doc.note}</span>}
                   </div>
@@ -236,7 +236,7 @@ export default function DocumentiCondominio({ condominioId }) {
                   <button
                     onClick={() => handleOpen(doc)}
                     style={{
-                      background: '#0f172a', color: '#94a3b8', border: '1px solid #334155',
+                      background: 'var(--app-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
                       borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer',
                       fontFamily: 'Sora, sans-serif'
                     }}
@@ -246,7 +246,7 @@ export default function DocumentiCondominio({ condominioId }) {
                   <button
                     onClick={() => setConfirmDelete(doc)}
                     style={{
-                      background: 'transparent', color: '#64748b', border: 'none',
+                      background: 'transparent', color: 'var(--text-muted)', border: 'none',
                       borderRadius: 6, padding: '6px 10px', fontSize: 16, cursor: 'pointer'
                     }}
                   >
@@ -266,21 +266,21 @@ export default function DocumentiCondominio({ condominioId }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
         }}>
           <div style={{
-            background: '#1e293b', borderRadius: 16, padding: 32, width: '100%',
-            maxWidth: 520, border: '1px solid #334155'
+            background: 'var(--card-bg)', borderRadius: 16, padding: 32, width: '100%',
+            maxWidth: 520, border: '1px solid var(--border-color)'
           }}>
-            <h3 style={{ margin: '0 0 24px', color: '#f1f5f9', fontSize: 18 }}>Carica documento</h3>
+            <h3 style={{ margin: '0 0 24px', color: 'var(--text-primary)', fontSize: 18 }}>Carica documento</h3>
             <form onSubmit={handleUpload}>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>
                   Tipo documento *
                 </label>
                 <select
                   value={form.tipo}
                   onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
                   style={{
-                    width: '100%', background: '#0f172a', color: '#f1f5f9',
-                    border: '1px solid #334155', borderRadius: 8, padding: '10px 12px',
+                    width: '100%', background: 'var(--app-bg)', color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px',
                     fontSize: 14, fontFamily: 'Sora, sans-serif'
                   }}
                 >
@@ -291,7 +291,7 @@ export default function DocumentiCondominio({ condominioId }) {
               </div>
 
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>
                   Nome documento
                 </label>
                 <input
@@ -300,15 +300,15 @@ export default function DocumentiCondominio({ condominioId }) {
                   onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
                   placeholder="Es. Regolamento 2020"
                   style={{
-                    width: '100%', background: '#0f172a', color: '#f1f5f9',
-                    border: '1px solid #334155', borderRadius: 8, padding: '10px 12px',
+                    width: '100%', background: 'var(--app-bg)', color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px',
                     fontSize: 14, fontFamily: 'Sora, sans-serif', boxSizing: 'border-box'
                   }}
                 />
               </div>
 
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>
                   File * {(form.tipo === 'regolamento' || form.tipo === 'tabella_millesimale_doc') && (
                     <span style={{ color: '#10b981' }}>(PDF o DOCX consigliato — il testo verrà estratto per l'AI)</span>
                   )}
@@ -316,7 +316,7 @@ export default function DocumentiCondominio({ condominioId }) {
                 <div
                   onClick={() => fileRef.current?.click()}
                   style={{
-                    background: '#0f172a', border: `2px dashed ${selectedFile ? '#2563eb' : '#334155'}`,
+                    background: 'var(--app-bg)', border: `2px dashed ${selectedFile ? '#2563eb' : 'var(--border-color)'}`,
                     borderRadius: 8, padding: '20px', textAlign: 'center', cursor: 'pointer'
                   }}
                 >
@@ -325,7 +325,7 @@ export default function DocumentiCondominio({ condominioId }) {
                       <Paperclip size={14} /> {selectedFile.name}
                     </span>
                   ) : (
-                    <span style={{ color: '#64748b', fontSize: 14 }}>Clicca per selezionare un file</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Clicca per selezionare un file</span>
                   )}
                 </div>
                 {/* ✅ accept: .docx abilitato, .doc legacy rimosso */}
@@ -334,7 +334,7 @@ export default function DocumentiCondominio({ condominioId }) {
               </div>
 
               <div style={{ marginBottom: 24 }}>
-                <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>
                   Note (opzionale)
                 </label>
                 <input
@@ -343,8 +343,8 @@ export default function DocumentiCondominio({ condominioId }) {
                   onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
                   placeholder="Es. Approvato in assemblea del 12/03/2023"
                   style={{
-                    width: '100%', background: '#0f172a', color: '#f1f5f9',
-                    border: '1px solid #334155', borderRadius: 8, padding: '10px 12px',
+                    width: '100%', background: 'var(--app-bg)', color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px',
                     fontSize: 14, fontFamily: 'Sora, sans-serif', boxSizing: 'border-box'
                   }}
                 />
@@ -352,7 +352,7 @@ export default function DocumentiCondominio({ condominioId }) {
 
               {uploadProgress && (
                 <div style={{
-                  background: '#0f172a', border: '1px solid #2563eb', borderRadius: 8,
+                  background: 'var(--app-bg)', border: '1px solid #2563eb', borderRadius: 8,
                   padding: '10px 14px', marginBottom: 16, color: '#60a5fa', fontSize: 13
                 }}>
                   ⏳ {uploadProgress}
@@ -365,7 +365,7 @@ export default function DocumentiCondominio({ condominioId }) {
                   onClick={() => { setShowForm(false); setSelectedFile(null) }}
                   disabled={uploading}
                   style={{
-                    background: 'transparent', color: '#94a3b8', border: '1px solid #334155',
+                    background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
                     borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer',
                     fontFamily: 'Sora, sans-serif'
                   }}
@@ -398,17 +398,17 @@ export default function DocumentiCondominio({ condominioId }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
         }}>
           <div style={{
-            background: '#1e293b', borderRadius: 12, padding: 28, maxWidth: 400,
-            width: '100%', border: '1px solid #334155'
+            background: 'var(--card-bg)', borderRadius: 12, padding: 28, maxWidth: 400,
+            width: '100%', border: '1px solid var(--border-color)'
           }}>
-            <h4 style={{ margin: '0 0 12px', color: '#f1f5f9' }}>Elimina documento</h4>
-            <p style={{ color: '#94a3b8', margin: '0 0 20px', fontSize: 14 }}>
-              Sei sicuro di voler eliminare "<strong style={{ color: '#f1f5f9' }}>{confirmDelete.nome}</strong>"?
+            <h4 style={{ margin: '0 0 12px', color: 'var(--text-primary)' }}>Elimina documento</h4>
+            <p style={{ color: 'var(--text-secondary)', margin: '0 0 20px', fontSize: 14 }}>
+              Sei sicuro di voler eliminare "<strong style={{ color: 'var(--text-primary)' }}>{confirmDelete.nome}</strong>"?
               Il file verrà rimosso definitivamente.
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setConfirmDelete(null)} style={{
-                background: 'transparent', color: '#94a3b8', border: '1px solid #334155',
+                background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
                 borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontFamily: 'Sora, sans-serif'
               }}>Annulla</button>
               <button onClick={() => handleDelete(confirmDelete)} style={{

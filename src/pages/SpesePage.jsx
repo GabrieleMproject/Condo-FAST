@@ -244,8 +244,8 @@ export default function SpesePage() {
   }
 
   const inputStyle = {
-    width: '100%', background: '#0f172a', color: '#f1f5f9',
-    border: '1px solid #334155', borderRadius: 8, padding: '10px 12px',
+    width: '100%', background: 'var(--app-bg)', color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px',
     fontSize: 14, fontFamily: 'Sora, sans-serif', boxSizing: 'border-box'
   }
 
@@ -253,11 +253,11 @@ export default function SpesePage() {
     <div style={{ padding: 32, maxWidth: 1200, margin: '0 auto', fontFamily: 'Sora, sans-serif' }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ margin: '0 0 4px', color: '#f1f5f9', fontSize: 26, fontWeight: 700 }}>
+        <h1 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 26, fontWeight: 700 }}>
           Spese condominiali
         </h1>
         {condominio && (
-          <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>
             {condominio.nome} · {condominio.indirizzo}
           </p>
         )}
@@ -283,11 +283,11 @@ export default function SpesePage() {
 
       {/* Selezione esercizio */}
       <div style={{
-        background: '#1e293b', borderRadius: 12, padding: '16px 20px',
-        border: '1px solid #334155', marginBottom: 24,
+        background: 'var(--card-bg)', borderRadius: 12, padding: '16px 20px',
+        border: '1px solid var(--border-color)', marginBottom: 24,
         display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap'
       }}>
-        <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>Esercizio:</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>Esercizio:</span>
         <div style={{ display: 'flex', gap: 8, flex: 1, flexWrap: 'wrap' }}>
           {esercizi.map(es => (
             <div
@@ -295,13 +295,13 @@ export default function SpesePage() {
               style={{
                 background: esercizioAttivo?.id === es.id
                   ? (es.tipo === 'straordinario' ? '#8b5cf6' : '#2563eb')
-                  : (es.tipo === 'straordinario' ? '#161033' : '#0f172a'),
+                  : (es.tipo === 'straordinario' ? '#161033' : 'var(--app-bg)'),
                 color: esercizioAttivo?.id === es.id
                   ? '#fff'
-                  : (es.tipo === 'straordinario' ? '#c084fc' : '#94a3b8'),
+                  : (es.tipo === 'straordinario' ? '#c084fc' : 'var(--text-secondary)'),
                 border: `1px solid ${esercizioAttivo?.id === es.id
                   ? (es.tipo === 'straordinario' ? '#8b5cf6' : '#2563eb')
-                  : (es.tipo === 'straordinario' ? '#4c1d95' : '#334155')}`,
+                  : (es.tipo === 'straordinario' ? '#4c1d95' : 'var(--border-color)')}`,
                 borderRadius: 8, padding: '7px 10px 7px 14px', fontSize: 13,
                 fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center', gap: 6
               }}
@@ -340,7 +340,7 @@ export default function SpesePage() {
           <button
             onClick={apriCreaEsercizio}
             style={{
-              background: 'transparent', color: '#64748b', border: '1px dashed #334155',
+              background: 'transparent', color: 'var(--text-muted)', border: '1px dashed var(--border-color)',
               borderRadius: 8, padding: '7px 14px', fontSize: 13, cursor: 'pointer',
               fontFamily: 'Sora, sans-serif'
             }}
@@ -359,10 +359,10 @@ export default function SpesePage() {
             { label: 'Unità coinvolte', value: unita.length, color: '#10b981' },
           ].map(kpi => (
             <div key={kpi.label} style={{
-              background: '#1e293b', borderRadius: 10, padding: '16px 20px',
+              background: 'var(--card-bg)', borderRadius: 10, padding: '16px 20px',
               border: `1px solid ${kpi.color}33`
             }}>
-              <div style={{ color: '#64748b', fontSize: 12, marginBottom: 4 }}>{kpi.label}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>{kpi.label}</div>
               <div style={{ color: kpi.color, fontSize: 22, fontWeight: 700 }}>{kpi.value}</div>
             </div>
           ))}
@@ -371,8 +371,8 @@ export default function SpesePage() {
 
       {/* Periodo esercizio attivo */}
       {esercizioAttivo && fmtPeriodo(esercizioAttivo) && (
-        <div style={{ color: '#64748b', fontSize: 13, marginBottom: 20, marginTop: -8 }}>
-          Periodo amministrativo: <span style={{ color: '#94a3b8' }}>{fmtPeriodo(esercizioAttivo)}</span>
+        <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20, marginTop: -8 }}>
+          Periodo amministrativo: <span style={{ color: 'var(--text-secondary)' }}>{fmtPeriodo(esercizioAttivo)}</span>
         </div>
       )}
 
@@ -383,8 +383,8 @@ export default function SpesePage() {
           <button
             onClick={apriFormFattura}
             style={{
-              background: '#0f172a', color: '#94a3b8',
-              border: '1px solid #334155', borderRadius: 8,
+              background: 'var(--app-bg)', color: 'var(--text-secondary)',
+              border: '1px solid var(--border-color)', borderRadius: 8,
               padding: '10px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
               fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center', gap: 8
             }}
@@ -426,21 +426,21 @@ export default function SpesePage() {
       {/* Lista spese */}
       {!esercizioAttivo ? (
         <div style={{
-          background: '#1e293b', border: '2px dashed #334155', borderRadius: 12,
+          background: 'var(--card-bg)', border: '2px dashed var(--border-color)', borderRadius: 12,
           padding: 48, textAlign: 'center'
         }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>📅</div>
-          <p style={{ color: '#64748b', margin: 0 }}>Crea un esercizio contabile per iniziare</p>
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Crea un esercizio contabile per iniziare</p>
         </div>
       ) : loadSpese ? (
-        <div style={{ textAlign: 'center', color: '#64748b', padding: 40 }}>Caricamento spese...</div>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Caricamento spese...</div>
       ) : spese.length === 0 ? (
         <div style={{
-          background: '#1e293b', border: '2px dashed #334155', borderRadius: 12,
+          background: 'var(--card-bg)', border: '2px dashed var(--border-color)', borderRadius: 12,
           padding: 48, textAlign: 'center'
         }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>💸</div>
-          <p style={{ color: '#64748b', margin: 0 }}>Nessuna spesa per questo esercizio</p>
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessuna spesa per questo esercizio</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -450,14 +450,14 @@ export default function SpesePage() {
               <div
                 key={spesa.id}
                 style={{
-                  background: '#1e293b', borderRadius: 10, padding: '16px 20px',
-                  border: `1px solid ${hasSubentro ? '#f59e0b44' : '#334155'}`,
+                  background: 'var(--card-bg)', borderRadius: 10, padding: '16px 20px',
+                  border: `1px solid ${hasSubentro ? '#f59e0b44' : 'var(--border-color)'}`,
                   display: 'flex', alignItems: 'center', gap: 16
                 }}
               >
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 15 }}>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 15 }}>
                       {spesa.descrizione}
                     </span>
                     <span style={{
@@ -481,7 +481,7 @@ export default function SpesePage() {
                       </span>
                     )}
                   </div>
-                  <div style={{ color: '#64748b', fontSize: 12, display: 'flex', gap: 12 }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12, display: 'flex', gap: 12 }}>
                     <span>{new Date(spesa.data_spesa).toLocaleDateString('it-IT')}</span>
                     {spesa.fornitore && <span>· {spesa.fornitore}</span>}
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -536,16 +536,16 @@ export default function SpesePage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
         }}>
           <div style={{
-            background: '#1e293b', borderRadius: 16, padding: 32, maxWidth: 480,
-            width: '100%', border: '1px solid #334155'
+            background: 'var(--card-bg)', borderRadius: 16, padding: 32, maxWidth: 480,
+            width: '100%', border: '1px solid var(--border-color)'
           }}>
-            <h3 style={{ margin: '0 0 24px', color: '#f1f5f9' }}>
+            <h3 style={{ margin: '0 0 24px', color: 'var(--text-primary)' }}>
               {esercizioEditId ? 'Modifica esercizio contabile' : 'Nuovo esercizio contabile'}
             </h3>
             <form onSubmit={handleSalvaEsercizio}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                 <div style={{ gridColumn: '1/-1' }}>
-                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>Anno</label>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>Anno</label>
                   <input type="number" style={inputStyle}
                     value={nuovoEsercizio.anno}
                     onChange={e => {
@@ -560,19 +560,19 @@ export default function SpesePage() {
                     }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>Data inizio</label>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>Data inizio</label>
                   <input type="date" style={inputStyle}
                     value={nuovoEsercizio.data_inizio}
                     onChange={e => setNuovoEsercizio(f => ({ ...f, data_inizio: e.target.value }))} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>Data fine</label>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>Data fine</label>
                   <input type="date" style={inputStyle}
                     value={nuovoEsercizio.data_fine}
                     onChange={e => setNuovoEsercizio(f => ({ ...f, data_fine: e.target.value }))} />
                 </div>
                 <div style={{ gridColumn: '1/-1' }}>
-                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>Stato</label>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>Stato</label>
                   <select style={inputStyle}
                     value={nuovoEsercizio.stato}
                     onChange={e => setNuovoEsercizio(f => ({ ...f, stato: e.target.value }))}>
@@ -581,7 +581,7 @@ export default function SpesePage() {
                   </select>
                 </div>
                 <div style={{ gridColumn: '1/-1' }}>
-                  <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>Tipo Gestione</label>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>Tipo Gestione</label>
                   <select style={inputStyle}
                     value={nuovoEsercizio.tipo || 'ordinario'}
                     onChange={e => setNuovoEsercizio(f => ({ ...f, tipo: e.target.value }))}>
@@ -591,7 +591,7 @@ export default function SpesePage() {
                 </div>
               </div>
 
-              <div style={{ background: '#0f172a', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#64748b', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ background: 'var(--app-bg)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Info size={14} style={{ flexShrink: 0 }} />
                 <span>Il periodo amministrativo può non coincidere con l'anno solare (es. 1/7 → 30/6). Le rate si generano dal preventivo, non automaticamente.</span>
               </div>
@@ -607,7 +607,7 @@ export default function SpesePage() {
 
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                 <button type="button" onClick={chiudiEsercizioForm} style={{
-                  background: 'transparent', color: '#94a3b8', border: '1px solid #334155',
+                  background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
                   borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontFamily: 'Sora, sans-serif'
                 }}>Annulla</button>
                 <button type="submit" style={{

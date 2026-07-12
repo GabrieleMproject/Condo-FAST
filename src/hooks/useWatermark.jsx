@@ -86,8 +86,8 @@ const styles = {
     zIndex: 9999
   },
   modal: {
-    background: '#1e293b',
-    border: '1px solid #334155',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: 16,
     padding: '32px',
     width: '100%',
@@ -112,7 +112,7 @@ const styles = {
     lineHeight: 1.3
   },
   desc: {
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     fontSize: 14,
     lineHeight: 1.5,
     marginBottom: 16
@@ -145,7 +145,7 @@ const styles = {
     justifyContent: 'center',
     gap: 8,
     background: 'transparent',
-    color: '#cbd5e1',
+    color: 'var(--text-secondary)',
     border: '1px solid #475569',
     borderRadius: 8,
     padding: '12px',
@@ -157,7 +157,7 @@ const styles = {
   btnClose: {
     background: 'transparent',
     border: 'none',
-    color: '#64748b',
+    color: 'var(--text-muted)',
     fontSize: 13,
     cursor: 'pointer',
     textDecoration: 'underline'

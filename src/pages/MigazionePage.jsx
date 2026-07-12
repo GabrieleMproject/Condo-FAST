@@ -13,7 +13,7 @@ const C = {
   bg: '#0f172a',
   card: '#1e293b',
   cardLight: '#253047',
-  border: '#334155',
+  border: 'var(--border-color)',
   borderFocus: '#6366f1',
   text: '#e2e8f0',
   muted: '#94a3b8',
@@ -35,7 +35,7 @@ const TIPO_BADGE = {
   rate:         { label: 'Rate',          bg: 'rgba(59,130,246,0.2)', color: '#93c5fd', icon: CreditCard },
   saldo_cassa:  { label: 'Saldi',         bg: 'rgba(16,185,129,0.2)', color: '#6ee7b7', icon: Coins },
   misto:        { label: 'Misto',         bg: 'rgba(139,92,246,0.2)', color: '#c4b5fd', icon: Folder },
-  sconosciuto:  { label: 'Sconosciuto',   bg: 'rgba(100,116,139,0.2)',color: '#cbd5e1', icon: HelpCircle },
+  sconosciuto:  { label: 'Sconosciuto',   bg: 'rgba(100,116,139,0.2)',color: 'var(--text-secondary)', icon: HelpCircle },
 }
 
 const BLOCCHI_DEF = [
@@ -789,7 +789,7 @@ export default function MigazionePage() {
   }
 
   const inputStyle = {
-    background: '#0f172a',
+    background: 'var(--app-bg)',
     border: `1px solid ${C.border}`,
     borderRadius: 8,
     color: C.text,
@@ -980,7 +980,7 @@ export default function MigazionePage() {
                 <span style={{ marginLeft: 'auto' }}>{daneaInfo ? '▲' : '▼'}</span>
               </button>
               {daneaInfo && (
-                <div style={{ padding: '16px', fontSize: 13, color: C.muted, lineHeight: 1.7, background: '#0f172a' }}>
+                <div style={{ padding: '16px', fontSize: 13, color: C.muted, lineHeight: 1.7, background: 'var(--app-bg)' }}>
                   <strong style={{ color: C.text }}>Da Danea Domustudio:</strong> esporta separatamente le sezioni:
                   <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
                     <li>📋 <strong>Unità immobiliari</strong> — file Excel/CSV</li>
@@ -1080,7 +1080,7 @@ export default function MigazionePage() {
             {progressLog.length > 0 && (
               <div style={{
                 background: '#0a1628', borderRadius: 10, padding: '14px 16px',
-                fontFamily: 'monospace', fontSize: 12, color: '#94a3b8',
+                fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)',
                 maxHeight: 160, overflowY: 'auto', marginBottom: 20,
                 border: `1px solid ${C.border}`,
               }}>
@@ -1157,7 +1157,7 @@ export default function MigazionePage() {
                       <div style={{ overflowX: 'auto', maxHeight: 320, overflowY: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                           <thead>
-                            <tr style={{ background: '#0f172a' }}>
+                            <tr style={{ background: 'var(--app-bg)' }}>
                               {blocco.key === 'millesimi'
                                 ? ['Tabella', 'Unità rif.', 'Valore', 'Proprietario'].map(h => (
                                     <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: C.muted, fontWeight: 600, borderBottom: `1px solid ${C.border}` }}>{h}</th>
@@ -1308,7 +1308,7 @@ export default function MigazionePage() {
             {importLog.length > 0 && (
               <div style={{
                 background: '#0a1628', borderRadius: 10, padding: '14px 16px',
-                fontFamily: 'monospace', fontSize: 12, color: '#94a3b8',
+                fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)',
                 maxHeight: 180, overflowY: 'auto', marginTop: 20,
                 border: `1px solid ${C.border}`,
               }}>
@@ -1338,7 +1338,7 @@ export default function MigazionePage() {
             <div style={{ overflowX: 'auto', marginBottom: 24 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#0f172a' }}>
+                  <tr style={{ background: 'var(--app-bg)' }}>
                     {['Blocco', 'Creati', 'Aggiornati', 'Saltati', 'Errori'].map(h => (
                       <th key={h} style={{
                         padding: '12px 16px', textAlign: 'left', color: C.muted, fontWeight: 600,

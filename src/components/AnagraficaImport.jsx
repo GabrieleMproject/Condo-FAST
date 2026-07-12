@@ -255,7 +255,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
                 <div style={styles.aiLoading}>
                   <div style={styles.spinner} />
                   <p style={{ color: '#60a5fa', margin: '12px 0 4px' }}>Claude sta analizzando il documento…</p>
-                  <p style={{ color: '#64748b', fontSize: '13px' }}>Estrazione dati con AI in corso</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Estrazione dati con AI in corso</p>
                 </div>
               ) : (
                 <>
@@ -276,7 +276,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
             {error && <div style={styles.errorBox}>{error}</div>}
 
             <div style={styles.templateHint}>
-              <span style={{ color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <Lightbulb size={14} style={{ color: '#fbbf24', flexShrink: 0 }} /> <span>Formato consigliato colonne XLSX/CSV:</span>
               </span>
               <code style={styles.code}>nome · cognome · email · telefono · indirizzo · citta · cap · provincia · codice_fiscale · ruolo · unita</code>
@@ -287,7 +287,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
         {step === 'preview' && (
           <div style={styles.body}>
             <div style={styles.previewHeader}>
-              <span style={{ color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <FileText size={14} /> <span>{fileName}</span>
               </span>
               <span style={styles.badge}>{rows.length} persone trovate</span>
@@ -346,7 +346,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
         {step === 'done' && importResult && (
           <div style={{ ...styles.body, textAlign: 'center', padding: '40px' }}>
             <div style={styles.doneIcon}><CheckCircle2 size={48} style={{ color: '#10b981', margin: '0 auto' }} /></div>
-            <h3 style={{ color: '#e2e8f0', marginBottom: 8 }}>Importazione completata</h3>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>Importazione completata</h3>
             <p style={{ color: '#60a5fa', fontSize: 20, marginBottom: 4 }}>
               <strong>{importResult.created}</strong> persone importate
             </p>
@@ -373,29 +373,29 @@ const styles = {
     zIndex: 1000, backdropFilter: 'blur(4px)',
   },
   modal: {
-    background: '#1e293b', borderRadius: 16, width: '90vw', maxWidth: 900,
+    background: 'var(--card-bg)', borderRadius: 16, width: '90vw', maxWidth: 900,
     maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-    border: '1px solid #334155', boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
+    border: '1px solid var(--border-color)', boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
   },
   header: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-    padding: '24px 28px 20px', borderBottom: '1px solid #334155',
+    padding: '24px 28px 20px', borderBottom: '1px solid var(--border-color)',
   },
-  title: { color: '#e2e8f0', fontSize: 20, fontWeight: 700, margin: 0, fontFamily: 'Sora, sans-serif' },
-  subtitle: { color: '#64748b', fontSize: 13, margin: '4px 0 0' },
+  title: { color: 'var(--text-primary)', fontSize: 20, fontWeight: 700, margin: 0, fontFamily: 'Sora, sans-serif' },
+  subtitle: { color: 'var(--text-muted)', fontSize: 13, margin: '4px 0 0' },
   closeBtn: {
-    background: 'none', border: 'none', color: '#64748b', fontSize: 20,
+    background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20,
     cursor: 'pointer', padding: '4px 8px', borderRadius: 6,
   },
   body: { padding: '24px 28px', overflowY: 'auto', flex: 1 },
   dropzone: {
-    border: '2px dashed #334155', borderRadius: 12, padding: '48px 32px',
+    border: '2px dashed var(--border-color)', borderRadius: 12, padding: '48px 32px',
     textAlign: 'center', cursor: 'pointer', transition: 'border-color .2s',
-    background: '#0f172a',
+    background: 'var(--app-bg)',
   },
   uploadIcon: { fontSize: 48, marginBottom: 16 },
-  dropText: { color: '#cbd5e1', fontSize: 16, margin: '0 0 8px' },
-  dropSub: { color: '#64748b', fontSize: 13 },
+  dropText: { color: 'var(--text-secondary)', fontSize: 16, margin: '0 0 8px' },
+  dropSub: { color: 'var(--text-muted)', fontSize: 13 },
   link: { color: '#3b82f6', textDecoration: 'underline' },
   aiLoading: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
   spinner: {
@@ -409,7 +409,7 @@ const styles = {
     borderRadius: 8, padding: '10px 14px', marginTop: 16, fontSize: 13,
   },
   templateHint: {
-    marginTop: 24, padding: '14px 18px', background: '#0f172a',
+    marginTop: 24, padding: '14px 18px', background: 'var(--app-bg)',
     borderRadius: 8, border: '1px solid #1e3a5f', fontSize: 12,
   },
   code: {
@@ -427,14 +427,14 @@ const styles = {
   tableWrap: { overflowX: 'auto', maxHeight: 380, overflowY: 'auto', borderRadius: 8 },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
   th: {
-    background: '#0f172a', color: '#64748b', padding: '8px 10px',
+    background: 'var(--app-bg)', color: 'var(--text-muted)', padding: '8px 10px',
     textAlign: 'left', fontWeight: 600, textTransform: 'uppercase',
     letterSpacing: '0.05em', position: 'sticky', top: 0,
   },
-  tr: { borderBottom: '1px solid #1e293b' },
+  tr: { borderBottom: '1px solid var(--border-color-2)' },
   td: { padding: '4px 6px' },
   cellInput: {
-    background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0',
+    background: 'var(--app-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)',
     borderRadius: 6, padding: '5px 8px', width: '100%', fontSize: 12,
     outline: 'none',
   },
@@ -448,7 +448,7 @@ const styles = {
     padding: '10px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
   },
   btnSecondary: {
-    background: 'transparent', color: '#94a3b8', border: '1px solid #334155',
+    background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
     borderRadius: 8, padding: '10px 22px', fontSize: 14, cursor: 'pointer',
   },
   doneIcon: { fontSize: 56, marginBottom: 16 },

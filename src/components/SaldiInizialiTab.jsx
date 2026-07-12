@@ -7,8 +7,8 @@ import { estraiSaldiConsuntivo } from '../lib/fileExtractor'
 import { Loader2, FileText, Check } from 'lucide-react'
 
 const inputStyle = {
-  width: '100%', background: '#0f172a', color: '#f1f5f9',
-  border: '1px solid #334155', borderRadius: 8, padding: '8px 10px',
+  width: '100%', background: 'var(--app-bg)', color: 'var(--text-primary)',
+  border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
   fontSize: 13, fontFamily: 'Sora, sans-serif', boxSizing: 'border-box'
 }
 
@@ -167,7 +167,7 @@ export default function SaldiInizialiTab({ condominioId }) {
   }
 
   if (!esercizi.length) {
-    return <div style={{ color: '#64748b', padding: 24, textAlign: 'center' }}>
+    return <div style={{ color: 'var(--text-muted)', padding: 24, textAlign: 'center' }}>
       Nessun esercizio. Crea prima un esercizio per impostare i saldi iniziali.
     </div>
   }
@@ -178,7 +178,7 @@ export default function SaldiInizialiTab({ condominioId }) {
       {/* Barra: esercizio + azioni import */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div>
-          <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>Esercizio</label>
+          <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>Esercizio</label>
           <select style={{ ...inputStyle, width: 180 }} value={esercizioId} onChange={e => setEsercizioId(e.target.value)}>
             {esercizi.map(e => <option key={e.id} value={e.id}>{e.anno} ({e.stato})</option>)}
           </select>
@@ -191,7 +191,7 @@ export default function SaldiInizialiTab({ condominioId }) {
           style={{
             background: esercizioPrec ? '#0e7490' : '#1e293b',
             color: esercizioPrec ? '#fff' : '#475569',
-            border: '1px solid #334155', borderRadius: 8, padding: '9px 16px',
+            border: '1px solid var(--border-color)', borderRadius: 8, padding: '9px 16px',
             fontSize: 13, fontWeight: 600, cursor: esercizioPrec ? 'pointer' : 'not-allowed',
             fontFamily: 'Sora, sans-serif'
           }}
@@ -231,8 +231,8 @@ export default function SaldiInizialiTab({ condominioId }) {
       )}
 
       {/* Fondo cassa riportato */}
-      <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 12, padding: '16px 18px' }}>
-        <label style={{ display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6 }}>
+      <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: '16px 18px' }}>
+        <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6 }}>
           Fondo cassa riportato (saldo c/c al 31/12 dell'anno precedente)
         </label>
         <input type="number" step="0.01" style={{ ...inputStyle, maxWidth: 240 }}
@@ -240,18 +240,18 @@ export default function SaldiInizialiTab({ condominioId }) {
       </div>
 
       {/* Griglia saldi per unità */}
-      <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ padding: '12px 16px', color: '#94a3b8', fontSize: 12 }}>
+      <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: 12 }}>
           Saldo iniziale per unità — <span style={{ color: '#10b981' }}>positivo = credito</span> · <span style={{ color: '#ef4444' }}>negativo = debito</span>
         </div>
         <div style={{ maxHeight: 380, overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#0f172a' }}>
-                <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b' }}>Unità</th>
-                <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b' }}>Piano</th>
-                <th style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b', width: 160 }}>Saldo €</th>
-                <th style={{ padding: '8px 12px', textAlign: 'left', color: '#64748b' }}>Note</th>
+              <tr style={{ background: 'var(--app-bg)' }}>
+                <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)' }}>Unità</th>
+                <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)' }}>Piano</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text-muted)', width: 160 }}>Saldo €</th>
+                <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)' }}>Note</th>
               </tr>
             </thead>
             <tbody>
@@ -259,9 +259,9 @@ export default function SaldiInizialiTab({ condominioId }) {
                 const val = parseFloat(input[u.id]?.saldo)
                 const col = Number.isFinite(val) ? (val < 0 ? '#ef4444' : val > 0 ? '#10b981' : '#94a3b8') : '#94a3b8'
                 return (
-                  <tr key={u.id} style={{ borderTop: i > 0 ? '1px solid #0f172a' : 'none' }}>
-                    <td style={{ padding: '6px 12px', color: '#f1f5f9' }}>{u.numero || '—'}</td>
-                    <td style={{ padding: '6px 12px', color: '#94a3b8' }}>{u.piano ?? '—'}</td>
+                  <tr key={u.id} style={{ borderTop: i > 0 ? '1px solid var(--border-color-2)' : 'none' }}>
+                    <td style={{ padding: '6px 12px', color: 'var(--text-primary)' }}>{u.numero || '—'}</td>
+                    <td style={{ padding: '6px 12px', color: 'var(--text-secondary)' }}>{u.piano ?? '—'}</td>
                     <td style={{ padding: '5px 12px', textAlign: 'right' }}>
                       <input type="number" step="0.01"
                         style={{ ...inputStyle, textAlign: 'right', color: col, maxWidth: 140 }}
@@ -279,8 +279,8 @@ export default function SaldiInizialiTab({ condominioId }) {
               })}
             </tbody>
             <tfoot>
-              <tr style={{ borderTop: '1px solid #334155', background: '#0f172a' }}>
-                <td colSpan={2} style={{ padding: '8px 12px', color: '#94a3b8', fontSize: 12 }}>Totale saldi</td>
+              <tr style={{ borderTop: '1px solid var(--border-color)', background: 'var(--app-bg)' }}>
+                <td colSpan={2} style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>Totale saldi</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700,
                   color: totale < 0 ? '#ef4444' : totale > 0 ? '#10b981' : '#94a3b8' }}>
                   {fmt(totale)}
@@ -307,20 +307,20 @@ export default function SaldiInizialiTab({ condominioId }) {
       {mapping && (
         <div style={{ position: 'fixed', inset: 0, background: '#00000099', zIndex: 1000,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#1e293b', borderRadius: 16, padding: 28, maxWidth: 640, width: '100%',
+          <div style={{ background: 'var(--card-bg)', borderRadius: 16, padding: 28, maxWidth: 640, width: '100%',
             border: '1px solid #7c3aed66', maxHeight: '85vh', overflowY: 'auto' }}>
-            <h3 style={{ margin: '0 0 6px', color: '#f1f5f9', fontSize: 17 }}>Associa i saldi estratti alle unità</h3>
-            <p style={{ margin: '0 0 18px', color: '#64748b', fontSize: 12 }}>
+            <h3 style={{ margin: '0 0 6px', color: 'var(--text-primary)', fontSize: 17 }}>Associa i saldi estratti alle unità</h3>
+            <p style={{ margin: '0 0 18px', color: 'var(--text-muted)', fontSize: 12 }}>
               Controlla l'abbinamento proposto e correggilo dove serve. Le righe senza unità verranno ignorate.
             </p>
             {mapping.cassa != null && (
-              <div style={{ background: '#0f172a', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, color: '#94a3b8' }}>
-                Fondo cassa rilevato: <strong style={{ color: '#f1f5f9' }}>{fmt(mapping.cassa)}</strong>
+              <div style={{ background: 'var(--app-bg)', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, color: 'var(--text-secondary)' }}>
+                Fondo cassa rilevato: <strong style={{ color: 'var(--text-primary)' }}>{fmt(mapping.cassa)}</strong>
               </div>
             )}
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ color: '#64748b' }}>
+                <tr style={{ color: 'var(--text-muted)' }}>
                   <th style={{ padding: '6px 8px', textAlign: 'left' }}>Estratto</th>
                   <th style={{ padding: '6px 8px', textAlign: 'right' }}>Saldo</th>
                   <th style={{ padding: '6px 8px', textAlign: 'left' }}>→ Unità</th>
@@ -328,9 +328,9 @@ export default function SaldiInizialiTab({ condominioId }) {
               </thead>
               <tbody>
                 {mapping.righe.map((r, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid #0f172a' }}>
-                    <td style={{ padding: '6px 8px', color: '#f1f5f9' }}>
-                      {r.nominativo || '—'} {r.numero ? <span style={{ color: '#64748b' }}>(n° {r.numero})</span> : null}
+                  <tr key={i} style={{ borderTop: '1px solid var(--border-color-2)' }}>
+                    <td style={{ padding: '6px 8px', color: 'var(--text-primary)' }}>
+                      {r.nominativo || '—'} {r.numero ? <span style={{ color: 'var(--text-muted)' }}>(n° {r.numero})</span> : null}
                     </td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', color: r.saldo < 0 ? '#ef4444' : '#10b981', fontWeight: 600 }}>
                       {fmt(r.saldo)}
@@ -348,7 +348,7 @@ export default function SaldiInizialiTab({ condominioId }) {
             </table>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 22 }}>
               <button onClick={() => setMapping(null)} style={{
-                background: 'transparent', color: '#94a3b8', border: '1px solid #334155',
+                background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
                 borderRadius: 8, padding: '10px 18px', fontSize: 14, cursor: 'pointer', fontFamily: 'Sora, sans-serif' }}>
                 Annulla
               </button>

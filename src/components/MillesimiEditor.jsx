@@ -771,7 +771,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
     return (
       <div style={styles.loadingWrap}>
         <div style={styles.spinner} />
-        <span style={{ color: '#94a3b8', marginTop: 12 }}>Caricamento millesimi...</span>
+        <span style={{ color: 'var(--text-secondary)', marginTop: 12 }}>Caricamento millesimi...</span>
       </div>
     );
   }
@@ -801,7 +801,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
         {/* Sidebar Left: Tables List */}
         <div style={styles.sidebar}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8' }}>Tabelle</h3>
+            <h3 style={{ margin: 0, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Tabelle</h3>
             <button 
               className="millesimi-sidebar-add-btn"
               style={styles.sidebarAddBtn} 
@@ -831,7 +831,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
 
           <div style={styles.sidebarList}>
             {tabelle.length === 0 ? (
-              <p style={{ fontSize: 12, color: '#64748b', textAlign: 'center', padding: '16px 0' }}>Nessuna tabella</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0' }}>Nessuna tabella</p>
             ) : (
               tabelle.map(t => {
                 const active = t.id === selectedTabellaId;
@@ -886,7 +886,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
           </div>
           
           {/* Diagnostica & Allineamento Link */}
-          <div style={{ borderTop: '1px solid #334155', marginTop: 12, paddingTop: 12 }}>
+          <div style={{ borderTop: '1px solid var(--border-color)', marginTop: 12, paddingTop: 12 }}>
             <div 
               className="millesimi-sidebar-item"
               style={{
@@ -942,7 +942,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     />
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {selectedTabella.nome}
                       </h3>
                       <button style={styles.iconBtn} onClick={() => setIsRenaming(true)} title="Rinomina tabella">
@@ -990,7 +990,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Filter size={13} color="#94a3b8" />
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>Scala:</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Scala:</span>
                     <select
                       style={styles.filterSelect}
                       value={filtroScala}
@@ -1002,7 +1002,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     </select>
                   </div>
 
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#cbd5e1' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary)' }}>
                     <input
                       type="checkbox"
                       checked={soloPartecipanti}
@@ -1017,7 +1017,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
               {/* Simplified Grid */}
               <div style={styles.gridContainer}>
                 {unitaFiltrate.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                     Nessuna unità corrispondente ai filtri impostati.
                   </div>
                 ) : (
@@ -1037,7 +1037,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                         const key = `${u.id}_${selectedTabellaId}`;
                         const val = valori[key] ?? '';
                         return (
-                          <tr key={u.id} style={{ background: idx % 2 === 0 ? '#1e293b20' : 'transparent' }}>
+                          <tr key={u.id} style={{ background: idx % 2 === 0 ? 'var(--border-color-2)' : 'transparent' }}>
                             {/* Interno */}
                             <td style={styles.td}>
                               <input
@@ -1079,7 +1079,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                               />
                             </td>
                             {/* Proprietario */}
-                            <td style={{ ...styles.td, textAlign: 'left', color: '#94a3b8' }}>
+                            <td style={{ ...styles.td, textAlign: 'left', color: 'var(--text-secondary)' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: 150 }}>
                                   {getProprietarioLabel(u)}
@@ -1089,7 +1089,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                                   style={{
                                     background: 'none',
                                     border: 'none',
-                                    color: '#64748b',
+                                    color: 'var(--text-muted)',
                                     cursor: 'pointer',
                                     padding: '2px 4px',
                                     borderRadius: 4,
@@ -1167,8 +1167,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
           ) : (
             <div style={styles.emptyState}>
               <Layers size={36} color="#475569" style={{ marginBottom: 12 }} />
-              <h4 style={{ margin: 0, color: '#f1f5f9', fontSize: 16 }}>Nessuna Tabella Selezionata</h4>
-              <p style={{ margin: '6px 0 16px', color: '#94a3b8', fontSize: 13, maxWidth: 350, lineHeight: 1.5 }}>
+              <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 16 }}>Nessuna Tabella Selezionata</h4>
+              <p style={{ margin: '6px 0 16px', color: 'var(--text-secondary)', fontSize: 13, maxWidth: 350, lineHeight: 1.5 }}>
                 Crea una nuova tabella millesimale nella barra laterale o importa le tabelle da file per iniziare la compilazione delle quote.
               </p>
               <button style={styles.btnPrimary} onClick={() => setShowNuovaTabella(true)}>
@@ -1184,10 +1184,10 @@ export default function MillesimiEditor({ condominioId: propId }) {
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}><Download size={18} /> Importa Tabelle Millesimali da File</h3>
+              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}><Download size={18} /> Importa Tabelle Millesimali da File</h3>
               <button style={styles.closeBtn} onClick={() => setShowImportModal(false)} type="button"><X size={18} /></button>
             </div>
-            <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 12, lineHeight: 1.4 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 12, lineHeight: 1.4 }}>
               Carica un file PDF, Excel (.xlsx, .csv), Word o Immagine. L'AI estrarrà le colonne e i valori associandoli alle unità (o creando le unità mancanti).
             </p>
 
@@ -1196,8 +1196,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
                 <div style={styles.uploadArea}>
                   <label htmlFor="file-upload" style={styles.uploadLabel}>
                     <Upload size={32} color="#60a5fa" style={{ marginBottom: 8 }} />
-                    <div style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 13 }}>Trascina o clicca per caricare un file</div>
-                    <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>PDF, XLSX, CSV, PNG, JPG, DOCX</div>
+                    <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 13 }}>Trascina o clicca per caricare un file</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>PDF, XLSX, CSV, PNG, JPG, DOCX</div>
                   </label>
                   <input
                     id="file-upload"
@@ -1232,14 +1232,14 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     const totale = tab.righe?.reduce((s, r) => s + (parseFloat(String(r.valore).replace(',', '.')) || 0), 0) || 0;
                     const ok = Math.abs(totale - 1000) <= 0.5;
                     return (
-                      <div key={i} style={{ background: '#0f172a', padding: 10, borderRadius: 8, border: '1px solid #334155' }}>
+                      <div key={i} style={{ background: 'var(--app-bg)', padding: 10, borderRadius: 8, border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <strong style={{ color: '#f1f5f9', fontSize: 12 }}>{tab.nome}</strong>
+                          <strong style={{ color: 'var(--text-primary)', fontSize: 12 }}>{tab.nome}</strong>
                           <span style={{ fontSize: 11, fontWeight: 700, color: ok ? '#4ade80' : '#facc15' }}>
                             Somma: {totale.toFixed(2)} {ok ? <Check size={12} style={{ display: 'inline' }} /> : '(≠ 1000)'}
                           </span>
                         </div>
-                        <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                           {(tab.righe || []).length} unità estratte (es. {(tab.righe || []).slice(0, 3).map(r => `Unità ${r.unita}: ${r.valore}`).join(', ')}{(tab.righe || []).length > 3 ? '...' : ''})
                         </div>
                       </div>
@@ -1269,7 +1269,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Aggiungi Nuova Unità Immobiliare</h3>
+              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Aggiungi Nuova Unità Immobiliare</h3>
               <button style={styles.closeBtn} onClick={() => setShowAddUnitModal(false)} type="button"><X size={18} /></button>
             </div>
             
@@ -1387,8 +1387,8 @@ const styles = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     gap: 16, flexWrap: 'wrap',
   },
-  title: { margin: 0, fontSize: 20, fontWeight: 700, color: '#f1f5f9' },
-  subtitle: { margin: '4px 0 0', fontSize: 13, color: '#94a3b8' },
+  title: { margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' },
+  subtitle: { margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' },
   
   mainLayout: {
     display: 'flex',
@@ -1403,26 +1403,26 @@ const styles = {
     background: '#111827b0',
     backdropFilter: 'blur(8px)',
     borderRadius: 12,
-    border: '1px solid #334155',
+    border: '1px solid var(--border-color)',
     padding: 16,
     display: 'flex',
     flexDirection: 'column',
   },
   sidebarAddBtn: {
-    background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155',
+    background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)',
     borderRadius: 6, width: 24, height: 24, display: 'flex', alignItems: 'center',
     justifyContent: 'center', cursor: 'pointer'
   },
   sidebarNewTabForm: {
-    background: '#1e293b',
-    border: '1px solid #334155',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: 8,
     padding: 8,
     marginBottom: 10,
   },
   sidebarInput: {
-    width: '100%', background: '#0f172a', border: '1px solid #334155',
-    borderRadius: 6, padding: '6px 10px', color: '#e2e8f0',
+    width: '100%', background: 'var(--app-bg)', border: '1px solid var(--border-color)',
+    borderRadius: 6, padding: '6px 10px', color: 'var(--text-primary)',
     fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none',
     boxSizing: 'border-box'
   },
@@ -1444,7 +1444,7 @@ const styles = {
     gap: 10,
   },
   sidebarItemDeleteBtn: {
-    background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
+    background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
     padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'color 0.2s, background 0.2s',
   },
@@ -1455,7 +1455,7 @@ const styles = {
     background: '#11182760',
     backdropFilter: 'blur(8px)',
     borderRadius: 12,
-    border: '1px solid #334155',
+    border: '1px solid var(--border-color)',
     padding: 20,
     minWidth: 0,
   },
@@ -1463,13 +1463,13 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottom: '1px solid #1e293b',
+    borderBottom: '1px solid var(--border-color-2)',
     paddingBottom: 12,
     gap: 16,
   },
   renameInput: {
-    background: '#0f172a', border: '1px solid #2563eb',
-    borderRadius: 6, padding: '4px 8px', color: '#f1f5f9',
+    background: 'var(--app-bg)', border: '1px solid #2563eb',
+    borderRadius: 6, padding: '4px 8px', color: 'var(--text-primary)',
     fontFamily: "'Sora', sans-serif", fontSize: 16, fontWeight: 700,
     outline: 'none', width: '220px',
   },
@@ -1496,23 +1496,23 @@ const styles = {
   searchWrap: {
     display: 'flex',
     alignItems: 'center',
-    background: '#0f172a',
-    border: '1px solid #334155',
+    background: 'var(--app-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: 8,
     width: '280px',
     position: 'relative',
   },
   searchInput: {
-    background: 'none', border: 'none', color: '#e2e8f0', padding: '6px 28px 6px 8px',
+    background: 'none', border: 'none', color: 'var(--text-primary)', padding: '6px 28px 6px 8px',
     fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none', flex: 1
   },
   clearSearchBtn: {
-    position: 'absolute', right: 8, background: 'none', border: 'none', color: '#64748b',
+    position: 'absolute', right: 8, background: 'none', border: 'none', color: 'var(--text-muted)',
     cursor: 'pointer', fontSize: 10
   },
   filterSelect: {
-    background: '#0f172a', border: '1px solid #334155', borderRadius: 8,
-    padding: '6px 8px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 12,
+    background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8,
+    padding: '6px 8px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif", fontSize: 12,
     outline: 'none', cursor: 'pointer'
   },
 
@@ -1520,38 +1520,38 @@ const styles = {
   gridContainer: {
     overflowY: 'auto',
     maxHeight: '400px',
-    border: '1px solid #1e293b',
+    border: '1px solid var(--border-color-2)',
     borderRadius: 8,
-    background: '#0f172a30'
+    background: 'var(--app-bg)'
   },
   table: {
     width: '100%', borderCollapse: 'collapse', fontSize: 13,
   },
   th: {
-    background: '#1e293b50', color: '#94a3b8',
+    background: 'var(--border-color)', color: 'var(--text-secondary)',
     padding: '8px 12px', fontWeight: 600, fontSize: 11,
     textTransform: 'uppercase', letterSpacing: '0.05em',
-    borderBottom: '1px solid #334155',
+    borderBottom: '1px solid var(--border-color)',
   },
   td: {
     padding: '6px 12px', borderBottom: '1px solid #1e293b30',
-    color: '#cbd5e1', verticalAlign: 'middle'
+    color: 'var(--text-secondary)', verticalAlign: 'middle'
   },
   badgeUnita: {
-    fontSize: 10, color: '#64748b', background: '#1e293b',
+    fontSize: 10, color: 'var(--text-muted)', background: 'var(--card-bg)',
     padding: '2px 6px', borderRadius: 6, marginLeft: 6, fontWeight: 500
   },
   inlineInput: {
-    width: '100%', background: '#0f172a',
-    border: '1px solid #334155', borderRadius: 6,
-    padding: '5px 8px', color: '#cbd5e1',
+    width: '100%', background: 'var(--app-bg)',
+    border: '1px solid var(--border-color)', borderRadius: 6,
+    padding: '5px 8px', color: 'var(--text-secondary)',
     fontFamily: "'Sora', sans-serif", fontSize: 13,
     outline: 'none',
     transition: 'border-color 0.2s',
   },
   cellInput: {
-    width: 100, background: '#0f172a',
-    border: '1px solid #334155', borderRadius: 6,
+    width: 100, background: 'var(--app-bg)',
+    border: '1px solid var(--border-color)', borderRadius: 6,
     padding: '5px 8px', color: '#38bdf8',
     fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600,
     textAlign: 'right', outline: 'none',
@@ -1563,7 +1563,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTop: '1px solid #1e293b',
+    borderTop: '1px solid var(--border-color-2)',
     paddingTop: 12,
     marginTop: 'auto',
   },
@@ -1576,8 +1576,8 @@ const styles = {
     transition: 'background 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   btnSecondary: {
-    background: '#1e293b', color: '#cbd5e1',
-    border: '1px solid #334155', borderRadius: 8,
+    background: 'var(--card-bg)', color: 'var(--text-secondary)',
+    border: '1px solid var(--border-color)', borderRadius: 8,
     padding: '8px 14px', fontFamily: "'Sora', sans-serif",
     fontWeight: 600, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1596,7 +1596,7 @@ const styles = {
     zIndex: 1000, padding: 20,
   },
   modalContent: {
-    background: '#1e293b', border: '1px solid #334155', borderRadius: 16,
+    background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
     padding: 20, width: '100%', maxWidth: 500, boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
     maxHeight: '90vh', overflowY: 'auto',
   },
@@ -1605,11 +1605,11 @@ const styles = {
     marginBottom: 12,
   },
   closeBtn: {
-    background: 'none', border: 'none', color: '#94a3b8', fontSize: 16, cursor: 'pointer',
+    background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 16, cursor: 'pointer',
   },
   uploadArea: {
-    border: '2px dashed #334155', borderRadius: 12, padding: 20, textAlign: 'center',
-    background: '#0f172a', cursor: 'pointer', transition: 'border-color 0.2s',
+    border: '2px dashed var(--border-color)', borderRadius: 12, padding: 20, textAlign: 'center',
+    background: 'var(--app-bg)', cursor: 'pointer', transition: 'border-color 0.2s',
   },
   uploadLabel: {
     cursor: 'pointer', display: 'block', width: '100%',
@@ -1619,13 +1619,13 @@ const styles = {
     borderRadius: '50%', animation: 'spin 0.8s linear infinite',
   },
   previewBox: {
-    marginTop: 12, background: '#0f172a30', border: '1px solid #334155', borderRadius: 8, padding: 12,
+    marginTop: 12, background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 12,
   },
   formGroup: {
     display: 'flex', flexDirection: 'column', gap: 4,
   },
   formLabel: {
-    fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.03em'
+    fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.03em'
   },
   toast: {
     position: 'fixed', bottom: 32, right: 32,

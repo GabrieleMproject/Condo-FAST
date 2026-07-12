@@ -114,8 +114,8 @@ export default function PersonaForm({ ruolo, onSave, onClose }) {
 function Section({ title, children }) {
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-        letterSpacing: '0.08em', marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid #1e293b' }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+        letterSpacing: '0.08em', marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border-color-2)' }}>
         {title}
       </div>
       {children}
@@ -126,7 +126,7 @@ function Section({ title, children }) {
 function Field({ label, error, children }) {
   return (
     <div>
-      <label style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 5 }}>{label}</label>
+      <label style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 5 }}>{label}</label>
       {children}
       {error && <span style={{ color: '#f87171', fontSize: 11 }}>{error}</span>}
     </div>
@@ -134,13 +134,13 @@ function Field({ label, error, children }) {
 }
 
 const ov    = { position:'fixed',inset:0,background:'rgba(0,0,0,0.65)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,backdropFilter:'blur(4px)' }
-const modal = { background:'#1e293b',borderRadius:14,width:'90vw',maxWidth:580,maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column',border:'1px solid #334155',boxShadow:'0 20px 50px rgba(0,0,0,0.5)' }
-const hdr   = { display:'flex',justifyContent:'space-between',alignItems:'center',padding:'18px 24px',borderBottom:'1px solid #334155',flexShrink:0 }
-const ttl   = { color:'#e2e8f0',fontSize:18,fontWeight:700,margin:0,fontFamily:'Sora,sans-serif' }
-const cls   = { background:'none',border:'none',color:'#64748b',fontSize:18,cursor:'pointer' }
+const modal = { background: 'var(--card-bg)',borderRadius:14,width:'90vw',maxWidth:580,maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column',border: '1px solid var(--border-color)',boxShadow:'0 20px 50px rgba(0,0,0,0.5)' }
+const hdr   = { display:'flex',justifyContent:'space-between',alignItems:'center',padding:'18px 24px',borderBottom: '1px solid var(--border-color)',flexShrink:0 }
+const ttl   = { color: 'var(--text-primary)',fontSize:18,fontWeight:700,margin:0,fontFamily:'Sora,sans-serif' }
+const cls   = { background:'none',border:'none',color: 'var(--text-muted)',fontSize:18,cursor:'pointer' }
 const body  = { padding:'20px 24px',overflowY:'auto',flex:1 }
 const grid2 = { display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 }
-const inp   = { width:'100%',background:'#0f172a',border:'1px solid #334155',color:'#e2e8f0',borderRadius:8,padding:'8px 12px',fontSize:13,outline:'none',boxSizing:'border-box' }
-const actions = { display:'flex',justifyContent:'flex-end',gap:10,padding:'14px 24px',borderTop:'1px solid #334155',flexShrink:0 }
+const inp   = { width:'100%',background: 'var(--app-bg)',border: '1px solid var(--border-color)',color: 'var(--text-primary)',borderRadius:8,padding:'8px 12px',fontSize:13,outline:'none',boxSizing:'border-box' }
+const actions = { display:'flex',justifyContent:'flex-end',gap:10,padding:'14px 24px',borderTop: '1px solid var(--border-color)',flexShrink:0 }
 const priBtn  = { background:'#2563eb',color:'white',border:'none',borderRadius:8,padding:'9px 20px',fontSize:13,fontWeight:600,cursor:'pointer' }
-const secBtn  = { background:'transparent',color:'#94a3b8',border:'1px solid #334155',borderRadius:8,padding:'9px 20px',fontSize:13,cursor:'pointer' }
+const secBtn  = { background:'transparent',color: 'var(--text-secondary)',border: '1px solid var(--border-color)',borderRadius:8,padding:'9px 20px',fontSize:13,cursor:'pointer' }

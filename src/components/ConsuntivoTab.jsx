@@ -207,7 +207,7 @@ export default function ConsuntivoTab({ condominioId }) {
 
           {/* Nota sintetica (art. 1130-bis c.c.) */}
           <Card title="Nota sintetica esplicativa (art. 1130-bis c.c.)">
-            <p style={{ ...st.note, fontSize: 13, color: '#cbd5e1', lineHeight: 1.6 }}>
+            <p style={{ ...st.note, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
               {(() => {
                 const diff = data.confronto.tot.differenza
                 const saldo = data.cassa.saldoFinaleCassa
@@ -267,20 +267,20 @@ function Table({ head, rows, foot = [], alignRight = [], congCol = -1 }) {
 
 const st = {
   toolbar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' },
-  select: { background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 8, padding: '7px 10px', fontFamily: 'Sora, sans-serif', fontSize: 13 },
-  btnGhost: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'transparent', color: '#94a3b8', border: '1px solid #334155', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
+  select: { background: 'var(--app-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '7px 10px', fontFamily: 'Sora, sans-serif', fontSize: 13 },
+  btnGhost: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
   btnPrimary: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
-  esBtn: (a) => ({ padding: '6px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: `1px solid ${a ? '#2563eb' : '#334155'}`, background: a ? 'rgba(37,99,235,0.15)' : 'transparent', color: a ? '#60a5fa' : '#64748b', fontFamily: 'Sora, sans-serif', fontWeight: a ? 600 : 400 }),
+  esBtn: (a) => ({ padding: '6px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: `1px solid ${a ? '#2563eb' : 'var(--border-color)'}`, background: a ? 'rgba(37,99,235,0.15)' : 'transparent', color: a ? '#60a5fa' : '#64748b', fontFamily: 'Sora, sans-serif', fontWeight: a ? 600 : 400 }),
   esTag: (ap) => ({ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 4, background: ap ? '#10b98122' : '#64748b22', color: ap ? '#10b981' : '#64748b' }),
   msg: { background: '#1e3a5f', color: '#93c5fd', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 12 },
   err: { background: '#ef444415', border: '1px solid #ef444440', borderRadius: 8, padding: '10px 14px', color: '#ef4444', fontSize: 13, marginBottom: 12 },
-  empty: { textAlign: 'center', padding: 40, color: '#64748b', background: '#1e293b', borderRadius: 12, border: '1px solid #334155' },
-  tplBanner: { display: 'flex', alignItems: 'center', gap: 8, background: '#0f172a', border: '1px solid #334155', borderRadius: 10, padding: '10px 14px', color: '#94a3b8', fontSize: 12.5 },
-  card: { background: '#1e293b', border: '1px solid #334155', borderRadius: 12, padding: 18 },
+  empty: { textAlign: 'center', padding: 40, color: 'var(--text-muted)', background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)' },
+  tplBanner: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12.5 },
+  card: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 18 },
   cardTitle: { color: '#60a5fa', fontWeight: 700, fontSize: 14, marginBottom: 12, fontFamily: 'Sora, sans-serif' },
   table: { borderCollapse: 'collapse', width: '100%', fontFamily: 'Sora, sans-serif', fontSize: 13 },
-  th: { color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '8px 10px', borderBottom: '1px solid #334155', whiteSpace: 'nowrap' },
-  td: { padding: '8px 10px', borderBottom: '1px solid #1e293b', whiteSpace: 'nowrap' },
-  footTd: { fontWeight: 700, color: '#e2e8f0', background: '#0f172a', borderTop: '1px solid #334155' },
-  note: { color: '#64748b', fontSize: 11.5, marginTop: 8 },
+  th: { color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '8px 10px', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' },
+  td: { padding: '8px 10px', borderBottom: '1px solid var(--border-color-2)', whiteSpace: 'nowrap' },
+  footTd: { fontWeight: 700, color: 'var(--text-primary)', background: 'var(--app-bg)', borderTop: '1px solid var(--border-color)' },
+  note: { color: 'var(--text-muted)', fontSize: 11.5, marginTop: 8 },
 }

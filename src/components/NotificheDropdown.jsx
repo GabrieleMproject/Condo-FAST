@@ -44,7 +44,7 @@ function ItemNotifica({ notifica, letta, onSegna, onNavigate }) {
   return (
     <div style={{
       padding: '14px 16px',
-      borderBottom: '1px solid #1e293b',
+      borderBottom: '1px solid var(--border-color-2)',
       background: letta ? 'transparent' : colori.bg,
       borderLeft: letta ? '3px solid transparent' : `3px solid ${colori.border}`,
       transition: 'background 0.2s',
@@ -120,7 +120,7 @@ function ItemNotifica({ notifica, letta, onSegna, onNavigate }) {
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
                   background: 'transparent', border: 'none',
-                  color: '#475569', fontSize: 12, cursor: 'pointer', padding: 0,
+                  color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', padding: 0,
                   fontFamily: 'Sora, sans-serif',
                 }}
                 onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}
@@ -178,8 +178,8 @@ export default function NotificheDropdown({
         right: 0,
         width: 380,
         maxHeight: '80vh',
-        background: '#1e293b',
-        border: '1px solid #334155',
+        background: 'var(--card-bg)',
+        border: '1px solid var(--border-color)',
         borderRadius: 16,
         boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
         zIndex: 2000,
@@ -201,13 +201,13 @@ export default function NotificheDropdown({
       {/* Header */}
       <div style={{
         padding: '16px 18px 12px',
-        borderBottom: '1px solid #334155',
+        borderBottom: '1px solid var(--border-color)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Bell size={16} color="#94a3b8" />
-          <span style={{ color: '#e2e8f0', fontSize: 15, fontWeight: 700 }}>
+          <span style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700 }}>
             Promemoria
           </span>
           {nonLette.length > 0 && (
@@ -229,7 +229,7 @@ export default function NotificheDropdown({
               title="Segna tutti come letti"
               style={{
                 background: 'transparent', border: 'none',
-                color: '#475569', cursor: 'pointer',
+                color: 'var(--text-muted)', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 4,
                 fontSize: 12, padding: '4px 8px', borderRadius: 6,
                 fontFamily: 'Sora, sans-serif',
@@ -246,7 +246,7 @@ export default function NotificheDropdown({
             title="Aggiorna promemoria"
             style={{
               background: 'transparent', border: 'none',
-              color: '#475569', cursor: loading ? 'not-allowed' : 'pointer',
+              color: 'var(--text-muted)', cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center',
               padding: '4px 8px', borderRadius: 6,
             }}
@@ -259,7 +259,7 @@ export default function NotificheDropdown({
             onClick={onClose}
             style={{
               background: 'transparent', border: 'none',
-              color: '#475569', cursor: 'pointer',
+              color: 'var(--text-muted)', cursor: 'pointer',
               display: 'flex', alignItems: 'center',
               padding: '4px 8px', borderRadius: 6,
             }}
@@ -274,7 +274,7 @@ export default function NotificheDropdown({
       {/* Lista notifiche */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {loading && notifiche.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
             <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
             <p style={{ fontSize: 13, margin: 0 }}>Calcolo promemoria…</p>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -289,10 +289,10 @@ export default function NotificheDropdown({
             }}>
               <CheckCheck size={22} color="#22c55e" />
             </div>
-            <p style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14, margin: '0 0 6px' }}>
+            <p style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14, margin: '0 0 6px' }}>
               Tutto in ordine!
             </p>
-            <p style={{ color: '#475569', fontSize: 13, margin: 0 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>
               Nessun promemoria attivo al momento.
             </p>
           </div>
@@ -317,8 +317,8 @@ export default function NotificheDropdown({
                 {nonLette.length > 0 && (
                   <div style={{
                     padding: '8px 16px',
-                    background: '#0f172a',
-                    color: '#334155',
+                    background: 'var(--app-bg)',
+                    color: 'var(--border-color)',
                     fontSize: 11, fontWeight: 700,
                     letterSpacing: '0.06em', textTransform: 'uppercase',
                   }}>
@@ -346,11 +346,11 @@ export default function NotificheDropdown({
       {/* Footer */}
       <div style={{
         padding: '10px 16px',
-        borderTop: '1px solid #1e293b',
+        borderTop: '1px solid var(--border-color-2)',
         flexShrink: 0,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        <span style={{ color: '#334155', fontSize: 11 }}>
+        <span style={{ color: 'var(--border-color)', fontSize: 11 }}>
           {notifiche.length} promemori{notifiche.length === 1 ? 'o' : 'a'} totali
         </span>
         <a
@@ -365,7 +365,7 @@ export default function NotificheDropdown({
             }, 100)
           }}
           style={{
-            color: '#475569', fontSize: 11, textDecoration: 'none',
+            color: 'var(--text-muted)', fontSize: 11, textDecoration: 'none',
             display: 'inline-flex', alignItems: 'center', gap: 4,
           }}
           onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}

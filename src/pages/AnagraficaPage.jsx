@@ -33,17 +33,17 @@ function TipoBadge({ tipo }) {
 }
 
 function PersonaChip({ persona, ruolo }) {
-  if (!persona) return <span style={{ color: '#475569', fontSize: 12, fontStyle: 'italic' }}>—</span>
+  if (!persona) return <span style={{ color: 'var(--text-muted)', fontSize: 12, fontStyle: 'italic' }}>—</span>
   const Icon = RUOLO_ICON[ruolo]
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       {Icon && <Icon size={14} style={{ color: ruolo === 'proprietario' ? '#3b82f6' : '#f59e0b' }} />}
       <div style={{ textAlign: 'left' }}>
-        <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 500 }}>
+        <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500 }}>
           {persona.cognome} {persona.nome}
         </div>
         {persona.email && <div style={{ color: '#60a5fa', fontSize: 11 }}>{persona.email}</div>}
-        {persona.telefono && <div style={{ color: '#64748b', fontSize: 11 }}>{persona.telefono}</div>}
+        {persona.telefono && <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{persona.telefono}</div>}
       </div>
     </div>
   )
@@ -480,8 +480,8 @@ export default function AnagraficaPage() {
           <div>
             <div style={styles.breadcrumb}>
               <Link to="/condomini" style={styles.breadLink}>Condomini</Link>
-              <span style={{ color: '#475569' }}> / </span>
-              <span style={{ color: '#94a3b8' }}>Anagrafica</span>
+              <span style={{ color: 'var(--text-muted)' }}> / </span>
+              <span style={{ color: 'var(--text-secondary)' }}>Anagrafica</span>
             </div>
             <h1 style={styles.title}>Anagrafica Unità</h1>
             <p style={styles.subtitle}>{unita.length} unità totali · {filtered.length} visualizzate</p>
@@ -516,8 +516,8 @@ export default function AnagraficaPage() {
         ) : filtered.length === 0 ? (
           <div style={styles.empty}>
             <p style={{ fontSize: 48, marginBottom: 8 }}>🏢</p>
-            <p style={{ color: '#94a3b8' }}>Nessuna unità trovata</p>
-            <p style={{ color: '#475569', fontSize: 13 }}>Aggiungi unità manualmente o importa un file</p>
+            <p style={{ color: 'var(--text-secondary)' }}>Nessuna unità trovata</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Aggiungi unità manualmente o importa un file</p>
           </div>
         ) : (
           <div style={styles.tableWrap}>
@@ -536,11 +536,11 @@ export default function AnagraficaPage() {
                   const isExpanded = expandedRow === u.id
                   return [
                     <tr key={u.id} style={styles.tr} onClick={() => setExpandedRow(isExpanded ? null : u.id)}>
-                      <td style={{ ...styles.td, fontWeight: 700, color: '#e2e8f0', textAlign: 'left' }}>
+                      <td style={{ ...styles.td, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'left' }}>
                         {u.numero}
                       </td>
                       <td style={{ ...styles.td, textAlign: 'left' }}><TipoBadge tipo={u.tipo} /></td>
-                      <td style={{ ...styles.td, color: '#94a3b8', textAlign: 'left' }}>
+                      <td style={{ ...styles.td, color: 'var(--text-secondary)', textAlign: 'left' }}>
                         {u.piano != null ? `Piano ${u.piano}` : '—'}
                         {u.scala ? ` · Sc.${u.scala}` : ''}
                       </td>
@@ -572,8 +572,8 @@ export default function AnagraficaPage() {
                           </button>
                         </div>
                       </td>
-                      <td style={{ ...styles.td, color: '#94a3b8', textAlign: 'left' }}>{u.mq ? `${u.mq} m²` : '—'}</td>
-                      <td style={{ ...styles.td, color: '#94a3b8', textAlign: 'left' }}>{u.millesimi || '—'}</td>
+                      <td style={{ ...styles.td, color: 'var(--text-secondary)', textAlign: 'left' }}>{u.mq ? `${u.mq} m²` : '—'}</td>
+                      <td style={{ ...styles.td, color: 'var(--text-secondary)', textAlign: 'left' }}>{u.millesimi || '—'}</td>
                       <td style={styles.td}>
                         <div style={styles.rowActions} onClick={e => e.stopPropagation()}>
                           <button style={styles.iconBtn} title="Modifica" onClick={() => { setEditUnita(u); setShowUnitaForm(true) }}><Edit size={14} /></button>
@@ -585,7 +585,7 @@ export default function AnagraficaPage() {
                     </tr>,
 
                     isExpanded && (
-                      <tr key={`${u.id}-expanded`} style={{ background: '#0f172a' }}>
+                      <tr key={`${u.id}-expanded`} style={{ background: 'var(--app-bg)' }}>
                         <td colSpan={8} style={{ padding: '0 16px 16px' }}>
                           <div style={styles.expandedGrid}>
                             {[
@@ -595,7 +595,7 @@ export default function AnagraficaPage() {
                               <div key={ruolo} style={styles.expandedCard}>
                                 <div style={styles.expandedTitle}>{RUOLO_ICON[ruolo]} {label}</div>
                                 {persona ? (
-                                  <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.8, textAlign: 'left' }}>
+                                  <div style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.8, textAlign: 'left' }}>
                                     <div><b>Nome:</b> {persona.cognome} {persona.nome}</div>
                                     <div><b>Email:</b> {persona.email || '—'}</div>
                                     <div><b>Tel:</b> {persona.telefono || '—'}</div>
@@ -612,7 +612,7 @@ export default function AnagraficaPage() {
                             {u.note && (
                               <div style={{ ...styles.expandedCard, gridColumn: '1/-1' }}>
                                 <div style={styles.expandedTitle}>📝 Note</div>
-                                <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'left' }}>{u.note}</div>
+                                <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'left' }}>{u.note}</div>
                               </div>
                             )}
                           </div>
@@ -696,7 +696,7 @@ export default function AnagraficaPage() {
           {personeFiltrateGlobali.length === 0 ? (
             <div style={styles.empty}>
               <Search size={32} color="#475569" style={{ marginBottom: 8 }} />
-              <p style={{ color: '#94a3b8', margin: 0 }}>Nessun condòmino trovato per "{searchGlobal}"</p>
+              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Nessun condòmino trovato per "{searchGlobal}"</p>
             </div>
           ) : (
             <div style={styles.tableWrap}>
@@ -719,8 +719,8 @@ export default function AnagraficaPage() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={styles.avatar}>{iniziali}</div>
                             <div style={{ textAlign: 'left' }}>
-                              <div style={{ color: '#f1f5f9', fontWeight: 600 }}>{p.cognome} {p.nome}</div>
-                              <div style={{ color: '#64748b', fontSize: 11 }}>ID: {p.id.slice(0, 8)}</div>
+                              <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{p.cognome} {p.nome}</div>
+                              <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>ID: {p.id.slice(0, 8)}</div>
                             </div>
                           </div>
                         </td>
@@ -732,14 +732,14 @@ export default function AnagraficaPage() {
                           {p.unitaDettagli.map((ud, i) => (
                             <div key={i} style={{ marginBottom: i > 0 ? 6 : 0, textAlign: 'left' }}>
                               <div style={{ color: '#60a5fa', fontWeight: 600, fontSize: 13 }}>{ud.condominioNome}</div>
-                              <div style={{ color: '#94a3b8', fontSize: 12 }}>{ud.ruolo} • Unità {ud.unitaNumero}{ud.unitaScala ? ` Scala ${ud.unitaScala}` : ''}</div>
+                              <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{ud.ruolo} • Unità {ud.unitaNumero}{ud.unitaScala ? ` Scala ${ud.unitaScala}` : ''}</div>
                             </div>
                           ))}
-                          {p.unitaDettagli.length === 0 && <span style={{ color: '#475569', fontStyle: 'italic' }}>Nessuna associazione</span>}
+                          {p.unitaDettagli.length === 0 && <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Nessuna associazione</span>}
                         </td>
                         <td style={styles.td}>
-                          <div style={{ color: '#cbd5e1', fontSize: 13, textAlign: 'left' }}>{p.indirizzo || '—'}</div>
-                          {p.citta && <div style={{ color: '#64748b', fontSize: 11, marginTop: 2, textAlign: 'left' }}>{p.citta}</div>}
+                          <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'left' }}>{p.indirizzo || '—'}</div>
+                          {p.citta && <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2, textAlign: 'left' }}>{p.citta}</div>}
                         </td>
                         <td style={{ ...styles.td, textAlign: 'center' }}>
                           <button onClick={() => apriModificaGlobale(p)} style={styles.btnEdit} title="Modifica Anagrafica">
@@ -782,7 +782,7 @@ export default function AnagraficaPage() {
                 {isEspanso && (
                   <div style={styles.condoCardBody}>
                     {residenti.length === 0 ? (
-                      <div style={{ padding: '20px 0', color: '#64748b', fontSize: 13 }}>
+                      <div style={{ padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>
                         Nessun condomino o inquilino associato alle unità di questo condominio.
                       </div>
                     ) : (
@@ -809,8 +809,8 @@ export default function AnagraficaPage() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                       <div style={styles.avatar}>{iniziali}</div>
                                       <div style={{ textAlign: 'left' }}>
-                                        <div style={{ color: '#e2e8f0', fontWeight: 600 }}>{p.cognome} {p.nome}</div>
-                                        <div style={{ color: '#64748b', fontSize: 11 }}>ID: {p.id.slice(0, 8)}</div>
+                                        <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{p.cognome} {p.nome}</div>
+                                        <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>ID: {p.id.slice(0, 8)}</div>
                                       </div>
                                     </div>
                                   </td>
@@ -824,13 +824,13 @@ export default function AnagraficaPage() {
                                         <span style={{ color: uc.ruolo === 'Proprietario' ? '#60a5fa' : '#34d399', fontWeight: 600, fontSize: 12 }}>
                                           {uc.ruolo}
                                         </span>
-                                        <span style={{ color: '#cbd5e1', fontSize: 12 }}> • Unità {uc.unitaNumero}{uc.unitaScala ? ` (Scala ${uc.unitaScala})` : ''}</span>
+                                        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}> • Unità {uc.unitaNumero}{uc.unitaScala ? ` (Scala ${uc.unitaScala})` : ''}</span>
                                       </div>
                                     ))}
                                   </td>
                                   <td style={styles.td}>
-                                    <div style={{ color: '#cbd5e1', fontSize: 13, textAlign: 'left' }}>{p.indirizzo || '—'}</div>
-                                    {p.citta && <div style={{ color: '#64748b', fontSize: 11, marginTop: 2, textAlign: 'left' }}>{p.citta}</div>}
+                                    <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'left' }}>{p.indirizzo || '—'}</div>
+                                    {p.citta && <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2, textAlign: 'left' }}>{p.citta}</div>}
                                   </td>
                                   <td style={{ ...styles.td, textAlign: 'center' }}>
                                     <button onClick={() => apriModificaGlobale(p)} style={styles.btnEdit} title="Modifica Anagrafica">
@@ -859,7 +859,7 @@ export default function AnagraficaPage() {
             <div style={styles.modalHead}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <UserCog size={18} color="#60a5fa" />
-                <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>Modifica Anagrafica Condòmino</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 15 }}>Modifica Anagrafica Condòmino</span>
               </div>
               <button style={styles.btnClose} onClick={() => setEditingPersona(null)}><X size={16} /></button>
             </div>
@@ -916,14 +916,14 @@ export default function AnagraficaPage() {
             <div style={styles.modalHead}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Plus size={18} color="#60a5fa" />
-                <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>Nuovo Condòmino</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 15 }}>Nuovo Condòmino</span>
               </div>
               <button style={styles.btnClose} onClick={() => setShowNuovoModal(false)}><X size={16} /></button>
             </div>
             
             <form onSubmit={handleCreaNuovoGlobale}>
               <div style={{ ...styles.modalBody, maxHeight: '65vh', overflowY: 'auto', paddingRight: 6 }}>
-                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Dati Anagrafici</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Dati Anagrafici</div>
                 <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>Cognome *</label>
@@ -946,7 +946,7 @@ export default function AnagraficaPage() {
                   </div>
                 </div>
 
-                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Contatti</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Contatti</div>
                 <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>Email</label>
@@ -962,7 +962,7 @@ export default function AnagraficaPage() {
                   <input style={styles.input} type="text" value={nuovoTelefonoAlt} onChange={e => setNuovoTelefonoAlt(e.target.value)} placeholder="es. 02123456" />
                 </div>
 
-                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Residenza</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Residenza</div>
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Indirizzo</label>
                   <input style={styles.input} type="text" value={nuovoIndirizzo} onChange={e => setNuovoIndirizzo(e.target.value)} placeholder="es. Via Roma 10" />
@@ -984,7 +984,7 @@ export default function AnagraficaPage() {
                   </div>
                 </div>
 
-                <div style={{ color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid #334155', paddingBottom: 4, textAlign: 'left' }}>Associazione Unità</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Associazione Unità</div>
                 
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Condominio</label>
@@ -1039,7 +1039,7 @@ export default function AnagraficaPage() {
 
 // ── STILI COMPLETI ────────────────────────────────────────────────────────
 const styles = {
-  page: { padding: '28px 32px', background: '#0f172a', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
+  page: { padding: '28px 32px', background: 'var(--app-bg)', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
   toast: {
     position: 'fixed', top: 20, right: 20, zIndex: 2000,
     color: 'white', padding: '12px 20px', borderRadius: 10,
@@ -1048,36 +1048,36 @@ const styles = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
   breadcrumb: { fontSize: 13, marginBottom: 6 },
   breadLink: { color: '#3b82f6', textDecoration: 'none' },
-  title: { color: '#e2e8f0', fontSize: 26, fontWeight: 700, margin: 0, textAlign: 'left' },
-  subtitle: { color: '#64748b', fontSize: 13, marginTop: 4, textAlign: 'left' },
+  title: { color: 'var(--text-primary)', fontSize: 26, fontWeight: 700, margin: 0, textAlign: 'left' },
+  subtitle: { color: 'var(--text-muted)', fontSize: 13, marginTop: 4, textAlign: 'left' },
   headerActions: { display: 'flex', gap: 10 },
   filters: { display: 'flex', gap: 12, marginBottom: 20 },
   search: {
-    flex: 1, background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0',
+    flex: 1, background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)',
     borderRadius: 10, padding: '10px 16px', fontSize: 14, outline: 'none',
   },
   select: {
-    background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0',
+    background: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)',
     borderRadius: 10, padding: '10px 14px', fontSize: 14, outline: 'none',
   },
-  loading: { color: '#64748b', textAlign: 'center', padding: '60px' },
-  empty: { textAlign: 'center', padding: '60px 20px', color: '#64748b', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  tableWrap: { overflowX: 'auto', borderRadius: 12, border: '1px solid #334155', background: '#1e293b' },
+  loading: { color: 'var(--text-muted)', textAlign: 'center', padding: '60px' },
+  empty: { textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  tableWrap: { overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border-color)', background: 'var(--card-bg)' },
   table: { width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 },
   th: {
-    background: '#0f172a', color: '#64748b', padding: '12px 16px',
+    background: 'var(--app-bg)', color: 'var(--text-muted)', padding: '12px 16px',
     textAlign: 'left', fontWeight: 600, textTransform: 'uppercase',
     letterSpacing: '0.05em', fontSize: 11, whiteSpace: 'nowrap',
-    borderBottom: '1px solid #334155'
+    borderBottom: '1px solid var(--border-color)'
   },
   tr: {
-    borderBottom: '1px solid #1e293b',
+    borderBottom: '1px solid var(--border-color-2)',
     transition: 'background .15s',
   },
-  td: { padding: '12px 16px', verticalAlign: 'middle', borderBottom: '1px solid #1e293b' },
+  td: { padding: '12px 16px', verticalAlign: 'middle', borderBottom: '1px solid var(--border-color-2)' },
   rowActions: { display: 'flex', gap: 2 },
   historyBtn: {
-    background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
+    background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
     padding: '4px', borderRadius: 4, display: 'flex', alignItems: 'center',
   },
   iconBtn: {
@@ -1088,13 +1088,13 @@ const styles = {
     display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, paddingTop: 16,
   },
   expandedCard: {
-    background: '#1e293b', borderRadius: 10, padding: '14px 18px',
-    border: '1px solid #334155',
+    background: 'var(--card-bg)', borderRadius: 10, padding: '14px 18px',
+    border: '1px solid var(--border-color)',
   },
-  expandedTitle: { color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+  expandedTitle: { color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
     letterSpacing: '0.08em', marginBottom: 10 },
   addPersonaBtn: {
-    background: 'transparent', border: '1px dashed #334155', color: '#3b82f6',
+    background: 'transparent', border: '1px dashed var(--border-color)', color: '#3b82f6',
     borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13,
   },
   btnPrimary: {
@@ -1102,38 +1102,38 @@ const styles = {
     padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
   },
   btnSecondary: {
-    background: 'transparent', color: '#94a3b8', border: '1px solid #334155',
+    background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
     borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer',
   },
 
   // Stili globali
-  searchBarWrap: { display: 'flex', alignItems: 'center', background: '#1e293b', border: '1px solid #334155', borderRadius: 12, marginBottom: 20 },
-  searchBarInput: { background: 'transparent', border: 'none', padding: '14px 16px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%' },
+  searchBarWrap: { display: 'flex', alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, marginBottom: 20 },
+  searchBarInput: { background: 'transparent', border: 'none', padding: '14px 16px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%' },
   resultsSec: { marginTop: 10 },
-  resultsTitle: { color: '#cbd5e1', fontSize: 15, fontWeight: 600, marginBottom: 12, textAlign: 'left' },
+  resultsTitle: { color: 'var(--text-secondary)', fontSize: 15, fontWeight: 600, marginBottom: 12, textAlign: 'left' },
   avatar: { width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  contactItem: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#e2e8f0' },
-  btnEdit: { background: 'rgba(255,255,255,0.05)', border: '1px solid #334155', borderRadius: 6, padding: '6px 12px', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontWeight: 600 },
+  contactItem: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-primary)' },
+  btnEdit: { background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '6px 12px', color: 'var(--text-primary)', fontSize: 12, cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontWeight: 600 },
   
   condominiList: { display: 'flex', flexDirection: 'column', gap: 14 },
-  condoCard: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' },
+  condoCard: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 14, overflow: 'hidden' },
   condoCardHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', cursor: 'pointer' },
   condoIcon: { width: 38, height: 38, borderRadius: 10, background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  condoNome: { color: '#f1f5f9', fontWeight: 700, fontSize: 16 },
-  condoIndirizzo: { color: '#64748b', fontSize: 12, marginTop: 2 },
+  condoNome: { color: 'var(--text-primary)', fontWeight: 700, fontSize: 16 },
+  condoIndirizzo: { color: 'var(--text-muted)', fontSize: 12, marginTop: 2 },
   residentiCountBadge: { background: 'rgba(96,165,250,0.15)', color: '#60a5fa', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20 },
-  condoCardBody: { padding: '0 24px 24px 24px', borderTop: '1px solid #33415515', paddingTop: 16 },
+  condoCardBody: { padding: '0 24px 24px 24px', borderTop: '1px solid var(--border-color-2)', paddingTop: 16 },
 
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 },
-  modal: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 22, width: 440, maxWidth: '90vw', fontFamily: 'Sora, sans-serif' },
+  modal: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 14, padding: 22, width: 440, maxWidth: '90vw', fontFamily: 'Sora, sans-serif' },
   modalHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  btnClose: { background: 'transparent', color: '#64748b', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+  btnClose: { background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
   modalBody: { display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 },
   formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
   formGroup: { display: 'flex', flexDirection: 'column', gap: 6 },
-  label: { color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  input: { width: '100%', boxSizing: 'border-box', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '9px 10px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
-  modalFooter: { display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid #334155', paddingTop: 14 },
-  btnCancel: { background: 'transparent', border: '1px solid #334155', borderRadius: 8, padding: '9px 20px', color: '#94a3b8', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: 13 },
+  label: { color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  input: { width: '100%', boxSizing: 'border-box', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '9px 10px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
+  modalFooter: { display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid var(--border-color)', paddingTop: 14 },
+  btnCancel: { background: 'transparent', border: '1px solid var(--border-color)', borderRadius: 8, padding: '9px 20px', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: 13 },
   btnSave: { background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
 }

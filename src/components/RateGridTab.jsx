@@ -34,7 +34,7 @@ function deriveStato(importo, pagato) {
 }
 
 function cellInfo(cell, rata) {
-  if (!cell) return { color: '#475569', bg: 'transparent', label: '—', importo: 0, pagato: 0, credito: 0, missing: true }
+  if (!cell) return { color: 'var(--text-muted)', bg: 'transparent', label: '—', importo: 0, pagato: 0, credito: 0, missing: true }
   const importo = parseFloat(cell.importo || 0)
   const pagato = parseFloat(cell.importo_pagato || 0)
   const credito = round2(pagato - importo)
@@ -76,13 +76,13 @@ export default function RateGridTab({ condominioId }) {
       });
 
     if (proprietari.length === 0) {
-      return <div style={{ color: '#64748b', fontSize: 11, fontStyle: 'italic' }}>— Nessuno —</div>;
+      return <div style={{ color: 'var(--text-muted)', fontSize: 11, fontStyle: 'italic' }}>— Nessuno —</div>;
     }
 
     if (proprietari.length === 1) {
       const p = proprietari[0].persone;
-      if (!p) return <div style={{ color: '#64748b', fontSize: 11, fontStyle: 'italic' }}>— Nessuno —</div>;
-      return <div style={{ color: '#64748b', fontSize: 11 }}>{p.cognome} {p.nome}</div>;
+      if (!p) return <div style={{ color: 'var(--text-muted)', fontSize: 11, fontStyle: 'italic' }}>— Nessuno —</div>;
+      return <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{p.cognome} {p.nome}</div>;
     }
 
     // Se ci sono più proprietari (subentro avvenuto nell'esercizio)
@@ -114,8 +114,8 @@ export default function RateGridTab({ condominioId }) {
                 gap: 4
               }}
             >
-              {idx > 0 && <span style={{ color: '#475569', fontSize: 9 }}>➔</span>}
-              <span>{p.cognome} {p.nome} <span style={{ color: '#475569', fontSize: 9, fontStyle: 'italic' }}>{labelDate}</span></span>
+              {idx > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 9 }}>➔</span>}
+              <span>{p.cognome} {p.nome} <span style={{ color: 'var(--text-muted)', fontSize: 9, fontStyle: 'italic' }}>{labelDate}</span></span>
             </div>
           );
         })}
@@ -534,11 +534,11 @@ L'Amministratore`;
   const totalePagato = round2(cells.reduce((s, c) => s + parseFloat(c.importo_pagato || 0), 0))
 
   // ── render ─────────────────────────────────────────────────
-  if (loading) return <div style={{ color: '#64748b', textAlign: 'center', padding: 32 }}>Caricamento griglia...</div>
+  if (loading) return <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 32 }}>Caricamento griglia...</div>
 
   if (!esercizio) return (
-    <div style={st.empty}><CreditCard size={32} color="#334155" style={{ marginBottom: 10 }} />
-      <p style={{ color: '#64748b', margin: 0 }}>Nessun esercizio contabile</p></div>
+    <div style={st.empty}><CreditCard size={32} color="var(--text-muted)" style={{ marginBottom: 10 }} />
+      <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessun esercizio contabile</p></div>
   )
 
   return (
@@ -569,7 +569,7 @@ L'Amministratore`;
                   borderRadius: 8,
                   fontSize: 13,
                   cursor: 'pointer',
-                  border: `1px solid ${isActive ? activeColor : '#334155'}`,
+                  border: `1px solid ${isActive ? activeColor : 'var(--border-color)'}`,
                   background: isActive ? (isStraord ? 'rgba(139, 92, 246, 0.15)' : 'rgba(37, 99, 235, 0.15)') : 'transparent',
                   color: isActive ? (isStraord ? '#a78bfa' : '#60a5fa') : '#64748b',
                   fontFamily: 'Sora, sans-serif',
@@ -591,8 +591,8 @@ L'Amministratore`;
           { label: 'Totale incassato', value: eur(totalePagato), color: '#10b981' },
        { label: 'Residuo', value: eur(Math.max(0, totaleDovuto - totalePagato)), color: (totaleDovuto - totalePagato) > 0.01 ? '#f59e0b' : '#10b981' },
         ].map((k) => (
-          <div key={k.label} style={{ background: '#1e293b', borderRadius: 10, padding: '14px 18px', border: `1px solid ${k.color}33` }}>
-            <div style={{ color: '#64748b', fontSize: 12, marginBottom: 4 }}>{k.label}</div>
+          <div key={k.label} style={{ background: 'var(--card-bg)', borderRadius: 10, padding: '14px 18px', border: `1px solid ${k.color}33` }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>{k.label}</div>
             <div style={{ color: k.color, fontSize: 20, fontWeight: 700 }}>{k.value}</div>
           </div>
         ))}
@@ -604,7 +604,7 @@ L'Amministratore`;
             <Megaphone size={20} style={{ color: '#fbbf24', flexShrink: 0 }} />
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 14 }}>Solleciti Consigliati</div>
-              <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 2 }}>
                 Rilevate {rateScaduteDa10Giorni.length} unità con rate scadute da oltre 10 giorni.
               </div>
             </div>
@@ -617,9 +617,9 @@ L'Amministratore`;
 
       {rate.length === 0 ? (
         <div style={st.empty}>
-          <CreditCard size={32} color="#334155" style={{ marginBottom: 10 }} />
-          <p style={{ color: '#94a3b8', margin: 0 }}>Nessuna rata generata per l'esercizio {esercizio.anno}</p>
-          <p style={{ color: '#475569', fontSize: 13, marginTop: 6 }}>Vai alla scheda Preventivo e genera le rate</p>
+          <CreditCard size={32} color="var(--text-muted)" style={{ marginBottom: 10 }} />
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Nessuna rata generata per l'esercizio {esercizio.anno}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 6 }}>Vai alla scheda Preventivo e genera le rate</p>
         </div>
       ) : (
         <div style={st.scrollWrap}>
@@ -629,8 +629,8 @@ L'Amministratore`;
                 <th style={{ ...st.th, ...st.stickyCol, textAlign: 'left' }}>Unità</th>
                 {rate.map((r) => (
                   <th key={r.id} style={st.th}>
-                    <div style={{ color: '#e2e8f0' }}>{r.descrizione || `Rata ${r.numero_rata}`}</div>
-                    <div style={{ color: '#64748b', fontWeight: 400, fontSize: 11 }}>
+                    <div style={{ color: 'var(--text-primary)' }}>{r.descrizione || `Rata ${r.numero_rata}`}</div>
+                    <div style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 11 }}>
                       {r.data_scadenza ? new Date(r.data_scadenza).toLocaleDateString('it-IT') : ''}
                     </div>
                   </th>
@@ -645,7 +645,7 @@ L'Amministratore`;
                 return (
                   <tr key={u.id}>
                     <td style={{ ...st.tdLabel, ...st.stickyCol }}>
-                      <div style={{ color: '#e2e8f0', fontWeight: 600 }}>Unità {u.numero}</div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Unità {u.numero}</div>
                       {renderProprietariTransizione(u)}
                       {esercizio?.tipo === 'ordinario' && configPagante[u.id] === 'inquilino' && getInquilino(u) && (
                         <div style={{
@@ -673,7 +673,7 @@ L'Amministratore`;
                             style={{ ...st.cellBtn, background: info.bg, borderColor: info.color + '55', cursor: info.missing ? 'default' : 'pointer' }}
                             title={info.missing ? 'Cella assente: rigenera le rate' : info.label}
                           >
-                            <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{info.missing ? '—' : eur(info.importo)}</span>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{info.missing ? '—' : eur(info.importo)}</span>
                             {!info.missing && (
                               <span style={{ color: info.color, fontSize: 10, marginTop: 2 }}>
                                 {info.label}
@@ -687,7 +687,7 @@ L'Amministratore`;
                       )
                     })}
                     <td style={{ ...st.td, textAlign: 'right' }}>
-                      <div style={{ color: '#e2e8f0', fontWeight: 700 }}>{eur(tu.dovuto)}</div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{eur(tu.dovuto)}</div>
                       <div style={{ color: '#10b981', fontSize: 11 }}>{eur(tu.pagato)}</div>
                     </td>
                   </tr>
@@ -700,7 +700,7 @@ L'Amministratore`;
                   const t = totRata(r.id)
                   return (
                     <td key={r.id} style={{ ...st.td, textAlign: 'center' }}>
-                      <div style={{ color: '#e2e8f0', fontWeight: 700 }}>{eur(t.dovuto)}</div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{eur(t.dovuto)}</div>
                       <div style={{ color: '#10b981', fontSize: 11 }}>{eur(t.pagato)}</div>
                     </td>
                   )
@@ -792,8 +792,8 @@ function CellEditor({ cell, rata, unita, getProprietario, getInquilino, configPa
       <div style={st.modal} onClick={(e) => e.stopPropagation()}>
         <div style={st.modalHead}>
           <div>
-            <div style={{ color: '#e2e8f0', fontWeight: 700 }}>Unità {unita.numero}{activePayer ? ` · ${activePayer.cognome} ${activePayer.nome}` : ''}</div>
-            <div style={{ color: '#64748b', fontSize: 12 }}>
+            <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Unità {unita.numero}{activePayer ? ` · ${activePayer.cognome} ${activePayer.nome}` : ''}</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
               {rata.descrizione || `Rata ${rata.numero_rata}`} · scad. {rata.data_scadenza ? new Date(rata.data_scadenza).toLocaleDateString('it-IT') : '—'}
             </div>
           </div>
@@ -802,7 +802,7 @@ function CellEditor({ cell, rata, unita, getProprietario, getInquilino, configPa
 
         <label style={st.fieldLabel}>Importo dovuto (piano)</label>
         <input style={st.input} type="number" value={importo} onChange={(e) => setImporto(e.target.value)} />
-        <p style={{ color: '#475569', fontSize: 11, margin: '4px 0 12px' }}>Modificarlo segna la cella come "modificata manualmente".</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 11, margin: '4px 0 12px' }}>Modificarlo segna la cella come "modificata manualmente".</p>
 
         <label style={st.fieldLabel}>Importo incassato</label>
         <input style={st.input} type="number" value={pagato} onChange={(e) => setPagato(e.target.value)} />
@@ -826,7 +826,7 @@ function CellEditor({ cell, rata, unita, getProprietario, getInquilino, configPa
           </button>
         )}
 
-        <div style={{ marginTop: 16, borderTop: '1px solid #334155', paddingTop: 12 }}>
+        <div style={{ marginTop: 16, borderTop: '1px solid var(--border-color)', paddingTop: 12 }}>
           <button 
             type="button" 
             onClick={() => setShowAnagrafica(!showAnagrafica)} 
@@ -964,8 +964,8 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
       <div style={{ ...st.modal, width: 750, maxWidth: '95vw' }}>
         <div style={st.modalHead}>
           <div>
-            <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 16 }}>Gestione Solleciti di Pagamento Massivi</div>
-            <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
+            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 16 }}>Gestione Solleciti di Pagamento Massivi</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
               Seleziona i condòmini morosi, imposta il canale (E-mail o Cartaceo) e personalizza il template.
             </div>
           </div>
@@ -974,13 +974,13 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
 
         {invioMassivoStato.inCorso ? (
           <div style={{ padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ color: '#e2e8f0', fontSize: 15, fontWeight: 600 }}>
+            <div style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 600 }}>
               Elaborazione ed invio dei solleciti in corso...
             </div>
-            <div style={{ color: '#cbd5e1', fontSize: 13 }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
               Elaborato {invioMassivoStato.corrente} di {invioMassivoStato.totale} solleciti {invioMassivoStato.falliti > 0 && `(${invioMassivoStato.falliti} falliti)`}
             </div>
-            <div style={{ height: 8, background: '#1e293b', borderRadius: 4, overflow: 'hidden', width: '100%', maxWidth: 400, margin: '0 auto' }}>
+            <div style={{ height: 8, background: 'var(--card-bg)', borderRadius: 4, overflow: 'hidden', width: '100%', maxWidth: 400, margin: '0 auto' }}>
               <div style={{
                 height: '100%',
                 background: '#2563eb',
@@ -1004,14 +1004,14 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                   </button>
                 </div>
 
-                <div style={{ maxHeight: 340, overflowY: 'auto', border: '1px solid #334155', borderRadius: 8, background: '#0f172a', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ maxHeight: 340, overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 8, background: 'var(--app-bg)', display: 'flex', flexDirection: 'column' }}>
                   {proposte.map(p => {
                     const isSelected = selezionati.includes(p.unita.id);
                     const haEmail = !!p.destinatario?.email;
                     const canaleCorrente = canali[p.unita.id];
 
                     return (
-                      <label key={p.unita.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #1e293b', cursor: 'pointer', background: isSelected ? 'rgba(37,99,235,0.06)' : 'transparent', transition: 'background-color 0.15s' }}>
+                      <label key={p.unita.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border-color-2)', cursor: 'pointer', background: isSelected ? 'rgba(37,99,235,0.06)' : 'transparent', transition: 'background-color 0.15s' }}>
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1019,7 +1019,7 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                           style={{ marginRight: 12, cursor: 'pointer' }}
                         />
                         <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
-                          <div style={{ fontWeight: 600, color: '#f1f5f9', fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
                               U. {p.unita.numero} - {p.destinatario.cognome} {p.destinatario.nome}
                             </span>
@@ -1032,7 +1032,7 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                                   e.stopPropagation();
                                   setCanali(prev => ({ ...prev, [p.unita.id]: e.target.value }));
                                 }}
-                                style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 4, color: '#e2e8f0', fontSize: 11, padding: '2px 4px', cursor: 'pointer' }}
+                                style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 4, color: 'var(--text-primary)', fontSize: 11, padding: '2px 4px', cursor: 'pointer' }}
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <option value="email">E-mail</option>
@@ -1045,7 +1045,7 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                             )}
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                            <span style={{ color: '#64748b', fontSize: 11 }}>Rate: {p.rateCoinvolte}</span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>Rate: {p.rateCoinvolte}</span>
                             <span style={{ color: '#ef4444', fontSize: 12, fontWeight: 700 }}>€ {p.importoInsoluto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
                           </div>
                         </div>
@@ -1092,12 +1092,12 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
                   />
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
                     {['{NOME}', '{UNITA}', '{CONDOMINIO}', '{IMPORTO_SCADUTO}', '{IBAN}'].map(tag => (
-                      <span key={tag} style={{ color: '#64748b', background: '#0f172a', border: '1px solid #334155', borderRadius: 4, padding: '2px 6px', fontSize: 10, fontFamily: 'monospace' }}>{tag}</span>
+                      <span key={tag} style={{ color: 'var(--text-muted)', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 4, padding: '2px 6px', fontSize: 10, fontFamily: 'monospace' }}>{tag}</span>
                     ))}
                   </div>
                 </div>
 
-                <label style={{ display: 'flex', alignItems: 'center', color: '#cbd5e1', fontSize: 12, cursor: 'pointer', marginTop: 4 }}>
+                <label style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', marginTop: 4 }}>
                   <input
                     type="checkbox"
                     checked={allegaPdf}
@@ -1109,10 +1109,10 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
 
                 {/* Opzioni Spedizione Cartacea */}
                 {haCartaceiSelezionati && (
-                  <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+                  <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
                     <label style={st.fieldLabel}>Opzione Spedizione Cartacea</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', color: '#cbd5e1', fontSize: 12, cursor: 'pointer' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>
                         <input
                           type="radio"
                           name="tipoCartaceo"
@@ -1147,7 +1147,7 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
             </div>
 
             {/* Footer */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid #334155', paddingTop: 14, marginTop: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid var(--border-color)', paddingTop: 14, marginTop: 6 }}>
               <button type="button" style={st.btnCancel} onClick={onClose} disabled={inviando}>Annulla</button>
               <button
                 type="submit"
@@ -1165,25 +1165,25 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
 }
 
 const st = {
-  empty: { textAlign: 'center', padding: 40, background: '#1e293b', borderRadius: 12, border: '1px solid #334155' },
-  scrollWrap: { overflowX: 'auto', border: '1px solid #334155', borderRadius: 12 },
+  empty: { textAlign: 'center', padding: 40, background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)' },
+  scrollWrap: { overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: 12 },
   table: { borderCollapse: 'separate', borderSpacing: 0, width: '100%', fontFamily: 'Sora, sans-serif' },
-  th: { background: '#0f172a', color: '#64748b', fontSize: 12, fontWeight: 700, padding: '12px 10px', textAlign: 'center', borderBottom: '1px solid #334155', whiteSpace: 'nowrap' },
-  td: { padding: '8px 10px', borderBottom: '1px solid #1e293b', verticalAlign: 'middle' },
-  tdLabel: { padding: '8px 12px', borderBottom: '1px solid #1e293b', whiteSpace: 'nowrap' },
-  stickyCol: { position: 'sticky', left: 0, background: '#1e293b', zIndex: 1 },
+  th: { background: 'var(--app-bg)', color: 'var(--text-muted)', fontSize: 12, fontWeight: 700, padding: '12px 10px', textAlign: 'center', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' },
+  td: { padding: '8px 10px', borderBottom: '1px solid var(--border-color-2)', verticalAlign: 'middle' },
+  tdLabel: { padding: '8px 12px', borderBottom: '1px solid var(--border-color-2)', whiteSpace: 'nowrap' },
+  stickyCol: { position: 'sticky', left: 0, background: 'var(--card-bg)', zIndex: 1 },
   cellBtn: { width: '100%', minWidth: 92, border: '1px solid', borderRadius: 8, padding: '8px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'Sora, sans-serif' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 },
-  modal: { background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 22, width: 360, maxWidth: '90vw', fontFamily: 'Sora, sans-serif' },
+  modal: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 14, padding: 22, width: 360, maxWidth: '90vw', fontFamily: 'Sora, sans-serif' },
   modalHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, gap: 10 },
-  fieldLabel: { display: 'block', color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 },
-  input: { width: '100%', boxSizing: 'border-box', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '9px 10px', color: '#e2e8f0', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
+  fieldLabel: { display: 'block', color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 },
+  input: { width: '100%', boxSizing: 'border-box', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '9px 10px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none' },
   btnPrimary: { flex: 1, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
   btnGhost: { flex: 1, background: 'transparent', color: '#10b981', border: '1px solid #10b98155', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
-  btnIcon: { background: 'transparent', color: '#64748b', border: '1px solid #334155', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  esBtn: (active) => ({ padding: '6px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: `1px solid ${active ? '#2563eb' : '#334155'}`, background: active ? 'rgba(37,99,235,0.15)' : 'transparent', color: active ? '#60a5fa' : '#64748b', fontFamily: 'Sora, sans-serif', fontWeight: active ? 600 : 400 }),
+  btnIcon: { background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-color)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  esBtn: (active) => ({ padding: '6px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: `1px solid ${active ? '#2563eb' : 'var(--border-color)'}`, background: active ? 'rgba(37,99,235,0.15)' : 'transparent', color: active ? '#60a5fa' : '#64748b', fontFamily: 'Sora, sans-serif', fontWeight: active ? 600 : 400 }),
   esTag: (aperto) => ({ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 4, background: aperto ? '#10b98122' : '#64748b22', color: aperto ? '#10b981' : '#64748b' }),
   bannerProposte: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f59e0b15', border: '1px solid #f59e0b40', borderRadius: 12, padding: '14px 20px', marginBottom: 16, flexWrap: 'wrap', gap: 12 },
   btnProposte: { background: '#f59e0b', color: '#0f172a', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
-  btnCancel: { background: 'transparent', border: '1px solid #334155', borderRadius: 8, padding: '8px 20px', color: '#94a3b8', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: 13 },
+  btnCancel: { background: 'transparent', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 20px', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontSize: 13 },
 }

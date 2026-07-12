@@ -39,6 +39,7 @@
   --input-bg: #0f172a;
   --btn-ghost-bg: transparent;
   --sepa-yellow: #fbbf24;
+  --gradient-card: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 
   /* Logo brand colors */
   --logo-prefix-color: #f1f5f9;
@@ -78,6 +79,7 @@
   --input-bg: #f8fafc;
   --btn-ghost-bg: #f1f5f9;
   --sepa-yellow: #d97706;
+  --gradient-card: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
 
   /* Logo brand colors */
   --logo-prefix-color: #1e293b;

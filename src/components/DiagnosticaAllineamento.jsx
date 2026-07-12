@@ -491,7 +491,7 @@ Cosa succederà:
               </select>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38, color: '#94a3b8' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38, color: 'var(--text-secondary)' }}>
               <ArrowRight size={18} />
             </div>
 
@@ -552,16 +552,16 @@ Cosa succederà:
                   return (
                     <div key={u.id} style={S.listItem}>
                       <div style={{ flex: 1 }}>
-                        <span style={{ fontWeight: 700, color: '#f1f5f9' }}>Int. {u.numero || '—'}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Int. {u.numero || '—'}</span>
                         {u.scala && <span style={S.badge}>Scala {u.scala}</span>}
                         {u.piano !== null && <span style={S.badge}>Piano {u.piano}</span>}
-                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                           Millesimi registrati in archivio
                         </div>
                       </div>
 
                       {isSelectingThis ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#1e293b', padding: 12, borderRadius: 8, border: '1px solid #334155', width: '100%', maxWidth: 420 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--card-bg)', padding: 12, borderRadius: 8, border: '1px solid var(--border-color)', width: '100%', maxWidth: 420 }}>
                           
                           {showNewPersonForm ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -582,7 +582,7 @@ Cosa succederà:
                             </div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              <strong style={{ fontSize: 12, color: '#cbd5e1' }}>Associa Condomino Esistente:</strong>
+                              <strong style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Associa Condomino Esistente:</strong>
                               <input
                                 style={S.inputSmall}
                                 placeholder="Filtra persone per nome/CF..."
@@ -660,13 +660,13 @@ Cosa succederà:
                   return (
                     <div key={p.id} style={S.listItem}>
                       <div style={{ flex: 1 }}>
-                        <span style={{ fontWeight: 700, color: '#f1f5f9' }}>{p.cognome} {p.nome}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{p.cognome} {p.nome}</span>
                         {p.email && <span style={{ ...S.badge, backgroundColor: '#0284c715', color: '#38bdf8' }}>{p.email}</span>}
-                        {p.codice_fiscale && <span style={{ ...S.badge, backgroundColor: '#0f172a' }}>{p.codice_fiscale}</span>}
+                        {p.codice_fiscale && <span style={{ ...S.badge, backgroundColor: 'var(--app-bg)' }}>{p.codice_fiscale}</span>}
                       </div>
 
                       {isSelectingThis ? (
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: '#1e293b', padding: 8, borderRadius: 8, border: '1px solid #334155' }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'var(--card-bg)', padding: 8, borderRadius: 8, border: '1px solid var(--border-color)' }}>
                           <select
                             style={S.selectSmall}
                             value={orphanTargetUnitaId}
@@ -716,59 +716,59 @@ Cosa succederà:
 // ─── STILI LOCALI PER IL PANNELLO DIAGNOSTICA ───────────────────────────────
 const S = {
   titleSection: {
-    display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 12, borderBottom: '1px solid #1e293b'
+    display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 12, borderBottom: '1px solid var(--border-color-2)'
   },
-  title: { margin: 0, fontSize: 18, fontWeight: 700, color: '#f1f5f9' },
-  subtitle: { margin: 0, fontSize: 12, color: '#94a3b8' },
+  title: { margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' },
+  subtitle: { margin: 0, fontSize: 12, color: 'var(--text-secondary)' },
   
   containerLayout: {
     display: 'flex', flexDirection: 'column', gap: 16
   },
   
   card: {
-    background: '#11182760', border: '1px solid #334155', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 8
+    background: '#11182760', border: '1px solid var(--border-color)', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 8
   },
   cardHeader: {
     display: 'flex', alignItems: 'center', gap: 8
   },
   cardTitle: {
-    margin: 0, fontSize: 14, fontWeight: 700, color: '#f1f5f9'
+    margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)'
   },
   cardDesc: {
-    margin: 0, fontSize: 12, color: '#94a3b8', lineHeight: 1.4
+    margin: 0, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4
   },
   
   formGroup: {
     display: 'flex', flexDirection: 'column', gap: 4, minWidth: 200
   },
   label: {
-    fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase'
+    fontSize: 10, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase'
   },
   select: {
-    background: '#0f172a', border: '1px solid #334155', borderRadius: 6, padding: '7px 10px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none'
+    background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '7px 10px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none'
   },
   selectSmall: {
-    background: '#0f172a', border: '1px solid #334155', borderRadius: 6, padding: '5px 8px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none', width: '220px'
+    background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '5px 8px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none', width: '220px'
   },
   inputSmall: {
-    background: '#0f172a', border: '1px solid #334155', borderRadius: 6, padding: '5px 8px', color: '#e2e8f0', fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none', boxSizing: 'border-box', width: '100%'
+    background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '5px 8px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif", fontSize: 12, outline: 'none', boxSizing: 'border-box', width: '100%'
   },
   
   btnPrimary: {
     background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 14px', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', height: 36
   },
   btnActionPrimary: {
-    background: '#1e293b', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, padding: '6px 12px', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', height: 28, transition: 'background 0.2s'
+    background: 'var(--card-bg)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, padding: '6px 12px', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', height: 28, transition: 'background 0.2s'
   },
   btnActionSecondary: {
-    background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: 6, padding: '6px 12px', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', height: 28
+    background: 'var(--card-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '6px 12px', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', height: 28
   },
   btnText: {
     background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', fontSize: 11, textDecoration: 'underline', fontFamily: "'Sora', sans-serif", padding: 0
   },
   
   anomalyContainer: {
-    background: '#0f172a30', border: '1px solid #1e293b', borderRadius: 8, padding: 4, marginTop: 8
+    background: 'var(--app-bg)', border: '1px solid var(--border-color-2)', borderRadius: 8, padding: 4, marginTop: 8
   },
   list: {
     display: 'flex', flexDirection: 'column', gap: 1
@@ -777,7 +777,7 @@ const S = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid #1e293b20', gap: 12
   },
   badge: {
-    fontSize: 9, color: '#94a3b8', background: '#1e293b', padding: '2px 5px', borderRadius: 4, marginLeft: 6, fontWeight: 600
+    fontSize: 9, color: 'var(--text-secondary)', background: 'var(--card-bg)', padding: '2px 5px', borderRadius: 4, marginLeft: 6, fontWeight: 600
   },
   emptyState: {
     display: 'flex', alignItems: 'center', gap: 8, padding: 12, background: '#10b98108', borderRadius: 6

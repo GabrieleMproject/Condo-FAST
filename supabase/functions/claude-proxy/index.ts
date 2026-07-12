@@ -42,9 +42,13 @@ async function checkRateLimit(userId: string): Promise<{ allowed: boolean; retry
   }
 
   // Registra la chiamata corrente
-  await supabase
-    .from('claude_rate_limit')
-    .insert({ user_id: userId })
+  try {
+    await supabase
+      .from('claude_rate_limit')
+      .insert({ user_id: userId })
+  } catch (err) {
+    console.error('Errore registrazione rate limit (fail-open):', err)
+  }
 
   return { allowed: true }
 }

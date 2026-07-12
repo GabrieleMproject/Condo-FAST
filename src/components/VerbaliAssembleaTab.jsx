@@ -134,6 +134,15 @@ export default function VerbaliAssembleaTab({ condominioId }) {
   const [selectedVerbaliIds, setSelectedVerbaliIds] = useState(new Set());
   const [optimizationLog, setOptimizationLog] = useState(null);
   const [noMatchWarning, setNoMatchWarning] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Filtra solo i documenti di tipo "verbale"
   const verbali = useMemo(() => {
@@ -204,7 +213,14 @@ export default function VerbaliAssembleaTab({ condominioId }) {
     );
 
     try {
-      await upload(selectedFile, 'verbale', form.nome, form.note, form.data_documento);
+      const res = await upload(selectedFile, 'verbale', form.nome, form.note, form.data_documento);
+      if (res?.data?.id) {
+        setSelectedVerbaliIds(prev => {
+          const next = new Set(prev);
+          next.add(res.data.id);
+          return next;
+        });
+      }
       setShowUploadModal(false);
       setForm({ nome: '', note: '', data_documento: '' });
       setSelectedFile(null);
@@ -236,10 +252,15 @@ export default function VerbaliAssembleaTab({ condominioId }) {
       alert('Abilita i popup per visualizzare il file.');
       return;
     }
-    const url = await getSignedUrl(doc.url_storage);
-    if (url) {
-      newWindow.location.href = url;
-    } else {
+    try {
+      const url = await getSignedUrl(doc.url_storage);
+      if (url) {
+        newWindow.location.href = url;
+      } else {
+        throw new Error("Impossibile generare l'URL firmato");
+      }
+    } catch (err) {
+      console.error("Errore handleOpen:", err);
       newWindow.close();
       alert('Impossibile aprire il verbale');
     }
@@ -365,7 +386,7 @@ Formato JSON atteso:
         </button>
       </div>
 
-      <div style={S.mainGrid}>
+      <div style={{ ...S.mainGrid, gridTemplateColumns: isLargeScreen ? '4.5fr 5.5fr' : '1fr' }}>
         
         {/* Colonna di sinistra: Lista verbali */}
         <div style={S.leftColumn}>
@@ -726,13 +747,8 @@ const S = {
   },
   mainGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr',
     gap: 20,
     alignItems: 'start',
-    // Per schermi grandi diventa due colonne
-    '@media (min-width: 1024px)': {
-      gridTemplateColumns: '4.5fr 5.5fr'
-    }
   },
   leftColumn: {
     background: '#1e293b',

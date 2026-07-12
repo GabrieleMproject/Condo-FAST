@@ -90,10 +90,15 @@ export default function DocumentiCondominio({ condominioId }) {
       alert('Abilita i popup per visualizzare il file.')
       return
     }
-    const url = await getSignedUrl(doc.url_storage)
-    if (url) {
-      newWindow.location.href = url
-    } else {
+    try {
+      const url = await getSignedUrl(doc.url_storage)
+      if (url) {
+        newWindow.location.href = url
+      } else {
+        throw new Error("Impossibile generare l'URL firmato")
+      }
+    } catch (err) {
+      console.error("Errore handleOpen:", err)
       newWindow.close()
       alert('Impossibile aprire il documento')
     }

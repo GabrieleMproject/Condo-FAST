@@ -246,9 +246,9 @@ export default function AssistenzaPage() {
                     </p>
                     
                     {t.risposta_admin && (
-                      <div style={{ background: '#064e3b', padding: 12, borderRadius: 8, marginTop: 12 }}>
-                        <span style={{ fontSize: 10, color: '#6ee7b7', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Risposta del Supporto</span>
-                        <p style={{ margin: 0, fontSize: 13, color: '#fff', whiteSpace: 'pre-wrap' }}>{t.risposta_admin}</p>
+                      <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: 12, borderRadius: 8, marginTop: 12 }}>
+                        <span style={{ fontSize: 10, color: 'var(--success)', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Risposta del Supporto</span>
+                        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{t.risposta_admin}</p>
                       </div>
                     )}
                   </div>
@@ -283,8 +283,8 @@ export default function AssistenzaPage() {
                       {isUser ? <User size={16} color="#fff" /> : <Bot size={16} color="#fff" />}
                     </div>
                     <div style={{ 
-                      background: isUser ? '#2563eb' : '#0f172a', 
-                      border: isUser ? 'none' : '1px solid #334155',
+                      background: isUser ? '#2563eb' : 'var(--app-bg)', 
+                      border: isUser ? 'none' : '1px solid var(--border-color)',
                       padding: '12px 16px', 
                       borderRadius: 12, 
                       borderTopRightRadius: isUser ? 0 : 12,
@@ -325,8 +325,8 @@ export default function AssistenzaPage() {
                       type="button" 
                       onClick={handleConvertiTicket}
                       disabled={isConvertingToTicket || isTyping}
-                      style={{ background: 'transparent', border: '1px solid #3b82f6', color: '#60a5fa', borderRadius: 20, padding: '6px 16px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, transition: 'all 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.1)'}
+                      style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', borderRadius: 20, padding: '6px 16px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, transition: 'all 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-glow)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       {isConvertingToTicket ? 'Generazione Ticket...' : <>Non hai risolto? Apri Ticket <ArrowRight size={14}/></>}
@@ -337,7 +337,7 @@ export default function AssistenzaPage() {
                     type="button" 
                     onClick={handleResetChat}
                     disabled={isConvertingToTicket || isTyping}
-                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#f87171', borderRadius: 20, padding: '6px 16px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, transition: 'all 0.2s' }}
+                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: 20, padding: '6px 16px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, transition: 'all 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
                   >

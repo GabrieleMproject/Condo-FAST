@@ -171,27 +171,16 @@ export default function BrandLogo({
 }) {
   const textFontSize = size * 0.56;
 
-  // Variabili CSS dinamiche per i colori in base al tema chiaro o scuro
+  // Variabili CSS dinamiche per i colori che si basano sulle variabili del tema in index.css
   const getLogoVars = () => {
-    if (variant === 'light') {
-      return {
-        '--logo-text-prefix': '#1e293b', // Grigio scuro per Condo nel tema chiaro
-        '--logo-text-suffix': '#2563eb', // Blu brillante per Smart nel tema chiaro
-        '--logo-text-highlight': '#0f172a', // Colore di impatto Condo nel tema chiaro
-        '--logo-text-glow': 'rgba(37, 99, 235, 0.25)', // Glow soffuso azzurro per Condo
-        '--logo-text-suffix-glow': 'rgba(37, 99, 235, 0.5)', // Glow azzurro per Smart
-        '--logo-text-suffix-highlight': '#1d4ed8', // Smart evidenziata nel tema chiaro
-      };
-    } else {
-      return {
-        '--logo-text-prefix': '#f1f5f9', // Bianco per Condo nel tema scuro (default)
-        '--logo-text-suffix': '#60a5fa', // Ciano/azzurro per Smart nel tema scuro
-        '--logo-text-highlight': '#ffffff', // Bianco brillante per Condo
-        '--logo-text-glow': 'rgba(255, 255, 255, 0.4)', // Glow bianco
-        '--logo-text-suffix-glow': 'rgba(96, 165, 250, 0.8)', // Glow blu neon
-        '--logo-text-suffix-highlight': '#93c5fd', // Smart evidenziata
-      };
-    }
+    return {
+      '--logo-text-prefix': 'var(--logo-prefix-color)',
+      '--logo-text-suffix': 'var(--logo-suffix-color)',
+      '--logo-text-highlight': 'var(--logo-highlight-color)',
+      '--logo-text-glow': 'var(--logo-glow-color)',
+      '--logo-text-suffix-glow': 'var(--logo-suffix-glow-color)',
+      '--logo-text-suffix-highlight': 'var(--logo-suffix-highlight-color)',
+    };
   };
 
   const logoVars = getLogoVars();

@@ -23,6 +23,69 @@
   --shadow: 0 4px 24px rgba(0,0,0,0.4);
   --font: 'Sora', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Compatibility variables for dark theme */
+  --card-bg: #1e293b;
+  --app-bg: #0f172a;
+  --border-color: #334155;
+  --border-color-2: #1e293b;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-dark: #cbd5e1;
+  --card-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --backdrop: rgba(15, 23, 42, 0.65);
+  --overlay-bg: rgba(15, 23, 42, 0.85);
+  --input-bg: #0f172a;
+  --btn-ghost-bg: transparent;
+  --sepa-yellow: #fbbf24;
+
+  /* Logo brand colors */
+  --logo-prefix-color: #f1f5f9;
+  --logo-suffix-color: #60a5fa;
+  --logo-highlight-color: #ffffff;
+  --logo-glow-color: rgba(255, 255, 255, 0.4);
+  --logo-suffix-glow-color: rgba(96, 165, 250, 0.8);
+  --logo-suffix-highlight-color: #93c5fd;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --bg-2: #ffffff;
+  --bg-3: #f1f5f9;
+  --border: #e2e8f0;
+  --border-2: #cbd5e1;
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-glow: rgba(37, 99, 235, 0.08);
+  --shadow: 0 8px 32px rgba(15, 23, 42, 0.04), 0 2px 8px rgba(15, 23, 42, 0.02);
+
+  /* Compatibility variables for light theme */
+  --card-bg: #ffffff;
+  --app-bg: #f8fafc;
+  --border-color: #e2e8f0;
+  --border-color-2: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-dark: #1e293b;
+  --card-shadow: 0 8px 32px rgba(15, 23, 42, 0.04), 0 2px 8px rgba(15, 23, 42, 0.02);
+  --backdrop: rgba(241, 245, 249, 0.7);
+  --overlay-bg: rgba(241, 245, 249, 0.9);
+  --input-bg: #f8fafc;
+  --btn-ghost-bg: #f1f5f9;
+  --sepa-yellow: #d97706;
+
+  /* Logo brand colors */
+  --logo-prefix-color: #1e293b;
+  --logo-suffix-color: #2563eb;
+  --logo-highlight-color: #0f172a;
+  --logo-glow-color: rgba(37, 99, 235, 0.25);
+  --logo-suffix-glow-color: rgba(37, 99, 235, 0.5);
+  --logo-suffix-highlight-color: #1d4ed8;
 }
 
 html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 15px; -webkit-font-smoothing: antialiased; }

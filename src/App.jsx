@@ -28,13 +28,15 @@ import ModuloFiscalePage from './pages/ModuloFiscalePage'
 import BackofficePage from './pages/BackofficePage'
 import SuperAdminGuard from './components/SuperAdminGuard'
 import MigazionePage from './pages/MigazionePage'
+import { ThemeProvider } from './contexts/ThemeContext'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <PlanProvider>
-          <Toaster position="top-right" />
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <PlanProvider>
+            <Toaster position="top-right" />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -72,5 +74,6 @@ export default function App() {
         </PlanProvider>
       </AuthProvider>
     </BrowserRouter>
+    </ThemeProvider>
   )
 }

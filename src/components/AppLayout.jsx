@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import BrandLogo from './BrandLogo';
 import NotificheDropdown from './NotificheDropdown';
 import { supabase } from '../lib/supabaseClient';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   LayoutDashboard,
   Building2,
@@ -109,6 +110,7 @@ export default function AppLayout() {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   // ── Gestione Piano e Profilo ──────────────────────────────────────────
   const {
@@ -209,12 +211,12 @@ export default function AppLayout() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', fontFamily: 'Sora, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--app-bg)', fontFamily: 'Sora, sans-serif' }}>
       {/* Sidebar */}
       <aside style={{
         width: collapsed ? 64 : 240,
-        background: '#0f172a',
-        borderRight: '1px solid #1e293b',
+        background: 'var(--app-bg)',
+        borderRight: '1px solid var(--border-color-2)',
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 0.2s ease',
@@ -222,7 +224,7 @@ export default function AppLayout() {
         flexShrink: 0,
       }}>
         {/* Logo */}
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: collapsed ? '0 16px' : '0 20px', borderBottom: '1px solid #1e293b', gap: 10, overflow: 'hidden' }}>
+        <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: collapsed ? '0 16px' : '0 20px', borderBottom: '1px solid var(--border-color-2)', gap: 10, overflow: 'hidden' }}>
           <BrandLogo size={32} showText={!collapsed} variant="sidebar" />
         </div>
 
@@ -236,13 +238,13 @@ export default function AppLayout() {
                 padding: collapsed ? '10px 16px' : '10px 12px',
                 borderRadius: 8, textDecoration: 'none',
                 background: active ? 'rgba(37,99,235,0.15)' : 'transparent',
-                color: active ? '#60a5fa' : '#94a3b8',
+                color: active ? 'var(--accent)' : 'var(--text-secondary)',
                 fontWeight: active ? 600 : 400, fontSize: 14,
                 transition: 'all 0.15s', whiteSpace: 'nowrap', overflow: 'hidden',
                 justifyContent: collapsed ? 'center' : 'flex-start',
               }}
-                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#cbd5e1'; } }}
-                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8'; } }}
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--border-color-2)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; } }}
               >
                 <Icon size={18} strokeWidth={active ? 2.5 : 1.8} style={{ flexShrink: 0 }} />
                 {!collapsed && label}
@@ -261,7 +263,7 @@ export default function AppLayout() {
           
           {isSuperAdmin && (
             <>
-              <div style={{ margin: '8px 12px', borderTop: '1px solid #1e293b' }} />
+              <div style={{ margin: '8px 12px', borderTop: '1px solid var(--border-color-2)' }} />
               <Link to="/backoffice" style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: collapsed ? '10px 16px' : '10px 12px',
@@ -283,7 +285,7 @@ export default function AppLayout() {
         </nav>
 
         {/* Bottom */}
-        <div style={{ padding: '8px', borderTop: '1px solid #1e293b', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ padding: '8px', borderTop: '1px solid var(--border-color-2)', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <button onClick={() => setCollapsed(c => !c)} style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: collapsed ? '10px 16px' : '10px 12px',
@@ -292,7 +294,7 @@ export default function AppLayout() {
             justifyContent: collapsed ? 'center' : 'flex-start',
             whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', transition: 'color 0.15s',
           }}
-            onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
             onMouseLeave={e => e.currentTarget.style.color = '#475569'}
           >
             {collapsed ? <ChevronRight size={18} /> : <><ChevronLeft size={18} /><span>Riduci</span></>}
@@ -317,9 +319,9 @@ export default function AppLayout() {
       {/* Main */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Topbar */}
-        <header style={{ height: 64, background: '#0f172a', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
+        <header style={{ height: 64, background: 'var(--app-bg)', borderBottom: '1px solid var(--border-color-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
           {/* ✅ breadcrumb legge la label aggiornata da NAV_ITEMS */}
-          <div style={{ color: '#94a3b8', fontSize: 13 }}>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
             {NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.label ?? 'CondoSmart'}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -341,7 +343,7 @@ export default function AppLayout() {
                   position: 'relative',
                 }}
                 aria-label={`Promemoria${notificheCount > 0 ? ` (${notificheCount} nuovi)` : ''}`}
-                onMouseEnter={e => { if (!dropdownNotificheOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#94a3b8'; } }}
+                onMouseEnter={e => { if (!dropdownNotificheOpen) { e.currentTarget.style.background = 'var(--border-color-2)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
                 onMouseLeave={e => { if (!dropdownNotificheOpen) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = notificheCount > 0 ? '#f59e0b' : '#475569'; } }}
               >
                 <Bell size={18} />
@@ -352,7 +354,7 @@ export default function AppLayout() {
                     background: '#ef4444', color: '#fff',
                     borderRadius: '50%', fontSize: 9, fontWeight: 700,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '2px solid #0f172a',
+                    border: '2px solid var(--app-bg)',
                     lineHeight: 1,
                     animation: 'bellPulse 2s ease-in-out infinite',
                   }}>
@@ -395,7 +397,7 @@ export default function AppLayout() {
                 fontWeight: 600,
                 cursor: 'pointer',
                 overflow: 'hidden',
-                border: '1px solid #334155'
+                border: '1px solid var(--border-color)'
               }}
             >
               {profile?.logo_base64 ? (
@@ -444,25 +446,25 @@ export default function AppLayout() {
         right: drawerOpen ? 0 : -420,
         width: 400,
         height: '100vh',
-        background: '#1e293b',
-        borderLeft: '1px solid #334155',
+        background: 'var(--card-bg)',
+        borderLeft: '1px solid var(--border-color)',
         boxShadow: '-8px 0 32px rgba(0, 0, 0, 0.4)',
         zIndex: 1000,
         transition: 'right 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',
-        color: '#f1f5f9',
+        color: 'var(--text-primary)',
       }}>
         {/* Drawer Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #334155',
+          borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#e2e8f0' }}>Profilo Amministratore</h3>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Profilo Amministratore</h3>
           <button
             onClick={() => {
               setDrawerOpen(false);
@@ -472,7 +474,7 @@ export default function AppLayout() {
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#94a3b8',
+              color: 'var(--text-secondary)',
               fontSize: 20,
               cursor: 'pointer',
               display: 'flex',
@@ -480,8 +482,8 @@ export default function AppLayout() {
               justifyContent: 'center',
               padding: 4,
             }}
-            onMouseEnter={e => e.currentTarget.style.color = '#e2e8f0'}
-            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
           >
             ✕
           </button>
@@ -494,10 +496,10 @@ export default function AppLayout() {
             display: 'flex',
             gap: 16,
             alignItems: 'center',
-            background: '#0f172a',
+            background: 'var(--app-bg)',
             padding: 16,
             borderRadius: 12,
-            border: '1px solid #334155',
+            border: '1px solid var(--border-color)',
             marginBottom: 24,
           }}>
             <div style={{
@@ -521,10 +523,10 @@ export default function AppLayout() {
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-              <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 15, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 15, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                 {profile?.ragione_sociale || profile?.studio_nome || 'Amministrazione'}
               </span>
-              <span style={{ color: '#64748b', fontSize: 12, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 12, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                 {user?.email}
               </span>
               <div style={{ marginTop: 2 }}>
@@ -801,79 +803,79 @@ export default function AppLayout() {
                   </button>
                 </div>
 
-                <div style={{ background: '#0f172a', padding: 16, borderRadius: 12, border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ background: 'var(--app-bg)', padding: 16, borderRadius: 12, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {profile?.logo_base64 && (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', borderBottom: '1px solid #1e293b' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-color-2)' }}>
                       <img src={profile.logo_base64} alt="Studio Logo" style={{ maxHeight: 60, maxWidth: '100%', objectFit: 'contain' }} />
                     </div>
                   )}
                   <div>
-                    <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Nome Studio / Amministratore</span>
-                    <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 500 }}>{profile?.studio_nome || '—'}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block' }}>Nome Studio / Amministratore</span>
+                    <span style={{ color: 'var(--text-dark)', fontSize: 13, fontWeight: 500 }}>{profile?.studio_nome || '—'}</span>
                   </div>
                   {profile?.ragione_sociale && (
                     <div>
-                      <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Ragione Sociale Azienda</span>
-                      <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 500 }}>{profile.ragione_sociale}</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block' }}>Ragione Sociale Azienda</span>
+                      <span style={{ color: 'var(--text-dark)', fontSize: 13, fontWeight: 500 }}>{profile.ragione_sociale}</span>
                     </div>
                   )}
                   {(profile?.partita_iva || profile?.codice_fiscale) && (
                     <div style={{ display: 'flex', gap: 16 }}>
                       {profile?.partita_iva && (
                         <div style={{ flex: 1 }}>
-                          <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Partita IVA</span>
-                          <span style={{ color: '#cbd5e1', fontSize: 13 }}>{profile.partita_iva}</span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block' }}>Partita IVA</span>
+                          <span style={{ color: 'var(--text-dark)', fontSize: 13 }}>{profile.partita_iva}</span>
                         </div>
                       )}
                       {profile?.codice_fiscale && (
                         <div style={{ flex: 1 }}>
-                          <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Codice Fiscale</span>
-                          <span style={{ color: '#cbd5e1', fontSize: 13 }}>{profile.codice_fiscale}</span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block' }}>Codice Fiscale</span>
+                          <span style={{ color: 'var(--text-dark)', fontSize: 13 }}>{profile.codice_fiscale}</span>
                         </div>
                       )}
                     </div>
                   )}
                   <div>
-                    <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Indirizzo</span>
-                    <span style={{ color: '#cbd5e1', fontSize: 13 }}>{profile?.studio_indirizzo || '—'}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block' }}>Indirizzo</span>
+                    <span style={{ color: 'var(--text-dark)', fontSize: 13 }}>{profile?.studio_indirizzo || '—'}</span>
                   </div>
                   <div>
-                    <span style={{ color: '#64748b', fontSize: 11, display: 'block' }}>Contatti</span>
-                    <span style={{ color: '#cbd5e1', fontSize: 13, whiteSpace: 'pre-wrap' }}>{profile?.studio_contatti || '—'}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11, display: 'block' }}>Contatti</span>
+                    <span style={{ color: 'var(--text-dark)', fontSize: 13, whiteSpace: 'pre-wrap' }}>{profile?.studio_contatti || '—'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Usage & Limits Section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <h4 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <h4 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Consumi e Limiti
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {/* Condomini */}
-                  <div style={{ background: '#0f172a', padding: 14, borderRadius: 10, border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ background: 'var(--app-bg)', padding: 14, borderRadius: 10, border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <span style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 500, display: 'block' }}>Condomini</span>
-                      <span style={{ color: '#64748b', fontSize: 11 }}>Attivi nel gestionale</span>
+                      <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500, display: 'block' }}>Condomini</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>Attivi nel gestionale</span>
                     </div>
-                    <span style={{ color: '#cbd5e1', fontSize: 15, fontWeight: 700 }}>
-                      {condominiCount} <span style={{ color: '#475569', fontSize: 12, fontWeight: 400 }}>/ {condominiInclusi ?? '∞'}</span>
+                    <span style={{ color: 'var(--text-dark)', fontSize: 15, fontWeight: 700 }}>
+                      {condominiCount} <span style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 400 }}>/ {condominiInclusi ?? '∞'}</span>
                     </span>
                   </div>
 
                   {/* AI Calls */}
-                  <div style={{ background: '#0f172a', padding: 14, borderRadius: 10, border: '1px solid #334155' }}>
+                  <div style={{ background: 'var(--app-bg)', padding: 14, borderRadius: 10, border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <div>
-                        <span style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 500, display: 'block' }}>Chiamate AI</span>
-                        <span style={{ color: '#64748b', fontSize: 11 }}>Mese corrente</span>
+                        <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500, display: 'block' }}>Chiamate AI</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>Mese corrente</span>
                       </div>
-                      <span style={{ color: '#cbd5e1', fontSize: 15, fontWeight: 700 }}>
-                        {aiCallsCount} <span style={{ color: '#475569', fontSize: 12, fontWeight: 400 }}>/ {aiCallsLimit ?? '∞'}</span>
+                      <span style={{ color: 'var(--text-dark)', fontSize: 15, fontWeight: 700 }}>
+                        {aiCallsCount} <span style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 400 }}>/ {aiCallsLimit ?? '∞'}</span>
                       </span>
                     </div>
                     {aiCallsLimit !== null && (
-                      <div style={{ height: 6, background: '#1e293b', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ height: 6, background: 'var(--border-color-2)', borderRadius: 3, overflow: 'hidden' }}>
                         <div style={{
                           width: `${Math.min(100, (aiCallsCount / aiCallsLimit) * 100)}%`,
                           height: '100%',
@@ -895,18 +897,18 @@ export default function AppLayout() {
 
               {/* Account details & Stripe */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <h4 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <h4 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Dettagli Account
                 </h4>
-                <div style={{ background: '#0f172a', padding: 14, borderRadius: 10, border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ background: 'var(--app-bg)', padding: 14, borderRadius: 10, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                    <span style={{ color: '#64748b' }}>ID Account</span>
-                    <span style={{ color: '#cbd5e1', fontFamily: 'monospace' }}>{user?.id?.slice(0, 8)}...</span>
+                    <span style={{ color: 'var(--text-muted)' }}>ID Account</span>
+                    <span style={{ color: 'var(--text-dark)', fontFamily: 'monospace' }}>{user?.id?.slice(0, 8)}...</span>
                   </div>
                   {profile?.dpa_accepted_at && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                      <span style={{ color: '#64748b' }}>DPA Accettato il</span>
-                      <span style={{ color: '#cbd5e1' }}>{new Date(profile.dpa_accepted_at).toLocaleDateString('it-IT')}</span>
+                      <span style={{ color: 'var(--text-muted)' }}>DPA Accettato il</span>
+                      <span style={{ color: 'var(--text-dark)' }}>{new Date(profile.dpa_accepted_at).toLocaleDateString('it-IT')}</span>
                     </div>
                   )}
                 </div>
@@ -918,8 +920,8 @@ export default function AppLayout() {
                     style={{
                       width: '100%',
                       background: 'transparent',
-                      border: '1px solid #334155',
-                      color: '#94a3b8',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-secondary)',
                       padding: '10px 14px',
                       borderRadius: 8,
                       fontSize: 13,
@@ -928,8 +930,8 @@ export default function AppLayout() {
                       fontFamily: 'Sora, sans-serif',
                       transition: 'all 0.2s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#f1f5f9'; e.currentTarget.style.borderColor = '#475569' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = '#334155' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--text-muted)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-color)' }}
                   >
                     {loadingPortal ? 'Apertura in corso...' : (
                       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -946,7 +948,7 @@ export default function AppLayout() {
         {/* Drawer Footer */}
         <div style={{
           padding: '20px 24px',
-          borderTop: '1px solid #334155',
+          borderTop: '1px solid var(--border-color)',
           display: 'flex',
           flexDirection: 'column',
           gap: 12,

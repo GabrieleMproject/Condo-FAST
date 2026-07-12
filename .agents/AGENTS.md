@@ -624,6 +624,18 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Auto-selezione Verbali Caricati:** Corretto il flusso UX in `VerbaliAssembleaTab.jsx` in modo che il verbale appena caricato con successo venga aggiunto istantaneamente all'insieme dei verbali selezionati per la ricerca AI.
 - **Fail-Open su Inserimento Rate Limit (Proxy):** Protetta l'operazione di log del rate limit in `claude-proxy/index.ts` con un blocco `try/catch` per evitare blocchi ed errori 500 sul client in caso di problemi di connessione temporanei verso Supabase DB.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S35 (12 Luglio 2026 - Tema Chiaro/Scuro)
+
+### 1. Gestione Tema Chiaro/Scuro
+- **Salvataggio della Preferenza:** La scelta del tema viene salvata localmente nel browser tramite `localStorage` con chiave `'condosmart-theme'`. Il tema scuro rimane quello predefinito all'avvio.
+- **Prevenzione Flash di Colore:** Implementato uno script sincrono all'inizio del tag `<head>` in `index.html`. Lo script legge immediatamente la preferenza in `localStorage` e imposta l'attributo `data-theme` su `document.documentElement` prima che il browser inizi a renderizzare gli elementi del body, azzerando i flash di colore durante il caricamento.
+- **Supporto Variabili CSS in Stili Inline:** Refattorizzati gli stili inline dei componenti centrali di layout e configurazione (`AppLayout.jsx`, `ImpostazioniPage.jsx`) sostituendo i colori hardcoded (es. `#0f172a`, `#1e293b`) con variabili CSS (es. `var(--app-bg)`, `var(--card-bg)`).
+- **Adattamento Logo del Brand:** Aggiornate le variabili del testo del logo in `BrandLogo.jsx` per puntare a costanti CSS definite in `index.css`. Questo permette al logo di adattarsi dinamicamente in base al tema attivo (usando tonalità chiare e scure adeguate) senza richiedere logica condizionale o ricaricamento dei componenti in JavaScript.
+- **Interfaccia Grafica:** Inserita la sezione "Aspetto & Tema" in `ImpostazioniPage.jsx` con switch grafici (Sole per Tema Chiaro e Luna per Tema Scuro) dotati di micro-transizioni.
+
+
 
 
 

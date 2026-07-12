@@ -6,7 +6,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { generaExportGDPR } from '../lib/exportDatiGdpr'
-import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink } from 'lucide-react'
+import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon } from 'lucide-react'
+import { useTheme } from '../contexts/ThemeContext'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
 async function avviaCheckout({ piano, userId, userEmail }) {
@@ -54,6 +55,7 @@ function fileToResizedDataUrl(file, maxW = 400) {
 // ═══════════════════════════════════════════════════════════════════════════
 export default function ImpostazioniPage() {
   const { user } = useAuth()
+  const { theme, setTheme } = useTheme()
   const {
     piano, limiti, profile,
     isTrialActive, isTrialScaduto, trialEndsAt,
@@ -612,6 +614,88 @@ export default function ImpostazioniPage() {
                 )}
               </div>
 
+            </div>
+          </div>
+        </section>
+
+        {/* ── ASPETTO & TEMA ───────────────────────────────────────── */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>Aspetto &amp; Tema</h2>
+          <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
+            Personalizza l'interfaccia grafica di CondoSmart scegliendo tra il tema chiaro e il tema scuro.
+          </p>
+
+          <div style={styles.brandingCard}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+              {/* Opzione Scuro */}
+              <div
+                onClick={() => setTheme('dark')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: 20,
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  border: theme === 'dark' ? '2px solid #2563eb' : '1px solid var(--border-color)',
+                  background: theme === 'dark' ? 'rgba(37, 99, 235, 0.05)' : 'var(--app-bg)',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div style={{
+                  background: 'var(--border-color-2)',
+                  width: 48,
+                  height: 48,
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: theme === 'dark' ? '#60a5fa' : 'var(--text-secondary)',
+                  flexShrink: 0,
+                }}>
+                  <Moon size={24} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>Tema Scuro</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Ottimizzato per ambienti con poca luce</div>
+                </div>
+              </div>
+
+              {/* Opzione Chiaro */}
+              <div
+                onClick={() => setTheme('light')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: 20,
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  border: theme === 'light' ? '2px solid #2563eb' : '1px solid var(--border-color)',
+                  background: theme === 'light' ? 'rgba(37, 99, 235, 0.05)' : 'var(--app-bg)',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div style={{
+                  background: 'var(--border-color-2)',
+                  width: 48,
+                  height: 48,
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: theme === 'light' ? '#d97706' : 'var(--text-secondary)',
+                  flexShrink: 0,
+                }}>
+                  <Sun size={24} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>Tema Chiaro</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Massima leggibilità durante il giorno</div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -1273,54 +1357,54 @@ function FeatureRow({ ok, label }) {
 
 // ── Stili ─────────────────────────────────────────────────────────────────
 const styles = {
-  page: { minHeight: '100vh', background: '#0f172a', padding: '32px 24px' },
+  page: { minHeight: '100vh', background: 'var(--app-bg)', padding: '32px 24px' },
   container: { maxWidth: 960, margin: '0 auto' },
   header: { marginBottom: 32 },
-  title: { color: '#e2e8f0', fontSize: 28, fontWeight: 700, margin: '0 0 6px', fontFamily: 'Sora, sans-serif' },
-  subtitle: { color: '#64748b', fontSize: 15, margin: 0 },
+  title: { color: 'var(--text-primary)', fontSize: 28, fontWeight: 700, margin: '0 0 6px', fontFamily: 'Sora, sans-serif' },
+  subtitle: { color: 'var(--text-muted)', fontSize: 15, margin: 0 },
   errorBox: {
     background: '#450a0a', border: '1px solid #991b1b', color: '#fca5a5',
     borderRadius: 8, padding: '12px 16px', marginBottom: 24, fontSize: 14,
   },
   section: { marginBottom: 40 },
-  sectionTitle: { color: '#94a3b8', fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 16px' },
-  pianoCard: { background: '#1e293b', border: '1px solid #334155', borderRadius: 16, padding: 24 },
+  sectionTitle: { color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 16px' },
+  pianoCard: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16, padding: 24 },
   pianoTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
   pianoNome: { display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 },
-  pianoDesc: { color: '#64748b', fontSize: 14, margin: 0 },
+  pianoDesc: { color: 'var(--text-muted)', fontSize: 14, margin: 0 },
   trialBadge: { background: '#1e3a5f', color: '#60a5fa', border: '1px solid #2563eb', borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 600 },
   scadutoBadge: { background: '#450a0a', color: '#f87171', border: '1px solid #991b1b', borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 600 },
   stripeStatus: { display: 'flex', alignItems: 'center', gap: 6 },
   statusDot: { width: 8, height: 8, borderRadius: '50%', background: '#4ade80' },
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 },
-  kpiCard: { background: '#0f172a', borderRadius: 10, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 4 },
-  kpiLabel: { color: '#64748b', fontSize: 12 },
-  kpiValue: { color: '#e2e8f0', fontSize: 22, fontWeight: 700 },
-  kpiSub: { color: '#475569', fontSize: 13, fontWeight: 400 },
+  kpiCard: { background: 'var(--app-bg)', borderRadius: 10, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 4 },
+  kpiLabel: { color: 'var(--text-muted)', fontSize: 12 },
+  kpiValue: { color: 'var(--text-primary)', fontSize: 22, fontWeight: 700 },
+  kpiSub: { color: 'var(--text-muted)', fontSize: 13, fontWeight: 400 },
   kpiExtra: { color: '#f59e0b', fontSize: 11 },
-  progressBar: { height: 4, background: '#1e293b', borderRadius: 2, marginTop: 4, overflow: 'hidden' },
+  progressBar: { height: 4, background: 'var(--border-color-2)', borderRadius: 2, marginTop: 4, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 2, transition: 'width 0.3s' },
   pianoActions: { display: 'flex', gap: 12 },
   btnPortale: {
-    background: 'transparent', border: '1px solid #334155', color: '#94a3b8',
+    background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)',
     borderRadius: 8, padding: '10px 18px', fontSize: 14, cursor: 'pointer',
   },
   // ── Branding ──
-  brandingCard: { background: '#1e293b', border: '1px solid #334155', borderRadius: 16, padding: 24 },
+  brandingCard: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16, padding: 24 },
   brandingGrid: { display: 'grid', gridTemplateColumns: '200px 1fr', gap: 24, alignItems: 'start' },
-  brandingLabel: { display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 },
+  brandingLabel: { display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 },
   brandingInput: {
-    width: '100%', background: '#0f172a', color: '#f1f5f9',
-    border: '1px solid #334155', borderRadius: 8, padding: '10px 12px',
+    width: '100%', background: 'var(--input-bg)', color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px',
     fontSize: 14, fontFamily: 'Sora, sans-serif', boxSizing: 'border-box',
   },
   logoBox: {
-    width: '100%', height: 110, background: '#0f172a', border: '1px solid #334155',
+    width: '100%', height: 110, background: 'var(--input-bg)', border: '1px solid var(--border-color)',
     borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   logoImg: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
   brandingBtnGhost: {
-    background: 'transparent', border: '1px solid #334155', color: '#94a3b8',
+    background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)',
     borderRadius: 8, padding: '7px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
   },
   brandingBtnSave: {
@@ -1329,7 +1413,7 @@ const styles = {
   },
   pianiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 },
   pianoOption: {
-    background: '#1e293b', border: '1px solid #334155', borderRadius: 16,
+    background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
     padding: 24, position: 'relative', display: 'flex', flexDirection: 'column',
   },
   pianoOptionActive: { border: '2px solid #2563eb' },
@@ -1340,13 +1424,13 @@ const styles = {
     fontSize: 12, fontWeight: 600,
   },
   pianoOptionHeader: { marginBottom: 20 },
-  pianoOptionNome: { color: '#e2e8f0', fontSize: 18, fontWeight: 700, fontFamily: 'Sora, sans-serif' },
+  pianoOptionNome: { color: 'var(--text-primary)', fontSize: 18, fontWeight: 700, fontFamily: 'Sora, sans-serif' },
   pianoOptionPrezzo: { display: 'flex', alignItems: 'baseline', gap: 2, margin: '8px 0 4px' },
-  prezzoValore: { color: '#e2e8f0', fontSize: 32, fontWeight: 700 },
-  prezzoMese: { color: '#64748b', fontSize: 14 },
-  pianoOptionSub: { color: '#64748b', fontSize: 12, margin: 0 },
+  prezzoValore: { color: 'var(--text-primary)', fontSize: 32, fontWeight: 700 },
+  prezzoMese: { color: 'var(--text-muted)', fontSize: 14 },
+  pianoOptionSub: { color: 'var(--text-muted)', fontSize: 12, margin: 0 },
   pianoOptionFeatures: { flex: 1, marginBottom: 16 },
-  sepaHint: { color: '#fbbf24', fontSize: 12, marginBottom: 12 },
+  sepaHint: { color: 'var(--sepa-yellow)', fontSize: 12, marginBottom: 12 },
   btnUpgrade: {
     background: '#2563eb', color: 'white', border: 'none', borderRadius: 8,
     padding: '11px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%',
@@ -1356,11 +1440,11 @@ const styles = {
     fontWeight: 600, padding: '11px 0',
   },
   trialNote: { color: '#475569', fontSize: 12, textAlign: 'center', marginTop: 16 },
-  infoCard: { background: '#1e293b', border: '1px solid #334155', borderRadius: 12, padding: '4px 0' },
+  infoCard: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: '4px 0' },
   infoRow: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '14px 20px', borderBottom: '1px solid #1e293b',
+    padding: '14px 20px', borderBottom: '1px solid var(--border-color-2)',
   },
-  infoLabel: { color: '#64748b', fontSize: 14 },
-  infoValue: { color: '#e2e8f0', fontSize: 14 },
+  infoLabel: { color: 'var(--text-muted)', fontSize: 14 },
+  infoValue: { color: 'var(--text-primary)', fontSize: 14 },
 }

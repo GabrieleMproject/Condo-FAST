@@ -702,8 +702,14 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 5. Esportazione Registro Anagrafe PDF
 - **Reportistica di Legge**: implementato l'export in PDF Landscape del Registro di Anagrafe Condominiale ufficiale ai sensi dell'Art. 1130 c.c. con orientamento orizzontale per ospitare tutte le colonne di legge.
 
-### 6. Fatti Verificati
+### 6. Bug Risolti (Fix Bug Triager)
+- **Importazione mancante `useCallback`**: Importato correttamente `useCallback` da `'react'` in `AnagraficaCondominioTab.jsx` per evitare il ReferenceError a runtime.
+- **Doppio attributo `style` JSX**: Risolti i conflitti di visualizzazione JSX unendo i doppi stili in un unico oggetto in `AnagraficaCondominioTab.jsx` alle righe 633, 643 e 907.
+- **Firma `exportAnagraficaPdf`**: Corretta la chiamata di esportazione separando il parametro `withWatermark` come secondo argomento invece di iniettarlo nell'oggetto delle opzioni.
+
+### 7. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
-- **Commit di sessione**: Registrato il commit di sessione S38 step 2 (unificazione tab).
+- **Commit di sessione**: Registrato il commit di sessione S38 step 3.
+
 
 

@@ -1,5 +1,5 @@
 // src/components/AnagraficaCondominioTab.jsx
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { 
   Search, UserCog, Edit, X, Mail, Phone, Home, Download, 
@@ -630,7 +630,7 @@ Lo Studio Amministrativo`
                       <tr key={u.id} style={styles.tr}>
                         <td style={{ ...styles.td, fontWeight: 700 }}>{u.numero}</td>
                         <td style={styles.td}>{u.scala || '-'}{u.piano != null ? ` / P.${u.piano}` : ''}</td>
-                        <td style={styles.td} style={{ textTransform: 'capitalize' }}>{u.tipo || 'Appartamento'}</td>
+                        <td style={{ ...styles.td, textTransform: 'capitalize' }}>{u.tipo || 'Appartamento'}</td>
                         
                         <td style={styles.td}>
                           {catastaliMancanti ? (
@@ -640,7 +640,7 @@ Lo Studio Amministrativo`
                           )}
                         </td>
 
-                        <td style={styles.td} style={{ fontFamily: 'monospace', fontSize: 13 }}>
+                        <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 13 }}>
                           {catastaliMancanti 
                             ? '-' 
                             : `F.${u.catasto_foglio} P.${u.catasto_particella} S.${u.catasto_subalterno}`}
@@ -772,7 +772,7 @@ Lo Studio Amministrativo`
                   type="button"
                   onClick={() => {
                     checkWatermark((withWatermark) => {
-                      exportAnagraficaPdf({ condominio: condominio || { nome: 'Condominio' }, persone: personeFiltrate, profile, withWatermark })
+                    exportAnagraficaPdf({ condominio: condominio || { nome: 'Condominio' }, persone: personeFiltrate }, withWatermark)
                     })
                   }}
                   style={{ ...styles.filterBtn(false), display: 'flex', alignItems: 'center', gap: 6, color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '6px 10px' }}
@@ -904,7 +904,7 @@ Lo Studio Amministrativo`
                       </div>
                       <div>
                         <span style={styles.lbl}>Codice Fiscale</span>
-                        <div style={styles.val} style={{ fontFamily: 'monospace', fontWeight: 600 }}>{ocrData.persona?.codice_fiscale || '-'}</div>
+                        <div style={{ ...styles.val, fontFamily: 'monospace', fontWeight: 600 }}>{ocrData.persona?.codice_fiscale || '-'}</div>
                       </div>
                       <div>
                         <span style={styles.lbl}>Email</span>

@@ -692,11 +692,18 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Validazione con un Click**: l'amministratore può scansionare il modulo compilato inviatogli dal condomino, caricarlo su CondoSmart e validare i dati catastali/anagrafici estratti dall'AI tramite una modale di confronto prima di salvare sul database.
 - **Race Condition Guard**: implementata una guardia asincrona in `handleFileChange` ed il blocco di interazione al pulsante "Annulla" per evitare di sovrascrivere i dati nel caso in cui l'utente cambi selezione di unità prima del completamento della chiamata AI (segnalazione e fix di Bug Triager).
 
-### 4. Esportazione Registro Anagrafe PDF
+### 4. Unificazione UX: "Anagrafica & Unità"
+- **Riorganizzazione Tab**: unificati i moduli `AnagraficaCondominioTab` e `RegistroAnagrafeTab` all'interno di un unico componente principale integrato [AnagraficaCondominioTab.jsx](file:///Users/gabrielemaesani/Documents/CondoAI2/src/components/AnagraficaCondominioTab.jsx).
+- **Sotto-Visualizzazione Fluda (Sub-Tabs)**: l'interfaccia offre ora due comode sotto-visualizzazioni selezionabili con un click:
+  1. *Proprietà & Catasto*: la griglia catastale con stato di completezza ed OCR AI.
+  2. *Rubrica Contatti*: la lista delle anagrafiche con filtri e modifiche rapide.
+- **Semplificazione Sidebar**: rimosso il tab ridondante `registro` da [CondominiDetailPage.jsx](file:///Users/gabrielemaesani/Documents/CondoAI2/src/pages/CondominiDetailPage.jsx), rinominando il tab principale in "Anagrafica & Unità" per una navigazione pulita ed intuitiva.
+
+### 5. Esportazione Registro Anagrafe PDF
 - **Reportistica di Legge**: implementato l'export in PDF Landscape del Registro di Anagrafe Condominiale ufficiale ai sensi dell'Art. 1130 c.c. con orientamento orizzontale per ospitare tutte le colonne di legge.
 
-### 5. Fatti Verificati
+### 6. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
-- **Commit di sessione**: Registrato il commit di sessione S38 step 1.
+- **Commit di sessione**: Registrato il commit di sessione S38 step 2 (unificazione tab).
 
 

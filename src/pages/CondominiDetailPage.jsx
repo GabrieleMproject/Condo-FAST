@@ -4,7 +4,6 @@ import { FileBarChart } from 'lucide-react'   // se non già importato un'icona;
 import RateGridTab from '../components/RateGridTab'
 import PreventivoSection from '../components/PreventivoSection'
 import SaldiInizialiTab from '../components/SaldiInizialiTab'
-import RegistroAnagrafeTab from '../components/RegistroAnagrafeTab'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useCondomini } from '../hooks/useCondomini'
 import { useAuditLog } from '../hooks/useAuditLog'
@@ -54,8 +53,7 @@ const DOTAZIONI = (c) => [
 
 const TABS = [
   { id: 'panoramica', label: 'Panoramica', icon: LayoutGrid },
-  { id: 'anagrafica', label: 'Anagrafica', icon: Users },
-  { id: 'registro',   label: 'Registro Anagrafe', icon: Building2 },
+  { id: 'anagrafica', label: 'Anagrafica & Unità', icon: Users },
   { id: 'preventivo', label: 'Preventivo', icon: ClipboardList },
   { id: 'saldi',      label: 'Saldi iniziali', icon: Wallet },
   { id: 'consuntivo', label: 'Consuntivo', icon: FileBarChart },
@@ -346,11 +344,9 @@ export default function CondominiDetailPage() {
           </>
         )}
 
-        {activeTab === 'anagrafica' && <AnagraficaCondominioTab condominioId={c.id} />}
+        {activeTab === 'anagrafica' && <AnagraficaCondominioTab condominioId={c.id} condominio={c} />}
         {activeTab === 'preventivo' && <PreventivoSection condominioId={c.id} />}
         {activeTab === 'saldi' && <SaldiInizialiTab condominioId={c.id} />}
-
-        {activeTab === 'registro' && <RegistroAnagrafeTab condominio={c} />}
 
         {activeTab === 'rate' && <RateGridTab condominioId={c.id} />}
 

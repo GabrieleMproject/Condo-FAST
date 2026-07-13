@@ -707,9 +707,16 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Doppio attributo `style` JSX**: Risolti i conflitti di visualizzazione JSX unendo i doppi stili in un unico oggetto in `AnagraficaCondominioTab.jsx` alle righe 633, 643 e 907.
 - **Firma `exportAnagraficaPdf`**: Corretta la chiamata di esportazione separando il parametro `withWatermark` come secondo argomento invece di iniettarlo nell'oggetto delle opzioni.
 
-### 7. Fatti Verificati
+### 7. Creazione Manuale delle Unità
+- **Inserimento Diretto**: aggiunto il pulsante "+ Nuova Unità" e la modale `showNuovaUnitaModal` per permettere all'amministratore di registrare manualmente nuove unità immobiliari nel condominio, valorizzandone la scala, il piano, i mq, il tipo e tutte le coordinate catastali ed immobiliari senza dover passare per un'importazione massiva di file.
+
+### 8. Popup Preventivo all'Esportazione (Controlli Completezza)
+- **Avviso Dinamico**: Ridenominato il pulsante in `"REGISTRO ANAGRAFE PDF"`. All'atto dell'esportazione del PDF, l'applicazione controlla lo stato di ogni unità: se vi sono campi catastali o soggetti non configurati (unità incomplete), viene mostrato a schermo un popup elegante con l'elenco delle unità mancanti, consentendo all'amministratore di annullare o procedere comunque all'esportazione.
+
+### 9. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
-- **Commit di sessione**: Registrato il commit di sessione S38 step 3.
+- **Commit di sessione**: Registrato il commit di sessione S38 step 4.
+
 
 
 

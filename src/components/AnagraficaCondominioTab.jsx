@@ -66,6 +66,24 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   const [showSendModal, setShowSendModal] = useState(false)
   const [selectedDestinatari, setSelectedDestinatari] = useState([])
 
+  // Stati per la creazione manuale dell'unità
+  const [showNuovaUnitaModal, setShowNuovaUnitaModal] = useState(false)
+  const [nuovoNumeroUnita, setNuovoNumeroUnita] = useState('')
+  const [nuovaScala, setNuovaScala] = useState('')
+  const [nuovoPiano, setNuovoPiano] = useState('')
+  const [nuovoMq, setNuovoMq] = useState('')
+  const [nuovoTipoUnita, setNuovoTipoUnita] = useState('appartamento')
+  const [nuovoCatastoFoglio, setNuovoCatastoFoglio] = useState('')
+  const [nuovoCatastoParticella, setNuovoCatastoParticella] = useState('')
+  const [nuovoCatastoSubalterno, setNuovoCatastoSubalterno] = useState('')
+  const [nuovoCatastoCategoria, setNuovoCatastoCategoria] = useState('')
+  const [nuovoCatastoRendita, setNuovoCatastoRendita] = useState('')
+  const [salvandoUnita, setSalvandoUnita] = useState(false)
+
+  // Stati per popup preventivo di esportazione
+  const [showExportConfirmModal, setShowExportConfirmModal] = useState(false)
+  const [unitaIncompletePerExport, setUnitaIncompletePerExport] = useState([])
+
   // Lista di tutte le unità per il dropdown
   const [unitaListDropdown, setUnitaListDropdown] = useState([])
 
@@ -555,7 +573,66 @@ Lo Studio Amministrativo`
       toast.error('Nessun dato catastale da esportare.')
       return
     }
-    exportRegistroAnagrafePdf(condominio, unitaList)
+
+    const incomplete = unitaList.filter(u => {
+      const { completa } = checkCompletezzaUnita(u)
+      return !completa
+    })
+
+    if (incomplete.length > 0) {
+      setUnitaIncompletePerExport(incomplete)
+      setShowExportConfirmModal(true)
+    } else {
+      exportRegistroAnagrafePdf(condominio, unitaList)
+    }
+  }
+
+  const handleCreaUnitaManuale = async (e) => {
+    e.preventDefault()
+    if (!nuovoNumeroUnita.trim()) {
+      toast.error("Il numero dell'unità è obbligatorio!")
+      return
+    }
+    setSalvandoUnita(true)
+    try {
+      const { error } = await supabase
+        .from('unita')
+        .insert([{
+          condominio_id: condominioId,
+          numero: nuovoNumeroUnita.trim(),
+          scala: nuovaScala.trim() || null,
+          piano: nuovoPiano !== '' ? parseInt(nuovoPiano) : null,
+          mq: nuovoMq !== '' ? parseFloat(nuovoMq) : null,
+          tipo: nuovoTipoUnita,
+          catasto_foglio: nuovoCatastoFoglio.trim() || null,
+          catasto_particella: nuovoCatastoParticella.trim() || null,
+          catasto_subalterno: nuovoCatastoSubalterno.trim() || null,
+          catasto_categoria: nuovoCatastoCategoria.trim() || null,
+          catasto_rendita: nuovoCatastoRendita !== '' ? parseFloat(nuovoCatastoRendita) : null
+        }])
+
+      if (error) throw error
+
+      toast.success('Unità immobiliare inserita con successo!')
+      setShowNuovaUnitaModal(false)
+      setNuovoNumeroUnita('')
+      setNuovaScala('')
+      setNuovoPiano('')
+      setNuovoMq('')
+      setNuovoTipoUnita('appartamento')
+      setNuovoCatastoFoglio('')
+      setNuovoCatastoParticella('')
+      setNuovoCatastoSubalterno('')
+      setNuovoCatastoCategoria('')
+      setNuovoCatastoRendita('')
+
+      await fetchDatiRegistro()
+      await caricaUnitaDropdown()
+    } catch (err) {
+      toast.error('Errore creazione unità: ' + err.message)
+    } finally {
+      setSalvandoUnita(false)
+    }
   }
 
   return (
@@ -583,19 +660,24 @@ Lo Studio Amministrativo`
         <div>
           {/* Top Actions Registro */}
           <div style={styles.filterRow}>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button onClick={fetchDatiRegistro} style={styles.filterBtn(false)} disabled={loadingRegistro}>
                 <RefreshCw size={14} style={{ marginRight: 6 }} /> Aggiorna
               </button>
               {!isCollaboratore && (
-                <button onClick={apriInvioRichieste} style={styles.filterBtn(false)} disabled={loadingRegistro}>
-                  <Mail size={14} style={{ marginRight: 6 }} /> Sollecita mancanti
-                </button>
+                <>
+                  <button onClick={() => setShowNuovaUnitaModal(true)} style={{ ...styles.filterBtn(false), color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }} disabled={loadingRegistro}>
+                    <Plus size={14} style={{ marginRight: 6 }} /> Nuova Unità
+                  </button>
+                  <button onClick={apriInvioRichieste} style={styles.filterBtn(false)} disabled={loadingRegistro}>
+                    <Mail size={14} style={{ marginRight: 6 }} /> Sollecita mancanti
+                  </button>
+                </>
               )}
             </div>
             
             <button onClick={handleEsportaRegistroPdf} style={{ ...styles.filterBtn(false), background: '#2563eb', color: '#fff', fontWeight: 600 }} disabled={loadingRegistro || unitaList.length === 0}>
-              <Download size={14} style={{ marginRight: 6 }} /> Esporta Registro (PDF)
+              <Download size={14} style={{ marginRight: 6 }} /> REGISTRO ANAGRAFE PDF
             </button>
           </div>
 
@@ -1158,6 +1240,140 @@ Lo Studio Amministrativo`
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE NUOVA UNITÀ MANUALE */}
+      {showNuovaUnitaModal && (
+        <div style={styles.overlay} onClick={() => setShowNuovaUnitaModal(false)}>
+          <div style={{ ...styles.modal, width: 520 }} onClick={e => e.stopPropagation()}>
+            <div style={styles.modalHead}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Plus size={18} color="#60a5fa" />
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 15 }}>Nuova Unità Immobiliare</span>
+              </div>
+              <button style={styles.btnClose} onClick={() => setShowNuovaUnitaModal(false)}><X size={16}/></button>
+            </div>
+
+            <form onSubmit={handleCreaUnitaManuale}>
+              <div style={{ ...styles.modalBody, maxHeight: '65vh', overflowY: 'auto', paddingRight: 6 }}>
+                
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Dati Immobile</div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Numero Unità *</label>
+                    <input style={styles.input} type="text" required value={nuovoNumeroUnita} onChange={e => setNuovoNumeroUnita(e.target.value)} placeholder="es. A10 o 15" />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Scala</label>
+                    <input style={styles.input} type="text" value={nuovaScala} onChange={e => setNuovaScala(e.target.value)} placeholder="es. A" />
+                  </div>
+                </div>
+
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Piano</label>
+                    <input style={styles.input} type="number" value={nuovoPiano} onChange={e => setNuovoPiano(e.target.value)} placeholder="es. 3" />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Superficie (mq)</label>
+                    <input style={styles.input} type="number" step="any" value={nuovoMq} onChange={e => setNuovoMq(e.target.value)} placeholder="es. 85" />
+                  </div>
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Tipo Unità</label>
+                  <select style={styles.input} value={nuovoTipoUnita} onChange={e => setNuovoTipoUnita(e.target.value)}>
+                    <option value="appartamento">Appartamento</option>
+                    <option value="box">Box Auto / Garage</option>
+                    <option value="cantina">Cantina</option>
+                    <option value="negozio">Negozio / Ufficio</option>
+                    <option value="altro">Altro</option>
+                  </select>
+                </div>
+
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Dati Catastali</div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Foglio</label>
+                    <input style={styles.input} type="text" value={nuovoCatastoFoglio} onChange={e => setNuovoCatastoFoglio(e.target.value)} placeholder="es. 12" />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Particella / Mappale</label>
+                    <input style={styles.input} type="text" value={nuovoCatastoParticella} onChange={e => setNuovoCatastoParticella(e.target.value)} placeholder="es. 450" />
+                  </div>
+                </div>
+
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Subalterno</label>
+                    <input style={styles.input} type="text" value={nuovoCatastoSubalterno} onChange={e => setNuovoCatastoSubalterno(e.target.value)} placeholder="es. 3" />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Categoria</label>
+                    <input style={styles.input} type="text" value={nuovoCatastoCategoria} onChange={e => setNuovoCatastoCategoria(e.target.value)} placeholder="es. A/3" />
+                  </div>
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Rendita Catastale (€)</label>
+                  <input style={styles.input} type="number" step="any" value={nuovoCatastoRendita} onChange={e => setNuovoCatastoRendita(e.target.value)} placeholder="es. 520.00" />
+                </div>
+
+              </div>
+
+              <div style={styles.modalFooter}>
+                <button type="button" style={styles.btnCancel} onClick={() => setShowNuovaUnitaModal(false)}>Annulla</button>
+                <button type="submit" disabled={salvandoUnita} style={styles.btnSave}>
+                  {salvandoUnita ? 'Salvataggio...' : 'Crea Unità'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP CONFERMA ESPORTAZIONE REGISTRO INCOMPLETO */}
+      {showExportConfirmModal && (
+        <div style={styles.overlay} onClick={() => setShowExportConfirmModal(false)}>
+          <div style={{ ...styles.modal, width: 480 }} onClick={e => e.stopPropagation()}>
+            <div style={styles.modalHead}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <AlertTriangle size={20} color="#eab308" />
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 16 }}>Dati Registro Incompleti</span>
+              </div>
+              <button style={styles.btnClose} onClick={() => setShowExportConfirmModal(false)}><X size={16}/></button>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6, margin: '0 0 12px' }}>
+                Attenzione: le seguenti unità abitative non sono ancora complete. Mancano i dati catastali o non vi sono associati condòmini completi:
+              </p>
+              <div style={{ maxHeight: 120, overflowY: 'auto', background: 'var(--app-bg)', padding: 12, borderRadius: 8, border: '1px solid var(--border-color)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {unitaIncompletePerExport.map(u => (
+                  <span key={u.id} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, background: 'rgba(234,179,8,0.15)', color: '#facc15', fontWeight: 600 }}>
+                    Unità {u.numero}
+                  </span>
+                ))}
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 12, margin: 0 }}>
+                Vuoi procedere comunque con il download del PDF del Registro Anagrafe?
+              </p>
+            </div>
+
+            <div style={styles.modalFooter}>
+              <button type="button" style={styles.btnCancel} onClick={() => setShowExportConfirmModal(false)}>Annulla</button>
+              <button 
+                onClick={() => {
+                  setShowExportConfirmModal(false)
+                  exportRegistroAnagrafePdf(condominio, unitaList)
+                }} 
+                style={{ ...styles.btnSave, background: '#2563eb' }}
+              >
+                Procedi ed Esporta
+              </button>
+            </div>
           </div>
         </div>
       )}

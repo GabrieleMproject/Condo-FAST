@@ -720,9 +720,13 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
   2. *Saldi Iniziali*: la griglia di inserimento saldi per unità e cassa con riporto da esercizio precedente e importazione AI da PDF consuntivo.
 - **Semplificazione Sidebar**: rimosso il tab ridondante `saldi` da [CondominiDetailPage.jsx](file:///Users/gabrielemaesani/Documents/CondoAI2/src/pages/CondominiDetailPage.jsx), rinominando il tab principale in "Preventivo & Saldi" per alleggerire la barra principale dei tab del condominio.
 
-### 10. Fatti Verificati
+### 10. Bug Risolti (Fix Bug Triager)
+- **Doppio attributo `style` JSX in PreventivoSection**: Sanate le celle della tabella e il contenitore della griglia dei saldi iniziali in `PreventivoSection.jsx` alle righe 337, 338, 339, 340, 343, 352, 353 e 494 unendo i doppi stili per evitare errori di compilazione e visualizzazione.
+
+### 11. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
-- **Commit di sessione**: Registrato il commit di sessione S38 step 5 (unificazione preventivo e saldi).
+- **Commit di sessione**: Registrato il commit di sessione S38 step 6.
+
 
 
 

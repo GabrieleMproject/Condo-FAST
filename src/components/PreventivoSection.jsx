@@ -334,13 +334,13 @@ export default function PreventivoSection({ condominioId }) {
                         const tabName = v.tabella_millesimale?.nome || 'Proprietà'
                         return (
                           <tr key={v.id} style={st.tr}>
-                            <td style={st.td} style={{ fontWeight: 600 }}>{v.descrizione}</td>
-                            <td style={st.td} style={{ textTransform: 'capitalize' }}>{v.categoria || 'altro'}</td>
-                            <td style={st.td} style={{ textAlign: 'right', fontWeight: 600 }}>{eur(v.importo)}</td>
-                            <td style={st.td} style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                            <td style={{ ...st.td, fontWeight: 600 }}>{v.descrizione}</td>
+                            <td style={{ ...st.td, textTransform: 'capitalize' }}>{v.categoria || 'altro'}</td>
+                            <td style={{ ...st.td, textAlign: 'right', fontWeight: 600 }}>{eur(v.importo)}</td>
+                            <td style={{ ...st.td, fontSize: 12, color: 'var(--text-secondary)' }}>
                               {v.criterio === 'millesimi' ? `Millesimi (${tabName})` : 'Quote uguali'}
                             </td>
-                            <td style={st.td} style={{ textAlign: 'center' }}>
+                            <td style={{ ...st.td, textAlign: 'center' }}>
                               <button onClick={() => prev.rimuoviVoce(v.id)} style={st.btnTrash}>
                                 <Trash2 size={14} />
                               </button>
@@ -349,8 +349,8 @@ export default function PreventivoSection({ condominioId }) {
                         )
                       })}
                       <tr style={{ borderTop: '2px solid var(--border-color)', background: 'var(--app-bg)' }}>
-                        <td colSpan={2} style={st.td} style={{ fontWeight: 700 }}>TOTALE PREVENTIVO</td>
-                        <td style={st.td} style={{ textAlign: 'right', fontWeight: 700, color: '#3b82f6' }}>{eur(prev.totale)}</td>
+                        <td colSpan={2} style={{ ...st.td, fontWeight: 700 }}>TOTALE PREVENTIVO</td>
+                        <td style={{ ...st.td, textAlign: 'right', fontWeight: 700, color: '#3b82f6' }}>{eur(prev.totale)}</td>
                         <td colSpan={2} />
                       </tr>
                     </tbody>
@@ -491,7 +491,7 @@ export default function PreventivoSection({ condominioId }) {
           </div>
 
           {/* Griglia saldi */}
-          <div style={st.card} style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)', borderRadius: 12 }}>
+          <div style={{ ...st.card, padding: 0, overflow: 'hidden', border: '1px solid var(--border-color)', borderRadius: 12 }}>
             <div style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: 12, background: 'var(--card-bg)' }}>
               Saldo iniziale per unità — <span style={{ color: '#10b981', fontWeight: 600 }}>positivo = credito</span> · <span style={{ color: '#ef4444', fontWeight: 600 }}>negativo = debito</span>
             </div>

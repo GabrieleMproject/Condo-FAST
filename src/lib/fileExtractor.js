@@ -702,3 +702,65 @@ export function aggregaDatiGestionale(risultatiPerFile) {
 
   return { gestionale, condominio, persone, unita, millesimi, saldi_iniziali, spese, rate };
 }
+
+// ─── ANAGRAFE CONDOMINIALE: Estrae i dati catastali e anagrafici da una scheda di autocertificazione ──
+export async function estraiDatiAnagrafeDaModulo(file, condominioId) {
+  const tipo = getTipoFile(file);
+  const isImage = tipo === 'image';
+  const isPdf   = tipo === 'pdf';
+
+  let contenuto = '';
+  let mediaType = '';
+
+  if (isImage || isPdf) {
+    contenuto = await fileToBase64(file);
+    mediaType = isImage ? (file.type || 'image/jpeg') : 'application/pdf';
+  } else if (tipo === 'xlsx') {
+    contenuto = await xlsxToText(file);
+  } else if (tipo === 'docx') {
+    contenuto = await docxToText(file);
+  } else {
+    contenuto = await fileToText(file);
+  }
+
+  const systemPrompt = `Sei un assistente AI specializzato nella gestione e lettura di moduli fiscali e schede di anagrafe condominiale per il mercato italiano.
+Il tuo compito è analizzare la scansione, foto o testo del modulo di autocertificazione compilato dal condomino ed estrarre i dati anagrafici, i dati catastali dell'unità immobiliare e le informazioni di residenza.
+
+Restituisci ESCLUSIVAMENTE un oggetto JSON valido con la seguente struttura, non aggiungere commenti o altri testi:
+{
+  "unita": {
+    "catasto_foglio": string o null (il foglio catastale, es. "12"),
+    "catasto_particella": string o null (la particella o mappale, es. "345"),
+    "catasto_subalterno": string o null (il subalterno, es. "3"),
+    "catasto_categoria": string o null (la categoria catastale, es. "A/3" o "C/6"),
+    "catasto_rendita": numero o null (la rendita catastale come numero, es. 450.50)
+  },
+  "persona": {
+    "nome": string o null (il nome dell'occupante/proprietario),
+    "cognome": string o null (il cognome),
+    "codice_fiscale": string o null (il codice fiscale normalizzato a 16 caratteri maiuscoli),
+    "email": string o null (l'indirizzo email compilato),
+    "telefono": string o null (il numero di telefono compilato),
+    "residenza_indirizzo": string o null (via/piazza, civico della residenza del soggetto, es. "Via Garibaldi 12"),
+    "residenza_comune": string o null (il comune di residenza),
+    "residenza_cap": string o null (il CAP di residenza, es. "00100"),
+    "residenza_provincia": string o null (la sigla della provincia di residenza a 2 caratteri, es. "RM")
+  },
+  "ruolo": string o null (deve essere rigorosamente uno tra: "proprietario", "inquilino", "comproprietario", "usufruttuario" se deducibile dal modulo)
+}
+
+Regole importanti:
+1. Pulisci i dati catastali: rimuovi spazi superflui e normalizzali.
+2. Codice Fiscale: controlla che sia valido a 16 cifre, convertilo in MAIUSCOLO.
+3. Se un campo non è presente o non è leggibile, impostalo a null. Non inventare dati.`;
+
+  const userPrompt = `Analizza questo modulo compilato dal condomino ed estrai i dati nel formato JSON specificato.`;
+
+  const risposta = isImage
+    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 })
+    : isPdf
+    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 })
+    : await callClaude(userPrompt + `\n\nContenuto del modulo:\n${contenuto}`, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 });
+
+  return pulisciEdEstraiJson(risposta, false);
+}

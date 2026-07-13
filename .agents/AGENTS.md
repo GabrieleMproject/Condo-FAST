@@ -677,3 +677,26 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
 - **Commit di sessione**: Registrato il commit di sessione S37 step 3.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S38 (13 Luglio 2026 - Registro Anagrafe Condominiale con AI Reader)
+
+### 1. Schema Catastale e Residenza
+- **Estensione Database**: creata la migrazione `sql/s38_anagrafe_condominiale.sql` che aggiunge i campi catastali (`catasto_foglio`, `catasto_particella`, `catasto_subalterno`, `catasto_categoria`, `catasto_rendita`) alla tabella `unita` e i campi residenza (`residenza_indirizzo`, `residenza_comune`, `residenza_cap`, `residenza_provincia`) alla tabella `persone`.
+
+### 2. Flusso di Sollecito Intelligente
+- **Filtro Chirurgico per Email**: l'interfaccia rileva automaticamente quali anagrafiche o dati catastali mancano per ciascuna unità immobiliare. Il pulsante di sollecito permette di inviare email di richiesta (via Resend) unicamente ai condòmini con dati incompleti o di nuova acquisizione, riducendo lo spam e mirando solo ai soggetti inadempienti.
+
+### 3. OCR Modulo Autocertificazione con Gemini
+- **Estrazione Dati AI**: implementata in `fileExtractor.js` la funzione `estraiDatiAnagrafeDaModulo` che sfrutta Gemini (Flash/Pro) per effettuare l'OCR dei moduli compilati e firmati (immagini o PDF).
+- **Validazione con un Click**: l'amministratore può scansionare il modulo compilato inviatogli dal condomino, caricarlo su CondoSmart e validare i dati catastali/anagrafici estratti dall'AI tramite una modale di confronto prima di salvare sul database.
+- **Race Condition Guard**: implementata una guardia asincrona in `handleFileChange` ed il blocco di interazione al pulsante "Annulla" per evitare di sovrascrivere i dati nel caso in cui l'utente cambi selezione di unità prima del completamento della chiamata AI (segnalazione e fix di Bug Triager).
+
+### 4. Esportazione Registro Anagrafe PDF
+- **Reportistica di Legge**: implementato l'export in PDF Landscape del Registro di Anagrafe Condominiale ufficiale ai sensi dell'Art. 1130 c.c. con orientamento orizzontale per ospitare tutte le colonne di legge.
+
+### 5. Fatti Verificati
+- **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
+- **Commit di sessione**: Registrato il commit di sessione S38 step 1.
+
+

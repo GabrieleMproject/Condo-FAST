@@ -379,3 +379,101 @@ Riepilogo quote per l'esercizio:
   
   doc.save(`Solleciti_Massivi_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
 }
+
+// ─── ANAGRAFE: Esportazione Registro Anagrafe Condominiale Ufficiale (Art. 1130 c.c.)
+export function exportRegistroAnagrafePdf(condominio, righe) {
+  const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+
+  // Disegna testata personalizzata Landscape
+  doc.setFillColor(...DARK); doc.rect(0, 0, W, 38, 'F');
+  doc.setFillColor(...BLU); doc.rect(0, 0, 4, 38, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...BLU);
+  doc.text('CONDOSMART', 12, 10);
+  doc.setFontSize(14); doc.setTextColor(...TESTO);
+  doc.text(condominio?.nome || 'Condominio', 12, 19);
+  
+  if (condominio?.indirizzo) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GRIGIO);
+    doc.text(`${condominio.indirizzo} ${condominio.civico || ''} - ${condominio.cap || ''} ${condominio.citta || ''}`, 12, 26);
+  }
+  if (condominio?.codice_fiscale) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GRIGIO);
+    doc.text(`C.F. Condominio: ${condominio.codice_fiscale}`, 12, 32);
+  }
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...TESTO);
+  doc.text('REGISTRO ANAGRAFE CONDOMINIALE', W - 12, 16, { align: 'right' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GRIGIO);
+  doc.text(`Art. 1130 comma 1 n. 6 c.c. · Stampato il ${new Date().toLocaleDateString('it-IT')}`, W - 12, 24, { align: 'right' });
+
+  // Prepara righe tabella
+  const body = [];
+  
+  righe.forEach(u => {
+    const catastali = [
+      u.catasto_foglio || '-',
+      u.catasto_particella || '-',
+      u.catasto_subalterno || '-',
+      u.catasto_categoria || '-',
+      u.catasto_rendita != null ? `€ ${Number(u.catasto_rendita).toFixed(2)}` : '-'
+    ].join(' / ');
+
+    const occupantiList = Array.isArray(u.occupanti_unita) ? u.occupanti_unita.filter(o => o.attivo) : [];
+
+    if (occupantiList.length === 0) {
+      body.push([
+        u.numero || '-',
+        `${u.scala || '-'} / ${u.piano != null ? u.piano : '-'}`,
+        u.tipo || 'Appartamento',
+        catastali,
+        '-',
+        '-',
+        '-',
+        '-'
+      ]);
+    } else {
+      occupantiList.forEach((occ, idx) => {
+        const p = occ.persona || {};
+        const residenza = [
+          p.residenza_indirizzo,
+          p.residenza_comune,
+          p.residenza_provincia ? `(${p.residenza_provincia})` : ''
+        ].filter(Boolean).join(', ') || '-';
+
+        body.push([
+          idx === 0 ? (u.numero || '-') : '',
+          idx === 0 ? (`${u.scala || '-'} / ${u.piano != null ? u.piano : '-'}`) : '',
+          idx === 0 ? (u.tipo || 'Appartamento') : '',
+          idx === 0 ? catastali : '',
+          `${p.cognome || ''} ${p.nome || ''}`.trim() || '-',
+          occ.ruolo ? (occ.ruolo.charAt(0).toUpperCase() + occ.ruolo.slice(1)) : '-',
+          p.codice_fiscale || '-',
+          residenza
+        ]);
+      });
+    }
+  });
+
+  autoTable(doc, {
+    startY: 44,
+    head: [['Unità', 'Scala/Piano', 'Tipo', 'Dati Catastali (F/P/S/Cat/Rend.)', 'Nominativo', 'Ruolo', 'Codice Fiscale', 'Indirizzo Residenza']],
+    body,
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 8, cellPadding: 4, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+    headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
+    alternateRowStyles: { fillColor: [24, 35, 55] },
+    margin: { left: 12, right: 12 }
+  });
+
+  // Footer pagina singola/multipla
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
+    doc.text(`Pagina ${i} di ${pageCount}`, W - 12, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+    doc.text('Generato automaticamente da CondoSmart', 12, doc.internal.pageSize.getHeight() - 10);
+  }
+
+  doc.save(`Registro_Anagrafe_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
+}

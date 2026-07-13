@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
+import { usePlan } from './usePlan'
 
 export function useCondomini() {
   const { user } = useAuth()
+  const { isCollaboratore, titolareId } = usePlan()
   const [condomini, setCondomini] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -32,9 +34,10 @@ export function useCondomini() {
   }, [fetchCondomini])
 
   const createCondominio = async (formData) => {
+    const ownerId = isCollaboratore ? titolareId : user.id
     const { data, error } = await supabase
       .from('condomini')
-      .insert([{ ...formData, amministratore_id: user.id }])
+      .insert([{ ...formData, amministratore_id: ownerId }])
       .select()
       .single()
 

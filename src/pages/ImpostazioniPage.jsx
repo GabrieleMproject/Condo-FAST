@@ -1,12 +1,13 @@
 // src/pages/ImpostazioniPage.jsx
 import { useState, useEffect, useRef } from 'react'
 import { usePlan, PIANI } from '../hooks/usePlan'
+import { useCondomini } from '../hooks/useCondomini'
 import { PlanBadge } from '../components/PlanGate'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { generaExportGDPR } from '../lib/exportDatiGdpr'
-import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon } from 'lucide-react'
+import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon, Building2 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ export default function ImpostazioniPage() {
   const [savingCollab, setSavingCollab] = useState(false)
   const [collabErr, setCollabErr] = useState(null)
   const [collabSuccess, setCollabSuccess] = useState(null)
+  const [selectedCollabForCondos, setSelectedCollabForCondos] = useState(null)
 
   // Stati Referral Program
   const [userReferrals, setUserReferrals] = useState([])
@@ -1316,9 +1318,18 @@ export default function ImpostazioniPage() {
                               {col.utente_id ? 'Attivo' : 'Invito inviato'}
                             </span>
                           </div>
-                          <button onClick={() => eliminaCollaboratore(col.id)} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}>
-                            <Trash2 size={16} />
-                          </button>
+                          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                            <button 
+                              onClick={() => setSelectedCollabForCondos(col)} 
+                              title="Gestisci condomini assegnati"
+                              style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}
+                            >
+                              <Building2 size={16} />
+                            </button>
+                            <button onClick={() => eliminaCollaboratore(col.id)} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}>
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1525,6 +1536,13 @@ export default function ImpostazioniPage() {
           </div>
         )}
 
+        {selectedCollabForCondos && (
+          <AssegnaCondominiModal 
+            collaboratore={selectedCollabForCondos} 
+            onClose={() => setSelectedCollabForCondos(null)} 
+          />
+        )}
+
       </div>
     </div>
   )
@@ -1634,4 +1652,104 @@ const styles = {
   },
   infoLabel: { color: 'var(--text-muted)', fontSize: 14 },
   infoValue: { color: 'var(--text-primary)', fontSize: 14 },
+}
+
+// ── Modale Assegnazione Condomini ai Collaboratori ────────────────────────
+function AssegnaCondominiModal({ collaboratore, onClose }) {
+  const { condomini, loading: loadingCondos } = useCondomini()
+  const [assignedCondoIds, setAssignedCondoIds] = useState([])
+  const [loadingAssigned, setLoadingAssigned] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetchAssignedCondos()
+  }, [collaboratore.id])
+
+  async function fetchAssignedCondos() {
+    setLoadingAssigned(true)
+    try {
+      const { data, error } = await supabase
+        .from('collaboratori_condomini')
+        .select('condominio_id')
+        .eq('collaboratore_id', collaboratore.id)
+      if (error) throw error
+      setAssignedCondoIds(data.map(item => item.condominio_id))
+    } catch (e) {
+      console.error('Errore caricamento condomini assegnati:', e)
+      toast.error('Errore nel caricamento dei condomini assegnati.')
+    } finally {
+      setLoadingAssigned(false)
+    }
+  }
+
+  async function handleToggleCondo(condoId, isChecked) {
+    setSaving(true)
+    try {
+      if (isChecked) {
+        const { error } = await supabase
+          .from('collaboratori_condomini')
+          .insert({
+            collaboratore_id: collaboratore.id,
+            condominio_id: condoId
+          })
+        if (error) throw error
+        setAssignedCondoIds(prev => [...prev, condoId])
+      } else {
+        const { error } = await supabase
+          .from('collaboratori_condomini')
+          .delete()
+          .eq('collaboratore_id', collaboratore.id)
+          .eq('condominio_id', condoId)
+        if (error) throw error
+        setAssignedCondoIds(prev => prev.filter(id => id !== condoId))
+      }
+    } catch (e) {
+      console.error('Errore durante l\'assegnazione del condominio:', e)
+      toast.error('Impossibile salvare l\'assegnazione.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(4px)' }}>
+      <div style={{ background: 'var(--card-bg)', width: 480, borderRadius: 16, padding: 32, border: '1px solid var(--border-color)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', maxHeight: '80vh' }}>
+        <h2 style={{ color: 'var(--text-primary)', fontSize: 20, margin: '0 0 8px', fontFamily: 'Sora, sans-serif' }}>Assegna Condomini</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 20, lineHeight: 1.4 }}>
+          Seleziona a quali condomini del tuo studio può accedere <strong>{collaboratore.email_collaboratore}</strong>.
+        </p>
+
+        <div style={{ flex: 1, overflowY: 'auto', marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 12, paddingRight: 8 }}>
+          {loadingCondos || loadingAssigned ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Caricamento...</p>
+          ) : condomini.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, fontStyle: 'italic' }}>Nessun condominio creato nello studio.</p>
+          ) : (
+            condomini.map(condo => {
+              const isChecked = assignedCondoIds.includes(condo.id)
+              return (
+                <label key={condo.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    disabled={saving}
+                    onChange={e => handleToggleCondo(condo.id, e.target.checked)}
+                    style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}
+                  />
+                  <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 500 }}>{condo.nome}</span>
+                </label>
+              )
+            })
+          )}
+        </div>
+
+        <button 
+          onClick={onClose}
+          style={{ width: '100%', background: 'var(--border-color)', color: 'var(--text-primary)', border: 'none', padding: 12, borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+        >
+          Chiudi
+        </button>
+      </div>
+    </div>
+  )
 }

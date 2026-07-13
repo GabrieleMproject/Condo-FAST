@@ -653,3 +653,27 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Tabella `assistenza_knowledge`:** Creata la migrazione `sql/s36_assistenza_knowledge.sql` che definisce la tabella con politiche RLS (lettura a tutti gli utenti autenticati per consentire il funzionamento del chatbot, scrittura riservata solo ai SuperAdmin via `public.is_superadmin`) e indice GIN `to_tsvector` per ricerche testuali performanti.
 - **Integrazione callClaude in Backoffice:** Importata la funzione `callClaude` in `BackofficePage.jsx` per gestire le chiamate di sintesi in modalità JSON strutturata con parsing robusto e fallback tramite regex in caso di stringhe non pulite restituite dall'AI.
 - **Interfaccia Utente e Gestione degli Stati:** Allineato il rendering dei tab grafici e introdotto lo stato `generaKB` con checkbox persistente sotto l'input di risposta dei ticket nel pannello laterale del Backoffice.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S37 (13 Luglio 2026 - Sessioni Concorrenti e Collaboratori)
+
+### 1. Controllo Sessione Unica (Anti-Sharing)
+- **Architettura Realtime**: introdotta la tabella `user_sessions` con politiche RLS per memorizzare l'ID sessione attivo per ogni utente.
+- **Logica client-side**: all'avvio del client, viene generato un ID univoco in `sessionStorage` e aggiornato sul database. Un listener Realtime su Supabase rileva se un altro utente si connette con lo stesso account, sloggando istantaneamente il client concorrente precedente per prevenire la condivisione fraudolenta dell'account Base.
+
+### 2. Multi-utenza e Collaboratori
+- **Flessibilità dei Piani**: modificati i limiti di `max_collaboratori` per i piani (Base/Trial: 0, Studio: 2, Professional: 10).
+- **Rilevamento e Ereditarietà**: implementata in `usePlan.js` la logica per verificare se l'utente corrente sia un collaboratore registrato in `collaboratori_studio`. In tal caso, l'applicazione eredita in modo trasparente l'abbonamento e i limiti dell'amministratore titolare del piano per i conteggi e l'uso dell'AI.
+- **Pannello Impostazioni**: creata una sezione dedicata ai Collaboratori in `ImpostazioniPage.jsx` per consentire ai titolari dei piani abilitati di invitare (tramite email) e rimuovere i collaboratori dello studio, bloccando gli inviti extra-soglia.
+
+### 3. Assegnazione Condomini ai Collaboratori
+- **Associazione molti-a-molti**: introdotta la tabella `collaboratori_condomini` per assegnare specifici condomini dello studio a ciascun collaboratore.
+- **Filtro RLS Dinamico**: aggiornata la funzione `user_owns_condominio` per restringere l'accesso del collaboratore solo ai condomini assegnati. Le schermate del gestionale filtrano automaticamente le risorse in base alle RLS senza alcuna modifica alle query frontend.
+- **Interfaccia di Assegnazione**: integrata la modale `AssegnaCondominiModal` accessibile con l'icona `Building2` dalla lista collaboratori in `ImpostazioniPage.jsx`.
+- **Allineamento Creazione Condomini**: modificato `useCondomini.js` in modo che la creazione di condomini da parte di un collaboratore associ la proprietà all'amministratore titolare del piano dello studio.
+
+### 4. Fatti Verificati
+- **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
+- **Commit di sessione**: Registrato il commit di sessione S37 step 3.
+

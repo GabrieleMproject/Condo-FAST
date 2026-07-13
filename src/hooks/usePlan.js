@@ -14,7 +14,6 @@ export const PIANI = {
     portale_condomino: true,
     rendiconto_pdf: true,
     assemblee: true,
-    multi_utente: false,
     max_collaboratori: 0,
     storico_anni: 3,
     api_access: false,
@@ -28,7 +27,6 @@ export const PIANI = {
     portale_condomino: false,
     rendiconto_pdf: false,
     assemblee: false,
-    multi_utente: false,
     max_collaboratori: 0,
     storico_anni: 1,
     api_access: false,
@@ -42,8 +40,7 @@ export const PIANI = {
     portale_condomino: true,
     rendiconto_pdf: true,
     assemblee: true,
-    multi_utente: false,
-    max_collaboratori: 0,
+    max_collaboratori: 2,
     storico_anni: 3,
     api_access: false,
   },
@@ -56,8 +53,7 @@ export const PIANI = {
     portale_condomino: true,
     rendiconto_pdf: true,
     assemblee: true,
-    multi_utente: true,
-    max_collaboratori: 5,
+    max_collaboratori: 10,
     extra_collaboratore: 29,
     storico_anni: null,          // illimitato
     api_access: true,
@@ -76,7 +72,7 @@ const FEATURE_GATES = {
   alert_contratti:     ['studio', 'professional'],  // S15
   notifiche_auto:      ['studio', 'professional'],  // S11
   storico_3anni:       ['studio', 'professional'],
-  multi_utente:        ['professional'],             // S20
+  multi_utente:        ['studio', 'professional'],   // Studio+ supporta ora collaboratori limitati
   api_access:          ['professional'],             // futuro
 }
 
@@ -88,6 +84,8 @@ export function PlanProvider({ children }) {
   const [condominiCount, setCondominiCount] = useState(0)
   const [aiCallsCount, setAiCallsCount]     = useState(0)
   const [loading, setLoading]               = useState(true)
+  const [isCollaboratore, setIsCollaboratore] = useState(false)
+  const [titolareId, setTitolareId]         = useState(null)
 
   // ── Carica profilo + conteggi ─────────────────────────────────────────
   const loadPlan = useCallback(async () => {
@@ -95,15 +93,38 @@ export function PlanProvider({ children }) {
       setProfile(null)
       setCondominiCount(0)
       setAiCallsCount(0)
+      setIsCollaboratore(false)
+      setTitolareId(null)
       setLoading(false)
       return
     }
     setLoading(true)
     try {
+      // 1. Verifica se l'utente è un collaboratore registrato e attivo
+      const { data: collab } = await supabase
+        .from('collaboratori_studio')
+        .select('amministratore_id')
+        .or(`utente_id.eq.${user.id},email_collaboratore.eq.${user.email}`)
+        .eq('attivo', true)
+        .maybeSingle()
+
+      const targetUserId = collab ? collab.amministratore_id : user.id
+      setIsCollaboratore(!!collab)
+      setTitolareId(collab ? collab.amministratore_id : null)
+
+      // Se collaboratore, aggiorna utente_id sul DB nel caso non sia settato
+      if (collab && !collab.utente_id) {
+        await supabase
+          .from('collaboratori_studio')
+          .update({ utente_id: user.id })
+          .or(`utente_id.eq.${user.id},email_collaboratore.eq.${user.email}`)
+      }
+
+      // 2. Carica il profilo del titolare del piano (o il proprio se amministratore)
       const { data: prof } = await supabase
         .from('profiles')
         .select()
-        .eq('id', user.id)
+        .eq('id', targetUserId)
         .single()
 
       setProfile(prof)
@@ -112,7 +133,7 @@ export function PlanProvider({ children }) {
       const { count: condCount } = await supabase
         .from('condomini')
         .select('id', { count: 'exact', head: true })
-        .eq('amministratore_id', user.id)
+        .eq('amministratore_id', targetUserId)
 
       setCondominiCount(condCount || 0)
 
@@ -123,10 +144,12 @@ export function PlanProvider({ children }) {
       const { count: aiCount } = await supabase
         .from('ai_call_log')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .gte('timestamp', inizioMese.toISOString())
 
       setAiCallsCount(aiCount || 0)
+    } catch (err) {
+      console.error('Errore durante caricamento piano:', err)
     } finally {
       setLoading(false)
     }
@@ -230,6 +253,8 @@ export function PlanProvider({ children }) {
     limiti,
     profile,
     isSuperAdmin: profile?.is_superadmin === true,
+    isCollaboratore,
+    titolareId,
 
     isTrialActive,
     isTrialScaduto,

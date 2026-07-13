@@ -9,20 +9,85 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let channel = null
+    const currentSessionId = (() => {
+      let sid = sessionStorage.getItem('condosmart_session_id')
+      if (!sid) {
+        sid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2)
+        sessionStorage.setItem('condosmart_session_id', sid)
+      }
+      return sid
+    })()
+
+    const setupSessionTracker = async (currentUser) => {
+      if (!currentUser) return
+
+      try {
+        // Registra o aggiorna la sessione corrente sul database
+        await supabase.from('user_sessions').upsert({
+          user_id: currentUser.id,
+          session_id: currentSessionId,
+          updated_at: new Date().toISOString()
+        })
+
+        // Crea il listener Realtime per monitorare sovrascritture esterne della sessione
+        if (channel) channel.unsubscribe()
+        
+        channel = supabase
+          .channel(`public:user_sessions:user_id=eq.${currentUser.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'user_sessions',
+              filter: `user_id=eq.${currentUser.id}`
+            },
+            (payload) => {
+              if (payload.new && payload.new.session_id !== currentSessionId) {
+                // Notifica l'utente e disconnetti
+                alert('Sessione disconnessa: è stato rilevato un accesso da un altro dispositivo con questo account.')
+                supabase.auth.signOut()
+              }
+            }
+          )
+          .subscribe()
+      } catch (err) {
+        console.error('Errore nel tracciamento della sessione:', err)
+      }
+    }
+
     // Recupera sessione iniziale
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      setUser(session?.user ?? null)
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      if (currentUser) {
+        setupSessionTracker(currentUser)
+      }
       setLoading(false)
     })
 
     // Ascolta cambiamenti auth (login, logout, refresh token)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
-      setUser(session?.user ?? null)
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      
+      if (event === 'SIGNED_IN' && currentUser) {
+        setupSessionTracker(currentUser)
+      } else if (event === 'SIGNED_OUT') {
+        if (channel) {
+          channel.unsubscribe()
+          channel = null
+        }
+      }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      if (channel) channel.unsubscribe()
+    }
   }, [])
 
   const signIn = async (email, password) => {

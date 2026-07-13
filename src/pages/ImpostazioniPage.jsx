@@ -72,11 +72,19 @@ export default function ImpostazioniPage() {
     aiCallsCount, aiCallsLimit, aiCallsRimanenti,
     updateBranding,
     refresh,
+    isCollaboratore,
   } = usePlan()
 
   const [loadingCheckout, setLoadingCheckout] = useState(null)
   const [loadingPortale, setLoadingPortale]   = useState(false)
   const [error, setError]                     = useState(null)
+
+  // Stati Collaboratori
+  const [collaboratori, setCollaboratori] = useState([])
+  const [emailNuovoCollab, setEmailNuovoCollab] = useState('')
+  const [savingCollab, setSavingCollab] = useState(false)
+  const [collabErr, setCollabErr] = useState(null)
+  const [collabSuccess, setCollabSuccess] = useState(null)
 
   // Stati Referral Program
   const [userReferrals, setUserReferrals] = useState([])
@@ -87,8 +95,25 @@ export default function ImpostazioniPage() {
   useEffect(() => {
     if (user?.id) {
       fetchReferralData()
+      if (!isCollaboratore) {
+        fetchCollaboratori()
+      }
     }
-  }, [user])
+  }, [user, isCollaboratore])
+
+  async function fetchCollaboratori() {
+    try {
+      const { data, error: err } = await supabase
+        .from('collaboratori_studio')
+        .select('*')
+        .eq('amministratore_id', user.id)
+        .order('created_at', { ascending: false })
+      if (err) throw err
+      setCollaboratori(data || [])
+    } catch (e) {
+      console.error('Errore caricamento collaboratori:', e)
+    }
+  }
 
   async function fetchReferralData() {
     try {
@@ -337,6 +362,69 @@ export default function ImpostazioniPage() {
   const giorniTrialRimasti = trialEndsAt
     ? Math.max(0, Math.ceil((new Date(trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)))
     : 0
+
+  async function aggiungiCollaboratore(e) {
+    if (e) e.preventDefault()
+    setCollabErr(null)
+    setCollabSuccess(null)
+    if (!emailNuovoCollab.trim()) return
+
+    const maxCollab = limiti.max_collaboratori || 0
+    if (collaboratori.length >= maxCollab) {
+      setCollabErr(`Hai raggiunto il limite massimo di collaboratori (${maxCollab}) per il tuo piano attuale. Fai l'upgrade per aggiungere altre utenze.`)
+      return
+    }
+
+    setSavingCollab(true)
+    try {
+      // Tenta di cercare se esiste già un profilo utente con questa email
+      const { data: utenteEsistente } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('mail_mittente_email', emailNuovoCollab.trim().toLowerCase())
+        .maybeSingle()
+
+      const { error: err } = await supabase
+        .from('collaboratori_studio')
+        .insert({
+          amministratore_id: user.id,
+          email_collaboratore: emailNuovoCollab.trim().toLowerCase(),
+          utente_id: utenteEsistente ? utenteEsistente.id : null,
+          attivo: true
+        })
+
+      if (err) {
+        if (err.code === '23505') {
+          throw new Error('Questo collaboratore è già stato invitato o aggiunto al tuo studio.')
+        }
+        throw err
+      }
+
+      setCollabSuccess('Collaboratore aggiunto con successo! Potrà accedere usando la sua email.')
+      setEmailNuovoCollab('')
+      await fetchCollaboratori()
+    } catch (err) {
+      setCollabErr(err.message)
+    } finally {
+      setSavingCollab(false)
+    }
+  }
+
+  async function eliminaCollaboratore(id) {
+    if (!window.confirm('Sei sicuro di voler rimuovere questo collaboratore dallo studio?')) return
+    try {
+      const { error: err } = await supabase
+        .from('collaboratori_studio')
+        .delete()
+        .eq('id', id)
+        .eq('amministratore_id', user.id)
+      if (err) throw err
+      toast.success('Collaboratore rimosso.')
+      await fetchCollaboratori()
+    } catch (e) {
+      toast.error('Errore durante la rimozione: ' + e.message)
+    }
+  }
 
   // ── GDPR Handlers ─────────────────────────────────────────────────────
   const handleExportGDPR = async () => {
@@ -1147,6 +1235,81 @@ export default function ImpostazioniPage() {
             </div>
           </div>
         </section>
+
+        {/* ── COLLABORATORI STUDIO ────────────────────────────────────── */}
+        {!isCollaboratore && (
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>Collaboratori Studio (Multi-utente)</h2>
+            <div style={styles.brandingCard}>
+              {limiti.max_collaboratori === 0 ? (
+                <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: 14 }}>
+                    La gestione dei collaboratori (multi-utente) non è inclusa nel tuo piano attuale ({limiti.label}).
+                  </p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>
+                    Effettua l'upgrade al piano <strong>Studio</strong> (fino a 2 collaboratori) o <strong>Professional</strong> (fino a 10 collaboratori) per abilitare la multi-utenza in ufficio.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 20 }}>
+                    Gestisci i membri del tuo team che possono accedere e operare sui condomini del tuo studio. (Attivi: {collaboratori.length} di {limiti.max_collaboratori})
+                  </p>
+                  
+                  {collaboratori.length < limiti.max_collaboratori ? (
+                    <form onSubmit={aggiungiCollaboratore} style={{ display: 'flex', gap: 12, marginBottom: 24, alignItems: 'flex-end' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={styles.brandingLabel}>Email del collaboratore</label>
+                        <input
+                          type="email"
+                          required
+                          value={emailNuovoCollab}
+                          onChange={e => setEmailNuovoCollab(e.target.value)}
+                          placeholder="collaboratore@studio.it"
+                          style={styles.brandingInput}
+                        />
+                      </div>
+                      <button type="submit" disabled={savingCollab} style={styles.brandingBtnSave}>
+                        {savingCollab ? 'Aggiunta…' : 'Aggiungi'}
+                      </button>
+                    </form>
+                  ) : (
+                    <p style={{ color: '#f59e0b', fontSize: 13, marginBottom: 20, fontWeight: 600 }}>
+                      Hai raggiunto il limite massimo di collaboratori per questo piano. Fai l'upgrade per aggiungerne altri.
+                    </p>
+                  )}
+
+                  {collabErr && <div style={{ ...styles.errorBox, marginBottom: 16 }}>{collabErr}</div>}
+                  {collabSuccess && <div style={{ color: '#4ade80', fontSize: 13, marginBottom: 16 }}>{collabSuccess}</div>}
+
+                  {collaboratori.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)', fontSize: 13, fontStyle: 'italic', margin: 0 }}>Nessun collaboratore aggiunto.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {collaboratori.map(col => (
+                        <div key={col.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--app-bg)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                          <div>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14 }}>{col.email_collaboratore}</span>
+                            <span style={{
+                              marginLeft: 12, fontSize: 11, padding: '2px 8px', borderRadius: 6,
+                              background: col.utente_id ? '#1e3a8a' : 'var(--border-color)',
+                              color: col.utente_id ? '#93c5fd' : 'var(--text-secondary)'
+                            }}>
+                              {col.utente_id ? 'Attivo' : 'Invito inviato'}
+                            </span>
+                          </div>
+                          <button onClick={() => eliminaCollaboratore(col.id)} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ── UPGRADE PIANI ────────────────────────────────────────── */}
         {(isTrialActive || isTrialScaduto || piano !== 'professional') && (

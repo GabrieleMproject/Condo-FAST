@@ -713,9 +713,17 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 8. Popup Preventivo all'Esportazione (Controlli Completezza)
 - **Avviso Dinamico**: Ridenominato il pulsante in `"REGISTRO ANAGRAFE PDF"`. All'atto dell'esportazione del PDF, l'applicazione controlla lo stato di ogni unità: se vi sono campi catastali o soggetti non configurati (unità incomplete), viene mostrato a schermo un popup elegante con l'elenco delle unità mancanti, consentendo all'amministratore di annullare o procedere comunque all'esportazione.
 
-### 9. Fatti Verificati
+### 9. Unificazione UX: "Preventivo & Saldi"
+- **Riorganizzazione Tab**: unificati i moduli `PreventivoSection` e `SaldiInizialiTab` all'interno di un unico componente principale integrato [PreventivoSection.jsx](file:///Users/gabrielemaesani/Documents/CondoAI2/src/components/PreventivoSection.jsx).
+- **Sotto-Visualizzazione Fluda (Sub-Tabs)**: l'interfaccia offre ora due sotto-visualizzazioni selezionabili con un click:
+  1. *Preventivo Spese*: l'elenco delle voci, le scadenze e la generazione della rateizzazione.
+  2. *Saldi Iniziali*: la griglia di inserimento saldi per unità e cassa con riporto da esercizio precedente e importazione AI da PDF consuntivo.
+- **Semplificazione Sidebar**: rimosso il tab ridondante `saldi` da [CondominiDetailPage.jsx](file:///Users/gabrielemaesani/Documents/CondoAI2/src/pages/CondominiDetailPage.jsx), rinominando il tab principale in "Preventivo & Saldi" per alleggerire la barra principale dei tab del condominio.
+
+### 10. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
-- **Commit di sessione**: Registrato il commit di sessione S38 step 4.
+- **Commit di sessione**: Registrato il commit di sessione S38 step 5 (unificazione preventivo e saldi).
+
 
 
 

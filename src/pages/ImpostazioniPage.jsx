@@ -381,7 +381,7 @@ export default function ImpostazioniPage() {
       const { data: utenteEsistente } = await supabase
         .from('profiles')
         .select('id')
-        .eq('mail_mittente_email', emailNuovoCollab.trim().toLowerCase())
+        .eq('email', emailNuovoCollab.trim().toLowerCase())
         .maybeSingle()
 
       const { error: err } = await supabase
@@ -468,14 +468,32 @@ export default function ImpostazioniPage() {
         {/* Header */}
         <div style={styles.header}>
           <h1 style={styles.title}>Impostazioni</h1>
-          <p style={styles.subtitle}>Gestisci il tuo piano e la fatturazione</p>
+          <p style={styles.subtitle}>
+            {isCollaboratore ? 'Gestisci il tuo profilo account' : 'Gestisci il tuo piano e la fatturazione'}
+          </p>
         </div>
 
         {error && <div style={styles.errorBox}>{error}</div>}
 
-        {/* ── PIANO ATTIVO ─────────────────────────────────────────── */}
-        <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>Piano attivo</h2>
+        {isCollaboratore && (
+          <section style={styles.section}>
+            <div style={styles.brandingCard}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <Lock size={20} style={{ color: 'var(--accent)' }} />
+                <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 16 }}>Account Collaboratore</h3>
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: 0 }}>
+                Questo account è associato come collaboratore dello studio. Le impostazioni di fatturazione, branding e abbonamento sono gestite direttamente dall'amministratore principale.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {!isCollaboratore && (
+          <>
+            {/* ── PIANO ATTIVO ─────────────────────────────────────────── */}
+            <section style={styles.section}>
+              <h2 style={styles.sectionTitle}>Piano attivo</h2>
 
           <div style={styles.pianoCard}>
             <div style={styles.pianoTop}>
@@ -1395,6 +1413,8 @@ export default function ImpostazioniPage() {
             </p>
           </section>
         )}
+      </>
+    )}
 
         {/* ── INFO ACCOUNT ─────────────────────────────────────────── */}
         <section style={styles.section}>
@@ -1422,39 +1442,41 @@ export default function ImpostazioniPage() {
         </section>
 
         {/* ── DATI E PRIVACY (GDPR) ─────────────────────────────────── */}
-        <section style={{ ...styles.section, marginTop: 40 }}>
-          <h2 style={{ ...styles.sectionTitle, color: '#f87171' }}>Dati e Privacy (GDPR)</h2>
-          <div style={{ ...styles.pianoCard, border: '1px solid #7f1d1d' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border-color)' }}>
-              <div>
-                <h3 style={{ color: 'var(--text-primary)', fontSize: 16, margin: '0 0 4px' }}>Esporta i tuoi dati (Art. 20 GDPR)</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Scarica una copia JSON di tutte le anagrafiche, condomini e spese collegate al tuo account.</p>
+        {!isCollaboratore && (
+          <section style={{ ...styles.section, marginTop: 40 }}>
+            <h2 style={{ ...styles.sectionTitle, color: '#f87171' }}>Dati e Privacy (GDPR)</h2>
+            <div style={{ ...styles.pianoCard, border: '1px solid #7f1d1d' }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border-color)' }}>
+                <div>
+                  <h3 style={{ color: 'var(--text-primary)', fontSize: 16, margin: '0 0 4px' }}>Esporta i tuoi dati (Art. 20 GDPR)</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>Scarica una copia JSON di tutte le anagrafiche, condomini e spese collegate al tuo account.</p>
+                </div>
+                <button 
+                  onClick={handleExportGDPR} 
+                  disabled={isExporting}
+                  style={{ background: 'var(--border-color)', color: 'var(--text-primary)', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+                >
+                  {isExporting ? 'Generazione in corso...' : '📥 Esporta Dati'}
+                </button>
               </div>
-              <button 
-                onClick={handleExportGDPR} 
-                disabled={isExporting}
-                style={{ background: 'var(--border-color)', color: 'var(--text-primary)', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
-              >
-                {isExporting ? 'Generazione in corso...' : '📥 Esporta Dati'}
-              </button>
-            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ color: '#f87171', fontSize: 16, margin: '0 0 4px' }}>Diritto all'Oblio (Art. 17 GDPR)</h3>
-                <p style={{ color: '#fca5a5', fontSize: 13, margin: 0 }}>Elimina definitivamente il tuo account e tutti i condomini. <strong>Azione irreversibile.</strong></p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ color: '#f87171', fontSize: 16, margin: '0 0 4px' }}>Diritto all'Oblio (Art. 17 GDPR)</h3>
+                  <p style={{ color: '#fca5a5', fontSize: 13, margin: 0 }}>Elimina definitivamente il tuo account e tutti i condomini. <strong>Azione irreversibile.</strong></p>
+                </div>
+                <button 
+                  onClick={() => setShowDeleteModal(true)} 
+                  style={{ background: '#7f1d1d', color: '#fecaca', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Trash2 size={16} /> Elimina Account</span>
+                </button>
               </div>
-              <button 
-                onClick={() => setShowDeleteModal(true)} 
-                style={{ background: '#7f1d1d', color: '#fecaca', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
-              >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Trash2 size={16} /> Elimina Account</span>
-              </button>
-            </div>
 
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
 
         {/* ── MODALE DOPPIA CONFERMA ELIMINAZIONE ───────────────────── */}
         {showDeleteModal && (

@@ -67,3 +67,6 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. Abilitazione realtime per il tracciamento delle sessioni attive
+ALTER PUBLICATION supabase_realtime ADD TABLE public.user_sessions;

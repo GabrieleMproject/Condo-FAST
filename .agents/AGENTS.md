@@ -816,3 +816,23 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Collaudo E2E**: Testati i passaggi dello script `collaudo_e2e.mjs`. L'estrazione dell'anagrafica da DOCX viene completata con successo tramite `gemini-proxy`. Le chiamate successive mostrano a volte errori 500 dovuti a limiti di quota/rate limit (429/503) sulle API key di Google in cloud, ma il routing è corretto. Aggiunte pause `sleep(3000)` per mitigare il problema in ambiente di test.
 - **Deploy**: Eseguito con successo il deploy della Edge Function `gemini-proxy` su Supabase Cloud.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S43 (15 Luglio 2026 - Caricamento Rapido Spese Globale con AI & Rilevamento Duplicati)
+
+### 1. Decisioni sul Workflow e Inserimento Rapido
+- **Inserimento Spese Globale (Opzione 2)**: Implementata la pagina globale `/spese` accessibile dalla barra di navigazione principale. Questo risolve il problema visivo della voce rotta della sidebar.
+- **Coda Sequenziale per Upload Multiplo (Max 10)**: Abilitato il caricamento drag-and-drop o manuale di fino a 10 fatture contemporaneamente. L'applicazione elabora i file uno dopo l'altro (coda sequenziale) per salvaguardare i token, ridurre i costi e rispettare i rate limit di Gemini Flash.
+- **Matching Intelligente del Condominio**: L'AI estrae i dati fiscali del condominio destinatario e l'applicazione effettua un abbinamento automatico confrontando il Codice Fiscale, il Nome (tramite matching fuzzy escludendo parole comuni) o l'Indirizzo.
+- **Riorganizzazione Props SpeseForm**: Modificato `SpeseForm.jsx` per accettare il file e i dati AI pre-analizzati a monte dalla coda globale, evitando doppie elaborazioni AI e velocizzando il rendering.
+- **Rilevamento Fatture Duplicate su DB**: Inserito un controllo automatico debounced basato sulla tabella `fatture_fornitori`. Se esiste già una spesa dello stesso condominio con stesso numero fattura e fornitore, o stesso fornitore, data e importo, l'applicazione mostra un'allerta visibile e richiede di spuntare un checkbox di conferma per consentire il salvataggio manuale.
+
+### 2. Bug e Regressioni Risolti (Fix Bug Triager)
+- **Falso Positivo in Modifica Spese**: Corretto il filtro duplicati in `SpeseForm.jsx`. Invece di confrontare `d.id !== spesaInEdit.id` (che confrontava l'ID del record fattura con l'ID del record spesa, fallendo sempre), ora confronta `d.spesa_id !== spesaInEdit.id`.
+- **Race Condition in Salvataggio Globale**: Introdotto lo stato `saving` in `SpeseGlobalPage.jsx` che disabilita i selettori di condominio ed esercizio a schermo per evitare modifiche asincrone durante l'upload e il salvataggio dei record.
+- **Loader in Aggiornamento Dati**: Inserito un feedback visivo di caricamento per lo stato `'updating_data'` quando l'utente seleziona manualmente un condominio differente nella pagina globale.
+
+### 3. Fatti Verificati
+- **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
+- **Push e Commit**: Caricate le modifiche sul repository GitHub ed eseguito il push su `origin main`.
+

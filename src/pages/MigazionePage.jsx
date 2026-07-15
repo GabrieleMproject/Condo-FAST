@@ -95,6 +95,18 @@ function StepIndicator({ step, total }) {
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
 const fmt = (n) => typeof n === 'number' ? n.toLocaleString('it-IT', { minimumFractionDigits: 2 }) : (n ?? '—')
 
+function normalizzaDataDb(dataStr) {
+  if (!dataStr) return null
+  const str = String(dataStr).trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+  const match = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
+  if (match) {
+    const [_, giorno, mese, anno] = match
+    return `${anno}-${mese.padStart(2, '0')}-${giorno.padStart(2, '0')}`
+  }
+  return str
+}
+
 function Badge({ label, bg, color, icon: Icon }) {
   return (
     <span style={{ background: bg, color, borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -134,6 +146,7 @@ export default function MigazionePage() {
   const [nomeNuovo, setNomeNuovo] = useState('')
   const [indirizzoNuovo, setIndirizzoNuovo] = useState('')
   const [creandoCondo, setCreandoCondo] = useState(false)
+  const [creatoOra, setCreatoOra] = useState(false)
 
   // Step 2
   const [files, setFiles] = useState([]) // [{file, id, analisi: null|oggetto, errore: null|string, loading: bool}]
@@ -176,6 +189,7 @@ export default function MigazionePage() {
       if (result?.id) {
         setCondominioId(result.id)
         setNuovoCondo(false)
+        setCreatoOra(true)
         toast.success('Condominio creato!')
       } else {
         toast.error('Errore nella creazione del condominio')
@@ -440,18 +454,9 @@ export default function MigazionePage() {
               personaId = existingId
               incr('persone', 'updated')
             }
-          } else {
-            // Upsert su codice_fiscale se valorizzato, altrimenti insert
-            if (p.codice_fiscale) {
-              const { data: ins, error } = await supabase
-                .from('persone').upsert(record, { onConflict: 'codice_fiscale' }).select('id').single()
-              if (error) throw error
-              personaId = ins.id
-            } else {
-              const { data: ins, error } = await supabase.from('persone').insert(record).select('id').single()
-              if (error) throw error
-              personaId = ins.id
-            }
+            const { data: ins, error } = await supabase.from('persone').insert(record).select('id').single()
+            if (error) throw error
+            personaId = ins.id
             incr('persone', 'created')
           }
           if (personaId) {
@@ -646,7 +651,7 @@ export default function MigazionePage() {
             descrizione: s.descrizione || '',
             importo: Number(s.importo) || 0,
             categoria: s.categoria || 'altro',
-            data_spesa: s.data || null,
+            data_spesa: normalizzaDataDb(s.data),
             condominio_id: condId,
             esercizio_id: eserciziId || null,
             criterio: 'manuale',
@@ -687,7 +692,7 @@ export default function MigazionePage() {
               const { data: ins, error } = await supabase.from('rate').insert({
                 esercizio_id: eserciziId,
                 numero: Number(r.numero_rata),
-                scadenza: r.scadenza || null,
+                scadenza: normalizzaDataDb(r.scadenza),
                 condominio_id: condId,
                 amministratore_id: adminId,
               }).select('id').single()
@@ -743,6 +748,7 @@ export default function MigazionePage() {
   function resetWizard() {
     setStep(1); setFadeIn(true)
     setCondominioId(''); setNuovoCondo(false); setNomeNuovo(''); setIndirizzoNuovo('')
+    setCreatoOra(false)
     setFiles([]); setGestionale(''); setAnalizzando(false); setProgressLog([])
     setDatiAggregati(null); setBlocchiAbilitati(BLOCCO_STATE_INIT())
     setConflitti({}); setConflittiInfo({}); setOpenAccordion({})
@@ -884,7 +890,7 @@ export default function MigazionePage() {
                 ) : (
                   <select
                     value={condominioId}
-                    onChange={e => setCondominioId(e.target.value)}
+                    onChange={e => { setCondominioId(e.target.value); setCreatoOra(false) }}
                     style={{ ...inputStyle }}
                   >
                     <option value="">— Seleziona condominio —</option>
@@ -929,13 +935,15 @@ export default function MigazionePage() {
                     </span>
                   )}
                 </button>
-                {condominioId && nuovoCondo === false && (
-                  <div style={{ color: 'var(--success-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <CheckCircle2 size={16} /> Condominio creato e selezionato!
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+
+              {condominioId && (
+                <div style={{ color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginTop: 24 }}>
+                  <CheckCircle2 size={16} style={{ color: C.success }} />
+                  <span>{creatoOra ? 'Condominio creato e selezionato!' : 'Condominio selezionato!'}</span>
+                </div>
+              )}
 
             <div style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end' }}>
               <button
@@ -952,7 +960,7 @@ export default function MigazionePage() {
         {/* ── STEP 2 ── */}
         {step === 2 && (
           <div style={card}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}>📂 Carica i file del gestionale</h2>
+            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}>Carica i file del gestionale</h2>
             <p style={{ color: C.muted, margin: '0 0 28px', fontSize: 14 }}>
               Carica uno o più file esportati dal tuo gestionale. L'AI classificherà automaticamente il tipo di dati.
             </p>
@@ -962,7 +970,6 @@ export default function MigazionePage() {
               <div style={{ marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 8,
                 background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)',
                 borderRadius: 20, padding: '6px 16px' }}>
-                <span>📊</span>
                 <span style={{ color: C.success, fontWeight: 600, fontSize: 13 }}>Gestionale rilevato: {gestionale}</span>
               </div>
             )}
@@ -1079,7 +1086,7 @@ export default function MigazionePage() {
             {progressLog.length > 0 && (
               <div style={{
                 background: '#0a1628', borderRadius: 10, padding: '14px 16px',
-                fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)',
+                fontFamily: 'monospace', fontSize: 12, color: '#e2e8f0',
                 maxHeight: 160, overflowY: 'auto', marginBottom: 20,
                 border: `1px solid ${C.border}`,
               }}>
@@ -1186,9 +1193,9 @@ export default function MigazionePage() {
 
                               return (
                                 <tr key={idx} style={{
-                                  background: isConflict ? 'rgba(245,158,11,0.05)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
-                                  borderBottom: `1px solid ${C.border}`,
-                                }}>
+                                    background: isConflict ? 'rgba(245,158,11,0.05)' : idx % 2 === 0 ? 'transparent' : 'var(--border-color-2)',
+                                    borderBottom: `1px solid ${C.border}`,
+                                  }}>
                                   {fields.map(campo => (
                                     <td key={campo} style={{ padding: '6px 12px' }}>
                                       <input
@@ -1307,7 +1314,7 @@ export default function MigazionePage() {
             {importLog.length > 0 && (
               <div style={{
                 background: '#0a1628', borderRadius: 10, padding: '14px 16px',
-                fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)',
+                fontFamily: 'monospace', fontSize: 12, color: '#e2e8f0',
                 maxHeight: 180, overflowY: 'auto', marginTop: 20,
                 border: `1px solid ${C.border}`,
               }}>

@@ -946,3 +946,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build:** Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
 - **Verifica Push:** Modifiche finali caricate su GitHub (`S46 step3: applica fix del Bug Triager per RLS collaboratori, shadowing template e date`) e pushate sul branch `main`.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S46 step 5 (15 Luglio 2026)
+
+### 1. Decisioni sul Subentro & Benvenuto Contabile
+- **Conformità Codice Civile (art. 63 disp. att. c.c.):** In linea con il principio di solidarietà passiva (l'acquirente risponde in solido con il venditore per l'anno in corso e quello precedente), la schermata mostra il dovuta, pagato e insoluto totale delle rate dell'unità per l'esercizio attivo. La data del subentro viene usata come riferimento per regolare i rapporti interni (pro-rata).
+- **Preservazione dello Stato (Tab Multipli):** Per consentire all'amministratore di allineare i conti senza perdere i dati inseriti nella modale del subentro, i collegamenti a *Riconciliazione Incassi* e *Gestione Rate* si aprono in un nuovo tab del browser (`target="_blank"`), lasciando il tab di anagrafica attivo a schermo.
+- **Aggiornamento Dinamico:** Introdotto un pulsante 🔄 **Ricarica** nella modale di benvenuto per ri-allineare istantaneamente le rate dopo aver inserito i pagamenti manuali o completato la riconciliazione nel secondo tab.
+- **Checkbox Obbligatorio (Soft-Gate):** L'invio dell'e-mail al nuovo condòmino è subordinato all'accettazione obbligatoria di una spunta in cui l'amministratore dichiara di aver verificato i pagamenti, prevenendo contestazioni per importi già versati ma non allineati.
+
+### 2. Implementazione Tecnica
+- **SintesiSubentroModal.jsx:** Creato il componente centralizzato riutilizzabile che si occupa di analizzare l'esercizio attivo, calcolare la situazione rateale dell'unità, interrogare la data dell'ultimo estratto conto e precompilare il testo dell'email di benvenuto comprensivo di IBAN e morosità residue.
+- **Integrazione in Anagrafica & Timeline:** Collegato il componente `SintesiSubentroModal.jsx` sia alla modale di creazione nuovo condomino (`AnagraficaCondominioTab.jsx`) sia alla timeline dei subentri (`StoricoOccupantiModal.jsx`), che ora disattivano correttamente il condomino precedente impostando `data_fine = dataSubentro - 1 giorno` ed innescano il flusso di benvenuto contabile.
+
+### 3. Fatti Verificati
+- **Verifica Build:** Build di produzione Vite completata con successo in 473ms.
+- **Verifica Git:** Modifiche committate con messaggio conforme `S46 step5: implementa subentro anagrafico con data di subentro e mail di benvenuto contabile` e pushate sul branch `main`.
+

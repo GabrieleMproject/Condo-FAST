@@ -222,15 +222,19 @@ serve(async (req) => {
       if (shouldFallback) {
         const isEquivalentModel = (m1: string, m2: string) => {
           const norm = (m: string) => {
-            if (m === 'gemini-flash-latest') return 'gemini-1.5-flash'
-            if (m === 'gemini-pro-latest') return 'gemini-1.5-pro'
+            if (m === 'gemini-flash-latest' || m === 'gemini-1.5-flash-latest' || m === 'gemini-1.5-flash') {
+              return 'flash'
+            }
+            if (m === 'gemini-pro-latest' || m === 'gemini-1.5-pro-latest' || m === 'gemini-1.5-pro') {
+              return 'pro'
+            }
             return m
           }
           return norm(m1) === norm(m2)
         }
 
-        // Tenta modelli alternativi in ordine di efficienza/disponibilità
-        const fallbackModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b', 'gemini-2.0-flash-exp']
+        // Tenta modelli alternativi usando gli alias validi per API v1beta
+        const fallbackModels = ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-1.5-flash-latest', 'gemini-1.5-pro-latest']
         const errorsLog: string[] = []
           
         console.warn(`[gemini-proxy] Quota/Servizio non disponibile per il modello ${currentModel}. Avvio fallback automatico.`);

@@ -63,59 +63,44 @@ function parseCsv(file) {
 
 // ── Normalizza un array di righe grezze → struttura standard ───────────────
 function normalizeRows(rows) {
-  const mapping = {
-    nome: 'nome',
-    cognome: 'cognome',
-    nominativo: 'nominativo',
-    email: 'email',
-    mail: 'email',
-    e_mail: 'email',
-    'e-mail': 'email',
-    pec: 'email',
-    telefono: 'telefono',
-    cellulare: 'telefono',
-    cell: 'telefono',
-    'cell.': 'telefono',
-    tel: 'telefono',
-    'tel.': 'telefono',
-    recapito: 'telefono',
-    codice_fiscale: 'codice_fiscale',
-    cf: 'codice_fiscale',
-    cod_fisc: 'codice_fiscale',
-    codfisc: 'codice_fiscale',
-    indirizzo: 'indirizzo',
-    via: 'indirizzo',
-    indirizzo_residenza: 'indirizzo',
-    citta: 'citta',
-    città: 'citta',
-    comune: 'citta',
-    cap: 'cap',
-    provincia: 'provincia',
-    prov: 'provincia',
-    unita: 'unita',
-    unità: 'unita',
-    appartamento: 'unita',
-    interno: 'unita',
-    int: 'unita',
-    ruolo: 'ruolo'
-  }
-
   return rows.map(row => {
     const normalized = {}
+    
+    // Inizializza tutti i campi attesi
+    const campiAttesi = ['nome', 'cognome', 'codice_fiscale', 'email', 'telefono', 'indirizzo', 'citta', 'cap', 'provincia', 'ruolo', 'unita']
+    campiAttesi.forEach(c => normalized[c] = '')
+
     for (const [k, v] of Object.entries(row)) {
-      const key = k.toLowerCase().trim().replace(/\s+/g, '_')
-      let mappedKey = mapping[key] || key
+      const key = k.toLowerCase().trim().replace(/[-.\s/]+/g, '_')
+      const valStr = String(v || '').trim()
+      if (!valStr) continue
+
+      let mappedKey = null
+
+      // 1. Corrispondenza diretta
+      if (key === 'nome') mappedKey = 'nome'
+      else if (key === 'cognome') mappedKey = 'cognome'
+      else if (key === 'codice_fiscale' || key === 'cf' || key === 'cod_fisc' || key === 'codicefiscale' || key === 'codfisc') mappedKey = 'codice_fiscale'
+      else if (key === 'indirizzo' || key === 'via' || key === 'residenza' || key === 'indirizzo_residenza') mappedKey = 'indirizzo'
+      else if (key === 'citta' || key === 'città' || key === 'comune') mappedKey = 'citta'
+      else if (key === 'cap') mappedKey = 'cap'
+      else if (key === 'provincia' || key === 'prov') mappedKey = 'provincia'
+      else if (key === 'ruolo' || key === 'qualifica') mappedKey = 'ruolo'
+      else if (key === 'unita' || key === 'unità' || key === 'interno' || key === 'int' || key === 'appartamento' || key === 'sub') mappedKey = 'unita'
       
-      if (!mapping[key]) {
-        const cleanKey = key.replace(/[-.]/g, '_').replace(/_+$/, '')
-        if (mapping[cleanKey]) {
-          mappedKey = mapping[cleanKey]
-        }
+      // 2. Controllo Email/PEC
+      else if (key.includes('email') || key.includes('mail') || key === 'pec' || key.includes('posta_e') || key.includes('contatto_e')) {
+        mappedKey = 'email'
+      }
+      
+      // 3. Controllo Telefono/Cellulare
+      else if (key.includes('tel') || key.includes('cell') || key.includes('phone') || key.includes('recapito') || key.includes('mobil') || key.includes('contatto_t')) {
+        mappedKey = 'telefono'
       }
 
-      const valStr = String(v || '').trim()
-      if (valStr) {
+      if (mappedKey) {
         if (normalized[mappedKey]) {
+          // Unisce email e telefoni multipli con virgola
           if (mappedKey === 'telefono' || mappedKey === 'email') {
             const valoriEsistenti = normalized[mappedKey].split(',').map(s => s.trim())
             if (!valoriEsistenti.includes(valStr)) {
@@ -126,10 +111,6 @@ function normalizeRows(rows) {
           }
         } else {
           normalized[mappedKey] = valStr
-        }
-      } else {
-        if (normalized[mappedKey] === undefined) {
-          normalized[mappedKey] = ''
         }
       }
     }

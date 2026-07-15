@@ -14,7 +14,14 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
   const rawStr = String(risposta || '').trim();
   const regex = isArray ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
   const match = rawStr.match(regex);
-  const clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
+  let clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
+  
+  // Rimuovi virgolette orfane su righe separate prima della chiusura parentesi graffa
+  clean = clean.replace(/\n\s*"\s*\n\s*\}/g, '\n}');
+  
+  // Rimuovi virgole pendenti (trailing commas) per conformità JSON
+  clean = clean.replace(/,\s*\}/g, '}').replace(/,\s*\]/g, ']');
+
   try {
     return JSON.parse(clean);
   } catch (err) {

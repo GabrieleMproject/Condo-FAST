@@ -6,17 +6,17 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCondomini } from '../hooks/useCondomini'
 import toast from 'react-hot-toast'
 import { classificaEStraiFileGestionale, aggregaDatiGestionale, validaMimeType } from '../lib/fileExtractor'
-import { User, Home, Calculator, ClipboardList, CreditCard, Coins, Folder, HelpCircle, Users, Check, AlertTriangle, Play, CheckCircle2, ArrowRight, Loader2, XCircle, Clock, Minus, Plus, Settings, X, FileText } from 'lucide-react'
+import { User, Home, Calculator, ClipboardList, CreditCard, Coins, Folder, HelpCircle, Users, Check, AlertTriangle, Play, CheckCircle2, ArrowRight, Loader2, XCircle, Clock, Minus, Plus, Settings, X, FileText, Database } from 'lucide-react'
 
-// ─── Palette dark ─────────────────────────────────────────────
+// ─── Palette Adattiva (Chiaro/Scuro) ──────────────────────────
 const C = {
-  bg: '#0f172a',
-  card: '#1e293b',
-  cardLight: '#253047',
+  bg: 'var(--app-bg)',
+  card: 'var(--card-bg)',
+  cardLight: 'var(--border-color-2)',
   border: 'var(--border-color)',
   borderFocus: '#6366f1',
   text: 'var(--text-primary)',
-  muted: '#94a3b8',
+  muted: 'var(--text-secondary)',
   accent: '#6366f1',
   accentHover: '#4f46e5',
   success: '#22c55e',
@@ -28,14 +28,14 @@ const C = {
 }
 
 const TIPO_BADGE = {
-  anagrafica:   { label: 'Anagrafica',   bg: 'rgba(99,102,241,0.2)',  color: '#a5b4fc', icon: User },
-  unita:        { label: 'Unità',         bg: 'rgba(34,197,94,0.2)',  color: '#86efac', icon: Home },
-  millesimi:    { label: 'Millesimi',     bg: 'rgba(245,158,11,0.2)', color: '#fcd34d', icon: Calculator },
-  spese:        { label: 'Spese',         bg: 'rgba(239,68,68,0.2)',  color: '#fca5a5', icon: ClipboardList },
-  rate:         { label: 'Rate',          bg: 'rgba(59,130,246,0.2)', color: '#93c5fd', icon: CreditCard },
-  saldo_cassa:  { label: 'Saldi',         bg: 'rgba(16,185,129,0.2)', color: '#6ee7b7', icon: Coins },
-  misto:        { label: 'Misto',         bg: 'rgba(139,92,246,0.2)', color: '#c4b5fd', icon: Folder },
-  sconosciuto:  { label: 'Sconosciuto',   bg: 'rgba(100,116,139,0.2)',color: 'var(--text-secondary)', icon: HelpCircle },
+  anagrafica:   { label: 'Anagrafica',   bg: 'rgba(99,102,241,0.15)',  color: '#6366f1', icon: User },
+  unita:        { label: 'Unità',         bg: 'rgba(34,197,94,0.15)',  color: '#22c55e', icon: Home },
+  millesimi:    { label: 'Millesimi',     bg: 'rgba(245,158,11,0.15)', color: '#d97706', icon: Calculator },
+  spese:        { label: 'Spese',         bg: 'rgba(239,68,68,0.15)',  color: '#ef4444', icon: ClipboardList },
+  rate:         { label: 'Rate',          bg: 'rgba(59,130,246,0.15)', color: '#3b82f6', icon: CreditCard },
+  saldo_cassa:  { label: 'Saldi',         bg: 'rgba(16,185,129,0.15)', color: '#10b981', icon: Coins },
+  misto:        { label: 'Misto',         bg: 'rgba(139,92,246,0.15)', color: '#8b5cf6', icon: Folder },
+  sconosciuto:  { label: 'Sconosciuto',   bg: 'var(--border-color-2)', color: 'var(--text-secondary)', icon: HelpCircle },
 }
 
 const BLOCCHI_DEF = [
@@ -836,12 +836,12 @@ export default function MigazionePage() {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 12,
+            display: 'inline-flex', alignItems: 'center', gap: 8,
             background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)',
             borderRadius: 40, padding: '8px 20px', marginBottom: 20,
           }}>
-            <span style={{ fontSize: 20 }}>🏗️</span>
-            <span style={{ color: '#a5b4fc', fontWeight: 600, fontSize: 14 }}>Wizard Migrazione</span>
+            <Database size={16} style={{ color: C.accent }} />
+            <span style={{ color: C.accent, fontWeight: 600, fontSize: 14 }}>Wizard Migrazione</span>
           </div>
           <h1 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 10px', lineHeight: 1.2 }}>
             Migra da gestionale
@@ -857,7 +857,7 @@ export default function MigazionePage() {
         {/* ── STEP 1 ── */}
         {step === 1 && (
           <div style={card}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}>🏢 Scegli il condominio</h2>
+            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}>Scegli il condominio</h2>
             <p style={{ color: C.muted, margin: '0 0 28px', fontSize: 14 }}>
               Seleziona il condominio destinatario dei dati importati.
             </p>
@@ -865,13 +865,13 @@ export default function MigazionePage() {
             {/* Toggle nuovoCondo */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
               <button
-                style={{ ...btnSecondary, borderColor: !nuovoCondo ? C.accent : C.border, color: !nuovoCondo ? '#a5b4fc' : C.text }}
+                style={{ ...btnSecondary, borderColor: !nuovoCondo ? C.accent : C.border, color: !nuovoCondo ? C.accent : C.text, fontWeight: !nuovoCondo ? 600 : 400 }}
                 onClick={() => setNuovoCondo(false)}
-              >📋 Condominio esistente</button>
+              >Condominio esistente</button>
               <button
-                style={{ ...btnSecondary, borderColor: nuovoCondo ? C.accent : C.border, color: nuovoCondo ? '#a5b4fc' : C.text }}
+                style={{ ...btnSecondary, borderColor: nuovoCondo ? C.accent : C.border, color: nuovoCondo ? C.accent : C.text, fontWeight: nuovoCondo ? 600 : 400 }}
                 onClick={() => setNuovoCondo(true)}
-              >➕ Crea nuovo condominio</button>
+              >Crea nuovo condominio</button>
             </div>
 
             {!nuovoCondo ? (
@@ -906,7 +906,7 @@ export default function MigazionePage() {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, color: C.muted, marginBottom: 8, fontWeight: 600 }}>Indirizzo</label>
+                  <label style={{ display: 'block', fontSize: 13, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600 }}>Indirizzo</label>
                   <input
                     style={inputStyle}
                     placeholder="es. Via Roma 12, Milano"
@@ -930,7 +930,7 @@ export default function MigazionePage() {
                   )}
                 </button>
                 {condominioId && nuovoCondo === false && (
-                  <div style={{ color: C.success, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ color: 'var(--success-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <CheckCircle2 size={16} /> Condominio creato e selezionato!
                   </div>
                 )}
@@ -975,7 +975,6 @@ export default function MigazionePage() {
                   padding: '12px 16px', textAlign: 'left', cursor: 'pointer', fontFamily: "'Sora', sans-serif",
                   fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
               >
-                <span>💡</span>
                 <span>Istruzioni per Danea Domustudio</span>
                 <span style={{ marginLeft: 'auto' }}>{daneaInfo ? '▲' : '▼'}</span>
               </button>
@@ -983,10 +982,10 @@ export default function MigazionePage() {
                 <div style={{ padding: '16px', fontSize: 13, color: C.muted, lineHeight: 1.7, background: 'var(--app-bg)' }}>
                   <strong style={{ color: C.text }}>Da Danea Domustudio:</strong> esporta separatamente le sezioni:
                   <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
-                    <li>📋 <strong>Unità immobiliari</strong> — file Excel/CSV</li>
-                    <li>👤 <strong>Persone/Condòmini</strong> — file Excel/CSV con contatti</li>
-                    <li>📐 <strong>Tabelle millesimali</strong> — file Excel</li>
-                    <li>💰 <strong>Rendiconto annuale</strong> — Excel con spese e rate</li>
+                    <li><strong>Unità immobiliari</strong> — file Excel/CSV</li>
+                    <li><strong>Persone/Condòmini</strong> — file Excel/CSV con contatti</li>
+                    <li><strong>Tabelle millesimali</strong> — file Excel</li>
+                    <li><strong>Rendiconto annuale</strong> — Excel con spese e rate</li>
                   </ul>
                   Carica tutti i file insieme: l'AI li classificherà e aggregherà automaticamente.
                 </div>
@@ -1010,7 +1009,7 @@ export default function MigazionePage() {
                 marginBottom: 20,
               }}
             >
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📁</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Folder size={40} style={{ color: C.muted }} /></div>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Trascina i file qui</div>
               <div style={{ color: C.muted, fontSize: 13 }}>o clicca per selezionarli</div>
               <div style={{ color: C.muted, fontSize: 12, marginTop: 8 }}>PDF, XLSX, CSV, DOCX, JPG, PNG</div>
@@ -1104,7 +1103,7 @@ export default function MigazionePage() {
         {/* ── STEP 3 ── */}
         {step === 3 && (
           <div style={card}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}>🔍 Revisione blocchi dati</h2>
+            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700 }}>Revisione blocchi dati</h2>
             <p style={{ color: C.muted, margin: '0 0 24px', fontSize: 14 }}>
               Verifica i dati estratti prima di importarli. Puoi abilitare/disabilitare blocchi e modificare singole righe.
             </p>
@@ -1143,7 +1142,7 @@ export default function MigazionePage() {
                       {blocco.icon && <blocco.icon size={16} style={{ color: C.accent }} />}
                       {blocco.label}
                     </span>
-                    <Badge label={`${rows.length}`} bg="rgba(99,102,241,0.2)" color="#a5b4fc" />
+                    <Badge label={`${rows.length}`} bg="rgba(99,102,241,0.15)" color="#6366f1" />
                     {hasConflicts && (
                       <Badge label={`${conflittiBlk.length} conflitti`} bg={C.warningBg} color={C.warning} icon={AlertTriangle} />
                     )}
@@ -1296,7 +1295,7 @@ export default function MigazionePage() {
                   {/* Errori */}
                   {p.errors?.length > 0 && (
                     <div style={{ marginTop: 10, fontSize: 12, color: C.error }}>
-                      {p.errors.slice(0, 5).map((e, i) => <div key={i}>⚠️ {e}</div>)}
+                      {p.errors.slice(0, 5).map((e, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><AlertTriangle size={12} style={{ color: C.error }} /> {e}</div>)}
                       {p.errors.length > 5 && <div>...e altri {p.errors.length - 5} errori</div>}
                     </div>
                   )}

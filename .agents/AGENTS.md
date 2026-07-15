@@ -879,6 +879,11 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
   - Scadenze F24 pendenti calcolate sulle ritenute d'acconto non presentate associate a fatture pagate nel mese precedente.
   - Esercizi contabili in scadenza nei prossimi 30 giorni.
   - Riconciliazioni arretrate (movimenti non abbinati da più di 15 giorni).
+- **Adeguamento Pagina Migrazione (`MigazionePage.jsx`)**:
+  - Rimosse tutte le emoji testuali (come 🏗️, 🏢, 📋, ➕, 📂, 📊, 💡, 👤, 📐, 💰, 📁, 🔍, ⚠️) dal layout e dai flussi del wizard.
+  - Sostituite le emoji principali con le relative icone SVG del pacchetto `lucide-react` (es. `<Database>` nel badge del wizard e `<Folder>` all'interno della dropzone di caricamento file).
+  - Convertita la tavolozza colori `C` in un insieme di riferimenti dinamici a variabili CSS (`var(--app-bg)`, `var(--card-bg)`, `var(--border-color)`, `var(--border-color-2)`, `var(--text-primary)`, `var(--text-secondary)`), rendendo l'intera pagina 100% adattiva al tema chiaro e scuro.
+  - Ottimizzati i colori dei badge (`TIPO_BADGE`) per utilizzare sfondi semi-trasparenti e testi a tinta solida per garantire contrasto e leggibilità ottimale in entrambi i temi.
 
 ### 2. Bug Risolti (Fix Bug Triager)
 - **Allineamento Schema DB su Dashboard e useNotifiche**: Risolte le incongruenze tra le query client-side e il database schema reale:
@@ -890,7 +895,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ### 3. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con esito verde e compilazione corretta del bundle di produzione.
-- **Supporto Tematico**: Sincronizzate tutte le aree della nuova dashboard con le variabili CSS globali, assicurando un contrasto ottimale e transizioni pulite in modalità chiara e scura.
-- **Push e Commit**: Eseguiti i commit `S43 step2` (ristrutturazione iniziale) e `S45 step2: risolve bug query db dashboard e useNotifiche` con push completato con successo su `origin main`.
+- **Supporto Tematico**: Sincronizzate tutte le aree della nuova dashboard e del wizard di migrazione con le variabili CSS globali, assicurando un contrasto ottimale e transizioni pulite in modalità chiara e scura.
+- **Push e Commit**: Eseguiti i commit `S43 step2` (ristrutturazione iniziale), `S45 step2: risolve bug query db dashboard e useNotifiche` e `S45 step4: rimuove emoji e adatta la pagina di migrazione al tema chiaro` con push completato con successo su `origin main`.
 
 

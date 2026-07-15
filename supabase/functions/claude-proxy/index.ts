@@ -222,8 +222,8 @@ serve(async (req) => {
       if (shouldFallback) {
         // Tenta modelli alternativi in ordine
         const fallbackModels = currentModel.includes('pro') 
-          ? ['gemini-1.5-pro', 'gemini-2.5-pro', 'gemini-1.0-pro-exp'] 
-          : ['gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-exp'];
+          ? ['gemini-1.5-pro', 'gemini-1.0-pro-exp'] 
+          : ['gemini-1.5-flash', 'gemini-2.0-flash-exp'];
           
         console.warn(`[claude-proxy] Quota esaurita per il modello ${currentModel}. Avvio fallback automatico.`);
         

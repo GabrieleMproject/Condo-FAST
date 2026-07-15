@@ -348,7 +348,7 @@ export default function PreventivoSection({ condominioId }) {
                               {v.criterio === 'millesimi' ? `Millesimi (${tabName})` : 'Quote uguali'}
                             </td>
                             <td style={{ ...st.td, textAlign: 'center' }}>
-                              <button onClick={() => prev.rimuoviVoce(v.id)} style={st.btnTrash}>
+                              <button onClick={() => prev.eliminaVoce(v.id)} style={st.btnTrash}>
                                 <Trash2 size={14} />
                               </button>
                             </td>

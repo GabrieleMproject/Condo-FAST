@@ -550,7 +550,9 @@ Lo Studio Amministrativo`
           catasto_particella: ocrData.unita?.catasto_particella || selectedUnitaForOcr.catasto_particella,
           catasto_subalterno: ocrData.unita?.catasto_subalterno || selectedUnitaForOcr.catasto_subalterno,
           catasto_categoria: ocrData.unita?.catasto_categoria || selectedUnitaForOcr.catasto_categoria,
-          catasto_rendita: ocrData.unita?.catasto_rendita != null ? parseFloat(ocrData.unita.catasto_rendita) : selectedUnitaForOcr.catasto_rendita
+          catasto_rendita: (ocrData.unita?.catasto_rendita != null && ocrData.unita.catasto_rendita !== '' && !isNaN(parseFloat(ocrData.unita.catasto_rendita))) 
+            ? parseFloat(ocrData.unita.catasto_rendita) 
+            : selectedUnitaForOcr.catasto_rendita
         })
         .eq('id', selectedUnitaForOcr.id)
 

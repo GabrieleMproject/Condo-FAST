@@ -76,10 +76,10 @@ export function useNotifiche() {
         settings.f24_ritenute?.enabled
           ? supabase
               .from('fatture_fornitori')
-              .select('id, condominio_id, ritenuta_acconto, stato, f24_presentato, data_pagamento, condomini(nome)')
+              .select('id, condominio_id, ritenuta_acconto, stato, ritenuta_pagata, data_pagamento, condomini(nome)')
               .eq('amministratore_id', user.id)
               .gt('ritenuta_acconto', 0)
-              .neq('f24_presentato', true)
+              .neq('ritenuta_pagata', true)
           : Promise.resolve({ data: [] }),
 
         // Rate scadute non pagate
@@ -87,9 +87,9 @@ export function useNotifiche() {
           ? supabase
               .from('rate_unita')
               .select(`
-                id, stato, scadenza, dovuto, condominio_id,
-                rate(
-                  id,
+                id, stato, importo, importo_pagato, condominio_id,
+                rate:rata_id(
+                  id, data_scadenza,
                   esercizi(
                     id, anno, condominio_id,
                     condomini(nome)
@@ -97,7 +97,6 @@ export function useNotifiche() {
                 )
               `)
               .neq('stato', 'pagata')
-              .not('scadenza', 'is', null)
           : Promise.resolve({ data: [] }),
 
         // Esercizi aperti con data_fine (usa condominiIds pre-calcolati fuori da Promise.all)
@@ -113,17 +112,21 @@ export function useNotifiche() {
         settings.movimenti_non_riconciliati?.enabled
           ? supabase
               .from('estratto_conto')
-              .select('id, condominio_id, data, importo, riconciliato, condomini(nome)')
+              .select('id, condominio_id, data_movimento, importo, riconciliato, condomini(nome)')
               .eq('riconciliato', false)
-              .not('data', 'is', null)
+              .not('data_movimento', 'is', null)
           : Promise.resolve({ data: [] }),
       ])
 
       const dati = {
-        fatture: fatture || [],
-        rateUnita: rateUnita || [],
+        fatture: (fatture || []).map(f => ({ ...f, f24_presentato: f.ritenuta_pagata })),
+        rateUnita: (rateUnita || []).map(ru => ({
+          ...ru,
+          scadenza: ru.rate?.data_scadenza,
+          dovuto: ru.importo,
+        })),
         esercizi: esercizi || [],
-        movimenti: movimenti || [],
+        movimenti: (movimenti || []).map(m => ({ ...m, data: m.data_movimento })),
       }
 
       const calcolate = calcolaNotifiche(settings, dati, new Date())

@@ -73,12 +73,17 @@ export default function DashboardPage() {
       try {
         const oggi = new Date()
         oggi.setHours(0, 0, 0, 0)
-        const oggiStr = oggi.toISOString().split('T')[0]
 
-        // 1. Carica rate_unita non pagate
+        // 1. Carica rate_unita non pagate (con join su rate per data_scadenza)
         const { data: rateData, error: errRate } = await supabase
           .from('rate_unita')
-          .select('id, dovuto, importo_pagato, scadenza, condominio_id')
+          .select(`
+            id, 
+            importo, 
+            importo_pagato, 
+            condominio_id,
+            rate:rata_id(data_scadenza)
+          `)
           .neq('stato', 'pagata')
 
         if (errRate) throw errRate
@@ -86,7 +91,7 @@ export default function DashboardPage() {
         // 2. Carica estratto conto non riconciliato
         const { data: movData, error: errMov } = await supabase
           .from('estratto_conto')
-          .select('id, condominio_id, importo, data')
+          .select('id, condominio_id, importo, data_movimento')
           .eq('riconciliato', false)
 
         if (errMov) throw errMov
@@ -94,16 +99,16 @@ export default function DashboardPage() {
         // 3. Carica fatture fornitori
         const { data: fatData, error: errFat } = await supabase
           .from('fatture_fornitori')
-          .select('id, condominio_id, importo_totale, stato, ritenuta_acconto, data_pagamento, f24_presentato, fornitore')
+          .select('id, condominio_id, importo_totale, stato, ritenuta_acconto, data_pagamento, ritenuta_pagata, fornitore')
 
         if (errFat) throw errFat
 
-        // 4. Carica saldi cassa (ordinati per data decrescente per prendere il più recente)
+        // 4. Carica saldi cassa (ordinati per data_movimento decrescente per prendere il più recente)
         const { data: saldoData, error: errSaldo } = await supabase
           .from('estratto_conto')
-          .select('condominio_id, saldo, data')
+          .select('condominio_id, saldo, data_movimento')
           .not('saldo', 'is', null)
-          .order('data', { ascending: false })
+          .order('data_movimento', { ascending: false })
 
         if (errSaldo) throw errSaldo
 
@@ -142,10 +147,11 @@ export default function DashboardPage() {
         let insolutiTotali = 0
         let rateScaduteCount = 0
         ;(rateData || []).forEach(ru => {
-          if (!ru.scadenza) return
-          const scad = new Date(ru.scadenza)
+          const scadenzaStr = ru.rate?.data_scadenza
+          if (!scadenzaStr) return
+          const scad = new Date(scadenzaStr)
           if (scad < oggi) {
-            const dovuto = parseFloat(ru.dovuto || 0)
+            const dovuto = parseFloat(ru.importo || 0)
             const pagato = parseFloat(ru.importo_pagato || 0)
             const residuo = dovuto - pagato
             if (residuo > 0) {
@@ -166,8 +172,8 @@ export default function DashboardPage() {
             initCondo(m.condominio_id)
             condoMap[m.condominio_id].movimenti++
 
-            if (m.data) {
-              const dataMov = new Date(m.data)
+            if (m.data_movimento) {
+              const dataMov = new Date(m.data_movimento)
               const diffGiorni = Math.floor((oggi - dataMov) / (1000 * 60 * 60 * 24))
               if (diffGiorni >= 15) {
                 if (!movimentiPerCondominio[m.condominio_id]) {
@@ -202,7 +208,7 @@ export default function DashboardPage() {
 
         const f24Pendenti = (fatData || []).filter(f => {
           if (!f.ritenuta_acconto || parseFloat(f.ritenuta_acconto) <= 0) return false
-          if (f.f24_presentato === true) return false
+          if (f.ritenuta_pagata === true) return false
           if (f.stato !== 'pagata') return false
 
           const dataPag = f.data_pagamento ? new Date(f.data_pagamento) : null
@@ -528,7 +534,7 @@ export default function DashboardPage() {
                 <CheckCircle2 size={48} style={{ color: '#16a34a', marginBottom: 12 }} />
                 <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px', fontSize: 15, fontWeight: 700 }}>Tutto sotto controllo</h4>
                 <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0, textAlign: 'center', lineHeight: 1.4 }}>
-                  Nessun ritardo amministrativo, scadenze F24 o esercizi in scadenza registrati nei prossimi giorni.
+                  Nessun ritardo amministrativo, scadenze F24 o esercizi in scadenza registrati nei primi giorni.
                 </p>
               </div>
             )}
@@ -664,7 +670,7 @@ const styles = {
   },
   ricTag: {
     background: 'rgba(139, 92, 246, 0.15)',
-    color: '#a78bfa',
+    color: '#7c3aed',
     borderRadius: 12,
     padding: '2px 8px',
     fontSize: 11,

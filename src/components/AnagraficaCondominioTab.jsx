@@ -733,35 +733,21 @@ Lo Studio Amministrativo`
                 <thead>
                   <tr>
                     <th style={styles.th}>Unità</th>
-                    <th style={styles.th}>Scala/Piano</th>
-                    <th style={styles.th}>Tipo</th>
-                    <th style={styles.th}>Stato Catasto</th>
                     <th style={styles.th}>Dati Catastali (F/P/S)</th>
-                    <th style={styles.th}>Soggetti (Ruolo)</th>
-                    <th style={styles.th}>Residenza</th>
-                    <th style={styles.th}>Stato Anagrafe</th>
+                    <th style={styles.th}>Soggetti (C.F. - Ruolo)</th>
+                    <th style={styles.th}>Residenza / Domicilio</th>
                     {!isCollaboratore && <th style={{ ...styles.th, textAlign: 'center' }}>Azioni</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {unitaList.map(u => {
-                    const { completa, motivi } = checkCompletezzaUnita(u)
                     const catastaliMancanti = !u.catasto_foglio || !u.catasto_particella || !u.catasto_subalterno
                     const occupanti = Array.isArray(u.occupanti_unita) ? u.occupanti_unita.filter(o => o.attivo) : []
+                    const unitaDescr = `${u.numero}${u.scala ? ` (Sc. ${u.scala})` : ''}${u.piano != null ? ` - Piano ${u.piano}` : ''}`
 
                     return (
                       <tr key={u.id} style={styles.tr}>
-                        <td style={{ ...styles.td, fontWeight: 700 }}>{u.numero}</td>
-                        <td style={styles.td}>{u.scala || '-'}{u.piano != null ? ` / P.${u.piano}` : ''}</td>
-                        <td style={{ ...styles.td, textTransform: 'capitalize' }}>{u.tipo || 'Appartamento'}</td>
-                        
-                        <td style={styles.td}>
-                          {catastaliMancanti ? (
-                            <span style={styles.badgeWarn}>Catasto Incompleto</span>
-                          ) : (
-                            <span style={styles.badgeOk}>OK</span>
-                          )}
-                        </td>
+                        <td style={{ ...styles.td, fontWeight: 700 }}>{unitaDescr}</td>
 
                         <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 13 }}>
                           {catastaliMancanti 
@@ -798,6 +784,9 @@ Lo Studio Amministrativo`
                                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                                   {occ.persona?.cognome} {occ.persona?.nome}
                                 </span>
+                                <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--text-secondary)' }}>
+                                  ({occ.persona?.codice_fiscale || 'C.F. assente'})
+                                </span>
                                 <span style={{ marginLeft: 6, fontSize: 11, padding: '1px 6px', borderRadius: 4, background: 'var(--border-color)', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
                                   {occ.ruolo}
                                 </span>
@@ -809,22 +798,14 @@ Lo Studio Amministrativo`
                         <td style={styles.td}>
                           {occupanti.map(occ => {
                             const p = occ.persona || {}
-                            if (!p.indirizzo) return <span key={occ.id} style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Non specificato</span>
+                            if (!p.indirizzo) return <span key={occ.id} style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 13, display: 'block' }}>Non specificata</span>
                             return (
-                              <div key={occ.id} style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                              <div key={occ.id} style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 2 }}>
                                 {p.indirizzo}, {p.citta} ({p.provincia || ''})
                               </div>
                             )
                           })}
                           {occupanti.length === 0 && '-'}
-                        </td>
-
-                        <td style={styles.td}>
-                          {completa ? (
-                            <span style={styles.badgeOk}>Completo</span>
-                          ) : (
-                            <span style={styles.badgeWarn} title={motivi.join('\n')}>Incompleto ⚠️</span>
-                          )}
                         </td>
 
                         {!isCollaboratore && (

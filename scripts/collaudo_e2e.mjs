@@ -626,13 +626,13 @@ Restituisci SOLO un JSON valido con questa struttura:
       if (unitaId) {
         const { error: sErr } = await client
           .from('saldi_iniziali_unita')
-          .insert({
+          .upsert({
             esercizio_id: esercizioId,
             unita_id: unitaId,
             condominio_id: condominioId,
             saldo: parseFloat(su.saldo) || 0,
             note: 'Riporto da Esercizio 2024',
-          });
+          }, { onConflict: 'esercizio_id,unita_id' });
 
         if (sErr) {
           console.error(`❌ Errore salvataggio saldo iniziale per unità ${unitaNum}:`, sErr.message);

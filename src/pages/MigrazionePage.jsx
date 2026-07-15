@@ -1,4 +1,4 @@
-// src/pages/MigazionePage.jsx
+// src/pages/MigrazionePage.jsx
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
@@ -131,7 +131,7 @@ function renderStatoImportIcon(stato, size = 20) {
   }
 }
 // ─── Componente principale ────────────────────────────────────
-export default function MigazionePage() {
+export default function MigrazionePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { condomini, loading: loadingCond, createCondominio } = useCondomini()
@@ -684,15 +684,15 @@ export default function MigazionePage() {
               .from('rate')
               .select('id')
               .eq('esercizio_id', eserciziId)
-              .eq('numero', Number(r.numero_rata))
+              .eq('numero_rata', Number(r.numero_rata))
               .maybeSingle()
             if (existing?.id) {
               rataId = existing.id
             } else {
               const { data: ins, error } = await supabase.from('rate').insert({
                 esercizio_id: eserciziId,
-                numero: Number(r.numero_rata),
-                scadenza: normalizzaDataDb(r.scadenza),
+                numero_rata: Number(r.numero_rata),
+                data_scadenza: normalizzaDataDb(r.scadenza),
                 condominio_id: condId,
                 amministratore_id: adminId,
               }).select('id').single()

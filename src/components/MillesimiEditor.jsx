@@ -845,7 +845,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
                     style={{
                       ...styles.sidebarItem,
                       borderLeft: active ? '4px solid #2563eb' : '4px solid transparent',
-                      background: active ? '#1e293b' : 'transparent',
+                      background: active ? 'var(--border-color)' : 'transparent',
                     }}
                     onClick={() => {
                       if (isSelectedTableDirty) {
@@ -892,7 +892,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
               style={{
                 ...styles.sidebarItem,
                 borderLeft: selectedTabellaId === 'diagnostica' ? '4px solid #38bdf8' : '4px solid transparent',
-                background: selectedTabellaId === 'diagnostica' ? '#1e293b' : 'transparent',
+                background: selectedTabellaId === 'diagnostica' ? 'var(--border-color)' : 'transparent',
               }}
               onClick={() => {
                 if (isSelectedTableDirty) {

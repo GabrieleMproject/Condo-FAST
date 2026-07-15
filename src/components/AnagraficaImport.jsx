@@ -67,7 +67,7 @@ function normalizeRows(rows) {
     const normalized = {}
     
     // Inizializza tutti i campi attesi
-    const campiAttesi = ['nome', 'cognome', 'codice_fiscale', 'email', 'telefono', 'indirizzo', 'citta', 'cap', 'provincia', 'ruolo', 'unita']
+    const campiAttesi = ['nome', 'cognome', 'codice_fiscale', 'email', 'telefono', 'indirizzo', 'citta', 'cap', 'provincia', 'ruolo', 'unita', 'scala']
     campiAttesi.forEach(c => normalized[c] = '')
 
     for (const [k, v] of Object.entries(row)) {
@@ -87,6 +87,7 @@ function normalizeRows(rows) {
       else if (key === 'provincia' || key === 'prov') mappedKey = 'provincia'
       else if (key === 'ruolo' || key === 'qualifica') mappedKey = 'ruolo'
       else if (key === 'unita' || key === 'unità' || key === 'interno' || key === 'int' || key === 'appartamento' || key === 'sub') mappedKey = 'unita'
+      else if (key === 'scala' || key === 'sc') mappedKey = 'scala'
       
       // 2. Controllo Email/PEC
       else if (key.includes('email') || key.includes('mail') || key === 'pec' || key.includes('posta_e') || key.includes('contatto_e')) {

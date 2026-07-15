@@ -426,8 +426,8 @@ Formato JSON atteso:
                 return (
                   <div key={verb.id} style={{
                     ...S.verbaleRow,
-                    border: isSelected ? '1px solid rgba(37, 99, 235, 0.5)' : '1px solid #334155',
-                    background: isSelected ? 'rgba(37, 99, 235, 0.03)' : '#1e293b'
+                    border: isSelected ? '1px solid rgba(37, 99, 235, 0.5)' : '1px solid var(--border-color)',
+                    background: isSelected ? 'rgba(37, 99, 235, 0.03)' : 'var(--card-bg)'
                   }}>
                     <input 
                       type="checkbox"

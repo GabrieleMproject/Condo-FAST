@@ -74,7 +74,7 @@ export default function SpeseGlobalPage() {
     try {
       const [resEsercizi, resUnita, resTabelle, resDocumenti] = await Promise.all([
         supabase.from('esercizi').select('*').eq('condominio_id', condoId).order('anno', { ascending: false }),
-        supabase.from('unita').select('id, numero, piano, tipo').eq('condominio_id', condoId),
+        supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condoId),
         supabase.from('tabelle_millesimali').select('*, millesimi_unita(*)').eq('condominio_id', condoId),
         supabase.from('documenti_condominio').select('*').eq('condominio_id', condoId)
       ])

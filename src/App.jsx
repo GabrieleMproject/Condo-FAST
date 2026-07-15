@@ -29,7 +29,7 @@ import AssistenzaPage from './pages/AssistenzaPage'
 import ModuloFiscalePage from './pages/ModuloFiscalePage'
 import BackofficePage from './pages/BackofficePage'
 import SuperAdminGuard from './components/SuperAdminGuard'
-import MigazionePage from './pages/MigazionePage'
+import MigrazionePage from './pages/MigrazionePage'
 import { ThemeProvider } from './contexts/ThemeContext'
 
 export default function App() {
@@ -66,7 +66,7 @@ export default function App() {
                 <Route path="/fiscale" element={<ModuloFiscalePage />} />
                 <Route path="/assistenza" element={<AssistenzaPage />} />
                 <Route path="/impostazioni" element={<ImpostazioniPage />} />
-                <Route path="/migrazione" element={<MigazionePage />} />
+                <Route path="/migrazione" element={<MigrazionePage />} />
                 <Route element={<SuperAdminGuard />}>
                   <Route path="/backoffice" element={<BackofficePage />} />
                 </Route>

@@ -351,7 +351,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     setRipartizioni(unita.map(u => {
       const val = parseFloat(importiManuali[u.id])
       return {
-        unita_id: u.id, interno: u.interno, piano: u.piano,
+        unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
         importo: Number.isFinite(val) ? Math.round(val * 100) / 100 : 0,
         millesimi: null,
         override_manuale: true,
@@ -370,7 +370,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     if (form.criterio === 'quota_fissa') {
       const quota = importo / unita.length
       setRipartizioni(unita.map(u => ({
-        unita_id: u.id, interno: u.interno, piano: u.piano,
+        unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
         importo: Math.round(quota * 100) / 100, millesimi: null,
       })))
       return
@@ -393,7 +393,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
       const qMill = (vMill / totMill) * importoMill
       const qFissa = unita.length > 0 ? importoFisso / unita.length : 0
       return {
-        unita_id: u.id, interno: u.interno, piano: u.piano,
+        unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
         importo: Math.round((qMill + qFissa) * 100) / 100,
         millesimi: vMill,
       }
@@ -845,7 +845,9 @@ Formato JSON:
               <tbody>
                 {unita.map((u, i) => (
                   <tr key={u.id} style={{ borderTop: i > 0 ? '1px solid var(--border-color-2)' : 'none' }}>
-                    <td style={{ padding: '7px 12px', color: 'var(--text-primary)' }}>{u.interno || u.numero || '—'}</td>
+                    <td style={{ padding: '7px 12px', color: 'var(--text-primary)' }}>
+                      {u.numero || '—'}{u.scala ? ` (Sc. ${u.scala})` : ''}
+                    </td>
                     <td style={{ padding: '7px 12px', color: 'var(--text-secondary)' }}>{u.piano ?? '—'}</td>
                     <td style={{ padding: '6px 12px', textAlign: 'right' }}>
                       <input
@@ -911,7 +913,9 @@ Formato JSON:
               <tbody>
                 {ripartizioni.map((r, i) => (
                   <tr key={r.unita_id} style={{ borderTop: i > 0 ? '1px solid var(--border-color-2)' : 'none' }}>
-                    <td style={{ padding: '7px 12px', color: 'var(--text-primary)' }}>{r.interno || '—'}</td>
+                    <td style={{ padding: '7px 12px', color: 'var(--text-primary)' }}>
+                      {r.interno || '—'}{r.scala ? ` (Sc. ${r.scala})` : ''}
+                    </td>
                     <td style={{ padding: '7px 12px', color: 'var(--text-secondary)' }}>{r.piano ?? '—'}</td>
                     {form.criterio !== 'quota_fissa' && (
                       <td style={{ padding: '7px 12px', textAlign: 'right', color: 'var(--text-muted)' }}>

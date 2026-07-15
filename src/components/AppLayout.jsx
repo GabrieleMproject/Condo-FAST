@@ -577,8 +577,8 @@ export default function AppLayout() {
                         fontWeight: 600,
                         fontFamily: 'Sora, sans-serif'
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#475569'}
-                      onMouseLeave={e => e.currentTarget.style.background = '#334155'}
+                      onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
+                      onMouseLeave={e => e.currentTarget.style.filter = 'none'}
                     >
                       {logoBase64 ? 'Cambia' : 'Carica'}
                     </button>

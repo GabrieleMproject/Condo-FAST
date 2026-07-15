@@ -727,6 +727,38 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
 - **Commit di sessione**: Registrato il commit di sessione S38 step 6.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S39 (15 Luglio 2026 - Analisi di Mercato, Pricing e Scelte Strategiche)
+
+### 1. Decisioni di Business e Pricing
+- **Strategia di Posizionamento Premium:** Definita una struttura di pricing premium per posizionare CondoAI come strumento ad alto valore aggiunto che riduce il carico di lavoro dello studio (ROI paragonabile a mezza risorsa part-time).
+- **Tariffazione SaaS basata su U.I.:** Mantenuta la metrica sulle unità immobiliari gestite (U.I.) con postazioni illimitate incluse (vantaggio rispetto a Danea Domustudio, allineato a Kipò). L'assistenza AI è inclusa nativamente (fair-use) per preservare la proposta di valore.
+- **Canoni di Listino:**
+  - *Starter (Fino a 250 U.I.):* €69/mese fatturato annualmente (~€830/anno).
+  - *Professional (Fino a 800 U.I.):* €179/mese (~€2.150/anno) [Tier di riferimento].
+  - *Studio (Fino a 2.000 U.I.):* €379/mese (~€4.550/anno).
+  - *Enterprise (Oltre 2.000 U.I.):* Su preventivo.
+- **Tattica di Lancio:** Regalo di mesi di servizio per i clienti fondatori (es. prezzo bloccato 24 mesi + 3 mesi gratis + migrazione inclusa) anziché sconti percentuali sul listino per non degradare il valore percepito.
+- **Onboarding e Migrazione:** L'importazione automatica dello storico dati da Domustudio viene gestita gratuitamente dal team come principale costo di acquisizione cliente (CAC) per eliminare la resistenza al cambio gestionale.
+
+### 2. Decisioni Strategiche su Segmenti Adiacenti (Feature "Distrazione")
+- **No Autogestione (Senza Amministratore):** Escluso il segmento dei condomini autogestiti per via del budget ridottissimo (tetto di €50/anno imposto dai concorrenti), degli elevati costi di supporto per utenti non professionisti, dell'alto churn e del conflitto di canale reputazionale con gli amministratori professionisti. La direzione normativa (DDL 1816/2026) conferma questa scelta stringendo le regole sulla formazione obbligatoria anche per gli amministratori interni.
+- **No Bacheca Condominiale UGC:** Escluso il modulo bacheca social tra condòmini per problemi di densità di rete nei micro-silos condominiali, carico di moderazione/contenziosi per l'amministratore e compliance GDPR. Sostituita dall'area riservata monodirezionale (pubblicazione bilanci e avvisi da parte del solo amministratore).
+- **No Provvigioni Opache Energia:** Escluso l'incasso di provvigioni non trasparenti per gli amministratori su contratti energetici per scongiurare il rischio di nullità della nomina ex art. 1129 comma 14 c.c. e Cassazione 14424/2025. Previste come alternative future: benchmark comparativi sui consumi delle parti comuni basati sulle fatture caricate, moduli di gara trasparenti e preparazione per CER (Comunità Energetiche Rinnovabili) sul lungo termine.
+
+### 3. Roadmap di Sviluppo e Go-To-Market
+- **Fase 1 (Luglio-Agosto 2026 - Focus Sviluppo):** Sviluppo e validazione del motore di calcolo contabile tramite test di regressione con "file d'oro" reali (confronto al centesimo dei bilanci CondoAI vs Domustudio) e completamento dell'importatore dati.
+- **Fase 2 (Settembre-Novembre 2026 - Finestra Commerciale):** Outbound marketing manuale mirato su 50 studi pilota (como-Milano) e allineamento con Amministrazione Gemelli (design partner).
+- **Fase 3 (Dicembre 2026-Gennaio 2027 - Migrazione):** Importazione e migrazione dati assistita in vista dell'apertura del nuovo esercizio contabile.
+- **Fase 4 (Febbraio-Aprile 2027 - Validazione Runtime):** Collaudo sul campo durante la redazione dei primi consuntivi reali e scadenze CU fiscali.
+- **Fase 5 (Autunno 2027 - Scale-Up):** Lancio delle campagne di marketing a pagamento strutturate.
+
+### 4. Fatti Verificati
+- **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
+- **Handoff Claude**: Creato il file di handoff `HANDOFF_PROGETTO.md` nella root del repository per l'allineamento del contesto nel Project Claude dell'utente.
+
+
 
 
 

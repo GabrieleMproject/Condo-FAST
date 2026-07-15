@@ -922,3 +922,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 3. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con esito verde e bundle di produzione generato con successo in 485ms.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S46 (15 Luglio 2026 - Grafici Vettoriali e Analisi Storica Consumi nel Consuntivo)
+
+### 1. Decisioni sul Workflow e Grafici PDF Vettoriali
+- **Disegno Vettoriale Nativo (Opzione B):** Rifiutata l'opzione di caricare librerie client esterne o renderizzare canvas invisibili in DOM (soggetti a sfocature e rallentamenti asincroni). Implementate le API di disegno vettoriale native di `jsPDF` (`rect`, `line`, `circle`, `text`) all'interno di `exportConsuntivo.js` per tracciare assi, barre e badge. I grafici risultanti sono al 100% vettoriali e garantiscono una nitidezza perfetta per la stampa e l'esportazione.
+- **Grafico Comparativo Categorie:** Introdotta la visualizzazione grafica che compara il Consuntivo dell'anno corrente con l'anno precedente per le prime 5 categorie di spesa (o con il Preventivo se non è disponibile uno storico).
+- **Riquadri di Approfondimento Consumi (Luce e Gas):** Inseriti due riquadri dedicati ed eleganti che mettono a confronto diretto la spesa per "Energia Elettrica" e "Riscaldamento" tra l'esercizio in corso e quello precedente, completi di un badge percentuale colorato in base al trend (rosso per aumento, verde per risparmio).
+- **Pagina Dedicata "F" nel PDF:** I grafici sono isolati in una nuova pagina dedicata del PDF ufficiale (sezione F) prima della nota sintetica esplicativa.
+
+### 2. Logica di Calcolo Storica e Modifiche UI
+- **Estensione useConsuntivo.js:** Aggiornato il hook per individuare l'esercizio dell'anno precedente dello stesso condominio (`LT anno corrente`) e recuperarne le relative spese. Implementata l'estrazione fuzzy basata su parole chiave per quantificare in euro le spese per luce e gas/riscaldamento di entrambi gli anni.
+- **Caricamento Reattivo in ConsuntivoTab.jsx:** Corretta la firma di `useConsuntivo` passando `condominioId, esercizioId` (risolvendo un bug strutturale per cui venivano passati l'id esercizio e della tabella millesimi invertiti, che impediva il caricamento contabile). Aggiunto un `useEffect` per richiamare in automatico la fetch al cambio di esercizio selezionato e inserita la card a schermo "Analisi Storica & Consumi Energetici" coerente con i dati stampati.
+
+### 3. Fatti Verificati
+- **Verifica Build:** Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
+- **Verifica Push:** Modifiche committate con messaggio conforme `S46 step3: implementa grafici vettoriali comparativi e analisi consumi nel consuntivo` e pushate sul branch `main`.
+

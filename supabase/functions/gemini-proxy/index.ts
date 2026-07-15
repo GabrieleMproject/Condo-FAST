@@ -199,10 +199,8 @@ serve(async (req) => {
       }
     }
 
-    // Riconoscimento JSON mode nativo
-    const isJsonRequested = body.jsonMode || 
-                            (body.prompt && /json/i.test(body.prompt)) || 
-                            (body.system && /json/i.test(body.system))
+    // Riconoscimento JSON mode nativo (solo se richiesto esplicitamente dal client)
+    const isJsonRequested = body.jsonMode === true
 
     if (isJsonRequested) {
       geminiPayload.generationConfig.responseMimeType = 'application/json'

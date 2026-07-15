@@ -936,7 +936,13 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Estensione useConsuntivo.js:** Aggiornato il hook per individuare l'esercizio dell'anno precedente dello stesso condominio (`LT anno corrente`) e recuperarne le relative spese. Implementata l'estrazione fuzzy basata su parole chiave per quantificare in euro le spese per luce e gas/riscaldamento di entrambi gli anni.
 - **Caricamento Reattivo in ConsuntivoTab.jsx:** Corretta la firma di `useConsuntivo` passando `condominioId, esercizioId` (risolvendo un bug strutturale per cui venivano passati l'id esercizio e della tabella millesimi invertiti, che impediva il caricamento contabile). Aggiunto un `useEffect` per richiamare in automatico la fetch al cambio di esercizio selezionato e inserita la card a schermo "Analisi Storica & Consumi Energetici" coerente con i dati stampati.
 
-### 3. Fatti Verificati
+### 3. Bug e Regressioni Risolti (Fix Bug Triager)
+- **Shadowing del Template:** Risolto un bug critico in `ConsuntivoTab.jsx` per cui lo stato locale `template` faceva shadowing di quello ritornato da `useConsuntivo.js`, oscurando le personalizzazioni e l'ordine delle categorie dell'amministratore. Rimosso lo stato locale ridondante e la funzione `fetchTemplate`.
+- **Supporto Collaboratori (Multi-utenza):** Aggiornato `useConsuntivo.js` per ricavare il titolare del condominio (`amministratore_id`) prima di caricare il profilo ed il template attivo. Questo rimuove la dipendenza da `supabase.auth.getUser()`, permettendo il corretto caricamento di loghi, contatti e template anche quando opera un collaboratore.
+- **Sincronizzazione Categorie:** Allineata la visualizzazione a schermo della Sezione A in `ConsuntivoTab.jsx` con il PDF per includere e accodare all'ordine del template eventuali categorie di spesa esterne presenti.
+- **Formattazione Date Sicura:** Introdotto l'helper `formattaData` in `ConsuntivoTab.jsx` e `exportConsuntivo.js` per prevenire rendering non validi ("Invalid Date") in caso di dati parziali o nulli nel database.
+
+### 4. Fatti Verificati
 - **Verifica Build:** Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
-- **Verifica Push:** Modifiche committate con messaggio conforme `S46 step3: implementa grafici vettoriali comparativi e analisi consumi nel consuntivo` e pushate sul branch `main`.
+- **Verifica Push:** Modifiche finali caricate su GitHub (`S46 step3: applica fix del Bug Triager per RLS collaboratori, shadowing template e date`) e pushate sul branch `main`.
 

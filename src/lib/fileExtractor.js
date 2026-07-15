@@ -16,13 +16,19 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
   const match = rawStr.match(regex);
   let clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
   
-  // Rimuovi virgolette orfane su righe separate prima della chiusura parentesi graffa
+  // 1. Forza chiavi senza virgolette ad avere virgolette doppie (es: { fornitore: ... } -> { "fornitore": ... })
+  clean = clean.replace(/([{,]\s*)([a-zA-Z0-9_-]+)\s*:/g, '$1"$2":');
+
+  // 2. Converti valori con virgolette singole in virgolette doppie (es: : 'valore' -> : "valore")
+  clean = clean.replace(/:\s*'([^']*)'/g, ': "$1"');
+
+  // 3. Rimuovi virgolette orfane su righe separate prima della chiusura parentesi graffa
   clean = clean.replace(/\n\s*"\s*\n\s*\}/g, '\n}');
   
-  // Rimuovi virgole pendenti (trailing commas) per conformità JSON
+  // 4. Rimuovi virgole pendenti (trailing commas) per conformità JSON
   clean = clean.replace(/,\s*\}/g, '}').replace(/,\s*\]/g, ']');
 
-  // Bilancia le parentesi graffe per tagliare caratteri spuri extra alla fine (es: }})
+  // 5. Bilancia le parentesi graffe per tagliare caratteri spuri extra alla fine (es: }})
   clean = clean.trim();
   if (!isArray && clean.startsWith('{') && clean.endsWith('}')) {
     let braceCount = 0;

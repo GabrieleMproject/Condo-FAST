@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { callClaude, callClaudeDocument } from '../lib/claudeClient'
+import { callGemini, callGeminiDocument } from '../lib/geminiClient'
 import { estraiFattura, fileToBase64 } from '../lib/fileExtractor'
 import { supabase } from '../lib/supabaseClient'
 import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet } from 'lucide-react'
@@ -94,7 +94,7 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
         const { data: fileData, error: fErr } = await supabase.storage.from('documenti-condominio').download(tab.url_storage)
         if (!fErr && fileData) {
           const base64 = await fileToBase64(fileData)
-          const res = await callClaudeDocument(
+          const res = await callGeminiDocument(
             `Estrai la tabella millesimale associando le quote al seguente elenco di unità del condominio:\n${JSON.stringify(unita.map(u => ({ id: u.id, numero: u.numero, scala: u.scala, piano: u.piano, tipo: u.tipo })))}\n\nRestituisci ESCLUSIVAMENTE un oggetto JSON: { "nome_tabella": "${tab.nome}", "tipo": "generale", "unita_millesimi": [ { "unita_id": "uuid", "valore": 123.45 } ] }`,
             base64,
             { maxTokens: 2000, mediaType: 'application/pdf', funzione: 'estrai_tabella_millesimale', condominio_id: condominioId }
@@ -124,7 +124,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   ]
 }`
 
-      const responseText = await callClaude(prompt, { maxTokens: 2500, funzione: 'struttura_tabella_millesimale', condominio_id: condominioId })
+      const responseText = await callGemini(prompt, { maxTokens: 2500, funzione: 'struttura_tabella_millesimale', condominio_id: condominioId })
       const cleanJson = responseText.replace(/```json/gi, '').replace(/```/g, '').trim()
       const parsed = JSON.parse(cleanJson)
 
@@ -374,7 +374,7 @@ Formato JSON:
   "confidenza": "alta" | "media" | "bassa"
 }`
 
-      const risposta = await callClaude(prompt, {
+      const risposta = await callGemini(prompt, {
         system: systemPrompt,
         funzione: 'criterio_spesa',
         condominio_id: condominioId,

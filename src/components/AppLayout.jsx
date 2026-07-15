@@ -94,7 +94,7 @@ function AiBanner() {
       flexShrink: 0,
     }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Bot size={16} style={{ flexShrink: 0 }} /> <span><strong>CondoSmart utilizza intelligenza artificiale</strong> (Anthropic Claude) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689.</span>
+        <Bot size={16} style={{ flexShrink: 0 }} /> <span><strong>CondoSmart utilizza intelligenza artificiale</strong> (Google Gemini) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689.</span>
       </span>
       <button
         onClick={() => setDismissed(true)}

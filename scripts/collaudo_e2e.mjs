@@ -7,6 +7,8 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import mammoth from 'mammoth';
 
+const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
 // ── Caricamento .env ──────────────────────────────────────────────────────────
 try {
   for (const line of readFileSync('.env', 'utf8').split('\n')) {
@@ -45,7 +47,7 @@ const client = createClient(URL, ANON, {
   },
 });
 
-// ── Helper Chiamate AI tramite claude-proxy ──────────────────────────────────
+// ── Helper Chiamate AI tramite gemini-proxy ──────────────────────────────────
 function sanitizeInput(text, maxLength = 40000) {
   if (typeof text !== 'string') return '';
   return text
@@ -55,9 +57,9 @@ function sanitizeInput(text, maxLength = 40000) {
     .trim();
 }
 
-async function callClaude(prompt, opts = {}) {
+async function callGemini(prompt, opts = {}) {
   const { funzione, maxTokens = 1000, system, jsonMode = true } = opts;
-  const res = await fetch(`${URL}/functions/v1/claude-proxy`, {
+  const res = await fetch(`${URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -82,9 +84,9 @@ async function callClaude(prompt, opts = {}) {
   return block?.text ?? '';
 }
 
-async function callClaudeDocument(prompt, base64Document, opts = {}) {
+async function callGeminiDocument(prompt, base64Document, opts = {}) {
   const { funzione, maxTokens = 8000, system, mediaType = 'application/pdf', jsonMode = true } = opts;
-  const res = await fetch(`${URL}/functions/v1/claude-proxy`, {
+  const res = await fetch(`${URL}/functions/v1/gemini-proxy`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -326,14 +328,15 @@ async function main() {
     const docxBuffer = readFileSync(docxPath);
     const { value: docxText } = await mammoth.extractRawText({ buffer: docxBuffer });
 
-    console.log('🤖 Invio testo DOCX a Claude Proxy per estrarre le anagrafiche...');
+    console.log('🤖 Invio testo DOCX a Gemini Proxy per estrarre le anagrafiche...');
     const systemPrompt = `Sei un esperto di amministrazione condominiale italiana ed estrazione dati.
 Estrai l'elenco di tutte le persone e i loro dati anagrafici (inclusi i contatti di email/telefono se presenti) e l'associazione alle unità immobiliari.
 Per ogni persona restituisci un oggetto JSON con questi campi esattamente:
 nome, cognome, email, telefono, indirizzo, citta, cap, provincia, codice_fiscale, ruolo ("proprietario"|"inquilino"|""), unita (identificativo/numero dell'unità).
 Rispondi SOLO con un array JSON valido, senza testo aggiuntivo e senza markdown.`;
 
-    const rawResponse = await callClaude(
+    await sleep(3000);
+    const rawResponse = await callGemini(
       `Estrai le anagrafiche dal seguente testo:\n\n${docxText}`,
       { system: systemPrompt, funzione: 'import_anagrafica', maxTokens: 8000 }
     );
@@ -444,7 +447,8 @@ Restituisci SOLO un oggetto JSON valido con questa struttura:
   ]
 }`;
 
-    const rawResponse = await callClaudeDocument(
+    await sleep(3000);
+    const rawResponse = await callGeminiDocument(
       'Estrai le tabelle millesimali presenti in questo documento.',
       pdfBase64,
       { system: systemPromptMillesimi, funzione: 'estrai_tabelle_millesimali', maxTokens: 8000 }
@@ -586,7 +590,8 @@ Restituisci SOLO un JSON valido con questa struttura:
   ]
 }`;
 
-    const rawResponse = await callClaudeDocument(
+    await sleep(3000);
+    const rawResponse = await callGeminiDocument(
       'Estrai i saldi di chiusura dal consuntivo.',
       pdfBase64,
       { system: systemPromptSaldi, funzione: 'estrai_saldi_consuntivo', maxTokens: 8000 }
@@ -663,7 +668,8 @@ Restituisci SOLO un JSON valido con questa struttura:
   ]
 }`;
 
-    const rawResponse = await callClaudeDocument(
+    await sleep(3000);
+    const rawResponse = await callGeminiDocument(
       'Estrai le voci di spesa previste dal preventivo.',
       pdfBase64,
       { system: systemPromptPrev, funzione: 'estrai_preventivo', maxTokens: 8000 }
@@ -817,7 +823,8 @@ Restituisci SOLO un JSON valido, senza testo aggiuntivo:
 }`;
 
     try {
-      const rawResponse = await callClaudeDocument(
+      await sleep(3000);
+      const rawResponse = await callGeminiDocument(
         'Estrai i dati della fattura.',
         pdfBase64,
         { system: systemPromptFattura, funzione: 'estrai_fattura', maxTokens: 4000 }
@@ -941,7 +948,8 @@ Restituisci SOLO un JSON valido, senza testo aggiuntivo:
 }`;
 
       try {
-        const rawResponse = await callClaudeDocument(
+        await sleep(3000);
+        const rawResponse = await callGeminiDocument(
           'Estrai i movimenti bancari.',
           pdfBase64,
           { system: systemPromptEC, funzione: 'estrai_movimenti', maxTokens: 8000 }

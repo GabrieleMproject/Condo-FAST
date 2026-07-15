@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { callClaudeDocument } from '../lib/claudeClient'
+import { callGeminiDocument } from '../lib/geminiClient'
 import { docxToText } from '../lib/fileExtractor'
 
 const BUCKET = 'documenti-condominio'
@@ -117,11 +117,11 @@ export function useDocumenti(condominioId) {
   return { documenti, loading, error, fetch, upload, remove, getSignedUrl, aggiornaTesto }
 }
 
-// Estrae testo da PDF usando FileReader + Claude API
+// Estrae testo da PDF usando FileReader + Gemini API
 async function estraiTestoPDF(file, condominioId) {
   try {
     const base64 = await fileToBase64(file)
-    const testo = await callClaudeDocument(
+    const testo = await callGeminiDocument(
       'Estrai tutto il testo di questo documento in modo fedele e completo. Restituisci solo il testo estratto, senza commenti o formattazione aggiuntiva.',
       base64,
       {

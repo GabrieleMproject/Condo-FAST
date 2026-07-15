@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { ChevronDown, ChevronUp, Send, Ticket, Bot, User, ArrowRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import { callClaude, callClaudeWithHistory } from '../lib/claudeClient'
+import { callGemini, callGeminiWithHistory } from '../lib/geminiClient'
 import { toast } from 'react-hot-toast'
 
 const FAQS = [
@@ -174,7 +174,7 @@ export default function AssistenzaPage() {
         ? newHistory.slice(1)
         : (newHistory[0]?.role === 'assistant' ? newHistory.slice(1) : newHistory);
 
-      const aiResponse = await callClaudeWithHistory(historyToSend, { 
+      const aiResponse = await callGeminiWithHistory(historyToSend, { 
         system: systemPromptDinamico, 
         funzione: 'assistenza_chat',
         maxTokens: 500
@@ -199,7 +199,7 @@ export default function AssistenzaPage() {
     try {
       // 1. Genera titolo AI silente
       const promptTitolo = `Genera un titolo breve, professionale e senza punteggiatura finale (max 8 parole) che riassuma questo problema tecnico o domanda: "${lastUserMsg}". Rispondi SOLO col titolo, niente introduzioni.`
-      let titoloGenerato = await callClaude(promptTitolo, { funzione: 'assistenza_titolo_ticket', maxTokens: 50 })
+      let titoloGenerato = await callGemini(promptTitolo, { funzione: 'assistenza_titolo_ticket', maxTokens: 50 })
       titoloGenerato = titoloGenerato.replace(/["']/g, '').trim()
       if (!titoloGenerato) titoloGenerato = 'Richiesta di assistenza via Chat'
 

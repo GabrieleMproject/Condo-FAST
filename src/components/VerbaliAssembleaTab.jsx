@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { useDocumenti } from '../hooks/useDocumenti'
-import { callClaude } from '../lib/claudeClient'
+import { callGemini } from '../lib/geminiClient'
 import { 
   FileSignature, Search, Sparkles, Paperclip, CheckCircle2, 
   AlertTriangle, Trash2, Calendar, FileText, Loader2, X, Plus 
@@ -297,7 +297,7 @@ export default function VerbaliAssembleaTab({ condominioId }) {
 
       const { verbaliFiltrati, metodo, risparmioPercentuale } = optimized;
 
-      // 3. Prepara il prompt per Claude
+      // 3. Prepara il prompt per Gemini
       const systemPrompt = `Sei un assistente virtuale esperto di gestione condominiale CondoSmart. Rispondi alle domande dell'amministratore basandoti ESCLUSIVAMENTE sui verbali delle assemblee forniti.
 
 Domanda dell'amministratore:
@@ -333,8 +333,8 @@ Formato JSON atteso:
 
       const userPrompt = `Verbali ed estratti di testo disponibili per l'analisi:\n\n${contestoVerbaliText}\n\nRispondi alla domanda: "${query}" in formato JSON strutturato.`;
 
-      // 4. Chiamata a Claude
-      const rispostaRaw = await callClaude(userPrompt, {
+      // 4. Chiamata a Gemini
+      const rispostaRaw = await callGemini(userPrompt, {
         system: systemPrompt,
         maxTokens: 1500,
         funzione: 'ricerca_verbali_ai',
@@ -347,7 +347,7 @@ Formato JSON atteso:
         const cleanJson = rispostaRaw.replace(/```json|```/g, '').trim();
         result = JSON.parse(cleanJson);
       } catch (err) {
-        console.error('Errore parsing JSON risposta Claude:', err, rispostaRaw);
+        console.error('Errore parsing JSON risposta Gemini:', err, rispostaRaw);
         result = {
           risposta: rispostaRaw,
           trovato: rispostaRaw.toLowerCase().includes('non ho trovato') ? false : true,

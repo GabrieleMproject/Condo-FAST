@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Users, Ticket, Search, Save, MessageSquare, Send, Gift, Plus } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { callClaude } from '../lib/claudeClient'
+import { callGemini } from '../lib/geminiClient'
 
 export default function BackofficePage() {
   const [activeTab, setActiveTab] = useState('utenti')
@@ -151,7 +151,7 @@ ${rispostaText}
 
 Rispondi esplicitamente in formato JSON valido.`
 
-          const resAI = await callClaude(promptSintesi, { funzione: 'assistenza_sintesi', jsonMode: true })
+          const resAI = await callGemini(promptSintesi, { funzione: 'assistenza_sintesi', jsonMode: true })
           
           let dataKB;
           try {
@@ -517,7 +517,7 @@ Struttura la risposta in formato JSON con le seguenti chiavi:
 
 Rispondi ESPLICITAMENTE in formato JSON valido.`
 
-      const resAI = await callClaude(prompt, { funzione: 'scrittura_marketing' })
+      const resAI = await callGemini(prompt, { funzione: 'scrittura_marketing' })
       let data
       try {
         data = JSON.parse(resAI)

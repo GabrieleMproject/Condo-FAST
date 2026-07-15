@@ -1,14 +1,14 @@
 /**
  * fileExtractor.js
- * Estrae dati strutturati da file di vari tipi usando Claude AI.
+ * Estrae dati strutturati da file di vari tipi usando Gemini AI.
  * Supporta: PDF (blocco document), XLSX/XLS, JPG/PNG (vision), DOCX, CSV, TXT
  *
- * Usa claudeClient.js per tutte le chiamate AI (mai fetch diretta)
+ * Usa geminiClient.js per tutte le chiamate AI (mai fetch diretta)
  * Dipendenze: exceljs, mammoth
  */
 import ExcelJS  from 'exceljs';
 import mammoth  from 'mammoth';
-import { callClaude, callClaudeVision, callClaudeDocument } from './claudeClient';
+import { callGemini, callGeminiVision, callGeminiDocument } from './geminiClient';
 
 function pulisciEdEstraiJson(risposta, isArray = false) {
   const rawStr = String(risposta || '').trim();
@@ -209,10 +209,10 @@ Regole importanti:
   // vision → system accorpato al prompt (il client vision non inoltra system)
   // document/text → system in opts
   const risposta = isVisual
-    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 4000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 4000 })
     : isPdf
-    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 })
-    : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 });
 
   return pulisciEdEstraiJson(risposta, true);
 }
@@ -272,10 +272,10 @@ Regole Generali:
     : `Analizza questa fattura ed estrai i dati nel formato JSON richiesto.\n\n${contenuto}`;
 
   const risposta = isVisual
-    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 2000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 2000 })
     : isPdf
-    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 })
-    : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 });
 
   return pulisciEdEstraiJson(risposta, false);
 }
@@ -304,7 +304,7 @@ Tabelle millesimali disponibili: ${tabelleMillesimali?.map(t => t.nome).join(', 
 
 ${testoRegolamento ? `Regolamento condominiale:\n${testoRegolamento.substring(0, 3000)}` : 'Nessun regolamento disponibile. Usa il Codice Civile.'}`;
 
-  const risposta = await callClaude(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500 });
+  const risposta = await callGemini(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500 });
   return pulisciEdEstraiJson(risposta, false);
 }
 // ─── CONSUNTIVO ANNO PRECEDENTE: estrai saldi di chiusura per riporto ─────────
@@ -344,10 +344,10 @@ Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
     : `Analizza questo consuntivo condominiale ed estrai i saldi di chiusura nel formato JSON richiesto.\n\nContenuto del file:\n${contenuto}`;
 
   const risposta = isVisual
-    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 })
     : isPdf
-    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 })
-    : await callClaude(userPrompt, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 });
 
   return pulisciEdEstraiJson(risposta, false);
 }// ── Estrae il PROFILO/struttura del modello consuntivo dell'amministratore ──
@@ -382,16 +382,16 @@ Imposta "attiva": true per ogni sezione effettivamente presente nel modello, fal
 
   let raw
   if (prep.isPdf) {
-    raw = await callClaudeDocument(userPrompt, prep.contenuto, {
+    raw = await callGeminiDocument(userPrompt, prep.contenuto, {
       system, mediaType: prep.mediaType || 'application/pdf',
       funzione: 'estrai_struttura_consuntivo', maxTokens: 3000,
     })
   } else if (prep.isVisual) {
-    raw = await callClaudeVision(`${system}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
+    raw = await callGeminiVision(`${system}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
       funzione: 'estrai_struttura_consuntivo', maxTokens: 3000,
     })
   } else {
-    raw = await callClaude(`${userPrompt}\n\n--- DOCUMENTO ---\n${prep.contenuto}`, {
+    raw = await callGemini(`${userPrompt}\n\n--- DOCUMENTO ---\n${prep.contenuto}`, {
       system, funzione: 'estrai_struttura_consuntivo', maxTokens: 3000,
     })
   }
@@ -424,19 +424,19 @@ Esempio: [{"nome":"Mario","cognome":"Rossi","email":"mario@example.com","telefon
 
   let raw
   if (prep.isPdf) {
-    raw = await callClaudeDocument(userPrompt, prep.contenuto, {
+    raw = await callGeminiDocument(userPrompt, prep.contenuto, {
       system: systemPrompt,
       mediaType: prep.mediaType || 'application/pdf',
       funzione: 'import_anagrafica',
       maxTokens: 8000,
     })
   } else if (prep.isVisual) {
-    raw = await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
+    raw = await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
       funzione: 'import_anagrafica',
       maxTokens: 8000,
     })
   } else {
-    raw = await callClaude(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
+    raw = await callGemini(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
       system: systemPrompt,
       funzione: 'import_anagrafica',
       maxTokens: 8000,
@@ -494,19 +494,19 @@ Se nel documento è presente una tabella con più colonne millesimali (es. colon
 
   let raw;
   if (prep.isPdf) {
-    raw = await callClaudeDocument(userPrompt, prep.contenuto, {
+    raw = await callGeminiDocument(userPrompt, prep.contenuto, {
       system: systemPrompt,
       mediaType: prep.mediaType || 'application/pdf',
       funzione: 'estrai_tabelle_millesimali',
       maxTokens: 8000,
     });
   } else if (prep.isVisual) {
-    raw = await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
+    raw = await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
       funzione: 'estrai_tabelle_millesimali',
       maxTokens: 8000,
     });
   } else {
-    raw = await callClaude(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
+    raw = await callGemini(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
       system: systemPrompt,
       funzione: 'estrai_tabelle_millesimali',
       maxTokens: 8000,
@@ -597,10 +597,10 @@ Schema esatto da rispettare:
     : `Analizza questo file esportato da un gestionale condominiale, classifica i dati che contiene ed estraili nel formato JSON richiesto.\n\nContenuto del file:\n${String(contenuto).substring(0, 30000)}`;
 
   const risposta = isVisual
-    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'classifica_gestionale', maxTokens: 6000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'classifica_gestionale', maxTokens: 6000 })
     : isPdf
-    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000 })
-    : await callClaude(userPrompt, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000 })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000 });
 
   return pulisciEdEstraiJson(risposta, false);
 }
@@ -757,10 +757,10 @@ Regole importanti:
   const userPrompt = `Analizza questo modulo compilato dal condomino ed estrai i dati nel formato JSON specificato.`;
 
   const risposta = isImage
-    ? await callClaudeVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 })
     : isPdf
-    ? await callClaudeDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 })
-    : await callClaude(userPrompt + `\n\nContenuto del modulo:\n${contenuto}`, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 })
+    : await callGemini(userPrompt + `\n\nContenuto del modulo:\n${contenuto}`, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 });
 
   return pulisciEdEstraiJson(risposta, false);
 }

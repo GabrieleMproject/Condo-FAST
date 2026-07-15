@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { callClaude } from '../lib/claudeClient';
+import { callGemini } from '../lib/geminiClient';
 
 const formattaData = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—');
 
@@ -98,7 +98,7 @@ ${JSON.stringify(fatNonRic.map(f => ({
 Abbina i movimenti alle fatture.`;
 
   setProgressoAI('Elaborazione suggerimenti...');
-      const risposta = await callClaude(userPrompt, { system: systemPrompt, maxTokens: 2048, funzione: 'riconcilia_uscite', condominio_id: condominioId });
+      const risposta = await callGemini(userPrompt, { system: systemPrompt, maxTokens: 2048, funzione: 'riconcilia_uscite', condominio_id: condominioId });
       const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
       const suggerimenti = JSON.parse(clean);
 

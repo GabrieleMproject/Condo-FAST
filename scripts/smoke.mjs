@@ -1,5 +1,5 @@
 // scripts/smoke.mjs
-// Smoke-test del claude-proxy: verifica deploy + model id + AI in ~2s.
+// Smoke-test del gemini-proxy: verifica deploy + model id + AI in ~2s.
 // Uso:  npm run smoke   (o: node scripts/smoke.mjs)
 // Richiede in .env: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SMOKE_EMAIL, SMOKE_PASSWORD
 // SMOKE_EMAIL/PASSWORD = un utente reale di test (serve un JWT valido per il proxy).
@@ -32,11 +32,11 @@ if (authErr) { console.error('❌ Login fallito:', authErr.message); process.exi
 
 const token = auth.session.access_token;
 
-// Body identico a quello che invia il frontend (callClaude → type:'text').
+// Body identico a quello che invia il frontend (callGemini → type:'text').
 const payload = { type: 'text', prompt: 'Rispondi solo con la parola: OK', maxTokens: 512 };
 
 const t0 = Date.now();
-const r = await fetch(`${URL}/functions/v1/claude-proxy`, {
+const r = await fetch(`${URL}/functions/v1/gemini-proxy`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

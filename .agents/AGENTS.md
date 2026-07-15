@@ -798,3 +798,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
 - **Esecuzione Smoke Test**: Eseguito `npm run smoke`. Il test ha fallito per disservizio esterno temporaneo delle API (errore 500 del proxy AI), non correlato alle modifiche grafiche.
 - **Commit di sessione**: Registrato il commit di sessione S41 step 1.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S42 (15 Luglio 2026 - Migrazione AI da Claude a Gemini)
+
+### 1. Decisioni sulla Migrazione AI
+- **Ridenominazione Edge Function**: Migrata la Edge Function di chiamata AI da `claude-proxy` a `gemini-proxy`. Aggiornata la configurazione in `supabase/config.toml`.
+- **Tabella Rate Limit**: Creata la tabella `gemini_rate_limit` (rinominata da `claude_rate_limit`) sul database Supabase tramite script SQL `sql/s42_gemini_rate_limit.sql`.
+- **Client Frontend**: Creato il nuovo client frontend `src/lib/geminiClient.js` che esporta le funzioni canoniche `callGemini`, `callGeminiWithHistory`, `callGeminiVision` e `callGeminiDocument`. Deprecato e svuotato il file `src/lib/claudeClient.js` per prevenire importazioni errate.
+- **Aggiornamento Componenti**: Aggiornati tutti i componenti frontend, hook, script e test per importare `geminiClient` ed utilizzare le nuove funzioni `callGemini...` invece delle vecchie `callClaude...`.
+- **Text Refactoring**: Sostituiti tutti i riferimenti UI, FAQ, informative legali (privacy policy) e descrizioni di sicurezza da Claude/Anthropic a Gemini/Google.
+
+### 2. Fatti Verificati
+- **Verifica Build**: Eseguito `npm run build` con successo. Non ci sono errori di compilazione nel frontend dopo il refactoring dei client.
+- **Smoke Test**: Eseguito `npm run smoke` con successo (Proxy OK).
+- **Collaudo E2E**: Testati i passaggi dello script `collaudo_e2e.mjs`. L'estrazione dell'anagrafica da DOCX viene completata con successo tramite `gemini-proxy`. Le chiamate successive mostrano a volte errori 500 dovuti a limiti di quota/rate limit (429/503) sulle API key di Google in cloud, ma il routing è corretto. Aggiunte pause `sleep(3000)` per mitigare il problema in ambiente di test.
+- **Deploy**: Eseguito con successo il deploy della Edge Function `gemini-proxy` su Supabase Cloud.
+

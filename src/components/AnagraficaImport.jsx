@@ -235,7 +235,7 @@ export default function AnagraficaImport({ onImport, onClose }) {
               {aiLoading ? (
                 <div style={styles.aiLoading}>
                   <div style={styles.spinner} />
-                  <p style={{ color: '#60a5fa', margin: '12px 0 4px' }}>Claude sta analizzando il documento…</p>
+                  <p style={{ color: '#60a5fa', margin: '12px 0 4px' }}>Gemini sta analizzando il documento…</p>
                   <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Estrazione dati con AI in corso</p>
                 </div>
               ) : (

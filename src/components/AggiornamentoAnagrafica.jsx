@@ -1,10 +1,10 @@
 // src/components/AggiornamentoAnagrafica.jsx
-// Flusso: incolla testo libero → Claude API interpreta → banner riepilogo diff → conferma → aggiorna DB
+// Flusso: incolla testo libero → Gemini API interpreta → banner riepilogo diff → conferma → aggiorna DB
 
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { ArrowRightLeft, Plus, Edit3, Trash2, Home, Key, X, AlertTriangle, CheckCircle2, XCircle, Search, ClipboardList, Check } from 'lucide-react'
-import { callClaude } from '../lib/claudeClient'
+import { callGemini } from '../lib/geminiClient'
 
 function renderDiffIcon(iconName, color, size = 20) {
   switch (iconName) {
@@ -193,7 +193,7 @@ Schema di ogni elemento:
 }
 Se non identifichi operazioni chiare, restituisci [].`
 
-      const raw = await callClaude(prompt, {
+      const raw = await callGemini(prompt, {
         funzione: 'aggiornamento_anagrafica',
         condominio_id: condominioId,
         maxTokens: 2000

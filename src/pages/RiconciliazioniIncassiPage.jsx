@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Bot, Check, X, AlertTriangle, Lightbulb, CheckCircle2, XCircle, Calendar, User, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { callClaude } from '../lib/claudeClient';
+import { callGemini } from '../lib/geminiClient';
 
 // ─── Helper deterministici (nessuna AI) ────────────────────────────────────
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -165,7 +165,7 @@ ${JSON.stringify(celleCtx, null, 2)}
 Abbina i bonifici alle celle.`;
 
       setProgressoAI('Elaborazione suggerimenti...');
-      const risposta = await callClaude(userPrompt, {
+      const risposta = await callGemini(userPrompt, {
         system: systemPrompt,
         maxTokens: 4000,
         funzione: 'riconcilia_incassi',

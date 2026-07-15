@@ -66,16 +66,15 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
     const list = [...(tabelle || [])]
     const docTabelle = (documenti || []).filter(d => d.tipo === 'tabella_millesimale_doc')
     docTabelle.forEach(d => {
-      const exists = list.some(t => String(t.nome || '').trim().toLowerCase() === String(d.nome || '').trim().toLowerCase())
-      if (!exists) {
+      // Evita duplicati se c'è già una tabella strutturata con lo stesso nome
+      if (!list.some(t => t.nome?.toLowerCase() === d.nome?.toLowerCase())) {
         list.push({
           id: `doc_${d.id}`,
-          nome: d.nome || 'Tabella da Documenti',
-          tipo_lavoro: 'da Documenti',
-          is_doc: true,
-          doc_id: d.id,
-          testo_estratto: d.testo_estratto,
-          url_storage: d.url_storage
+          nome: d.nome || d.file_name || 'Documento Tabella',
+          criterio: 'millesimi',
+          documento_id: d.id,
+          millesimi_unita: [],
+          is_doc: true
         })
       }
     })
@@ -324,7 +323,26 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     if (form.criterio === 'manuale') { calcolaManuale(); return }
     if (!form.importo || !unita?.length) return
     calcolaRipartizioni()
-  }, [form.importo, form.criterio, form.tabella_millesimale_id, form.percentuale_millesimi, importiManuali, unita])
+  }, [form.importo, form.criterio, form.tabella_millesimale_id, form.percentuale_millesimi, importiManuali, unita, tabelleAssociate])
+
+  // Auto-seleziona la tabella millesimale di default se ce n'è una sola o se corrisponde a criteri generici
+  useEffect(() => {
+    if (!form.tabella_millesimale_id && tabelleAssociate.length > 0) {
+      const tabelleStrutturate = tabelleAssociate.filter(t => !t.id.startsWith('doc_'))
+      
+      if (tabelleStrutturate.length === 1) {
+        setField('tabella_millesimale_id', tabelleStrutturate[0].id)
+      } else if (tabelleStrutturate.length > 1) {
+        const generale = tabelleStrutturate.find(t => {
+          const n = String(t.nome || '').toLowerCase()
+          return n.includes('generale') || n.includes('proprietà') || n.includes('proprietá')
+        })
+        if (generale) {
+          setField('tabella_millesimale_id', generale.id)
+        }
+      }
+    }
+  }, [tabelleAssociate, form.tabella_millesimale_id])
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }))
 

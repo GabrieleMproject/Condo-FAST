@@ -863,3 +863,26 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
 - **Push e Commit**: Caricate le modifiche sul repository GitHub ed eseguito il push su `origin main`.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S45 (15 Luglio 2026 - Ristrutturazione Dashboard Globale)
+
+### 1. Decisioni sulla Dashboard Globale
+- **Ristrutturazione Dashboard Studio (`DashboardPage.jsx`)**: Sostituita la vecchia interfaccia statica con una dashboard dinamica e guidata dai dati del database Supabase, offrendo una panoramica centralizzata di tutto lo studio amministrativo.
+- **KPI Finanziari Aggregati**: Calcolati dinamicamente quattro indicatori-chiave:
+  - *Condomini Gestiti*: Numero totale di fabbricati attivi e archiviati.
+  - *Morosità Totale*: Somma cumulativa di tutte le rate insolute con data scadenza passata (`dovuto - pagato` dove `scadenza < oggi`).
+  - *Riconciliazioni Pendenti*: Numero complessivo di movimenti bancari non riconciliati.
+  - *Fatture da Pagare*: Totale delle ditte in attesa di saldo (fatture in stato `'attesa'`).
+- **Tabella Riepilogo Condomini**: Creata una griglia interattiva dei fabbricati con metriche di salute (unità, saldo banca aggiornato all'ultimo estratto conto con saldo, insoluti rate, fatture pendenti e movimenti da riconciliare per singolo condominio).
+- **Pannello Urgenze ed Alerting**: Integrati tre tipi di alert amministrativi in tempo reale:
+  - Scadenze F24 pendenti calcolate sulle ritenute d'acconto non presentate associate a fatture pagate nel mese precedente.
+  - Esercizi contabili in scadenza nei prossimi 30 giorni.
+  - Riconciliazioni arretrate (movimenti non abbinati da più di 15 giorni).
+
+### 2. Fatti Verificati
+- **Verifica Build**: Eseguito `npm run build` con esito verde e compilazione corretta del bundle di produzione.
+- **Supporto Tematico**: Sincronizzate tutte le aree della nuova dashboard con le variabili CSS globali, assicurando un contrasto ottimale e transizioni pulite in modalità chiara e scura.
+- **Push e Commit**: Eseguito il commit `S43 step2: ristruttura dashboard globale...` (associato alla sessione corrente) ed effettuato il push su `origin main`.
+
+

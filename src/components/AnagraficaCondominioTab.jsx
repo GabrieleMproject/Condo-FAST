@@ -38,6 +38,12 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   const [telefono, setTelefono] = useState('')
   const [indirizzo, setIndirizzo] = useState('')
   const [citta, setCitta] = useState('')
+  const [cf, setCf] = useState('')
+  const [dataNascita, setDataNascita] = useState('')
+  const [cap, setCap] = useState('')
+  const [provincia, setProvincia] = useState('')
+  const [telefonoAlt, setTelefonoAlt] = useState('')
+  const [note, setNote] = useState('')
   const [salvando, setSalvando] = useState(false)
 
   const [nuovoNome, setNuovoNome] = useState('')
@@ -214,8 +220,14 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
     setCognome(p.cognome || '')
     setEmail(p.email || '')
     setTelefono(p.telefono || '')
+    setTelefonoAlt(p.telefono_alt || '')
     setIndirizzo(p.indirizzo || '')
     setCitta(p.citta || '')
+    setCap(p.cap || '')
+    setProvincia(p.provincia || '')
+    setCf(p.codice_fiscale || '')
+    setDataNascita(p.data_nascita || '')
+    setNote(p.note || '')
   }
 
   const handleSalva = async (e) => {
@@ -225,7 +237,20 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
     try {
       const { error } = await supabase
         .from('persone')
-        .update({ nome, cognome, email, telefono, indirizzo, citta })
+        .update({ 
+          nome, 
+          cognome, 
+          email, 
+          telefono, 
+          telefono_alt: telefonoAlt || null,
+          indirizzo: indirizzo || null, 
+          citta: citta || null,
+          cap: cap || null,
+          provincia: provincia || null,
+          codice_fiscale: cf.trim().toUpperCase() || null,
+          data_nascita: dataNascita || null,
+          note: note || null
+        })
         .eq('id', editingPersona.id)
 
       if (error) throw error
@@ -1148,7 +1173,7 @@ Lo Studio Amministrativo`
       {/* Modale Modifica Rubrica */}
       {editingPersona && (
         <div style={styles.overlay} onClick={() => setEditingPersona(null)}>
-          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+          <div style={{ ...styles.modal, width: 550 }} onClick={e => e.stopPropagation()}>
             <div style={styles.modalHead}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <UserCog size={18} color="#60a5fa" />
@@ -1158,36 +1183,71 @@ Lo Studio Amministrativo`
             </div>
             
             <form onSubmit={handleSalva}>
-              <div style={styles.modalBody}>
+              <div style={{ ...styles.modalBody, maxHeight: '65vh', overflowY: 'auto', paddingRight: 6 }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Dati Anagrafici</div>
                 <div style={styles.formRow}>
                   <div style={styles.formGroup}>
-                    <label style={styles.label}>Nome</label>
-                    <input style={styles.input} type="text" required value={nome} onChange={e => setNome(e.target.value)} />
-                  </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Cognome</label>
+                    <label style={styles.label}>Cognome *</label>
                     <input style={styles.input} type="text" required value={cognome} onChange={e => setCognome(e.target.value)} />
                   </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Nome *</label>
+                    <input style={styles.input} type="text" required value={nome} onChange={e => setNome(e.target.value)} />
+                  </div>
                 </div>
 
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Email</label>
-                  <input style={styles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Codice Fiscale</label>
+                    <input style={styles.input} type="text" value={cf} onChange={e => setCf(e.target.value)} maxLength={16} placeholder="es. RSSMRA80A01F205X" />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Data di Nascita</label>
+                    <input style={styles.input} type="date" value={dataNascita} onChange={e => setDataNascita(e.target.value)} />
+                  </div>
                 </div>
 
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Contatti</div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Email</label>
+                    <input style={styles.input} type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Telefono</label>
+                    <input style={styles.input} type="text" value={telefono} onChange={e => setTelefono(e.target.value)} />
+                  </div>
+                </div>
                 <div style={styles.formGroup}>
-                  <label style={styles.label}>Telefono</label>
-                  <input style={styles.input} type="text" value={telefono} onChange={e => setTelefono(e.target.value)} />
+                  <label style={styles.label}>Telefono Alternativo</label>
+                  <input style={styles.input} type="text" value={telefonoAlt} onChange={e => setTelefonoAlt(e.target.value)} />
                 </div>
 
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 12, marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Residenza</div>
                 <div style={styles.formGroup}>
-                  <label style={styles.label}>Indirizzo di Residenza</label>
+                  <label style={styles.label}>Indirizzo</label>
                   <input style={styles.input} type="text" value={indirizzo} onChange={e => setIndirizzo(e.target.value)} />
                 </div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Città</label>
+                    <input style={styles.input} type="text" value={citta} onChange={e => setCitta(e.target.value)} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>CAP</label>
+                      <input style={styles.input} type="text" value={cap} onChange={e => setCap(e.target.value)} maxLength={5} />
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Prov.</label>
+                      <input style={styles.input} type="text" value={provincia} onChange={e => setProvincia(e.target.value)} maxLength={2} />
+                    </div>
+                  </div>
+                </div>
 
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Città</label>
-                  <input style={styles.input} type="text" value={citta} onChange={e => setCitta(e.target.value)} />
+                <div style={{ ...styles.formGroup, marginTop: 12 }}>
+                  <label style={styles.label}>Note</label>
+                  <textarea style={{ ...styles.input, minHeight: 50, resize: 'vertical' }} value={note} onChange={e => setNote(e.target.value)} />
                 </div>
               </div>
 

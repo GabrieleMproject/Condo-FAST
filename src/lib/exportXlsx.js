@@ -44,10 +44,12 @@ function buildFoglioAnagrafica(ws, unita) {
   unita.forEach((u, i) => {
     const prop = u.occupanti?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false);
     const inq  = u.occupanti?.find(o => (o.ruolo === 'inquilino' || o.tipo_occupante === 'inquilino') && o.attivo !== false);
+    const propNome = prop?.persona ? `${prop.persona.nome || ''} ${prop.persona.cognome || ''}`.trim() : '';
+    const inqNome = inq?.persona ? `${inq.persona.nome || ''} ${inq.persona.cognome || ''}`.trim() : '';
     const row = ws.addRow({
       numero: u.numero, tipo: u.tipo, piano: u.piano ?? '', scala: u.scala ?? '', superficie: u.superficie ?? '',
-      prop_nome: prop?.persona?.nominativo || '', prop_email: prop?.persona?.email || '',
-      inq_nome: inq?.persona?.nominativo || '', inq_email: inq?.persona?.email || '',
+      prop_nome: propNome, prop_email: prop?.persona?.email || '',
+      inq_nome: inqNome, inq_email: inq?.persona?.email || '',
       dal: '', al: '',
     });
     styleDataRow(row, i);
@@ -114,7 +116,7 @@ function buildFoglioRate(ws, rate, cells, unita, getProprietario) {
   let i = 0;
   (unita || []).forEach(u => {
     const prop = getProprietario ? getProprietario(u) : (u.occupanti?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false));
-    const propNome = prop ? (prop.persona?.nominativo || `${prop.cognome || ''} ${prop.nome || ''}`.trim()) : '';
+    const propNome = prop ? (prop.persona ? `${prop.persona.nome || ''} ${prop.persona.cognome || ''}`.trim() : `${prop.nome || ''} ${prop.cognome || ''}`.trim()) : '';
     rateSorted.forEach(r => {
       const cell = cellMap[`${u.id}_${r.id}`];
       if (!cell) return;

@@ -57,7 +57,7 @@ export default function RipartizionePage() {
           *,
           occupanti:occupanti_unita(
             id, ruolo, attivo,
-            persona:persone(nominativo, email)
+            persona:persone(id, nome, cognome, email)
           )
         `).eq('condominio_id', condominioId).order('numero'),
         supabase.from('ripartizioni').select(`
@@ -138,7 +138,7 @@ export default function RipartizionePage() {
   // ─── Helper: nome proprietario unità (stringa, per display) ──
   function getProprietario(u) {
     const occ = u.occupanti?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false);
-    return occ?.persona?.nominativo || '—';
+    return occ?.persona ? `${occ.persona.nome || ''} ${occ.persona.cognome || ''}`.trim() : '—';
   }
 
   // ─── Helper: proprietario come oggetto occupante (per export) ─

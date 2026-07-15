@@ -68,7 +68,7 @@ export default function ConfigPagantePage() {
           *,
           occupanti:occupanti_unita(
             id, ruolo, attivo,
-            persona:persone(id, nominativo, email, telefono)
+            persona:persone(id, nome, cognome, email, telefono)
           )
         `).eq('condominio_id', condominioId).order('numero'),
         supabase.from('config_pagante_unita').select('*').eq('esercizio_id', esercizioId),
@@ -284,7 +284,7 @@ export default function ConfigPagantePage() {
                   <div style={styles.occupanteIcon}><Home size={16} /></div>
                   <div style={styles.occupanteInfo}>
                     <span style={styles.occupanteLabel}>Proprietario</span>
-                    <span style={styles.occupanteNome}>{prop?.nominativo || '—'}</span>
+                    <span style={styles.occupanteNome}>{prop ? `${prop.nome || ''} ${prop.cognome || ''}`.trim() : '—'}</span>
                     {prop?.email && <span style={styles.occupanteEmail}>{prop.email}</span>}
                   </div>
                   {pagante === 'proprietario' && (
@@ -304,7 +304,7 @@ export default function ConfigPagantePage() {
                   <div style={styles.occupanteInfo}>
                     <span style={styles.occupanteLabel}>Inquilino</span>
                     <span style={styles.occupanteNome}>
-                      {inq?.nominativo || <em style={{ color: 'var(--text-muted)' }}>Nessun inquilino attivo</em>}
+                      {inq ? `${inq.nome || ''} ${inq.cognome || ''}`.trim() : <em style={{ color: 'var(--text-muted)' }}>Nessun inquilino attivo</em>}
                     </span>
                     {inq?.email && <span style={styles.occupanteEmail}>{inq.email}</span>}
                   </div>

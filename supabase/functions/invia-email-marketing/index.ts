@@ -41,7 +41,6 @@ serve(async (req) => {
     // 2. Verifica che l'utente sia un SuperAdmin
     const { data: isAdmin, error: adminErr } = await supabase
       .rpc('is_superadmin', { check_user_id: user.id })
-      .single()
 
     if (adminErr || !isAdmin) {
       return new Response(JSON.stringify({ error: 'Accesso negato. Solo i SuperAdmin possono inviare email di marketing.' }), {

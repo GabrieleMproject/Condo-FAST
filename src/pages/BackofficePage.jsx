@@ -102,7 +102,7 @@ export default function BackofficePage() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ piano: nuevoPiano })
+        .update({ piano: nuovoPiano })
         .eq('id', utenteId)
       
       if (error) throw error
@@ -559,25 +559,15 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || !user.email) throw new Error("Utente non autenticato o email mancante")
 
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invia-email-marketing`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('invia-email-marketing', {
+        body: {
           destinatari: [user.email],
           oggetto: `[TEST] ${marketingForm.oggetto}`,
           messaggio: marketingForm.messaggio
-        })
+        }
       })
 
-      if (!res.ok) {
-        const errText = await res.json().catch(() => ({}))
-        throw new Error(errText.error || `Errore HTTP ${res.status}`)
-      }
+      if (error) throw error
 
       toast.success(`Email di test inviata con successo a ${user.email}!`)
     } catch (err) {
@@ -599,28 +589,17 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
     setInviandoEmail(true)
     const loadToast = toast.loading(`Invio email a ${conteggio} utenti in corso...`)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invia-email-marketing`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('invia-email-marketing', {
+        body: {
           destinatari: destinatariFiltrati,
           oggetto: marketingForm.oggetto,
           messaggio: marketingForm.messaggio
-        })
+        }
       })
 
-      if (!res.ok) {
-        const errText = await res.json().catch(() => ({}))
-        throw new Error(errText.error || `Errore HTTP ${res.status}`)
-      }
+      if (error) throw error
 
-      const resData = await res.json()
-      toast.success(resData.message || "Invio completato!")
+      toast.success(data?.message || "Invio completato!")
       setMarketingForm({ target: 'tutti', oggetto: '', messaggio: '' })
     } catch (err) {
       toast.error("Errore invio marketing: " + err.message)

@@ -59,4 +59,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 2. Impedisce a utenti non-superadmin (e non service_role) di modificare autonomamente la colonna "piano"
+CREATE OR REPLACE FUNCTION public.check_piano_update()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.piano IS DISTINCT FROM OLD.piano THEN
+    -- Consente le modifiche solo se effettuate da service_role o se l'utente è un SuperAdmin.
+    -- Se auth.role() è nullo (es. migrazioni locali o CLI dirette), non blocca.
+    IF auth.role() IS NOT NULL AND auth.role() != 'service_role' AND NOT public.is_superadmin(auth.uid()) THEN
+      RAISE EXCEPTION 'Non hai i permessi per modificare direttamente la colonna piano.';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_check_piano_update ON public.profiles;
+CREATE TRIGGER trg_check_piano_update
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.check_piano_update();
+
 NOTIFY pgrst, 'reload schema';
+

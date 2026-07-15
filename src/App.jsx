@@ -7,6 +7,7 @@ import FattureFornitoriPage from './pages/FattureFornitoriPage'
 import RiconciliazioniPage from './pages/RiconciliazioniPage'
 import DashboardFinanziaria from './pages/DashboardFinanziaria'
 import SpesePage from './pages/SpesePage'
+import SpeseGlobalPage from './pages/SpeseGlobalPage'
 import StoricoOperazioniPage from './pages/StoricoOperazioniPage'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
@@ -49,6 +50,7 @@ export default function App() {
                 <Route path="/condomini/:id" element={<CondominiDetailPage />} />
                 <Route path="/condomini/:condominioId/anagrafica" element={<AnagraficaPage />} />
                 <Route path="/condomini/:condominioId/spese" element={<SpesePage />} />
+                <Route path="/spese" element={<SpeseGlobalPage />} />
                 <Route path="/archivio" element={<StoricoOperazioniPage />} />
                 <Route path="/condomini/:condominioId/millesimi" element={<MillesimiEditor />} />
                 <Route path="/condomini/:condominioId/ripartizione" element={<RipartizionePage />} />

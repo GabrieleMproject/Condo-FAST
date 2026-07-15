@@ -59,7 +59,7 @@ const trovaTabellaFuzzy = (tabelleList, nomeConsigliato, criterio) => {
   return null
 }
 
-export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false, prefillData = null, onRefreshTabelle = null }) {
+export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false, prefillData = null, onRefreshTabelle = null, initialFile = null, initialAiDatiEstratti = null }) {
   const [strutturandoDoc, setStrutturandoDoc] = useState(false)
 
   const tabelleAssociate = useMemo(() => {
@@ -194,8 +194,8 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [ripartizioni, setRipartizioni] = useState([])
   // Importi manuali: { [unita_id]: stringa } — modificabili dall'utente
   const [importiManuali, setImportiManuali] = useState({})
-  const [fileCaricato, setFileCaricato] = useState(null)
-  const [aiDatiEstratti, setAiDatiEstratti] = useState(null)
+  const [fileCaricato, setFileCaricato] = useState(initialFile || null)
+  const [aiDatiEstratti, setAiDatiEstratti] = useState(initialAiDatiEstratti || null)
 
 
   const [showAiModal, setShowAiModal] = useState(false)
@@ -204,9 +204,14 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
 
+  // Rilevamento duplicati
+  const [duplicateWarning, setDuplicateWarning] = useState(null)
+  const [forceSave, setForceSave] = useState(false)
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false)
+
   // Stato import fattura
   const [loadingFattura, setLoadingFattura] = useState(false)
-  const [fatturaImportata, setFatturaImportata] = useState(false)
+  const [fatturaImportata, setFatturaImportata] = useState(!!initialAiDatiEstratti)
   const [dragOver, setDragOver] = useState(false)
   const [errFattura, setErrFattura] = useState(null)
   const fileInputRef = useRef()
@@ -225,13 +230,95 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     } else if (prefillData) {
       setForm(prev => ({
         ...prev,
-        importo: prefillData.importo || prev.importo,
-        data_spesa: prefillData.data_spesa || prev.data_spesa,
+        importo: prefillData.importo_totale != null ? String(prefillData.importo_totale) : (prefillData.importo || prev.importo),
+        data_spesa: prefillData.data_fattura || prefillData.data_spesa || prev.data_spesa,
         descrizione: prefillData.descrizione || prev.descrizione,
         fornitore: prefillData.fornitore || prev.fornitore,
+        numero_fattura: prefillData.numero_fattura || prev.numero_fattura,
+        categoria: prefillData.categoria || prev.categoria,
+        note: prefillData.note || prev.note,
       }))
     }
   }, [spesaInEdit, prefillData])
+
+  useEffect(() => {
+    if (initialAiDatiEstratti && !spesaInEdit) {
+      const CAT_VALIDE = CATEGORIE.map(c => c.value)
+      const catSpesa = CAT_VALIDE.includes(initialAiDatiEstratti.categoria) ? initialAiDatiEstratti.categoria : 'altro'
+      setForm(f => ({
+        ...f,
+        descrizione: initialAiDatiEstratti.descrizione || f.descrizione,
+        importo: initialAiDatiEstratti.importo_totale != null ? String(initialAiDatiEstratti.importo_totale) : f.importo,
+        data_spesa: initialAiDatiEstratti.data_fattura || f.data_spesa,
+        fornitore: initialAiDatiEstratti.fornitore || f.fornitore,
+        numero_fattura: initialAiDatiEstratti.numero_fattura || f.numero_fattura,
+        categoria: catSpesa,
+        note: initialAiDatiEstratti.note || f.note,
+      }))
+      setFatturaImportata(true)
+      setFileCaricato(initialFile)
+      setAiDatiEstratti(initialAiDatiEstratti)
+    }
+  }, [initialAiDatiEstratti, initialFile])
+
+  useEffect(() => {
+    if (!condominioId || !form.importo || checkingDuplicate) {
+      setDuplicateWarning(null)
+      return
+    }
+
+    const checkDuplicate = async () => {
+      setCheckingDuplicate(true)
+      try {
+        let query = supabase
+          .from('fatture_fornitori')
+          .select('id, numero_fattura, fornitore, importo_totale, data_fattura')
+          .eq('condominio_id', condominioId)
+          .eq('importo_totale', parseFloat(form.importo) || 0)
+
+        // Se abbiamo il numero fattura, controlliamo quello
+        if (form.numero_fattura?.trim()) {
+          query = query.ilike('numero_fattura', form.numero_fattura.trim())
+        } else {
+          // Altrimenti controlliamo per data e fornitore
+          if (form.data_spesa) {
+            query = query.eq('data_fattura', form.data_spesa)
+          }
+          if (form.fornitore?.trim()) {
+            query = query.ilike('fornitore', form.fornitore.trim())
+          }
+        }
+
+        const { data, error } = await query
+
+        if (error) throw error
+
+        if (data && data.length > 0) {
+          // Filtriamo via la spesa corrente se siamo in modalità modifica
+          const matches = spesaInEdit ? data.filter(d => d.id !== spesaInEdit.id) : data
+          if (matches.length > 0) {
+            setDuplicateWarning({
+              numero_fattura: matches[0].numero_fattura,
+              fornitore: matches[0].fornitore,
+              data_fattura: matches[0].data_fattura,
+              importo_totale: matches[0].importo_totale
+            })
+          } else {
+            setDuplicateWarning(null)
+          }
+        } else {
+          setDuplicateWarning(null)
+        }
+      } catch (err) {
+        console.error('Errore durante il controllo duplicati:', err)
+      } finally {
+        setCheckingDuplicate(false)
+      }
+    }
+
+    const timer = setTimeout(checkDuplicate, 600)
+    return () => clearTimeout(timer)
+  }, [condominioId, form.importo, form.numero_fattura, form.fornitore, form.data_spesa, spesaInEdit])
 
   useEffect(() => {
     if (form.criterio === 'manuale') { calcolaManuale(); return }
@@ -428,6 +515,11 @@ Formato JSON:
       e.manuale = `La somma degli importi (€${totaleRipartito.toFixed(2)}) deve corrispondere al totale (€${(parseFloat(form.importo) || 0).toFixed(2)}). Scarto: €${scartoManuale.toFixed(2)}`
     if (ripartizioni.length === 0)
       e.ripartizioni = 'Impossibile ripartire la spesa: verifica che la tabella millesimale selezionata contenga valori validi.'
+    
+    if (duplicateWarning && !forceSave) {
+      e.duplicate = 'Rilevato potenziale duplicato. Conferma con il checkbox sotto per salvare comunque.'
+    }
+
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -829,10 +921,48 @@ Formato JSON:
         </div>
       )}
 
+      {/* Rilevamento potenziale duplicato */}
+      {duplicateWarning && (
+        <div style={{
+          background: 'rgba(245, 158, 11, 0.1)',
+          border: '1px solid rgba(245, 158, 11, 0.4)',
+          borderRadius: 8,
+          padding: '12px 16px',
+          marginBottom: 16,
+          fontSize: 13,
+          color: '#fbbf24',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+            <AlertTriangle size={16} />
+            <span>Rilevato potenziale duplicato nel database</span>
+          </div>
+          <div style={{ color: 'var(--text-secondary)' }}>
+            Esiste già una fattura di {duplicateWarning.importo_totale}€ da "{duplicateWarning.fornitore || 'Fornitore sconosciuto'}"{duplicateWarning.numero_fattura ? ` (Num. ${duplicateWarning.numero_fattura})` : ''} del {new Date(duplicateWarning.data_fattura).toLocaleDateString('it-IT')}.
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, cursor: 'pointer', userSelect: 'none', color: 'var(--text-primary)' }}>
+            <input
+              type="checkbox"
+              checked={forceSave}
+              onChange={(e) => setForceSave(e.target.checked)}
+              style={{ width: 16, height: 16, cursor: 'pointer' }}
+            />
+            <span>Forza salvataggio (confermo che non si tratta di un duplicato)</span>
+          </label>
+        </div>
+      )}
+
       {/* Azioni */}
       {errors.ripartizioni && (
         <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 16, background: '#ef444410', padding: '10px 14px', borderRadius: 8, border: '1px solid #ef444430', display: 'flex', alignItems: 'center', gap: 6 }}>
           <AlertTriangle size={14} style={{ flexShrink: 0 }} /> <span>{errors.ripartizioni}</span>
+        </div>
+      )}
+      {errors.duplicate && (
+        <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 16, background: '#ef444410', padding: '10px 14px', borderRadius: 8, border: '1px solid #ef444430', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AlertTriangle size={14} style={{ flexShrink: 0 }} /> <span>{errors.duplicate}</span>
         </div>
       )}
       <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 28 }}>

@@ -245,7 +245,10 @@ Formato JSON:
   "imponibile_ritenuta": number,
   "aliquota_ritenuta_percentuale": number,
   "importo_ritenuta": number,
-  "codice_tributo_f24": "1019" | "1020" | "1040" | null
+  "codice_tributo_f24": "1019" | "1020" | "1040" | null,
+  "condominio_destinatario_nome": "denominazione/ragione sociale del condominio destinatario della fattura (il cliente/ricevente)" | null,
+  "condominio_destinatario_codice_fiscale": "codice fiscale o partita iva del condominio destinatario della fattura (il cliente/ricevente)" | null,
+  "condominio_destinatario_indirizzo": "indirizzo del condominio destinatario della fattura" | null
 }
 
 Regole Ritenuta d'Acconto:

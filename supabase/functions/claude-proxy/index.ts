@@ -203,20 +203,23 @@ serve(async (req) => {
       body: JSON.stringify(geminiPayload),
     })
 
-    // Se fallisce per quota esaurita o limiti, tenta il fallback su modelli alternativi
+    // Se fallisce per quota esaurita o temporanea indisponibilità (503), tenta il fallback su modelli alternativi
     if (!response.ok) {
       const cloneRes = response.clone()
-      let isQuotaError = false
+      let shouldFallback = false
       let errText = ''
       try {
         errText = await cloneRes.text()
-        isQuotaError = response.status === 429 || 
-                       errText.includes('Quota exceeded') || 
-                       errText.includes('RESOURCE_EXHAUSTED') || 
-                       errText.includes('rate-limits')
+        shouldFallback = response.status === 429 || 
+                         response.status === 503 ||
+                         errText.includes('Quota exceeded') || 
+                         errText.includes('RESOURCE_EXHAUSTED') || 
+                         errText.includes('rate-limits') ||
+                         errText.includes('UNAVAILABLE') ||
+                         errText.includes('high demand')
       } catch { /* ignore */ }
 
-      if (isQuotaError) {
+      if (shouldFallback) {
         // Tenta modelli alternativi in ordine
         const fallbackModels = currentModel.includes('pro') 
           ? ['gemini-1.5-pro', 'gemini-2.5-pro', 'gemini-1.0-pro-exp'] 

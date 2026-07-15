@@ -42,12 +42,13 @@ function buildFoglioAnagrafica(ws, unita) {
   ];
   styleHeader(ws.getRow(1));
   unita.forEach((u, i) => {
-    const prop = u.occupanti?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false);
-    const inq  = u.occupanti?.find(o => (o.ruolo === 'inquilino' || o.tipo_occupante === 'inquilino') && o.attivo !== false);
+    const occList = u.occupanti || u.occupanti_unita;
+    const prop = occList?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false);
+    const inq  = occList?.find(o => (o.ruolo === 'inquilino' || o.tipo_occupante === 'inquilino') && o.attivo !== false);
     const propNome = prop?.persona ? `${prop.persona.nome || ''} ${prop.persona.cognome || ''}`.trim() : '';
     const inqNome = inq?.persona ? `${inq.persona.nome || ''} ${inq.persona.cognome || ''}`.trim() : '';
     const row = ws.addRow({
-      numero: u.numero, tipo: u.tipo, piano: u.piano ?? '', scala: u.scala ?? '', superficie: u.superficie ?? '',
+      numero: u.numero, tipo: u.tipo, piano: u.piano ?? '', scala: u.scala ?? '', superficie: u.mq ?? '',
       prop_nome: propNome, prop_email: prop?.persona?.email || '',
       inq_nome: inqNome, inq_email: inq?.persona?.email || '',
       dal: '', al: '',
@@ -115,7 +116,7 @@ function buildFoglioRate(ws, rate, cells, unita, getProprietario) {
 
   let i = 0;
   (unita || []).forEach(u => {
-    const prop = getProprietario ? getProprietario(u) : (u.occupanti?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false));
+    const prop = getProprietario ? getProprietario(u) : ((u.occupanti || u.occupanti_unita)?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false));
     const propNome = prop ? (prop.persona ? `${prop.persona.nome || ''} ${prop.persona.cognome || ''}`.trim() : `${prop.nome || ''} ${prop.cognome || ''}`.trim()) : '';
     rateSorted.forEach(r => {
       const cell = cellMap[`${u.id}_${r.id}`];

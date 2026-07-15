@@ -61,8 +61,8 @@ export default function RipartizionePage() {
           )
         `).eq('condominio_id', condominioId).order('numero'),
         supabase.from('ripartizioni').select(`
-          *, spesa:spese(id, descrizione, importo, criterio, tabella_millesimale_id, categoria)
-        `).eq('condominio_id', condominioId),
+          *, spesa:spese!inner(id, descrizione, importo, criterio, tabella_millesimale_id, categoria, esercizio_id)
+        `).eq('spese.esercizio_id', esercizioId),
         supabase.from('tabelle_millesimali').select('*').eq('condominio_id', condominioId),
         supabase.from('rate').select('*').eq('esercizio_id', esercizioId).order('numero_rata'),
       ]);

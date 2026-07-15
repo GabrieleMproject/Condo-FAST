@@ -68,6 +68,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
 
   // Stati per la creazione manuale dell'unità
   const [showNuovaUnitaModal, setShowNuovaUnitaModal] = useState(false)
+  const [editUnitaId, setEditUnitaId] = useState(null)
   const [nuovoNumeroUnita, setNuovoNumeroUnita] = useState('')
   const [nuovaScala, setNuovaScala] = useState('')
   const [nuovoPiano, setNuovoPiano] = useState('')
@@ -587,7 +588,37 @@ Lo Studio Amministrativo`
     }
   }
 
-  const handleCreaUnitaManuale = async (e) => {
+  const apriModificaUnita = (u) => {
+    setEditUnitaId(u.id)
+    setNuovoNumeroUnita(u.numero || '')
+    setNuovaScala(u.scala || '')
+    setNuovoPiano(u.piano != null ? String(u.piano) : '')
+    setNuovoMq(u.mq != null ? String(u.mq) : '')
+    setNuovoTipoUnita(u.tipo || 'appartamento')
+    setNuovoCatastoFoglio(u.catasto_foglio || '')
+    setNuovoCatastoParticella(u.catasto_particella || '')
+    setNuovoCatastoSubalterno(u.catasto_subalterno || '')
+    setNuovoCatastoCategoria(u.catasto_categoria || '')
+    setNuovoCatastoRendita(u.catasto_rendita != null ? String(u.catasto_rendita) : '')
+    setShowNuovaUnitaModal(true)
+  }
+
+  const apriNuovaUnita = () => {
+    setEditUnitaId(null)
+    setNuovoNumeroUnita('')
+    setNuovaScala('')
+    setNuovoPiano('')
+    setNuovoMq('')
+    setNuovoTipoUnita('appartamento')
+    setNuovoCatastoFoglio('')
+    setNuovoCatastoParticella('')
+    setNuovoCatastoSubalterno('')
+    setNuovoCatastoCategoria('')
+    setNuovoCatastoRendita('')
+    setShowNuovaUnitaModal(true)
+  }
+
+  const handleSalvaUnitaManuale = async (e) => {
     e.preventDefault()
     if (!nuovoNumeroUnita.trim()) {
       toast.error("Il numero dell'unità è obbligatorio!")
@@ -595,26 +626,36 @@ Lo Studio Amministrativo`
     }
     setSalvandoUnita(true)
     try {
-      const { error } = await supabase
-        .from('unita')
-        .insert([{
-          condominio_id: condominioId,
-          numero: nuovoNumeroUnita.trim(),
-          scala: nuovaScala.trim() || null,
-          piano: nuovoPiano !== '' ? parseInt(nuovoPiano) : null,
-          mq: nuovoMq !== '' ? parseFloat(nuovoMq) : null,
-          tipo: nuovoTipoUnita,
-          catasto_foglio: nuovoCatastoFoglio.trim() || null,
-          catasto_particella: nuovoCatastoParticella.trim() || null,
-          catasto_subalterno: nuovoCatastoSubalterno.trim() || null,
-          catasto_categoria: nuovoCatastoCategoria.trim() || null,
-          catasto_rendita: nuovoCatastoRendita !== '' ? parseFloat(nuovoCatastoRendita) : null
-        }])
+      const payload = {
+        numero: nuovoNumeroUnita.trim(),
+        scala: nuovaScala.trim() || null,
+        piano: nuovoPiano !== '' ? parseInt(nuovoPiano) : null,
+        mq: nuovoMq !== '' ? parseFloat(nuovoMq) : null,
+        tipo: nuovoTipoUnita,
+        catasto_foglio: nuovoCatastoFoglio.trim() || null,
+        catasto_particella: nuovoCatastoParticella.trim() || null,
+        catasto_subalterno: nuovoCatastoSubalterno.trim() || null,
+        catasto_categoria: nuovoCatastoCategoria.trim() || null,
+        catasto_rendita: nuovoCatastoRendita !== '' ? parseFloat(nuovoCatastoRendita) : null
+      }
 
-      if (error) throw error
+      if (editUnitaId) {
+        const { error } = await supabase
+          .from('unita')
+          .update(payload)
+          .eq('id', editUnitaId)
+        if (error) throw error
+        toast.success('Unità immobiliare aggiornata con successo!')
+      } else {
+        const { error } = await supabase
+          .from('unita')
+          .insert([{ condominio_id: condominioId, ...payload }])
+        if (error) throw error
+        toast.success('Unità immobiliare inserita con successo!')
+      }
 
-      toast.success('Unità immobiliare inserita con successo!')
       setShowNuovaUnitaModal(false)
+      setEditUnitaId(null)
       setNuovoNumeroUnita('')
       setNuovaScala('')
       setNuovoPiano('')
@@ -629,7 +670,7 @@ Lo Studio Amministrativo`
       await fetchDatiRegistro()
       await caricaUnitaDropdown()
     } catch (err) {
-      toast.error('Errore creazione unità: ' + err.message)
+      toast.error('Errore salvataggio unità: ' + err.message)
     } finally {
       setSalvandoUnita(false)
     }
@@ -666,7 +707,7 @@ Lo Studio Amministrativo`
               </button>
               {!isCollaboratore && (
                 <>
-                  <button onClick={() => setShowNuovaUnitaModal(true)} style={{ ...styles.filterBtn(false), color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }} disabled={loadingRegistro}>
+                  <button onClick={apriNuovaUnita} style={{ ...styles.filterBtn(false), color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }} disabled={loadingRegistro}>
                     <Plus size={14} style={{ marginRight: 6 }} /> Nuova Unità
                   </button>
                   <button onClick={apriInvioRichieste} style={styles.filterBtn(false)} disabled={loadingRegistro}>
@@ -788,36 +829,46 @@ Lo Studio Amministrativo`
 
                         {!isCollaboratore && (
                           <td style={{ ...styles.td, textAlign: 'center' }}>
-                            {occupanti.length === 0 ? (
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                               <button
-                                onClick={() => {
-                                  setNuovoUnitaId(u.id)
-                                  setNuovoRuolo('proprietario')
-                                  setShowNuovoModal(true)
-                                }}
-                                title="Aggiungi proprietario o inquilino a questa unità"
-                                style={{ ...styles.btnEdit, background: '#10b981', color: '#fff', border: '1px solid #10b981' }}
+                                onClick={() => apriModificaUnita(u)}
+                                title="Modifica dati unità e dati catastali"
+                                style={{ ...styles.btnEdit, border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
                               >
-                                <Plus size={12} style={{ marginRight: 4 }} /> Soggetto
+                                📝 Modifica
                               </button>
-                            ) : (
-                              <>
-                                <input
-                                  type="file"
-                                  accept="image/*,application/pdf"
-                                  ref={el => fileInputRefs.current[u.id] = el}
-                                  onChange={e => handleFileChange(u, e)}
-                                  style={{ display: 'none' }}
-                                />
-                                <button 
-                                  onClick={() => fileInputRefs.current[u.id]?.click()}
-                                  title="Carica modulo autocertificazione compilato"
-                                  style={styles.btnEdit}
+
+                              {occupanti.length === 0 ? (
+                                <button
+                                  onClick={() => {
+                                    setNuovoUnitaId(u.id)
+                                    setNuovoRuolo('proprietario')
+                                    setShowNuovoModal(true)
+                                  }}
+                                  title="Aggiungi proprietario o inquilino a questa unità"
+                                  style={{ ...styles.btnEdit, background: '#10b981', color: '#fff', border: '1px solid #10b981' }}
                                 >
-                                  <Upload size={14} style={{ marginRight: 6 }} /> Carica Modulo
+                                  <Plus size={12} style={{ marginRight: 4 }} /> Soggetto
                                 </button>
-                              </>
-                            )}
+                              ) : (
+                                <>
+                                  <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    ref={el => fileInputRefs.current[u.id] = el}
+                                    onChange={e => handleFileChange(u, e)}
+                                    style={{ display: 'none' }}
+                                  />
+                                  <button 
+                                    onClick={() => fileInputRefs.current[u.id]?.click()}
+                                    title="Carica modulo autocertificazione compilato"
+                                    style={styles.btnEdit}
+                                  >
+                                    <Upload size={14} style={{ marginRight: 6 }} /> Carica Modulo
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -1290,13 +1341,15 @@ Lo Studio Amministrativo`
           <div style={{ ...styles.modal, width: 520 }} onClick={e => e.stopPropagation()}>
             <div style={styles.modalHead}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Plus size={18} color="#60a5fa" />
-                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 15 }}>Nuova Unità Immobiliare</span>
+                {editUnitaId ? <Plus size={18} color="#fbbf24" /> : <Plus size={18} color="#60a5fa" />}
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 15 }}>
+                  {editUnitaId ? 'Modifica Unità Immobiliare' : 'Nuova Unità Immobiliare'}
+                </span>
               </div>
-              <button style={styles.btnClose} onClick={() => setShowNuovaUnitaModal(false)}><X size={16}/></button>
+              <button style={styles.btnClose} onClick={() => { setShowNuovaUnitaModal(false); setEditUnitaId(null); }}><X size={16}/></button>
             </div>
 
-            <form onSubmit={handleCreaUnitaManuale}>
+            <form onSubmit={handleSalvaUnitaManuale}>
               <div style={{ ...styles.modalBody, maxHeight: '65vh', overflowY: 'auto', paddingRight: 6 }}>
                 
                 <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4, textAlign: 'left' }}>Dati Immobile</div>
@@ -1366,7 +1419,7 @@ Lo Studio Amministrativo`
               <div style={styles.modalFooter}>
                 <button type="button" style={styles.btnCancel} onClick={() => setShowNuovaUnitaModal(false)}>Annulla</button>
                 <button type="submit" disabled={salvandoUnita} style={styles.btnSave}>
-                  {salvandoUnita ? 'Salvataggio...' : 'Crea Unità'}
+                  {salvandoUnita ? 'Salvataggio...' : (editUnitaId ? 'Salva Modifiche' : 'Crea Unità')}
                 </button>
               </div>
             </form>

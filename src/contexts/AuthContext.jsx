@@ -3,15 +3,15 @@ import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext(null)
 
+let globalChannel = null
+let isTrackingSession = false
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    let channel = null
-    let isTrackingSession = false
-
     const currentSessionId = (() => {
       let sid = sessionStorage.getItem('condosmart_session_id')
       if (!sid) {
@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
 
     const setupSessionTracker = async (currentUser) => {
       if (!currentUser) return
-      if (isTrackingSession) return // Lock per evitare esecuzioni parallele concorrenti
+      if (isTrackingSession) return // Lock globale per evitare esecuzioni parallele concorrenti
       isTrackingSession = true
 
       try {
@@ -35,12 +35,12 @@ export function AuthProvider({ children }) {
         })
 
         // Rimuove in modo pulito il canale precedente se esistente per evitare collisioni
-        if (channel) {
-          await supabase.removeChannel(channel)
-          channel = null
+        if (globalChannel) {
+          await supabase.removeChannel(globalChannel)
+          globalChannel = null
         }
         
-        channel = supabase
+        globalChannel = supabase
           .channel(`user_sessions_${currentUser.id}_${currentSessionId}`)
           .on(
             'postgres_changes',
@@ -91,18 +91,19 @@ export function AuthProvider({ children }) {
         setupSessionTracker(currentUser)
       } else if (event === 'SIGNED_OUT') {
         isTrackingSession = false // Reset lock
-        if (channel) {
-          supabase.removeChannel(channel)
-          channel = null
+        if (globalChannel) {
+          supabase.removeChannel(globalChannel)
+          globalChannel = null
         }
       }
     })
 
     return () => {
       subscription.unsubscribe()
-      if (channel) {
-        supabase.removeChannel(channel)
-      }
+      // Nota: Non disiscriviamo globalChannel qui durante la pulizia dell'effetto.
+      // Questo impedisce che lo smontaggio e rimontaggio fulmineo indotto da StrictMode
+      // disiscriva asincronicamente la connessione Realtime attiva e valida.
+      // Il canale viene chiuso unicamente su SIGNED_OUT o se viene ricreato.
     }
   }, [])
 

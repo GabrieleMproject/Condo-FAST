@@ -220,15 +220,22 @@ serve(async (req) => {
       } catch { /* ignore */ }
 
       if (shouldFallback) {
+        const isEquivalentModel = (m1: string, m2: string) => {
+          const norm = (m: string) => {
+            if (m === 'gemini-flash-latest') return 'gemini-1.5-flash'
+            if (m === 'gemini-pro-latest') return 'gemini-1.5-pro'
+            return m
+          }
+          return norm(m1) === norm(m2)
+        }
+
         // Tenta modelli alternativi in ordine
-        const fallbackModels = currentModel.includes('pro') 
-          ? ['gemini-1.5-pro', 'gemini-1.0-pro-exp'] 
-          : ['gemini-1.5-flash', 'gemini-2.0-flash-exp'];
+        const fallbackModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp']
           
-        console.warn(`[gemini-proxy] Quota esaurita per il modello ${currentModel}. Avvio fallback automatico.`);
+        console.warn(`[gemini-proxy] Quota/Servizio non disponibile per il modello ${currentModel}. Avvio fallback automatico.`);
         
         for (const altModel of fallbackModels) {
-          if (altModel === currentModel) continue;
+          if (isEquivalentModel(altModel, currentModel)) continue;
           try {
             console.log(`[gemini-proxy] Tentativo di fallback con modello: ${altModel}`);
             const altResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${altModel}:generateContent?key=${GEMINI_API_KEY}`, {

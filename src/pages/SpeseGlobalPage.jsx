@@ -36,6 +36,7 @@ export default function SpeseGlobalPage() {
   const [activeQueueId, setActiveQueueId] = useState(null)
   const [processing, setProcessing] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [saving, setSaving] = useState(false)
   
   const fileInputRef = useRef()
 
@@ -100,7 +101,7 @@ export default function SpeseGlobalPage() {
       const paroleChiave = nomeEstratto
         .replace(/condominio/g, '')
         .split(/[\s,.-]+/)
-        .filter(w => w.length > 2)
+        .filter(w => w.length > 2 && !['cond', 'condo', 'condominio', 'studio', 'amministrazione'].includes(w))
       
       if (paroleChiave.length > 0) {
         const trovatoNome = condominiList.find(c => {
@@ -289,6 +290,7 @@ export default function SpeseGlobalPage() {
     const item = queue.find(q => q.id === itemId)
     if (!item) return
 
+    setSaving(true)
     try {
       // a. Crea spesa
       const { data: nuovaSpesa, error: spesaErr } = await supabase
@@ -405,6 +407,8 @@ export default function SpeseGlobalPage() {
     } catch (err) {
       console.error('Errore durante il salvataggio:', err)
       alert('Errore durante il salvataggio: ' + err.message)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -612,6 +616,12 @@ export default function SpeseGlobalPage() {
                 <RefreshCw size={14} /> Riprova analisi
               </button>
             </div>
+          ) : activeItem.status === 'updating_data' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'var(--text-muted)' }}>
+              <Loader2 size={36} className="spin" style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)', marginBottom: 12 }} />
+              <h3 style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: 16, fontWeight: 600 }}>Aggiornamento dati condominio...</h3>
+              <p style={{ margin: 0, fontSize: 13 }}>Caricamento delle tabelle millesimali e degli esercizi contabili.</p>
+            </div>
           ) : activeItem.status === 'saved' ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: '#10b981' }}>
               <CheckCircle2 size={48} style={{ marginBottom: 16 }} />
@@ -631,11 +641,13 @@ export default function SpeseGlobalPage() {
                   </label>
                   <select
                     value={activeItem.condominioId || ''}
+                    disabled={saving}
                     onChange={(e) => handleCondominioChange(activeItem.id, e.target.value)}
                     style={{
                       width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
                       border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
-                      fontSize: 13, fontFamily: 'Sora, sans-serif'
+                      fontSize: 13, fontFamily: 'Sora, sans-serif',
+                      opacity: saving ? 0.6 : 1
                     }}
                   >
                     <option value="">-- Seleziona condominio --</option>
@@ -667,12 +679,12 @@ export default function SpeseGlobalPage() {
                   <select
                     value={activeItem.esercizioId || ''}
                     onChange={(e) => handleEsercizioChange(activeItem.id, e.target.value)}
-                    disabled={!activeItem.condominioId || activeItem.esercizi.length === 0}
+                    disabled={saving || !activeItem.condominioId || activeItem.esercizi.length === 0}
                     style={{
                       width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
                       border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
                       fontSize: 13, fontFamily: 'Sora, sans-serif',
-                      opacity: !activeItem.condominioId || activeItem.esercizi.length === 0 ? 0.6 : 1
+                      opacity: (saving || !activeItem.condominioId || activeItem.esercizi.length === 0) ? 0.6 : 1
                     }}
                   >
                     {!activeItem.condominioId ? (

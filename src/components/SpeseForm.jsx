@@ -272,7 +272,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
       try {
         let query = supabase
           .from('fatture_fornitori')
-          .select('id, numero_fattura, fornitore, importo_totale, data_fattura')
+          .select('id, spesa_id, numero_fattura, fornitore, importo_totale, data_fattura')
           .eq('condominio_id', condominioId)
           .eq('importo_totale', parseFloat(form.importo) || 0)
 
@@ -295,7 +295,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
 
         if (data && data.length > 0) {
           // Filtriamo via la spesa corrente se siamo in modalità modifica
-          const matches = spesaInEdit ? data.filter(d => d.id !== spesaInEdit.id) : data
+          const matches = spesaInEdit ? data.filter(d => d.spesa_id !== spesaInEdit.id) : data
           if (matches.length > 0) {
             setDuplicateWarning({
               numero_fattura: matches[0].numero_fattura,

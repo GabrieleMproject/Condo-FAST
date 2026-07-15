@@ -272,17 +272,6 @@ L'Amministratore`;
       })
       .catch(err => console.error("[RateGridTab] Errore di rete esercizi:", err))
 
-    supabase.from('config_pagante_unita').select('unita_id, pagante').eq('condominio_id', condominioId)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("[RateGridTab] Errore config_pagante_unita:", error.message)
-          return
-        }
-        const map = {}
-        ;(data || []).forEach(c => { map[c.unita_id] = c.pagante })
-        setConfigPagante(map)
-      })
-
     // Carica dati condominio (con IBAN)
     supabase.from('condomini').select('*').eq('id', condominioId).maybeSingle()
       .then(({ data, error }) => {
@@ -314,6 +303,18 @@ L'Amministratore`;
         setCells(cellData || [])
       } else {
         setCells([])
+      }
+
+      // Carica configurazione pagante per l'esercizio corrente
+      const { data: configData, error: configErr } = await supabase
+        .from('config_pagante_unita').select('unita_id, pagante')
+        .eq('esercizio_id', esercizio.id)
+      if (configErr) {
+        console.error("[RateGridTab] Errore config_pagante_unita:", configErr.message)
+      } else {
+        const map = {}
+        ;(configData || []).forEach(c => { map[c.unita_id] = c.pagante })
+        setConfigPagante(map)
       }
     } catch (e) {
       console.error("[RateGridTab] Errore nel caricamento della griglia rate:", e.message)

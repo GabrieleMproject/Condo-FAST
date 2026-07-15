@@ -1,1 +1,20 @@
-{}
+{
+  "condominioId": "dc73952f-d4d9-4f84-8521-52f2d9242eb3",
+  "esercizioId": "00ce5ae0-e4bb-49c2-81ac-1b9bdb95fcd5",
+  "personeMap": {
+    "Micieli Domenico Loris": "32c91e1c-db08-4ee5-8c95-cdfb8e6e2f6d",
+    "Chiodarelli Elena": "40950c78-0e3f-4a69-ad0a-eb29c66e1883",
+    "Stranieri Antonio": "25601eeb-97c3-4453-a8a5-d46e764d0e7e",
+    "Cattaneo Angela": "f36e0ca7-f70e-42ae-b982-c9f63dd0278d",
+    "Galeazzi Elena": "f5a721f1-37f4-4d5c-af8a-aa021b9af4a8",
+    "Millo S.": "d20c068b-837d-4ff7-8c74-5274900176f9"
+  },
+  "unitaMap": {
+    "Via Canzighina, n° 290": "75a0b7b6-ebfc-4f18-8a1b-40a60ec54d4e"
+  },
+  "tabelleMillesimali": {},
+  "preventivoId": null,
+  "speseMappa": {},
+  "fattureMappa": {},
+  "movimentiCaricati": false
+}

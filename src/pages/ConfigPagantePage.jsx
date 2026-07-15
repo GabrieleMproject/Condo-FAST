@@ -21,13 +21,46 @@ export default function ConfigPagantePage() {
   const [toast, setToast] = useState(null);
   const [defaultGlobal, setDefaultGlobal] = useState('proprietario');
 
-  // ─── Caricamento ─────────────────────────────────────────────
+  const [esercizi, setEsercizi] = useState([]);
+  const [esercizioId, setEsercizioId] = useState('');
+
+  // ─── Caricamento Esercizi ─────────────────────────────────────
   useEffect(() => {
     if (!condominioId) return;
-    loadAll();
+    loadEsercizi();
   }, [condominioId]);
 
-  async function loadAll() {
+  async function loadEsercizi() {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('esercizi')
+        .select('*')
+        .eq('condominio_id', condominioId)
+        .order('anno', { ascending: false });
+
+      if (error) throw error;
+      setEsercizi(data || []);
+      
+      const active = data?.find(e => e.stato === 'aperto') || data?.[0];
+      if (active) {
+        setEsercizioId(active.id);
+      } else {
+        setLoading(false);
+      }
+    } catch (e) {
+      showToast('Errore caricamento esercizi: ' + e.message, 'error');
+      setLoading(false);
+    }
+  }
+
+  // ─── Caricamento Configurazione per Esercizio ──────────────────
+  useEffect(() => {
+    if (!esercizioId) return;
+    loadConfig();
+  }, [esercizioId]);
+
+  async function loadConfig() {
     setLoading(true);
     try {
       const [{ data: uni }, { data: cfg }] = await Promise.all([
@@ -38,7 +71,7 @@ export default function ConfigPagantePage() {
             persona:persone(id, nominativo, email, telefono)
           )
         `).eq('condominio_id', condominioId).order('numero'),
-        supabase.from('config_pagante_unita').select('*').eq('condominio_id', condominioId),
+        supabase.from('config_pagante_unita').select('*').eq('esercizio_id', esercizioId),
       ]);
 
       setUnita(uni || []);
@@ -49,6 +82,8 @@ export default function ConfigPagantePage() {
       });
       setConfig(map);
       setOriginale(map);
+    } catch (e) {
+      showToast('Errore: ' + e.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -70,12 +105,13 @@ export default function ConfigPagantePage() {
 
   // ─── Salvataggio ─────────────────────────────────────────────
   async function salva() {
+    if (!esercizioId) return;
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
       const upserts = Object.entries(config).map(([unita_id, pagante]) => ({
-        condominio_id: condominioId,
+        esercizio_id: esercizioId,
         unita_id,
         pagante,
         user_id: user.id,
@@ -83,7 +119,7 @@ export default function ConfigPagantePage() {
 
       const { error } = await supabase
         .from('config_pagante_unita')
-        .upsert(upserts, { onConflict: 'condominio_id,unita_id' });
+        .upsert(upserts, { onConflict: 'esercizio_id,unita_id' });
 
       if (error) throw error;
 
@@ -105,6 +141,7 @@ export default function ConfigPagantePage() {
     return u.occupanti?.find(o => (o.ruolo === 'proprietario' || o.tipo_occupante === 'proprietario') && o.attivo !== false)?.persona;
   }
 
+  // eslint-disable-next-line
   function getInquilino(u) {
     return u.occupanti?.find(o =>
       (o.ruolo === 'inquilino' || o.tipo_occupante === 'inquilino') && o.attivo !== false
@@ -127,9 +164,9 @@ export default function ConfigPagantePage() {
           </p>
         </div>
         <button
-          style={{ ...styles.btnPrimary, opacity: (!isDirty || saving) ? 0.5 : 1 }}
+          style={{ ...styles.btnPrimary, opacity: (!isDirty || saving || !esercizioId) ? 0.5 : 1 }}
           onClick={salva}
-          disabled={!isDirty || saving}
+          disabled={!isDirty || saving || !esercizioId}
         >
           {saving ? 'Salvataggio...' : (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -139,8 +176,28 @@ export default function ConfigPagantePage() {
         </button>
       </div>
 
+      {/* Selettore Esercizio */}
+      <div style={{ ...styles.defaultBar, marginBottom: 12 }}>
+        <span style={styles.defaultLabel}>Esercizio Contabile:</span>
+        {esercizi.length > 0 ? (
+          <select
+            style={styles.select}
+            value={esercizioId}
+            onChange={e => setEsercizioId(e.target.value)}
+          >
+            {esercizi.map(es => (
+              <option key={es.id} value={es.id}>
+                {es.anno} - {es.tipo === 'straordinario' ? 'Straordinario' : 'Ordinario'} ({es.stato})
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span style={{ fontSize: 13, color: '#f87171' }}>Nessun esercizio creato per questo condominio. Crea prima un esercizio.</span>
+        )}
+      </div>
+
       {/* Alert unità senza config */}
-      {uniteSenzaConfig > 0 && (
+      {uniteSenzaConfig > 0 && esercizioId && (
         <div style={{ ...styles.alert, display: 'flex', alignItems: 'center', gap: 6 }}>
           <Info size={14} style={{ flexShrink: 0 }} />
           <span>{uniteSenzaConfig} {uniteSenzaConfig === 1 ? 'unità non ha' : 'unità non hanno'} ancora una configurazione. Il default è <strong>proprietario</strong>.</span>
@@ -148,20 +205,22 @@ export default function ConfigPagantePage() {
       )}
 
       {/* Default globale */}
-      <div style={styles.defaultBar}>
-        <span style={styles.defaultLabel}>Applica a tutte le unità:</span>
-        <select
-          style={styles.select}
-          value={defaultGlobal}
-          onChange={e => setDefaultGlobal(e.target.value)}
-        >
-          <option value="proprietario">Proprietario</option>
-          <option value="inquilino">Inquilino</option>
-        </select>
-        <button style={styles.btnSecondary} onClick={applicaDefault}>
-          Applica
-        </button>
-      </div>
+      {esercizioId && (
+        <div style={styles.defaultBar}>
+          <span style={styles.defaultLabel}>Applica a tutte le unità:</span>
+          <select
+            style={styles.select}
+            value={defaultGlobal}
+            onChange={e => setDefaultGlobal(e.target.value)}
+          >
+            <option value="proprietario">Proprietario</option>
+            <option value="inquilino">Inquilino</option>
+          </select>
+          <button style={styles.btnSecondary} onClick={applicaDefault}>
+            Applica
+          </button>
+        </div>
+      )}
 
       {/* Legenda */}
       <div style={styles.legend}>

@@ -15,7 +15,13 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
   const regex = isArray ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
   const match = rawStr.match(regex);
   const clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+  try {
+    return JSON.parse(clean);
+  } catch (err) {
+    console.error('[pulisciEdEstraiJson] Errore parsing JSON. Stringa estratta:', clean);
+    console.error('[pulisciEdEstraiJson] Errore originale:', err);
+    throw err;
+  }
 }
 
 // ─── Leggi file come base64 ───────────────────────────────────────────────────
@@ -268,7 +274,8 @@ Regole Generali:
 - Se la fattura ha più righe, somma gli importi
 - La categoria deve essere quella più appropriata tra quelle elencate
 - Gli importi devono essere numeri senza simboli €
-- Se un campo non è presente, usa null`;
+- Se un campo non è presente, usa null
+- Tutte le stringhe di testo nel JSON devono essere correttamente formattate. Se il testo del documento contiene virgolette doppie ("), queste devono essere OBBLIGATORIAMENTE escaped come \". Esempio: "lavori di riparazione \"chiavi in mano\"".`;
 
   const userPrompt = (isVisual || isPdf)
     ? 'Analizza questa fattura ed estrai i dati nel formato JSON richiesto.'

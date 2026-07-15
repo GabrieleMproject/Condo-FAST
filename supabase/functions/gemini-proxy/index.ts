@@ -229,8 +229,9 @@ serve(async (req) => {
           return norm(m1) === norm(m2)
         }
 
-        // Tenta modelli alternativi in ordine
-        const fallbackModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp']
+        // Tenta modelli alternativi in ordine di efficienza/disponibilità
+        const fallbackModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b', 'gemini-2.0-flash-exp']
+        const errorsLog: string[] = []
           
         console.warn(`[gemini-proxy] Quota/Servizio non disponibile per il modello ${currentModel}. Avvio fallback automatico.`);
         
@@ -252,11 +253,18 @@ serve(async (req) => {
               console.log(`[gemini-proxy] Fallback riuscito! Utilizzato modello: ${altModel}`);
               break
             } else {
+              const altErrText = await altResponse.text().catch(() => '')
+              errorsLog.push(`${altModel} (Status: ${altResponse.status}, Msg: ${altErrText.slice(0, 150)})`)
               console.warn(`[gemini-proxy] Fallback fallito per modello ${altModel} (Status: ${altResponse.status})`);
             }
           } catch (altErr) {
+            errorsLog.push(`${altModel} (Eccezione: ${altErr.message})`)
             console.error(`[gemini-proxy] Errore chiamata fallback ${altModel}:`, altErr)
           }
+        }
+
+        if (!response.ok) {
+          throw new Error(`Servizio AI temporaneamente non disponibile. Modello originale ${currentModel} fallito. Dettagli tentativi di fallback:\n- ${errorsLog.join('\n- ')}`)
         }
       }
     }

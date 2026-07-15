@@ -188,21 +188,68 @@ serve(async (req) => {
       geminiPayload.generationConfig.responseMimeType = 'application/json'
     }
 
-    // ── 5. Chiamata API Gemini ─────────────────────────────────────────
+    // ── 5. Chiamata API Gemini con Fallback automatico su 429 (Rate Limit / Quota) ──
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
     if (!GEMINI_API_KEY) {
       throw new Error('Manca la variabile GEMINI_API_KEY nelle impostazioni di Supabase Edge Functions')
     }
 
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`
-
-    const response = await fetch(GEMINI_API_URL, {
+    let currentModel = model
+    let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(geminiPayload),
     })
+
+    // Se fallisce per quota esaurita o limiti, tenta il fallback su modelli alternativi
+    if (!response.ok) {
+      const cloneRes = response.clone()
+      let isQuotaError = false
+      let errText = ''
+      try {
+        errText = await cloneRes.text()
+        isQuotaError = response.status === 429 || 
+                       errText.includes('Quota exceeded') || 
+                       errText.includes('RESOURCE_EXHAUSTED') || 
+                       errText.includes('rate-limits')
+      } catch { /* ignore */ }
+
+      if (isQuotaError) {
+        // Tenta modelli alternativi in ordine
+        const fallbackModels = currentModel.includes('pro') 
+          ? ['gemini-1.5-pro', 'gemini-2.5-pro', 'gemini-1.0-pro-exp'] 
+          : ['gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-exp'];
+          
+        console.warn(`[claude-proxy] Quota esaurita per il modello ${currentModel}. Avvio fallback automatico.`);
+        
+        for (const altModel of fallbackModels) {
+          if (altModel === currentModel) continue;
+          try {
+            console.log(`[claude-proxy] Tentativo di fallback con modello: ${altModel}`);
+            const altResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${altModel}:generateContent?key=${GEMINI_API_KEY}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(geminiPayload),
+            })
+            
+            if (altResponse.ok) {
+              response = altResponse
+              currentModel = altModel
+              console.log(`[claude-proxy] Fallback riuscito! Utilizzato modello: ${altModel}`);
+              break
+            } else {
+              console.warn(`[claude-proxy] Fallback fallito per modello ${altModel} (Status: ${altResponse.status})`);
+            }
+          } catch (altErr) {
+            console.error(`[claude-proxy] Errore chiamata fallback ${altModel}:`, altErr)
+          }
+        }
+      }
+    }
 
     if (!response.ok) {
       const errText = await response.text()

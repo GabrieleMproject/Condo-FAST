@@ -13,6 +13,7 @@ import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
 import { useComunicazioni } from '../hooks/useComunicazioni'
 import AnagraficaImport from './AnagraficaImport'
+import SintesiSubentroModal from './SintesiSubentroModal'
 import { toast } from 'react-hot-toast'
 
 export default function AnagraficaCondominioTab({ condominioId, condominio }) {
@@ -60,6 +61,8 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
   const [nuovoNote, setNuovoNote] = useState('')
   const [nuovoUnitaId, setNuovoUnitaId] = useState('')
   const [nuovoRuolo, setNuovoRuolo] = useState('proprietario')
+  const [nuovoDataSubentro, setNuovoDataSubentro] = useState(new Date().toISOString().split('T')[0])
+  const [subentroSintesi, setSubentroSintesi] = useState(null)
   const [salvandoNuovo, setSalvandoNuovo] = useState(false)
 
   // --- STATI VISTA REGISTRO ---
@@ -299,9 +302,22 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
 
       if (pErr) throw pErr
 
+      let exCondominoObj = null
       if (nuovoUnitaId) {
-        const oggi = new Date().toISOString().split('T')[0]
-        const subDate = new Date()
+        // 1. Recupera ex condomino attivo per la modale di sintesi
+        const { data: exOcc } = await supabase
+          .from('occupanti_unita')
+          .select('persone(id, nome, cognome)')
+          .eq('unita_id', nuovoUnitaId)
+          .eq('ruolo', nuovoRuolo)
+          .eq('attivo', true)
+          .maybeSingle()
+        if (exOcc?.persone) {
+          exCondominoObj = exOcc.persone
+        }
+
+        // 2. Disattiva il vecchio occupante impostando data_fine a dataSubentro - 1 giorno
+        const subDate = new Date(nuovoDataSubentro)
         subDate.setDate(subDate.getDate() - 1)
         const ieri = subDate.toISOString().split('T')[0]
 
@@ -312,6 +328,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
           .eq('ruolo', nuovoRuolo)
           .eq('attivo', true)
 
+        // 3. Inserisci il nuovo record attivo
         const { error: oErr } = await supabase
           .from('occupanti_unita')
           .insert([{
@@ -319,13 +336,31 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
             persona_id: persona.id,
             ruolo: nuovoRuolo,
             attivo: true,
-            data_inizio: oggi
+            data_inizio: nuovoDataSubentro
           }])
         if (oErr) throw oErr
       }
 
       toast.success('Nuovo condòmino creato con successo!')
       setShowNuovoModal(false)
+
+      if (nuovoUnitaId) {
+        // Recupera dati completi dell'unità per il riepilogo
+        const { data: unitaDati } = await supabase
+          .from('unita')
+          .select('id, numero, scala, piano, condominio_id')
+          .eq('id', nuovoUnitaId)
+          .single()
+
+        setSubentroSintesi({
+          unita: unitaDati,
+          ruolo: nuovoRuolo,
+          nuovoCondomino: persona,
+          exCondomino: exCondominoObj,
+          dataSubentro: nuovoDataSubentro,
+        })
+      }
+
       setNuovoNome('')
       setNuovoCognome('')
       setNuovoEmail('')
@@ -340,6 +375,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
       setNuovoNote('')
       setNuovoUnitaId('')
       setNuovoRuolo('proprietario')
+      setNuovoDataSubentro(new Date().toISOString().split('T')[0])
       
       await caricaPersone()
       await fetchDatiRegistro()
@@ -1361,6 +1397,16 @@ Lo Studio Amministrativo`
                   </div>
                 </div>
 
+                {nuovoUnitaId && (
+                  <div style={{ ...styles.formGroup, marginTop: 12 }}>
+                    <label style={styles.label}>Data Subentro *</label>
+                    <input style={styles.input} type="date" required value={nuovoDataSubentro} onChange={e => setNuovoDataSubentro(e.target.value)} />
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                      Data di inizio possesso/inquilinato per i conteggi contabili.
+                    </span>
+                  </div>
+                )}
+
                 <div style={{ ...styles.formGroup, marginTop: 12 }}>
                   <label style={styles.label}>Note</label>
                   <textarea style={{ ...styles.input, minHeight: 50, resize: 'vertical' }} value={nuovoNote} onChange={e => setNuovoNote(e.target.value)} />
@@ -1517,6 +1563,18 @@ Lo Studio Amministrativo`
       {/* Modale Importazione AI */}
       {showImport && (
         <AnagraficaImport onImport={handleImport} onClose={() => setShowImport(false)} />
+      )}
+
+      {/* Modale Sintesi Subentro e Benvenuto Contabile */}
+      {subentroSintesi && (
+        <SintesiSubentroModal
+          unita={subentroSintesi.unita}
+          ruolo={subentroSintesi.ruolo}
+          nuovoCondomino={subentroSintesi.nuovoCondomino}
+          exCondomino={subentroSintesi.exCondomino}
+          dataSubentro={subentroSintesi.dataSubentro}
+          onClose={() => setSubentroSintesi(null)}
+        />
       )}
     </div>
   )

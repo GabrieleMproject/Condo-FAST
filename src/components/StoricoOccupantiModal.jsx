@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { 
   User, Clock, Plus, Trash2, Calendar, UserPlus, X, Search, Check, AlertCircle, Mail, Phone, ArrowRightLeft 
 } from 'lucide-react';
+import SintesiSubentroModal from './SintesiSubentroModal';
 
 const formattaData = (dateStr) => {
   if (!dateStr) return '';
@@ -21,6 +22,7 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [subentroSintesi, setSubentroSintesi] = useState(null);
 
   // Subentry Form States
   const [selectedPersonaId, setSelectedPersonaId] = useState('');
@@ -188,6 +190,15 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
         }]);
 
       if (errNew) throw errNew;
+
+      const nuovoCondominoObj = personeList.find(p => p.id === selectedPersonaId);
+      setSubentroSintesi({
+        unita: unita,
+        ruolo: ruolo,
+        nuovoCondomino: nuovoCondominoObj,
+        exCondomino: currentActive?.persone || null,
+        dataSubentro: dataSubentro
+      });
 
       // Reset subentry fields
       setSelectedPersonaId('');
@@ -430,6 +441,20 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
         </div>
 
       </div>
+
+      {subentroSintesi && (
+        <SintesiSubentroModal
+          unita={subentroSintesi.unita}
+          ruolo={subentroSintesi.ruolo}
+          nuovoCondomino={subentroSintesi.nuovoCondomino}
+          exCondomino={subentroSintesi.exCondomino}
+          dataSubentro={subentroSintesi.dataSubentro}
+          onClose={() => {
+            setSubentroSintesi(null);
+            onClose(); // Chiude lo storico occupanti dopo il subentro completo
+          }}
+        />
+      )}
     </div>
   );
 }

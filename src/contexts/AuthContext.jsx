@@ -10,6 +10,8 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let channel = null
+    let isTrackingSession = false
+
     const currentSessionId = (() => {
       let sid = sessionStorage.getItem('condosmart_session_id')
       if (!sid) {
@@ -21,6 +23,8 @@ export function AuthProvider({ children }) {
 
     const setupSessionTracker = async (currentUser) => {
       if (!currentUser) return
+      if (isTrackingSession) return // Lock per evitare esecuzioni parallele concorrenti
+      isTrackingSession = true
 
       try {
         // Registra o aggiorna la sessione corrente sul database
@@ -54,9 +58,15 @@ export function AuthProvider({ children }) {
               }
             }
           )
-          .subscribe()
+          .subscribe((status) => {
+            if (status !== 'SUBSCRIBED') {
+              // Se la sottoscrizione fallisce o viene chiusa, resettiamo il lock per consentire retry futuri
+              isTrackingSession = false
+            }
+          })
       } catch (err) {
         console.error('Errore nel tracciamento della sessione:', err)
+        isTrackingSession = false // Sblocca in caso di errore
       }
     }
 
@@ -80,8 +90,9 @@ export function AuthProvider({ children }) {
       if (event === 'SIGNED_IN' && currentUser) {
         setupSessionTracker(currentUser)
       } else if (event === 'SIGNED_OUT') {
+        isTrackingSession = false // Reset lock
         if (channel) {
-          channel.unsubscribe()
+          supabase.removeChannel(channel)
           channel = null
         }
       }
@@ -89,7 +100,9 @@ export function AuthProvider({ children }) {
 
     return () => {
       subscription.unsubscribe()
-      if (channel) channel.unsubscribe()
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [])
 

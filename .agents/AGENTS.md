@@ -835,4 +835,5 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 3. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
 - **Push e Commit**: Caricate le modifiche sul repository GitHub ed eseguito il push su `origin main`.
+- **Diagnostica Edge Function**: Modificata ed eseguito il deploy di `gemini-proxy` per esporre la risposta d'errore JSON originale di Google Gemini API, facilitando l'individuazione di problemi legati alle quote della chiave API.
 

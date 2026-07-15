@@ -407,27 +407,23 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GRIGIO);
   doc.text(`Art. 1130 comma 1 n. 6 c.c. · Stampato il ${new Date().toLocaleDateString('it-IT')}`, W - 12, 24, { align: 'right' });
 
-  // Prepara righe tabella
+  // Prepara righe tabella (5 colonne conformi per legge)
   const body = [];
   
   righe.forEach(u => {
+    const unitaDescr = `${u.numero || '-'}${u.scala ? ` (Sc. ${u.scala})` : ''}${u.piano != null ? ` - P.${u.piano}` : ''}`;
     const catastali = [
-      u.catasto_foglio || '-',
-      u.catasto_particella || '-',
-      u.catasto_subalterno || '-',
-      u.catasto_categoria || '-',
-      u.catasto_rendita != null ? `€ ${Number(u.catasto_rendita).toFixed(2)}` : '-'
-    ].join(' / ');
+      u.catasto_foglio ? `F.${u.catasto_foglio}` : '',
+      u.catasto_particella ? `P.${u.catasto_particella}` : '',
+      u.catasto_subalterno ? `S.${u.catasto_subalterno}` : ''
+    ].filter(Boolean).join(' ') || '-';
 
     const occupantiList = Array.isArray(u.occupanti_unita) ? u.occupanti_unita.filter(o => o.attivo) : [];
 
     if (occupantiList.length === 0) {
       body.push([
-        u.numero || '-',
-        `${u.scala || '-'} / ${u.piano != null ? u.piano : '-'}`,
-        u.tipo || 'Appartamento',
+        unitaDescr,
         catastali,
-        '-',
         '-',
         '-',
         '-'
@@ -441,13 +437,11 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
           p.provincia ? `(${p.provincia})` : ''
         ].filter(Boolean).join(', ') || '-';
 
+        const ruoloStr = occ.ruolo ? ` (${occ.ruolo.charAt(0).toUpperCase() + occ.ruolo.slice(1)})` : '';
         body.push([
-          idx === 0 ? (u.numero || '-') : '',
-          idx === 0 ? (`${u.scala || '-'} / ${u.piano != null ? u.piano : '-'}`) : '',
-          idx === 0 ? (u.tipo || 'Appartamento') : '',
+          idx === 0 ? unitaDescr : '',
           idx === 0 ? catastali : '',
-          `${p.cognome || ''} ${p.nome || ''}`.trim() || '-',
-          occ.ruolo ? (occ.ruolo.charAt(0).toUpperCase() + occ.ruolo.slice(1)) : '-',
+          `${`${p.cognome || ''} ${p.nome || ''}`.trim() || '-'}${ruoloStr}`,
           p.codice_fiscale || '-',
           residenza
         ]);
@@ -457,11 +451,11 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
 
   autoTable(doc, {
     startY: 44,
-    head: [['Unità', 'Scala/Piano', 'Tipo', 'Dati Catastali (F/P/S/Cat/Rend.)', 'Nominativo', 'Ruolo', 'Codice Fiscale', 'Indirizzo Residenza']],
+    head: [['Unità', 'Dati Catastali (F/P/S)', 'Nominativo (Ruolo)', 'Codice Fiscale', 'Indirizzo Residenza']],
     body,
     theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 8, cellPadding: 4, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
-    headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
+    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 4.5, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+    headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
     alternateRowStyles: { fillColor: [24, 35, 55] },
     margin: { left: 12, right: 12 }
   });

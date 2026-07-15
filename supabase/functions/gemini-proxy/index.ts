@@ -265,7 +265,7 @@ serve(async (req) => {
                                    errText.includes('high demand')
                       
       if (isQuotaOrUnavailable) {
-        throw new Error('Servizio AI temporaneamente non disponibile. Riprova tra poco.')
+        throw new Error(`Servizio AI temporaneamente non disponibile (Quota/Rate Limit Google superato o API Key non abilitata). Dettagli: ${errText}`)
       }
       throw new Error(`Errore API Gemini (${response.status}): ${errText}`)
     }

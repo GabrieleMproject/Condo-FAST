@@ -775,13 +775,14 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Metrica Conversioni**: Aggiunti KPI grafici nel tab Marketing per tracciare le performance del programma di referral "Invita un amico" (tasso di registrazione, tasso di abbonamento ed euro totali erogati).
 
 ### 4. Bug Risolti (Fix Hot)
-- **Crash Realtime `AuthContext.jsx`**: Risolto un bug di race condition su Supabase Realtime per cui l'evento asincrono `.unsubscribe()` di un canale non completato prima della chiamata `.subscribe()` concorrente lanciava l'errore `cannot add postgres_changes callbacks... after subscribe()`. Risolto ripulendo in modo sequenziale con `await supabase.removeChannel(channel)` e nominando il canale con l'identificatore univoco di sessione (`currentSessionId`).
+- **Crash Realtime `AuthContext.jsx`**: Risolto un bug di race condition su Supabase Realtime per cui l'evento asincrono `.unsubscribe()` di un canale non completato prima della chiamata `.subscribe()` concorrente lanciava l'errore `cannot add postgres_changes callbacks... after subscribe()`. Risolto blindando la creazione del canale con un lock booleano sincrono (`isTrackingSession`), ripulendo in modo sequenziale con `await supabase.removeChannel(channel)` e nominando il canale con l'identificatore univoco di sessione (`currentSessionId`).
+- **Errore Eliminazione Condominio (Foreign Key in audit_log)**: Risolto un errore che impediva la cancellazione a cascata (`DELETE CASCADE`) di un condominio. Il trigger di audit log (`audit_trigger_func`) tentava di inserire una riga associata al `condominio_id` appena cancellato, fallendo a causa del vincolo di FK `audit_log_condominio_id_fkey`. Risolto modificando il trigger SQL per verificare se il condominio esiste ancora prima del logging (e impostando a NULL in caso contrario).
 
 ### 5. Fatti Verificati
-- **Esecuzione SQL**: Lo script `sql/s39_backoffice_marketing.sql` è stato applicato con successo sul database di produzione tramite la CLI di Supabase (`supabase db query --linked`).
+- **Esecuzione SQL**: Applicati con successo lo script `sql/s39_backoffice_marketing.sql` e il fix `sql/s40_fix_audit_delete_cascade.sql` sul database di produzione.
 - **Deploy Edge Function**: La Edge Function `invia-email-marketing` è stata caricata con successo su Supabase Cloud.
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
-- **Commit di sessione**: Registrato il commit di sessione S40 step 3.
+- **Commit di sessione**: Registrato il commit di sessione S40 step 4.
 
 
 

@@ -259,7 +259,7 @@ serve(async (req) => {
                       errText.includes('rate-limits')
                       
       if (isQuota) {
-        throw new Error('Servizio AI temporaneamente non disponibile per esaurimento della quota giornaliera di prova. Per sbloccare l\'uso illimitato in produzione, l\'amministratore del sistema deve associare una carta di credito al piano a consumo (Pay-as-you-go) sul pannello di Google AI Studio.')
+        throw new Error('Servizio AI temporaneamente non disponibile. Riprova tra poco.')
       }
       throw new Error(`Errore API Gemini (${response.status}): ${errText}`)
     }

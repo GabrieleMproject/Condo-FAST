@@ -1,9 +1,8 @@
-
 // src/pages/RegisterPage.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabaseClient';
+import { User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import BrandLogo from '../components/BrandLogo';
 
 export default function RegisterPage() {
@@ -13,6 +12,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ nome: '', cognome: '', email: '', password: '' });
   const [dpaAccepted, setDpaAccepted] = useState(false);
   const [tosAccepted, setTosAccepted] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -60,131 +60,226 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: 'var(--app-bg)' }}>
-      <div className="w-full max-w-md">
-
-        <div className="text-center mb-8">
-          <BrandLogo size={40} variant="login" interactive={true} />
-          <p className="text-slate-400 mt-2 text-sm">30 giorni gratuiti — nessuna carta richiesta</p>
+    <div className="auth-layout">
+      {/* Left panel — branding (identico a LoginPage) */}
+      <div className="auth-brand">
+        <div className="brand-content">
+          <div className="brand-logo">
+            <BrandLogo size={48} variant="login" interactive={true} />
+          </div>
+          <h1 className="brand-headline">
+            Gestisci i tuoi condomini.<br />
+            L'automazione fa il resto.
+          </h1>
+          <p className="brand-sub">
+            La piattaforma moderna per amministratori condominiali professionisti.
+            Crea il tuo account oggi e ottieni 30 giorni di prova gratuita con tutte le funzioni incluse.
+          </p>
+          <div className="brand-features">
+            {['Prova gratuita per 30 giorni', 'Nessuna carta di credito richiesta', 'Accesso a tutte le funzionalità AI', 'DPA pre-compilato conforme GDPR'].map(f => (
+              <div key={f} className="feature-item">
+                <span className="feature-dot" />
+                {f}
+              </div>
+            ))}
+          </div>
         </div>
+        <div className="brand-bg-shape" />
+      </div>
 
-        <div className="rounded-xl p-8" style={{ background: 'var(--card-bg)' }}>
-          <h2 className="text-white font-semibold text-lg mb-6">Crea account</h2>
+      {/* Right panel — form */}
+      <div className="auth-form-panel">
+        <div className="auth-form-wrapper" style={{ maxWidth: 460 }}>
+          <div className="form-header">
+            <h2>Crea il tuo account</h2>
+            <p>Prova CondoSmart gratis e semplifica il tuo studio</p>
+          </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg text-sm"
-              style={{ background: '#7f1d1d', color: '#fca5a5' }}>
+            <div className="error-banner" style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: 'var(--radius)',
+              color: '#f87171',
+              padding: '0.85rem 1rem',
+              fontSize: '0.85rem',
+              marginBottom: '1.2rem',
+              lineHeight: 1.5
+            }}>
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-400 text-sm mb-1">Nome</label>
+          <form onSubmit={handleSubmit} className="auth-form">
+            
+            {/* Nome e Cognome */}
+            <div className="field-row">
+              <div className="field-group">
+                <label htmlFor="nome">Nome</label>
+                <div className="input-wrapper">
+                  <User size={16} className="input-icon" />
+                  <input
+                    id="nome"
+                    name="nome"
+                    type="text"
+                    placeholder="Mario"
+                    value={form.nome}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="field-group">
+                <label htmlFor="cognome">Cognome</label>
+                <div className="input-wrapper">
+                  <User size={16} className="input-icon" />
+                  <input
+                    id="cognome"
+                    name="cognome"
+                    type="text"
+                    placeholder="Rossi"
+                    value={form.cognome}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="field-group">
+              <label htmlFor="email">Email Studio</label>
+              <div className="input-wrapper">
+                <Mail size={16} className="input-icon" />
                 <input
-                  name="nome" value={form.nome} onChange={handleChange} required
-                  className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
-                  style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="mario.rossi@studio.it"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
                 />
               </div>
-              <div>
-                <label className="block text-slate-400 text-sm mb-1">Cognome</label>
+            </div>
+
+            {/* Password */}
+            <div className="field-group">
+              <label htmlFor="password">Password</label>
+              <div className="input-wrapper">
+                <Lock size={16} className="input-icon" />
                 <input
-                  name="cognome" value={form.cognome} onChange={handleChange} required
-                  className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
-                  style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}
+                  id="password"
+                  name="password"
+                  type={showPwd ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  minLength={8}
                 />
+                <button type="button" className="pwd-toggle" onClick={() => setShowPwd(v => !v)}>
+                  {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
+              <p style={{ color: 'var(--text-3)', fontSize: '0.75rem', marginTop: 2 }}>Minimo 8 caratteri</p>
             </div>
 
-            <div>
-              <label className="block text-slate-400 text-sm mb-1">Email</label>
-              <input
-                name="email" type="email" value={form.email} onChange={handleChange} required
-                className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
-                style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-400 text-sm mb-1">Password</label>
-              <input
-                name="password" type="password" value={form.password} onChange={handleChange}
-                required minLength={8}
-                className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
-                style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}
-              />
-              <p className="text-slate-500 text-xs mt-1">Minimo 8 caratteri</p>
-            </div>
-
-            {/* ── DPA Checkbox ── */}
-            <div className="rounded-lg p-4" style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}>
-              <label className="flex items-start gap-3 cursor-pointer">
+            {/* DPA Checkbox Box */}
+            <div style={{
+              background: 'var(--bg-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '0.95rem 1.1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              marginTop: '0.5rem'
+            }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer', margin: 0 }}>
                 <input
                   type="checkbox"
                   checked={dpaAccepted}
                   onChange={e => setDpaAccepted(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded accent-blue-600 flex-shrink-0"
+                  style={{
+                    marginTop: '0.2rem',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '4px',
+                    accentColor: 'var(--accent)',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }}
                 />
-                <span className="text-slate-300 text-sm leading-relaxed">
-                  Ho letto e accetto il{' '}
-                  <a href="/dpa.html" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                <span style={{ color: 'var(--text-2)', fontSize: '0.82rem', lineHeight: '1.45', fontWeight: 400 }}>
+                  Accetto il{' '}
+                  <a href="/dpa.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
                     Contratto di Trattamento Dati (DPA)
                   </a>{' '}
-                  ai sensi dell'art. 28 GDPR. Confermo di essere l'amministratore condominiale
-                  responsabile del trattamento dei dati dei condomini gestiti tramite CondoSmart.
+                  ex art. 28 GDPR. Dichiaro di agire quale Titolare del trattamento per i dati gestiti.
                 </span>
               </label>
-              {!dpaAccepted && (
-                <p className="text-slate-500 text-xs mt-2 ml-7">
-                  Obbligatorio per utilizzare il servizio
-                </p>
-              )}
             </div>
 
-            {/* ── Termini & Privacy Checkbox ── */}
-            <div className="rounded-lg p-4" style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)' }}>
-              <label className="flex items-start gap-3 cursor-pointer">
+            {/* Termini & Privacy Checkbox Box */}
+            <div style={{
+              background: 'var(--bg-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '0.95rem 1.1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem'
+            }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer', margin: 0 }}>
                 <input
                   type="checkbox"
                   checked={tosAccepted}
                   onChange={e => setTosAccepted(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded accent-blue-600 flex-shrink-0"
+                  style={{
+                    marginTop: '0.2rem',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '4px',
+                    accentColor: 'var(--accent)',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }}
                 />
-                <span className="text-slate-300 text-sm leading-relaxed">
-                  Ho letto e accetto i{' '}
-                  <a href="/termini.html" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                <span style={{ color: 'var(--text-2)', fontSize: '0.82rem', lineHeight: '1.45', fontWeight: 400 }}>
+                  Accetto i{' '}
+                  <a href="/termini.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
                     Termini di Servizio
                   </a>
                   {' '}e la{' '}
-                  <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                  <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
                     Privacy Policy
-                  </a>.
+                  </a>
+                  {' '}di CondoSmart.
                 </span>
               </label>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading || !dpaAccepted || !tosAccepted}
-              className="w-full py-2.5 rounded-lg text-white font-medium text-sm transition-opacity"
+              className="btn-primary"
               style={{
-                background: (dpaAccepted && tosAccepted) ? '#2563eb' : 'var(--border-color)',
-                cursor: (dpaAccepted && tosAccepted) ? 'pointer' : 'not-allowed',
-                opacity: loading ? 0.7 : 1,
+                background: (dpaAccepted && tosAccepted) ? 'var(--accent)' : 'var(--border)',
+                cursor: (dpaAccepted && tosAccepted && !loading) ? 'pointer' : 'not-allowed',
+                marginTop: '0.8rem',
+                opacity: loading ? 0.7 : 1
               }}
             >
-              {loading ? 'Registrazione in corso...' : 'Crea account gratuito'}
+              {loading ? <span className="btn-spinner" /> : <>Registrati gratis <ArrowRight size={16} /></>}
             </button>
           </form>
 
-          <p className="text-center text-slate-400 text-sm mt-6">
+          <p className="auth-switch">
             Hai già un account?{' '}
-            <Link to="/login" style={{ color: '#2563eb' }} className="hover:underline">
-              Accedi
-            </Link>
+            <Link to="/login">Accedi</Link>
           </p>
         </div>
       </div>

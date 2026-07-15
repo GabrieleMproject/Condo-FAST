@@ -391,7 +391,7 @@ Riepilogo quote per l'esercizio:
 
 // ─── ANAGRAFE: Esportazione Registro Anagrafe Condominiale Ufficiale (Art. 1130 c.c.)
 export function exportRegistroAnagrafePdf(condominio, righe) {
-  const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
 
   // Testata chiara Landscape: disegniamo solo la linea blu divisoria.
@@ -466,7 +466,7 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
     styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 4.5, textColor: [20, 20, 20], fillColor: [255, 255, 255], lineColor: LINEA_BORDO },
     headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
     alternateRowStyles: { fillColor: SFONDO_ALT },
-    margin: { left: 12, right: 12 }
+    margin: { left: 12, right: 12, bottom: 18 }
   });
 
   // Footer pagina singola/multipla
@@ -474,11 +474,11 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
   const H = doc.internal.pageSize.getHeight();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    // Linea divisoria per il footer
-    doc.setDrawColor(...LINEA_BORDO); doc.setLineWidth(0.3); doc.line(10, H - 15, W - 10, H - 15);
+    // Linea divisoria per il footer (spostata a H - 12 per allineamento a Portrait)
+    doc.setDrawColor(...LINEA_BORDO); doc.setLineWidth(0.3); doc.line(10, H - 12, W - 10, H - 12);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
-    doc.text(`Pagina ${i} di ${pageCount}`, W - 12, H - 8, { align: 'right' });
-    doc.text('Generato automaticamente da CondoSmart', 12, H - 8);
+    doc.text(`Pagina ${i} di ${pageCount}`, W - 12, H - 5, { align: 'right' });
+    doc.text('Generato automaticamente da CondoSmart', 12, H - 5);
   }
 
   doc.save(`Registro_Anagrafe_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);

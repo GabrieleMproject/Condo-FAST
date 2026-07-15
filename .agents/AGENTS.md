@@ -783,4 +783,4 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Esecuzione SQL**: Applicati con successo lo script `sql/s39_backoffice_marketing.sql` e il fix `sql/s40_fix_audit_delete_cascade.sql` sul database di produzione.
 - **Deploy Edge Function**: Le Edge Functions `invia-email-marketing` e `claude-proxy` sono state caricate con successo su Supabase Cloud.
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
-- **Commit di sessione**: Registrato il commit di sessione S40 step 16.
+- **Commit di sessione**: Registrato il commit di sessione S40 step 17.

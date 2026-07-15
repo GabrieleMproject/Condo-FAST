@@ -105,6 +105,13 @@ export default function PreventivoSection({ condominioId }) {
     if (esercizio && prev.preventivo) setScadenze(defaultScadenze(esercizio.anno, prev.totale))
   }, [esercizio?.id, prev.preventivo?.id])
 
+  // Autoseleziona la prima tabella millesimale disponibile se non selezionata
+  useEffect(() => {
+    if (mill.tabelle && mill.tabelle.length > 0 && !nv.tabella_millesimale_id) {
+      setNv(prevVal => ({ ...prevVal, tabella_millesimale_id: mill.tabelle[0].id }))
+    }
+  }, [mill.tabelle, nv.tabella_millesimale_id])
+
   const sommaScadenze = round2(scadenze.reduce((s, x) => s + (parseFloat(x.importo) || 0), 0))
   const scadenzeTornano = Math.abs(sommaScadenze - prev.totale) <= 0.01 && prev.totale > 0
 

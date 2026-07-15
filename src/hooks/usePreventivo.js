@@ -60,6 +60,14 @@ export function usePreventivo(condominioId, esercizioId) {
 
   const aggiungiVoce = useCallback(async (voce) => {
     if (!preventivo) throw new Error('Crea prima il preventivo')
+    
+    const criterioVoce = voce.criterio || 'millesimi'
+    const tabellaId = criterioVoce === 'parti_uguali' ? null : (voce.tabella_millesimale_id || null)
+
+    if (criterioVoce === 'millesimi' && !tabellaId) {
+      throw new Error('Scegli una tabella millesimale per la voce di preventivo.')
+    }
+
     const { data, error } = await supabase
       .from('preventivo_voci')
       .insert({
@@ -67,8 +75,8 @@ export function usePreventivo(condominioId, esercizioId) {
         descrizione: voce.descrizione,
         categoria: voce.categoria || null,
         importo: parseFloat(voce.importo) || 0,
-        criterio: voce.criterio || 'millesimi',
-        tabella_millesimale_id: voce.criterio === 'parti_uguali' ? null : (voce.tabella_millesimale_id || null),
+        criterio: criterioVoce,
+        tabella_millesimale_id: tabellaId,
         ordine: voci.length,
       })
       .select().single()

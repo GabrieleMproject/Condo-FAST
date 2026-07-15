@@ -10,6 +10,7 @@ import { applyWatermark } from './watermark'
 
 const eur = (v) => '€ ' + Number(v || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const sgn = (v) => (Number(v) < 0 ? '-' : '') + '€ ' + Math.abs(Number(v || 0)).toLocaleString('it-IT', { minimumFractionDigits: 2 })
+const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
 
 const HEAD = { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 }
 const BODY = { font: 'helvetica', fontSize: 8, cellPadding: 2.2, textColor: [20, 20, 20], lineColor: [200, 200, 200] }
@@ -337,7 +338,7 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
     y = sezioneTitolo(doc, y, sez.fatture?.titolo || 'E — Situazione fatture')
     const body = c.fatture.rows.map(f => [
       f.fornitore || '', f.numero_fattura || '—',
-      f.data_fattura ? new Date(f.data_fattura).toLocaleDateString('it-IT') : '',
+      f.data_fattura ? formattaData(f.data_fattura) : '',
       eur(f.importo_totale), f.stato || '', f.ritenutaBadge || '—',
     ])
     body.push(['TOTALE', '', '', eur(c.fatture.tot.totale), `pagate ${eur(c.fatture.tot.pagate)}`, c.fatture.tot.attesaF24 ? `${c.fatture.tot.attesaF24} att. F24` : ''])

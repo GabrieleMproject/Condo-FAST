@@ -125,29 +125,38 @@ export function useConsuntivo(condominioId, esercizioId) {
         .eq('esercizio_id', esercizioId).maybeSingle()
       if (ePv) throw ePv
 
-      // 8) branding studio
-      const { data: { user } } = await supabase.auth.getUser()
+      // 8) Carica condominio per identificare l'amministratore titolare (supporto collaboratori / multi-utenza)
+      const { data: condo, error: eCond } = await supabase
+        .from('condomini')
+        .select('amministratore_id')
+        .eq('id', condominioId)
+        .single()
+      if (eCond) throw eCond
+      const titolareId = condo?.amministratore_id
+
+      // 9) branding studio basato sull'amministratore titolare
       let branding = null
-      if (user?.id) {
+      if (titolareId) {
         const { data: prof } = await supabase
           .from('profiles')
           .select('studio_nome, studio_indirizzo, studio_contatti, logo_base64, ragione_sociale, partita_iva, codice_fiscale')
-          .eq('id', user.id).maybeSingle()
+          .eq('id', titolareId).maybeSingle()
         branding = prof || null
       }
 
-      // 9) template attivo dell'amministratore
+      // 10) template attivo dell'amministratore titolare
       let tmpl = DEFAULT_TEMPLATE
-      if (user?.id) {
+      if (titolareId) {
         const { data: ct } = await supabase
           .from('consuntivo_template')
-          .select('id, struttura')
-          .eq('amministratore_id', user.id)
+          .select('id, struttura, nome')
+          .eq('amministratore_id', titolareId)
           .eq('attivo', true)
           .order('updated_at', { ascending: false })
           .limit(1).maybeSingle()
         if (ct?.struttura && Object.keys(ct.struttura).length) {
           tmpl = { ...DEFAULT_TEMPLATE, ...ct.struttura,
+            nome: ct.nome,
             sezioni: { ...DEFAULT_TEMPLATE.sezioni, ...(ct.struttura.sezioni || {}) },
             etichette_categorie: { ...DEFAULT_TEMPLATE.etichette_categorie, ...(ct.struttura.etichette_categorie || {}) },
           }

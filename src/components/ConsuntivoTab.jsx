@@ -11,6 +11,7 @@ import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, Ale
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const sgn = (n) => (Number(n) < 0 ? '-' : '') + '€ ' + Math.abs(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })
+const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
 
 export default function ConsuntivoTab({ condominioId }) {
   const [condominio, setCondominio] = useState(null)
@@ -19,8 +20,7 @@ export default function ConsuntivoTab({ condominioId }) {
   const [tabellaMillId, setTabellaMillId] = useState(null)
   const [uploadingTpl, setUploadingTpl] = useState(false)
   const [tplMsg, setTplMsg] = useState('')
-  const [template, setTemplate] = useState(null)
-  const { data, loading, error, fetch } = useConsuntivo(condominioId, esercizioId)
+  const { data, template, loading, error, fetch, setTemplate } = useConsuntivo(condominioId, esercizioId)
   const { unita, getProprietario } = useUnita(condominioId)
   const { tabelle, getMillesimiUnita, getTotaleTabella } = useMillesimi(condominioId)
   const { WatermarkModal, checkWatermark } = useWatermark()
@@ -35,7 +35,6 @@ export default function ConsuntivoTab({ condominioId }) {
           setEsercizioId(active.id)
         }
       })
-      fetchTemplate()
     }
   }, [condominioId])
 
@@ -50,12 +49,6 @@ export default function ConsuntivoTab({ condominioId }) {
       setTabellaMillId(tabelle[0].id)
     }
   }, [tabelle])
-
-  async function fetchTemplate() {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data } = await supabase.from('consuntivo_template').select('*').eq('amministratore_id', user.id).eq('attivo', true).maybeSingle()
-    setTemplate(data)
-  }
 
   async function onTemplateFile(e) {
     const file = e.target.files?.[0]
@@ -148,7 +141,10 @@ export default function ConsuntivoTab({ condominioId }) {
           <Card title="A — Rendiconto di competenza">
             <Table head={['Categoria', 'Tipo', 'Importo']}
               rows={[
-                ...(template?.ordine_categorie || Object.keys(data.competenza.catMap))
+                ...(() => {
+                  const ord = template?.ordine_categorie || Object.keys(data.competenza.catMap)
+                  return [...ord, ...Object.keys(data.competenza.catMap).filter(k => !ord.includes(k))]
+                })()
                   .filter(k => data.competenza.catMap[k])
                   .map(k => {
                     const v = data.competenza.catMap[k]
@@ -197,7 +193,7 @@ export default function ConsuntivoTab({ condominioId }) {
             <Card title="E — Situazione fatture">
               <Table head={['Fornitore', 'N°', 'Data', 'Importo', 'Stato', 'Ritenuta/F24']} alignRight={[3]}
                 rows={data.fatture.rows.map(f => [f.fornitore, f.numero_fattura || '—',
-                  f.data_fattura ? new Date(f.data_fattura).toLocaleDateString('it-IT') : '', eur(f.importo_totale), f.stato, f.ritenutaBadge || '—'])}
+                  f.data_fattura ? formattaData(f.data_fattura) : '', eur(f.importo_totale), f.stato, f.ritenutaBadge || '—'])}
                 foot={[['TOTALE', '', '', eur(data.fatture.tot.totale), `pagate ${eur(data.fatture.tot.pagate)}`, data.fatture.tot.attesaF24 ? `${data.fatture.tot.attesaF24} att. F24` : '']]} />
             </Card>
           )}

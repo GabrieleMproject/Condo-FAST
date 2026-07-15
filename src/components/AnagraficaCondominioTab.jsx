@@ -161,10 +161,10 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
               codice_fiscale,
               email,
               telefono,
-              residenza_indirizzo,
-              residenza_comune,
-              residenza_cap,
-              residenza_provincia
+              indirizzo,
+              citta,
+              cap,
+              provincia
             )
           )
         `)
@@ -419,7 +419,7 @@ export default function AnagraficaCondominioTab({ condominioId, condominio }) {
     occupanti.forEach(occ => {
       const p = occ.persona || {}
       if (!p.codice_fiscale) motivi.push(`C.F. mancante per ${p.nome || ''} ${p.cognome || ''}`)
-      if (!p.residenza_indirizzo || !p.residenza_comune) motivi.push(`Residenza incompleta per ${p.nome || ''} ${p.cognome || ''}`)
+      if (!p.indirizzo || !p.citta) motivi.push(`Residenza incompleta per ${p.nome || ''} ${p.cognome || ''}`)
     })
 
     return { completa: motivi.length === 0, motivi }
@@ -545,10 +545,10 @@ Lo Studio Amministrativo`
             codice_fiscale: ocrData.persona.codice_fiscale || personaCorrente.codice_fiscale,
             email: ocrData.persona.email || personaCorrente.email,
             telefono: ocrData.persona.telefono || personaCorrente.telefono,
-            residenza_indirizzo: ocrData.persona.residenza_indirizzo || personaCorrente.residenza_indirizzo,
-            residenza_comune: ocrData.persona.residenza_comune || personaCorrente.residenza_comune,
-            residenza_cap: ocrData.persona.residenza_cap || personaCorrente.residenza_cap,
-            residenza_provincia: ocrData.persona.residenza_provincia || personaCorrente.residenza_provincia
+            indirizzo: ocrData.persona.residenza_indirizzo || personaCorrente.indirizzo,
+            citta: ocrData.persona.residenza_comune || personaCorrente.citta,
+            cap: ocrData.persona.residenza_cap || personaCorrente.cap,
+            provincia: ocrData.persona.residenza_provincia || personaCorrente.provincia
           })
           .eq('id', personaCorrente.id)
 
@@ -730,7 +730,27 @@ Lo Studio Amministrativo`
 
                         <td style={styles.td}>
                           {occupanti.length === 0 ? (
-                            <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Non registrato</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNuovoUnitaId(u.id)
+                                setNuovoRuolo('proprietario')
+                                setShowNuovoModal(true)
+                              }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#3b82f6',
+                                cursor: 'pointer',
+                                fontSize: 13,
+                                textDecoration: 'underline',
+                                padding: 0,
+                                fontWeight: 500,
+                                textAlign: 'left'
+                              }}
+                            >
+                              ➕ Aggiungi Soggetto
+                            </button>
                           ) : (
                             occupanti.map(occ => (
                               <div key={occ.id} style={{ marginBottom: 4 }}>
@@ -748,10 +768,10 @@ Lo Studio Amministrativo`
                         <td style={styles.td}>
                           {occupanti.map(occ => {
                             const p = occ.persona || {}
-                            if (!p.residenza_indirizzo) return <span key={occ.id} style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Non specificato</span>
+                            if (!p.indirizzo) return <span key={occ.id} style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Non specificato</span>
                             return (
                               <div key={occ.id} style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                                {p.residenza_indirizzo}, {p.residenza_comune} ({p.residenza_provincia || ''})
+                                {p.indirizzo}, {p.citta} ({p.provincia || ''})
                               </div>
                             )
                           })}
@@ -768,20 +788,36 @@ Lo Studio Amministrativo`
 
                         {!isCollaboratore && (
                           <td style={{ ...styles.td, textAlign: 'center' }}>
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              ref={el => fileInputRefs.current[u.id] = el}
-                              onChange={e => handleFileChange(u, e)}
-                              style={{ display: 'none' }}
-                            />
-                            <button 
-                              onClick={() => fileInputRefs.current[u.id]?.click()}
-                              title="Carica modulo autocertificazione compilato"
-                              style={styles.btnEdit}
-                            >
-                              <Upload size={14} style={{ marginRight: 6 }} /> Carica Modulo
-                            </button>
+                            {occupanti.length === 0 ? (
+                              <button
+                                onClick={() => {
+                                  setNuovoUnitaId(u.id)
+                                  setNuovoRuolo('proprietario')
+                                  setShowNuovoModal(true)
+                                }}
+                                title="Aggiungi proprietario o inquilino a questa unità"
+                                style={{ ...styles.btnEdit, background: '#10b981', color: '#fff', border: '1px solid #10b981' }}
+                              >
+                                <Plus size={12} style={{ marginRight: 4 }} /> Soggetto
+                              </button>
+                            ) : (
+                              <>
+                                <input
+                                  type="file"
+                                  accept="image/*,application/pdf"
+                                  ref={el => fileInputRefs.current[u.id] = el}
+                                  onChange={e => handleFileChange(u, e)}
+                                  style={{ display: 'none' }}
+                                />
+                                <button 
+                                  onClick={() => fileInputRefs.current[u.id]?.click()}
+                                  title="Carica modulo autocertificazione compilato"
+                                  style={styles.btnEdit}
+                                >
+                                  <Upload size={14} style={{ marginRight: 6 }} /> Carica Modulo
+                                </button>
+                              </>
+                            )}
                           </td>
                         )}
                       </tr>
@@ -828,7 +864,11 @@ Lo Studio Amministrativo`
               <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
                 <button
                   type="button"
-                  onClick={() => setShowNuovoModal(true)}
+                 onClick={() => {
+                    setNuovoUnitaId('')
+                    setNuovoRuolo('proprietario')
+                    setShowNuovoModal(true)
+                  }}
                   style={{ ...styles.filterBtn(false), display: 'flex', alignItems: 'center', gap: 6, color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', padding: '6px 10px' }}
                   title="Crea manualmente un nuovo condòmino"
                 >

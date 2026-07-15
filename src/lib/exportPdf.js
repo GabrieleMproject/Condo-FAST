@@ -436,9 +436,9 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
       occupantiList.forEach((occ, idx) => {
         const p = occ.persona || {};
         const residenza = [
-          p.residenza_indirizzo,
-          p.residenza_comune,
-          p.residenza_provincia ? `(${p.residenza_provincia})` : ''
+          p.indirizzo,
+          p.citta,
+          p.provincia ? `(${p.provincia})` : ''
         ].filter(Boolean).join(', ') || '-';
 
         body.push([

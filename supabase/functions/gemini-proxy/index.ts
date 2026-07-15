@@ -59,7 +59,9 @@ function getModel(funzione?: string): string {
     'ricerca_verbali_ai',
     'criterio_ripartizione',
     'struttura_tabella_millesimale',
-    'assistenza_chat'
+    'assistenza_chat',
+    'estrai_fattura',
+    'estrai_movimenti'
   ];
   if (funzione && proFunctions.includes(funzione)) {
     return 'gemini-pro-latest';
@@ -313,6 +315,7 @@ serve(async (req) => {
     const geminiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     const promptTokens = geminiData.usageMetadata?.promptTokenCount ?? 0
     const candidatesTokens = geminiData.usageMetadata?.candidatesTokenCount ?? 0
+    const finishReason = geminiData.candidates?.[0]?.finishReason
 
     const responsePayload = {
       content: [
@@ -324,7 +327,9 @@ serve(async (req) => {
       usage: {
         input_tokens: promptTokens,
         output_tokens: candidatesTokens,
-      }
+      },
+      finishReason,
+      modelUsed: currentModel
     }
 
     return new Response(

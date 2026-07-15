@@ -105,6 +105,9 @@ export async function callGemini(prompt, opts = {}) {
   });
 
   const block = data.content?.find(b => b.type === 'text');
+  if (data.finishReason && data.finishReason !== 'STOP') {
+    console.warn(`[geminiClient] Chiamata terminata con finishReason: ${data.finishReason} (Modello: ${data.modelUsed})`);
+  }
   return block?.text ?? '';
 }
 
@@ -209,5 +212,8 @@ export async function callGeminiDocument(prompt, base64Document, opts = {}) {
   });
 
   const block = data.content?.find(b => b.type === 'text');
+  if (data.finishReason && data.finishReason !== 'STOP') {
+    console.warn(`[geminiClient] Chiamata terminata con finishReason: ${data.finishReason} (Modello: ${data.modelUsed})`);
+  }
   return block?.text ?? '';
 }

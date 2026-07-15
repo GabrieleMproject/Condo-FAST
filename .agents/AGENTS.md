@@ -880,9 +880,17 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
   - Esercizi contabili in scadenza nei prossimi 30 giorni.
   - Riconciliazioni arretrate (movimenti non abbinati da più di 15 giorni).
 
-### 2. Fatti Verificati
+### 2. Bug Risolti (Fix Bug Triager)
+- **Allineamento Schema DB su Dashboard e useNotifiche**: Risolte le incongruenze tra le query client-side e il database schema reale:
+  - *Mappatura Rate*: Sostituiti i campi inesistenti `dovuto` e `scadenza` in `rate_unita` con `importo` e una join su `rate:rata_id(data_scadenza)`.
+  - *Mappatura Date Estratto Conto*: Sostituito il campo inesistente `data` in `estratto_conto` con `data_movimento`.
+  - *Mappatura F24*: Sostituito il campo inesistente `f24_presentato` in `fatture_fornitori` con `ritenuta_pagata`.
+- **Prevenzione Crash Notifiche**: Corretto l'hook `useNotifiche.js` che presentava le stesse query errate su `rate_unita` ed `estratto_conto`. Mappate le risposte all'interno dell'hook per garantire piena compatibilità con l'engine puro `notificheEngine.js` senza alterarne la logica interna.
+- **Risoluzione Problemi di Contrasto**: Cambiato il colore del testo per il badge `.ricTag` in `#7c3aed` per migliorarne l'accessibilità visiva e il contrasto in modalità chiara (Light Mode).
+
+### 3. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con esito verde e compilazione corretta del bundle di produzione.
 - **Supporto Tematico**: Sincronizzate tutte le aree della nuova dashboard con le variabili CSS globali, assicurando un contrasto ottimale e transizioni pulite in modalità chiara e scura.
-- **Push e Commit**: Eseguito il commit `S43 step2: ristruttura dashboard globale...` (associato alla sessione corrente) ed effettuato il push su `origin main`.
+- **Push e Commit**: Eseguiti i commit `S43 step2` (ristrutturazione iniziale) e `S45 step2: risolve bug query db dashboard e useNotifiche` con push completato con successo su `origin main`.
 
 

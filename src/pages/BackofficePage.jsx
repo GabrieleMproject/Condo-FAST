@@ -27,6 +27,16 @@ export default function BackofficePage() {
   const [editingKb, setEditingKb] = useState(null)
   const [kbForm, setKbForm] = useState({ argomento: '', domanda_sintesi: '', risoluzione: '', tags: '' })
 
+  // Stati ricerca e filtri utenti
+  const [userSearch, setUserSearch] = useState('')
+  const [filterPiano, setFilterPiano] = useState('tutti')
+  const [filterInattivi, setFilterInattivi] = useState(false)
+
+  // Stati form marketing
+  const [marketingForm, setMarketingForm] = useState({ target: 'tutti', oggetto: '', messaggio: '' })
+  const [generandoTestoAI, setGenerandoTestoAI] = useState(false)
+  const [inviandoEmail, setInviandoEmail] = useState(false)
+
   useEffect(() => {
     fetchData()
   }, [])
@@ -34,9 +44,9 @@ export default function BackofficePage() {
   const fetchData = async () => {
     setLoading(true)
     try {
+      // ✅ Caricamento tramite RPC aggregata
       const { data: prof, error: profErr } = await supabase
-        .from('profiles')
-        .select('id, piano, is_superadmin, studio_nome, ragione_sociale, email')
+        .rpc('get_utenti_statistiche')
       
       if (profErr) throw profErr
       setUtenti(prof || [])
@@ -85,6 +95,21 @@ export default function BackofficePage() {
       toast.error('Errore caricamento dati: ' + err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleModificaPiano = async (utenteId, nuovoPiano) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ piano: nuevoPiano })
+        .eq('id', utenteId)
+      
+      if (error) throw error
+      toast.success('Piano dell\'utente aggiornato con successo!')
+      fetchData()
+    } catch (err) {
+      toast.error('Errore durante la modifica del piano: ' + err.message)
     }
   }
 
@@ -371,6 +396,240 @@ Rispondi esplicitamente in formato JSON valido.`
     }
   }
 
+  // ── Helper Limiti e Progress Bar ──────────────────────────────────────────
+  const getAiLimit = (piano) => {
+    switch (piano) {
+      case 'base': return 100
+      case 'studio': return 500
+      case 'trial': return 500
+      case 'professional': return 999999 // Illimitato
+      default: return 500
+    }
+  }
+
+  const getColLimit = (piano) => {
+    switch (piano) {
+      case 'studio': return 2
+      case 'professional': return 10
+      default: return 0
+    }
+  }
+
+  const renderAiProgressBar = (consumate, piano) => {
+    const limit = getAiLimit(piano)
+    if (piano === 'professional') {
+      return (
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+          {consumate} / ∞ calls
+        </span>
+      )
+    }
+    
+    const pct = Math.min(Math.round((Number(consumate) / limit) * 100), 100)
+    let barColor = '#10b981' // verde
+    if (pct >= 80) barColor = '#ef4444' // rosso
+    else if (pct >= 50) barColor = '#eab308' // giallo
+    
+    return (
+      <div style={{ minWidth: 110 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 2 }}>
+          <span>{consumate}/{limit}</span>
+          <span>{pct}%</span>
+        </div>
+        <div style={{ width: '100%', height: 6, background: 'var(--border-color-2)', borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 3 }} />
+        </div>
+      </div>
+    )
+  }
+
+  // ── Filtri e Statistiche Memoizzate ───────────────────────────────────────
+  const statisticheReferral = React.useMemo(() => {
+    const totaleInviti = referrals.length
+    const registrati = referrals.filter(r => r.referred_id !== null).length
+    const paganti = referrals.filter(r => r.stato === 'convalidato' || r.stato === 'applicato').length
+    const scontiApplicati = referrals.filter(r => r.stato === 'applicato').reduce((sum, r) => sum + (r.sconto_valore || 0), 0)
+    const tassoRegistrazione = totaleInviti > 0 ? Math.round((registrati / totaleInviti) * 100) : 0
+    const tassoConversione = registrati > 0 ? Math.round((paganti / registrati) * 100) : 0
+    return {
+      totaleInviti,
+      registrati,
+      paganti,
+      scontiApplicati,
+      tassoRegistrazione,
+      tassoConversione
+    }
+  }, [referrals])
+
+  const utentiFiltrati = React.useMemo(() => {
+    return utenti.filter(u => {
+      const search = userSearch.toLowerCase()
+      const matchesSearch = 
+        u.email?.toLowerCase().includes(search) ||
+        (u.nome && u.nome.toLowerCase().includes(search)) ||
+        (u.cognome && u.cognome.toLowerCase().includes(search)) ||
+        (u.studio_nome && u.studio_nome.toLowerCase().includes(search)) ||
+        (u.ragione_sociale && u.ragione_sociale.toLowerCase().includes(search))
+      
+      const matchesPiano = filterPiano === 'tutti' || u.piano === filterPiano
+      const matchesInattivi = !filterInattivi || Number(u.condomini_count) === 0
+      
+      return matchesSearch && matchesPiano && matchesInattivi
+    })
+  }, [utenti, userSearch, filterPiano, filterInattivi])
+
+  const destinatariFiltrati = React.useMemo(() => {
+    return utenti.filter(u => {
+      // Escludiamo i superadmin dall'invio newsletter di marketing
+      if (u.is_superadmin) return false
+      
+      switch (marketingForm.target) {
+        case 'trial':
+          return u.piano === 'trial'
+        case 'paganti':
+          return u.piano === 'base' || u.piano === 'studio' || u.piano === 'professional'
+        case 'inattivi':
+          return Number(u.condomini_count) === 0
+        case 'ai_high':
+          const limite = getAiLimit(u.piano)
+          return (Number(u.ai_calls_count) / limite) >= 0.8
+        case 'tutti':
+        default:
+          return true
+      }
+    }).map(u => u.email).filter(Boolean)
+  }, [utenti, marketingForm.target])
+
+  // ── Azioni Marketing ──────────────────────────────────────────────────────
+  const handleGeneraTestoMarketing = async () => {
+    const spunto = window.prompt("Inserisci un breve spunto per l'email promozionale (es. Promozione Summer: 20% di sconto per passare al piano Studio):")
+    if (!spunto) return
+
+    setGenerandoTestoAI(true)
+    const loadToast = toast.loading("L'AI sta redigendo il testo promozionale...")
+    try {
+      const prompt = `Sei l'AI Copywriter di CondoSmart, un software SaaS premium per amministratori di condominio in Italia.
+Scrivi una email promozionale/newsletter accattivante basandoti su questo spunto: "${spunto}".
+Usa uno stile professionale ma persuasivo. Spiega i benefici di CondoSmart (risparmio di tempo, automazione AI di fatture e anagrafiche, collaboratori illimitati).
+Struttura la risposta in formato JSON con le seguenti chiavi:
+- "oggetto": l'oggetto accattivante della mail
+- "corpo": il testo dell'email formattato in HTML pulito e moderno (usa tag <p>, <ul>, <li>, <strong>, e se vuoi dei bottoni usa link stilizzati con colori adatti, ma NON includere layout <html> o <body> completi, solo il contenuto interno).
+
+Rispondi ESPLICITAMENTE in formato JSON valido.`
+
+      const resAI = await callClaude(prompt, { funzione: 'scrittura_marketing' })
+      let data
+      try {
+        data = JSON.parse(resAI)
+      } catch (pe) {
+        const jsonMatch = resAI.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          data = JSON.parse(jsonMatch[0])
+        } else {
+          throw pe
+        }
+      }
+
+      if (data && data.oggetto && data.corpo) {
+        setMarketingForm(prev => ({
+          ...prev,
+          oggetto: data.oggetto,
+          messaggio: data.corpo
+        }))
+        toast.success("Email promozionale generata con successo!")
+      } else {
+        throw new Error("Formato risposta AI non valido.")
+      }
+    } catch (err) {
+      toast.error("Errore generazione testo: " + err.message)
+    } finally {
+      toast.dismiss(loadToast)
+      setGenerandoTestoAI(false)
+    }
+  }
+
+  const handleInviaTestMarketing = async () => {
+    if (!marketingForm.oggetto || !marketingForm.messaggio) {
+      return toast.error("Inserisci oggetto e corpo del messaggio per inviare il test.")
+    }
+    
+    setInviandoEmail(true)
+    const loadToast = toast.loading("Invio email di test in corso...")
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !user.email) throw new Error("Utente non autenticato o email mancante")
+
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invia-email-marketing`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        },
+        body: JSON.stringify({
+          destinatari: [user.email],
+          oggetto: `[TEST] ${marketingForm.oggetto}`,
+          messaggio: marketingForm.messaggio
+        })
+      })
+
+      if (!res.ok) {
+        const errText = await res.json().catch(() => ({}))
+        throw new Error(errText.error || `Errore HTTP ${res.status}`)
+      }
+
+      toast.success(`Email di test inviata con successo a ${user.email}!`)
+    } catch (err) {
+      toast.error("Errore invio test: " + err.message)
+    } finally {
+      toast.dismiss(loadToast)
+      setInviandoEmail(false)
+    }
+  }
+
+  const handleInviaMarketingMassivo = async () => {
+    const conteggio = destinatariFiltrati.length
+    if (conteggio === 0) return toast.error("Nessun destinatario nel target selezionato.")
+    
+    if (!window.confirm(`Sei sicuro di voler inviare questa email promozionale a tutti i ${conteggio} utenti selezionati?`)) {
+      return
+    }
+
+    setInviandoEmail(true)
+    const loadToast = toast.loading(`Invio email a ${conteggio} utenti in corso...`)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invia-email-marketing`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        },
+        body: JSON.stringify({
+          destinatari: destinatariFiltrati,
+          oggetto: marketingForm.oggetto,
+          messaggio: marketingForm.messaggio
+        })
+      })
+
+      if (!res.ok) {
+        const errText = await res.json().catch(() => ({}))
+        throw new Error(errText.error || `Errore HTTP ${res.status}`)
+      }
+
+      const resData = await res.json()
+      toast.success(resData.message || "Invio completato!")
+      setMarketingForm({ target: 'tutti', oggetto: '', messaggio: '' })
+    } catch (err) {
+      toast.error("Errore invio marketing: " + err.message)
+    } finally {
+      toast.dismiss(loadToast)
+      setInviandoEmail(false)
+    }
+  }
+
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -403,6 +662,12 @@ Rispondi esplicitamente in formato JSON valido.`
         >
           <Gift size={16} /> Referral & Campagne
         </button>
+        <button
+          style={{ ...styles.tabButton, ...(activeTab === 'marketing' ? styles.tabActive : {}) }}
+          onClick={() => setActiveTab('marketing')}
+        >
+          <Send size={16} /> Marketing & Newsletter
+        </button>
       </div>
 
       <div style={styles.content}>
@@ -411,48 +676,134 @@ Rispondi esplicitamente in formato JSON valido.`
         ) : (
           <>
             {activeTab === 'utenti' && (
-              <div style={styles.card}>
-                <h2 style={styles.cardTitle}>Lista Utenti</h2>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={styles.table}>
-                    <thead>
-                      <tr>
-                        <th style={styles.th}>ID Utente</th>
-                        <th style={styles.th}>Nome Studio / Ragione Sociale</th>
-                        <th style={styles.th}>Piano</th>
-                        <th style={styles.th}>Ruolo</th>
-                        <th style={styles.th}>Azioni</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {utenti.map(u => (
-                        <tr key={u.id} style={styles.tr}>
-                          <td style={styles.td}><span style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{u.id.substring(0, 8)}...</span></td>
-                          <td style={styles.td}>{u.ragione_sociale || u.studio_nome || '—'}</td>
-                          <td style={styles.td}>
-                            <span style={{ padding: '4px 8px', borderRadius: 4, background: '#1e3a8a', color: '#bfdbfe', fontSize: 12, fontWeight: 600 }}>
-                              {(u.piano || 'trial').toUpperCase()}
-                            </span>
-                          </td>
-                          <td style={styles.td}>
-                            {u.is_superadmin ? (
-                              <span style={{ color: '#10b981', fontWeight: 600 }}>SuperAdmin</span>
-                            ) : (
-                              <span style={{ color: 'var(--text-muted)' }}>Admin</span>
-                            )}
-                          </td>
-                          <td style={styles.td}>
-                            <button 
-                              onClick={() => handlePromuovi(u.id, u.is_superadmin)}
-                              style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
-                            >
-                              Toggle SuperAdmin
-                            </button>
-                          </td>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Filtri e Ricerca */}
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+                    <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                      type="text"
+                      placeholder="Cerca utente, email o studio..."
+                      value={userSearch}
+                      onChange={e => setUserSearch(e.target.value)}
+                      style={{ ...styles.input, paddingLeft: 38 }}
+                    />
+                  </div>
+                  <select
+                    value={filterPiano}
+                    onChange={e => setFilterPiano(e.target.value)}
+                    style={{ ...styles.input, width: 'auto', minWidth: 150 }}
+                  >
+                    <option value="tutti">Tutti i piani</option>
+                    <option value="trial">Trial</option>
+                    <option value="base">Base</option>
+                    <option value="studio">Studio</option>
+                    <option value="professional">Professional</option>
+                  </select>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
+                    <input
+                      type="checkbox"
+                      checked={filterInattivi}
+                      onChange={e => setFilterInattivi(e.target.checked)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    Solo senza condomini (inattivi)
+                  </label>
+                </div>
+
+                <div style={styles.card}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <h2 style={{ ...styles.cardTitle, margin: 0 }}>Lista Utenti ({utentiFiltrati.length})</h2>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={styles.table}>
+                      <thead>
+                        <tr>
+                          <th style={styles.th}>Utente / Studio</th>
+                          <th style={styles.th}>Registrato il</th>
+                          <th style={styles.th}>Condomini</th>
+                          <th style={styles.th}>Chiamate AI (Mese)</th>
+                          <th style={styles.th}>Collab.</th>
+                          <th style={styles.th}>Piano</th>
+                          <th style={styles.th}>Ruolo</th>
+                          <th style={styles.th}>Azioni</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {utentiFiltrati.map(u => (
+                          <tr key={u.id} style={styles.tr}>
+                            <td style={styles.td}>
+                              <div style={{ fontWeight: 600 }}>{u.nome || u.cognome ? `${u.nome || ''} ${u.cognome || ''}`.trim() : '—'}</div>
+                              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
+                              {u.studio_nome && (
+                                <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2 }}>🏢 {u.studio_nome}</div>
+                              )}
+                            </td>
+                            <td style={{ ...styles.td, fontSize: 13, color: 'var(--text-secondary)' }}>
+                              {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                            </td>
+                            <td style={{ ...styles.td, fontWeight: 600, textAlign: 'center' }}>
+                              {u.condomini_count}
+                            </td>
+                            <td style={styles.td}>
+                              {renderAiProgressBar(u.ai_calls_count, u.piano)}
+                            </td>
+                            <td style={{ ...styles.td, fontSize: 13 }}>
+                              {getColLimit(u.piano) > 0 ? (
+                                <span>{u.collaboratori_count} / {getColLimit(u.piano)}</span>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)' }}>—</span>
+                              )}
+                            </td>
+                            <td style={styles.td}>
+                              <select
+                                value={u.piano || 'trial'}
+                                onChange={(e) => handleModificaPiano(u.id, e.target.value)}
+                                style={{
+                                  background: 'var(--app-bg)',
+                                  border: '1px solid var(--border-color)',
+                                  color: 'var(--text-primary)',
+                                  padding: '4px 8px',
+                                  borderRadius: 6,
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  outline: 'none',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <option value="trial">Trial</option>
+                                <option value="base">Base</option>
+                                <option value="studio">Studio</option>
+                                <option value="professional">Professional</option>
+                              </select>
+                            </td>
+                            <td style={styles.td}>
+                              {u.is_superadmin ? (
+                                <span style={{ color: '#10b981', fontWeight: 600, fontSize: 12 }}>SuperAdmin</span>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Admin</span>
+                              )}
+                            </td>
+                            <td style={styles.td}>
+                              <button 
+                                onClick={() => handlePromuovi(u.id, u.is_superadmin)}
+                                style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 11 }}
+                              >
+                                Toggle Admin
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {utentiFiltrati.length === 0 && (
+                          <tr>
+                            <td colSpan="8" style={{ ...styles.td, color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>
+                              Nessun utente corrisponde ai filtri selezionati.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -886,6 +1237,134 @@ Rispondi esplicitamente in formato JSON valido.`
                 </div>
               </div>
             )}
+
+            {activeTab === 'marketing' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {/* KPI Referral e Conversioni */}
+                <div style={styles.kpiContainer}>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Totale Inviti</div>
+                    <div style={styles.kpiValue}>{statisticheReferral.totaleInviti}</div>
+                  </div>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Registrati</div>
+                    <div style={styles.kpiValue}>{statisticheReferral.registrati}</div>
+                    <div style={styles.kpiSub}>{statisticheReferral.tassoRegistrazione}% tasso reg.</div>
+                  </div>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Clienti Paganti</div>
+                    <div style={styles.kpiValue}>{statisticheReferral.paganti}</div>
+                    <div style={styles.kpiSub}>{statisticheReferral.tassoConversione}% tasso conv.</div>
+                  </div>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Sconti Erogati</div>
+                    <div style={{ ...styles.kpiValue, color: '#10b981' }}>{statisticheReferral.scontiApplicati}€</div>
+                  </div>
+                </div>
+
+                {/* Form Invio Newsletter */}
+                <div style={styles.card}>
+                  <h2 style={styles.cardTitle}>Invia Comunicazione di Marketing</h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24, alignItems: 'flex-start' }}>
+                    
+                    {/* Form */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Seleziona Destinatari Target</label>
+                        <select
+                          value={marketingForm.target}
+                          onChange={e => setMarketingForm(prev => ({ ...prev, target: e.target.value }))}
+                          style={styles.selectInput}
+                        >
+                          <option value="tutti">Tutti gli utenti registrati ({destinatariFiltrati.length})</option>
+                          <option value="trial">Solo utenti in Prova (Trial) ({destinatariFiltrati.length})</option>
+                          <option value="paganti">Solo utenti con piani Paganti (Base/Studio/Prof) ({destinatariFiltrati.length})</option>
+                          <option value="inattivi">Solo utenti inattivi (0 condomini creati) ({destinatariFiltrati.length})</option>
+                          <option value="ai_high">Consumo AI mensile &gt;= 80% ({destinatariFiltrati.length})</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Oggetto dell'Email</label>
+                        <input
+                          type="text"
+                          value={marketingForm.oggetto}
+                          onChange={e => setMarketingForm(prev => ({ ...prev, oggetto: e.target.value }))}
+                          placeholder="es. Offerta Fondatori: 3 mesi gratis su CondoSmart!"
+                          style={styles.input}
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Corpo del Messaggio (HTML supportato)</label>
+                          <button
+                            type="button"
+                            onClick={handleGeneraTestoMarketing}
+                            disabled={generandoTestoAI}
+                            style={{
+                              background: '#2563eb',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 6,
+                              padding: '4px 10px',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {generandoTestoAI ? 'Generazione...' : '✨ Scrivi con AI'}
+                          </button>
+                        </div>
+                        <textarea
+                          value={marketingForm.messaggio}
+                          onChange={e => setMarketingForm(prev => ({ ...prev, messaggio: e.target.value }))}
+                          placeholder="Scrivi qui il corpo dell'email in HTML..."
+                          style={{ ...styles.textarea, minHeight: 220, width: '100%', boxSizing: 'border-box' }}
+                          required
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                        <button
+                          type="button"
+                          onClick={handleInviaTestMarketing}
+                          disabled={inviandoEmail}
+                          style={styles.btnSecondary}
+                        >
+                          Invia Mail di Test a me
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleInviaMarketingMassivo}
+                          disabled={inviandoEmail || destinatariFiltrati.length === 0 || !marketingForm.oggetto || !marketingForm.messaggio}
+                          style={{ ...styles.btnSubmit, flex: 2 }}
+                        >
+                          Invia a {destinatariFiltrati.length} utenti
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Anteprima Email */}
+                    <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 18, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 460 }}>
+                      <h3 style={{ ...styles.cardTitle, fontSize: 14, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Anteprima Grafica</h3>
+                      <div style={{ background: '#ffffff', color: '#1e293b', borderRadius: 8, padding: 16, border: '1px solid var(--border-color)', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', textAlign: 'left' }}>
+                        <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: 10, marginBottom: 12, fontSize: 12, lineHeight: 1.5, color: '#64748b' }}>
+                          <div><strong>Da:</strong> CondoSmart Team &lt;info@condosmart.it&gt;</div>
+                          <div><strong>Oggetto:</strong> {marketingForm.oggetto || '(Nessun oggetto)'}</div>
+                        </div>
+                        <div 
+                          style={{ fontSize: 14, lineHeight: 1.6, overflowY: 'auto', flex: 1, color: '#334155' }}
+                          dangerouslySetInnerHTML={{ __html: marketingForm.messaggio || '<p style="color: #94a3b8; font-style: italic;">Il corpo del messaggio comparirà qui...</p>' }}
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -911,6 +1390,12 @@ const styles = {
   ticketCard: { background: 'var(--app-bg)', padding: 16, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s' },
   textarea: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '12px 14px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', minHeight: 120, resize: 'vertical' },
   input: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box' },
+  selectInput: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box', cursor: 'pointer' },
   btnSubmit: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 2 },
   btnSecondary: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 1 },
+  kpiContainer: { display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' },
+  kpiCard: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: '18px 20px', flex: 1, minWidth: 150, textAlign: 'left' },
+  kpiTitle: { color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 },
+  kpiValue: { color: 'var(--text-primary)', fontSize: 24, fontWeight: 700 },
+  kpiSub: { color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }
 }

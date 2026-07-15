@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
+import { useSpeseQueue } from '../contexts/SpeseQueueContext'
 import { estraiFattura } from '../lib/fileExtractor'
 import SpeseForm from '../components/SpeseForm'
 import {
@@ -31,9 +32,8 @@ export default function SpeseGlobalPage() {
   const [condomini, setCondomini] = useState([])
   const [loadingCondomini, setLoadingCondomini] = useState(true)
   
-  // Coda di elaborazione fatture
-  const [queue, setQueue] = useState([])
-  const [activeQueueId, setActiveQueueId] = useState(null)
+  // Coda di elaborazione fatture (dallo SpeseQueueContext per persistere i dati)
+  const { queue, setQueue, activeQueueId, setActiveQueueId } = useSpeseQueue()
   const [processing, setProcessing] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -57,6 +57,15 @@ export default function SpeseGlobalPage() {
       }
     }
     fetchCondomini()
+  }, [])
+
+  // 1b. Ripristina gli elementi rimasti in 'analyzing' su 'idle' al mount per riprendere l'analisi
+  useEffect(() => {
+    setQueue(prev => {
+      const hasAnalyzing = prev.some(item => item.status === 'analyzing')
+      if (!hasAnalyzing) return prev
+      return prev.map(item => item.status === 'analyzing' ? { ...item, status: 'idle' } : item)
+    })
   }, [])
 
   // 2. Helper per recuperare i dettagli di un condominio selezionato

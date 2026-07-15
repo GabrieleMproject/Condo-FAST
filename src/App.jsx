@@ -9,6 +9,7 @@ import DashboardFinanziaria from './pages/DashboardFinanziaria'
 import SpesePage from './pages/SpesePage'
 import SpeseGlobalPage from './pages/SpeseGlobalPage'
 import StoricoOperazioniPage from './pages/StoricoOperazioniPage'
+import { SpeseQueueProvider } from './contexts/SpeseQueueContext'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
@@ -37,8 +38,9 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <PlanProvider>
-            <Toaster position="top-right" />
-          <Routes>
+            <SpeseQueueProvider>
+              <Toaster position="top-right" />
+              <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -73,8 +75,9 @@ export default function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
-        </PlanProvider>
-      </AuthProvider>
+            </SpeseQueueProvider>
+          </PlanProvider>
+        </AuthProvider>
     </BrowserRouter>
     </ThemeProvider>
   )

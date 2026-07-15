@@ -30,11 +30,14 @@ export function AuthProvider({ children }) {
           updated_at: new Date().toISOString()
         })
 
-        // Crea il listener Realtime per monitorare sovrascritture esterne della sessione
-        if (channel) channel.unsubscribe()
+        // Rimuove in modo pulito il canale precedente se esistente per evitare collisioni
+        if (channel) {
+          await supabase.removeChannel(channel)
+          channel = null
+        }
         
         channel = supabase
-          .channel(`public:user_sessions:user_id=eq.${currentUser.id}`)
+          .channel(`user_sessions_${currentUser.id}_${currentSessionId}`)
           .on(
             'postgres_changes',
             {

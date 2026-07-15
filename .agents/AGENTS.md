@@ -758,6 +758,29 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
 - **Handoff Claude**: Creato il file di handoff `HANDOFF_PROGETTO.md` nella root del repository per l'allineamento del contesto nel Project Claude dell'utente.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S40 (15 Luglio 2026 - Console Backoffice & Strumenti di Marketing)
+
+### 1. Monitoraggio Risorse e Utilizzi
+- **Funzione SQL di Aggregazione**: Creata la RPC `get_utenti_statistiche()` definita come `SECURITY DEFINER` per contare in modo efficiente e centralizzato le risorse di ciascun utente (condomini creati, chiamate AI mensili in UTC, collaboratori attivi) bypassando le politiche RLS client-side in sicurezza.
+- **Console Backoffice Completa**: Refattorizzata la tabella utenti in `BackofficePage.jsx` per mostrare gli utilizzi reali e includere una barra di avanzamento colorata per i consumi AI del mese. Aggiunta una tendina `select` per aggiornare al volo il piano dell'utente.
+
+### 2. Strumenti di Email Marketing e AI Copywriter
+- **Pannello Newsletter & Promozioni**: Aggiunto il tab "Marketing & Newsletter" nel backoffice per l'invio di email promozionali (via Resend) filtrate per target (Trial, Paganti, Inattivi, Consumi AI >80%) con anteprima grafica in tempo reale.
+- **Copywriter Assistito**: Integrato il pulsante "Scrivi con AI" che interpella Claude per redigere oggetti e corpi email HTML accattivanti in base a uno spunto dell'admin.
+- **Edge Function di Marketing**: Creata e deployata la Edge Function `invia-email-marketing` abilitata per l'invio asincrono a lotti di email massive tramite le API di sistema di Resend (autorizzata solo per i SuperAdmin).
+
+### 3. Statistiche Referral
+- **Metrica Conversioni**: Aggiunti KPI grafici nel tab Marketing per tracciare le performance del programma di referral "Invita un amico" (tasso di registrazione, tasso di abbonamento ed euro totali erogati).
+
+### 4. Fatti Verificati
+- **Esecuzione SQL**: Lo script `sql/s39_backoffice_marketing.sql` è stato applicato con successo sul database di produzione tramite la CLI di Supabase (`supabase db query --linked`).
+- **Deploy Edge Function**: La Edge Function `invia-email-marketing` è stata caricata con successo su Supabase Cloud.
+- **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
+- **Commit di sessione**: Registrato il commit di sessione S39 step 1.
+
+
 
 
 

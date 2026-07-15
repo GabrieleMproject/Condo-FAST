@@ -880,10 +880,10 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
   - Esercizi contabili in scadenza nei prossimi 30 giorni.
   - Riconciliazioni arretrate (movimenti non abbinati da più di 15 giorni).
 - **Adeguamento Pagina Migrazione (`MigazionePage.jsx`)**:
-  - Rimosse tutte le emoji testuali (come 🏗️, 🏢, 📋, ➕, 📂, 📊, 💡, 👤, 📐, 💰, 📁, 🔍, ⚠️) dal layout e dai flussi del wizard.
-  - Sostituite le emoji principali con le relative icone SVG del pacchetto `lucide-react` (es. `<Database>` nel badge del wizard e `<Folder>` all'interno della dropzone di caricamento file).
-  - Convertita la tavolozza colori `C` in un insieme di riferimenti dinamici a variabili CSS (`var(--app-bg)`, `var(--card-bg)`, `var(--border-color)`, `var(--border-color-2)`, `var(--text-primary)`, `var(--text-secondary)`), rendendo l'intera pagina 100% adattiva al tema chiaro e scuro.
-  - Ottimizzati i colori dei badge (`TIPO_BADGE`) per utilizzare sfondi semi-trasparenti e testi a tinta solida per garantire contrasto e leggibilità ottimale in entrambi i temi.
+  - Rimosse tutte le emoji testuali dal layout e dai flussi del wizard.
+  - Sostituite le emoji principali con le relative icone SVG del pacchetto `lucide-react`.
+  - Convertita la tavolozza colori in un insieme di riferimenti dinamici a variabili CSS (`var(--app-bg)`, `var(--card-bg)`, `var(--border-color)`, `var(--border-color-2)`, `var(--text-primary)`, `var(--text-secondary)`), rendendo l'intera pagina 100% adattiva al tema chiaro e scuro.
+  - Ottimizzati i colori dei badge per utilizzare sfondi semi-trasparenti e testi a tinta solida per garantire contrasto e leggibilità ottimale in entrambi i temi.
 
 ### 2. Bug Risolti (Fix Bug Triager)
 - **Allineamento Schema DB su Dashboard e useNotifiche**: Risolte le incongruenze tra le query client-side e il database schema reale:
@@ -892,10 +892,12 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
   - *Mappatura F24*: Sostituito il campo inesistente `f24_presentato` in `fatture_fornitori` con `ritenuta_pagata`.
 - **Prevenzione Crash Notifiche**: Corretto l'hook `useNotifiche.js` che presentava le stesse query errate su `rate_unita` ed `estratto_conto`. Mappate le risposte all'interno dell'hook per garantire piena compatibilità con l'engine puro `notificheEngine.js` senza alterarne la logica interna.
 - **Risoluzione Problemi di Contrasto**: Cambiato il colore del testo per il badge `.ricTag` in `#7c3aed` per migliorarne l'accessibilità visiva e il contrasto in modalità chiara (Light Mode).
+- **Correzione crash upsert `persone`**: Sostituito il metodo `.upsert()` basato su `codice_fiscale` (privo di vincolo UNIQUE nel database) con un inserimento sicuro `.insert()`.
+- **Normalizzazione Date per Database**: Introdotto l'helper `normalizzaDataDb` in `MigazionePage.jsx` per convertire automaticamente i testi delle date modificabili inseriti in formato italiano (`DD/MM/YYYY`) nel formato standard PostgreSQL `YYYY-MM-DD` (per spese e rate).
+- **Miglioramento Contrasto Console Log (Tema Chiaro)**: Cambiato il colore dei testi dei log terminale a `#e2e8f0` per garantirne la leggibilità ottimale (testo chiaro su sfondo scuro) anche quando il tema generale dell'app è chiaro.
+- **Correzione Logica Successo Condominio**: Introdotto lo stato `creatoOra` per mostrare la dicitura "Condominio creato e selezionato!" solo al termine dell'operazione di creazione reale e non in caso di semplice selezione da dropdown.
 
 ### 3. Fatti Verificati
 - **Verifica Build**: Eseguito `npm run build` con esito verde e compilazione corretta del bundle di produzione.
 - **Supporto Tematico**: Sincronizzate tutte le aree della nuova dashboard e del wizard di migrazione con le variabili CSS globali, assicurando un contrasto ottimale e transizioni pulite in modalità chiara e scura.
-- **Push e Commit**: Eseguiti i commit `S43 step2` (ristrutturazione iniziale), `S45 step2: risolve bug query db dashboard e useNotifiche` e `S45 step4: rimuove emoji e adatta la pagina di migrazione al tema chiaro` con push completato con successo su `origin main`.
-
-
+- **Push e Commit**: Eseguiti i commit `S43 step2` (ristrutturazione iniziale), `S45 step2: risolve bug query db dashboard e useNotifiche`, `S45 step4: rimuove emoji e adatta la pagina di migrazione al tema chiaro` e `S45 step6: corregge bug critici di query e usabilità riscontrati dal Bug Triager` con push completato con successo su `origin main`.

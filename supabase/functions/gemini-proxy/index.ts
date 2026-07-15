@@ -169,7 +169,25 @@ serve(async (req) => {
       generationConfig: {
         maxOutputTokens: body.maxTokens || body.max_tokens || 2048,
         temperature: 0.1, // Temperatura bassa per risposte strutturate e deterministiche
-      }
+      },
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_NONE"
+        }
+      ]
     }
 
     // Istruzione di sistema (se presente)

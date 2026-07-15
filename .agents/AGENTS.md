@@ -964,3 +964,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build:** Build di produzione Vite completata con successo in 473ms.
 - **Verifica Git:** Modifiche committate con messaggio conforme `S46 step5: implementa subentro anagrafico con data di subentro e mail di benvenuto contabile` e pushate sul branch `main`.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S47 step 1 (15 Luglio 2026 - Ottimizzazione e Bug Fix di Codebase e UI)
+
+### 1. Decisioni sul Workflow e Risoluzione Bug
+- **Risoluzione Bug Schema DB & Query (`DashboardFinanziaria.jsx`):** Corretta la select per il conteggio delle rate scadute e non pagate. Anziché interrogare direttamente `rate` filtrando per `stato` (che non appartiene a tale tabella), la query seleziona da `rate_unita` facendo un inner join con `rate` (`rate!inner(data_scadenza)`) per ereditare la scadenza.
+- **Normalizzazione Ripartizioni Spese (`SpeseForm.jsx`, `SpesePage.jsx`, `SpeseGlobalPage.jsx`):** Rimosso il riferimento alla colonna inesistente `interno` sostituendola con `numero` (che identifica l'interno catastale delle unità). Integrata inoltre la gestione e la visualizzazione della `scala` sia nelle ripartizioni manuali che automatiche.
+- **Wizard di Migrazione (`MigrazionePage.jsx`):** Corretto un refuso nel nome del file (`MigazionePage.jsx` -> `MigrazionePage.jsx`) e aggiornato il relativo import e le rotte in `App.jsx`. Corrette inoltre le colonne `numero` -> `numero_rata` e `scadenza` -> `data_scadenza` per evitare blocchi SQL durante la migrazione del piano rateale.
+- **Importazione Anagrafica da Excel (`AnagraficaImport.jsx`):** Esteso il normalizzatore delle colonne inserendo `'scala'` nei campi attesi per salvare correttamente questo metadato nel database.
+- **Hardening Contrasto Light Mode (Tema Chiaro):**
+  - *Verbali:* In `VerbaliAssembleaTab.jsx` rimossi gli sfondi grigio scuro hardcoded `#1e293b` ed i bordi `#334155` per i verbali non selezionati, sostituendoli con variabili CSS del tema (`var(--card-bg)`, `var(--border-color)`).
+  - *Sidebar Millesimali:* In `MillesimiEditor.jsx` sostituito lo sfondo grigio scuro attivo `#1e293b` con `var(--border-color)`.
+  - *Pulsante Logo Drawer:* In `AppLayout.jsx` rimosso l'hover inline hardcoded scuro, implementando un filtro brightness CSS universale responsivo.
+
+### 2. Fatti Verificati
+- **Verifica Build:** Esecuzione di `npm run build` con successo (build verde in 494ms).
+- **Verifica Git:** Modifiche committate in locale con messaggio `S47 step1: risoluzione bug DB, UI, contrasto e ridenominazione MigrazionePage`.
+

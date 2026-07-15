@@ -48,7 +48,30 @@ export function useConsuntivo(condominioId, esercizioId) {
         .eq('id', esercizioId).single()
       if (eEs) throw eEs
 
-      // 2) spese + ripartizioni (competenza)
+      // 1b) esercizio precedente (se presente per il confronto storico)
+      let esPrec = null
+      let spesePrec = []
+      if (es?.anno) {
+        const { data: ep } = await supabase
+          .from('esercizi')
+          .select('id, anno')
+          .eq('condominio_id', condominioId)
+          .lt('anno', es.anno)
+          .order('anno', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (ep) {
+          esPrec = ep
+          const { data: spPrec } = await supabase
+            .from('spese')
+            .select('id, descrizione, importo, categoria, tipo_lavoro')
+            .eq('condominio_id', condominioId)
+            .eq('esercizio_id', ep.id)
+          spesePrec = spPrec || []
+        }
+      }
+
+      // 2) spese + ripartizioni (competenza) dell'esercizio corrente
       const { data: spese, error: eSp } = await supabase
         .from('spese')
         .select(`
@@ -226,6 +249,56 @@ export function useConsuntivo(condominioId, esercizioId) {
         consuntivo: round2(confronto.reduce((a, r) => a + r.consuntivo, 0)),
         differenza: round2(confronto.reduce((a, r) => a + r.differenza, 0)),
       }
+      // Calcolo dello storico consumi per energia e riscaldamento
+      const paroleEnergia = ['luce', 'energia', 'elettricità', 'enel', 'servizio elettrico', 'a2a']
+      const paroleRiscaldamento = ['riscaldamento', 'gas', 'metano', 'combustibile', 'caldaia', 'teleriscaldamento']
+
+      const matchesKeywords = (txt, keywords) => {
+        if (!txt) return false
+        const t = txt.toLowerCase()
+        return keywords.some(k => t.includes(k))
+      }
+
+      const calcConsumoSpec = (listaSpese, keywords) => {
+        return round2(listaSpese.reduce((acc, s) => {
+          if (matchesKeywords(s.descrizione, keywords)) {
+            return acc + num(s.importo)
+          }
+          return acc
+        }, 0))
+      }
+
+      const energiaCorr = calcConsumoSpec(spese || [], paroleEnergia)
+      const energiaPrec = esPrec ? calcConsumoSpec(spesePrec, paroleEnergia) : 0
+      const riscaldamentoCorr = calcConsumoSpec(spese || [], paroleRiscaldamento)
+      const riscaldamentoPrec = esPrec ? calcConsumoSpec(spesePrec, paroleRiscaldamento) : 0
+
+      const calcVariazione = (corr, prec) => {
+        if (!prec || prec === 0) return 0
+        return round2(((corr - prec) / prec) * 100)
+      }
+
+      const catMapPrec = {}
+      spesePrec.forEach(s => {
+        const cat = s.categoria || 'altro'
+        catMapPrec[cat] = (catMapPrec[cat] || 0) + num(s.importo)
+      })
+
+      const storico = {
+        haPrecedente: !!esPrec,
+        annoPrecedente: esPrec ? esPrec.anno : null,
+        speseCategoriePrec: catMapPrec,
+        energia: {
+          corrente: energiaCorr,
+          precedente: energiaPrec,
+          variazione: calcVariazione(energiaCorr, energiaPrec)
+        },
+        riscaldamento: {
+          corrente: riscaldamentoCorr,
+          precedente: riscaldamentoPrec,
+          variazione: calcVariazione(riscaldamentoCorr, riscaldamentoPrec)
+        }
+      }
 
       setData({
         esercizio: es,
@@ -240,6 +313,8 @@ export function useConsuntivo(condominioId, esercizioId) {
         fatture: { rows: fattureRows, tot: fattureTot },
         // confronto
         confronto: { rows: confronto, tot: confrontoTot },
+        // storico
+        storico,
       })
     } catch (e) {
       setError(e.message)

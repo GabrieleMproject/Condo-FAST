@@ -20,7 +20,7 @@ export default function ConsuntivoTab({ condominioId }) {
   const [uploadingTpl, setUploadingTpl] = useState(false)
   const [tplMsg, setTplMsg] = useState('')
   const [template, setTemplate] = useState(null)
-  const { data, loading, error, fetch } = useConsuntivo(esercizioId, tabellaMillId)
+  const { data, loading, error, fetch } = useConsuntivo(condominioId, esercizioId)
   const { unita, getProprietario } = useUnita(condominioId)
   const { tabelle, getMillesimiUnita, getTotaleTabella } = useMillesimi(condominioId)
   const { WatermarkModal, checkWatermark } = useWatermark()
@@ -38,6 +38,12 @@ export default function ConsuntivoTab({ condominioId }) {
       fetchTemplate()
     }
   }, [condominioId])
+
+  useEffect(() => {
+    if (esercizioId) {
+      fetch()
+    }
+  }, [esercizioId, fetch])
 
   useEffect(() => {
     if (tabelle?.length && !tabellaMillId) {
@@ -205,6 +211,43 @@ export default function ConsuntivoTab({ condominioId }) {
             </Card>
           )}
 
+          {/* Analisi Storica & Consumi Energetici */}
+          {data.storico && (
+            <Card title="Analisi Storica & Consumi Energetici">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 4 }}>
+                <div style={st.statBox}>
+                  <div style={st.statLabel}>🔋 ENERGIA ELETTRICA</div>
+                  <div style={st.statValue}>{eur(data.storico.energia.corrente)}</div>
+                  {data.storico.haPrecedente ? (
+                    <div style={st.statSub}>
+                      <span>Prec. ({data.storico.annoPrecedente}): <b>{eur(data.storico.energia.precedente)}</b></span>
+                      <span style={st.badge(data.storico.energia.variazione)}>
+                        {data.storico.energia.variazione >= 0 ? '+' : ''}{data.storico.energia.variazione}%
+                      </span>
+                    </div>
+                  ) : (
+                    <div style={st.statSub}>Nessun dato storico per il confronto</div>
+                  )}
+                </div>
+
+                <div style={st.statBox}>
+                  <div style={st.statLabel}>🔥 RISCALDAMENTO & GAS</div>
+                  <div style={st.statValue}>{eur(data.storico.riscaldamento.corrente)}</div>
+                  {data.storico.haPrecedente ? (
+                    <div style={st.statSub}>
+                      <span>Prec. ({data.storico.annoPrecedente}): <b>{eur(data.storico.riscaldamento.precedente)}</b></span>
+                      <span style={st.badge(data.storico.riscaldamento.variazione)}>
+                        {data.storico.riscaldamento.variazione >= 0 ? '+' : ''}{data.storico.riscaldamento.variazione}%
+                      </span>
+                    </div>
+                  ) : (
+                    <div style={st.statSub}>Nessun dato storico per il confronto</div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Nota sintetica (art. 1130-bis c.c.) */}
           <Card title="Nota sintetica esplicativa (art. 1130-bis c.c.)">
             <p style={{ ...st.note, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
@@ -283,4 +326,9 @@ const st = {
   td: { padding: '8px 10px', borderBottom: '1px solid var(--border-color-2)', whiteSpace: 'nowrap' },
   footTd: { fontWeight: 700, color: 'var(--text-primary)', background: 'var(--app-bg)', borderTop: '1px solid var(--border-color)' },
   note: { color: 'var(--text-muted)', fontSize: 11.5, marginTop: 8 },
+  statBox: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 6 },
+  statLabel: { fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' },
+  statValue: { fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' },
+  statSub: { fontSize: 11, color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  badge: (v) => ({ fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: v <= 0 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: v <= 0 ? '#10b981' : '#ef4444' }),
 }

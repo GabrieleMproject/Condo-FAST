@@ -12,6 +12,7 @@ import DocumentiCondominio from '../components/DocumentiCondominio'
 import ComunicazioniTab from '../components/ComunicazioniTab'
 import AnagraficaCondominioTab from '../components/AnagraficaCondominioTab'
 import PassaggioConsegneSection from '../components/PassaggioConsegneSection'
+import SinistriTab from '../components/SinistriTab'
 import {
   DoorOpen, Layers, ArrowUpDown, Wallet, ClipboardList, CalendarDays,
   MoveVertical, Trees, ParkingCircle, UserCheck,
@@ -19,7 +20,7 @@ import {
   ArrowLeft, Receipt, Users,
   CheckCircle2,
   ChevronRight, Building2,
-  Mail, FileSignature,
+  Mail, FileSignature, ShieldAlert,
 } from 'lucide-react'
 import VerbaliAssembleaTab from '../components/VerbaliAssembleaTab'
 
@@ -58,6 +59,7 @@ const TABS = [
   { id: 'rate',       label: 'Rate',       icon: CreditCard },
   { id: 'comunicazioni', label: 'Comunicazioni', icon: Mail },
   { id: 'verbali',    label: 'Verbali',    icon: FileSignature },
+  { id: 'sinistri',   label: 'Sinistri',   icon: ShieldAlert },
   { id: 'finanze',    label: 'Finanze',    icon: Wallet },        // ← nuovo: accesso pagine finanziarie
   { id: 'documenti',  label: 'Documenti',  icon: FileText },
   { id: 'storico',    label: 'Storico',    icon: FolderClock },
@@ -350,6 +352,8 @@ export default function CondominiDetailPage() {
         {activeTab === 'comunicazioni' && <ComunicazioniTab condominioId={c.id} />}
 
         {activeTab === 'verbali' && <VerbaliAssembleaTab condominioId={c.id} />}
+
+        {activeTab === 'sinistri' && <SinistriTab condominioId={c.id} />}
 
         {activeTab === 'finanze' && <FinanzeTab condominioId={c.id} />}
 

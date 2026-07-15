@@ -29,7 +29,7 @@ export function useDocumenti(condominioId) {
     }
   }, [condominioId])
 
-  const upload = useCallback(async (file, tipo, nome, note = '', dataDocumento = null) => {
+  const upload = useCallback(async (file, tipo, nome, note = '', dataDocumento = null, sinistroId = null) => {
     setLoading(true)
     setError(null)
     try {
@@ -37,8 +37,8 @@ export function useDocumenti(condominioId) {
       const ext = file.name.split('.').pop().toLowerCase()
       const path = `${condominioId}/${Date.now()}_${file.name}`
       const { error: uploadError } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, { upsert: false })
+          .from(BUCKET)
+          .upload(path, file, { upsert: false })
       if (uploadError) throw uploadError
 
       // 2. Estrai testo se PDF o DOCX
@@ -51,18 +51,19 @@ export function useDocumenti(condominioId) {
 
       // 3. Salva record su DB
       const { data, error: dbError } = await supabase
-        .from('documenti_condominio')
-        .insert({
-          condominio_id: condominioId,
-          tipo,
-          nome: nome || file.name,
-          url_storage: path,
-          testo_estratto,
-          note,
-          data_documento: dataDocumento,
-        })
-        .select()
-        .single()
+          .from('documenti_condominio')
+          .insert({
+            condominio_id: condominioId,
+            tipo,
+            nome: nome || file.name,
+            url_storage: path,
+            testo_estratto,
+            note,
+            data_documento: dataDocumento,
+            sinistro_id: sinistroId,
+          })
+          .select()
+          .single()
       if (dbError) throw dbError
 
       setDocumenti(prev => [data, ...prev])
@@ -78,7 +79,7 @@ export function useDocumenti(condominioId) {
   const getSignedUrl = useCallback(async (urlStorage) => {
     const { data } = await supabase.storage
       .from(BUCKET)
-      .createSignedUrl(urlStorage, 60 * 60) // 1 ora
+      .createSignedUrl(urlStorage, 15 * 60) // 15 minuti (GDPR Hardening)
     return data?.signedUrl
   }, [])
 

@@ -901,3 +901,24 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build**: Eseguito `npm run build` con esito verde e compilazione corretta del bundle di produzione.
 - **Supporto Tematico**: Sincronizzate tutte le aree della nuova dashboard e del wizard di migrazione con le variabili CSS globali, assicurando un contrasto ottimale e transizioni pulite in modalità chiara e scura.
 - **Push e Commit**: Eseguiti i commit `S43 step2` (ristrutturazione iniziale), `S45 step2: risolve bug query db dashboard e useNotifiche`, `S45 step4: rimuove emoji e adatta la pagina di migrazione al tema chiaro` e `S45 step6: corregge bug critici di query e usabilità riscontrati dal Bug Triager` con push completato con successo su `origin main`.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S46 (15 Luglio 2026 - Gestione Sinistri Condominiali)
+
+### 1. Decisioni di Prodotto e Architettura
+- **Gestione Relazionale del Sinistro**: Introdotta la tabella `sinistri` con politiche RLS collegate a `user_owns_condominio(condominio_id)` ed abilitato il trigger di audit log (`public.audit_trigger_func()`) per tracciare le modifiche sotto la categoria `'sinistri'`.
+- **Accoppiamento Documentale e Spese**: Aggiunta la colonna `sinistro_id` a `documenti_condominio` e `spese` per agganciare in modo nativo e pulito file e pagamenti di riparazione relativi al sinistro.
+- **GDPR Hardening su Documenti**: Ridotta la validità dei Signed URL generati da `useDocumenti.js` a 15 minuti (900 secondi), conformando l'upload dei documenti dei sinistri agli standard già in uso per fatture e verbali.
+
+### 2. Risoluzione Bug e Regressioni (Fix Bug Triager)
+- **Fix Query PostgREST su Unità e Persone**: Corretto un bug di query in `useSinistri.js` dovuto alla colonna inesistente `interno` (sostituita con `numero`) e alla richiesta di una relazione diretta non esistente `proprietario:persone` (risolta richiedendo correttamente `occupanti_unita(persone(...))`).
+- **Allineamento Reattivo dello Stato Detail**: Semplificata la gestione di `activeSinistro` in `SinistriTab.jsx` eliminando l'accoppiamento manuale dell'oggetto post-salvataggio e introducendo un `useEffect` che osserva lo stato `sinistri` per mantenere i dettagli sempre allineati al DB dopo una modifica.
+- **Sostituzione Interno con Numero**: Sostituiti tutti i riferimenti UI in `SinistriTab.jsx` alla colonna inesistente `interno` per fare fallback in modo pulito su `numero` dell'unità (che rappresenta l'interno catastale reale).
+- **Correzione Stili e Select (Tema Chiaro/Scuro)**:
+  - Rimosso `{t.icon}` (stringa letterale) dall'opzione select in `DocumentiCondominio.jsx`.
+  - Sostituito lo sfondo scuro hardcoded `#1e293b` ed il colore testo dei filtri non selezionati con le variabili CSS (`var(--app-bg)`, `var(--text-secondary)`), garantendo il perfetto contrasto e stile coerente in Light Mode.
+
+### 3. Fatti Verificati
+- **Verifica Build**: Eseguito `npm run build` con esito verde e bundle di produzione generato con successo in 485ms.
+

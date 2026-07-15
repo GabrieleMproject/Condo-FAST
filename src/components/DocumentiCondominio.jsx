@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDocumenti } from '../hooks/useDocumenti'
-import { FileText, FileSpreadsheet, FileSignature, Award, Landmark, Folder, FolderOpen, Paperclip, CheckCircle2, AlertTriangle, Trash2, Download, Plus, X, File } from 'lucide-react'
+import { FileText, FileSpreadsheet, FileSignature, Award, Landmark, Folder, FolderOpen, Paperclip, CheckCircle2, AlertTriangle, Trash2, Download, Plus, X, File, ShieldAlert } from 'lucide-react'
 
 function renderTipoIcon(tipo, size = 20) {
   switch (tipo) {
@@ -16,6 +16,8 @@ function renderTipoIcon(tipo, size = 20) {
       return <Award size={size} style={{ color: '#06b6d4' }} />
     case 'estratto_conto_archivio':
       return <Landmark size={size} style={{ color: '#0ea5e9' }} />
+    case 'sinistro':
+      return <ShieldAlert size={size} style={{ color: '#ef4444' }} />
     default:
       return <Folder size={size} style={{ color: '#6b7280' }} />
   }
@@ -27,6 +29,7 @@ const TIPI = [
   { value: 'contratto', label: 'Contratto/Appalto', icon: 'contratto' },
   { value: 'certificazione', label: 'Certificazione', icon: 'certificazione' },
   { value: 'estratto_conto_archivio', label: 'Estratto Conto (Archivio)', icon: 'estratto_conto_archivio' },
+  { value: 'sinistro', label: 'Assicurazione & Sinistri', icon: 'sinistro' },
   { value: 'altro', label: 'Altro', icon: 'altro' },
 ]
 
@@ -37,6 +40,7 @@ const CATEGORIE_LABEL = {
   contratto: { label: 'Contratto', color: '#f59e0b' },
   certificazione: { label: 'Certificazione', color: '#06b6d4' },
   estratto_conto_archivio: { label: 'Archivio E/C', color: '#0ea5e9' },
+  sinistro: { label: 'Sinistri', color: '#ef4444' },
   altro: { label: 'Altro', color: '#6b7280' },
 }
 
@@ -145,8 +149,8 @@ export default function DocumentiCondominio({ condominioId }) {
             key={tipo}
             onClick={() => setFiltroTipo(tipo)}
             style={{
-              background: filtroTipo === tipo ? '#2563eb' : '#1e293b',
-              color: filtroTipo === tipo ? '#fff' : '#94a3b8',
+              background: filtroTipo === tipo ? '#2563eb' : 'var(--app-bg)',
+              color: filtroTipo === tipo ? '#fff' : 'var(--text-secondary)',
               border: `1px solid ${filtroTipo === tipo ? '#2563eb' : 'var(--border-color)'}`,
               borderRadius: 20, padding: '5px 14px', fontSize: 12,
               cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontWeight: 500
@@ -285,7 +289,7 @@ export default function DocumentiCondominio({ condominioId }) {
                   }}
                 >
                   {TIPI.map(t => (
-                    <option key={t.value} value={t.value}>{t.icon} {t.label}</option>
+                    <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>
               </div>

@@ -14,6 +14,201 @@ const sgn = (v) => (Number(v) < 0 ? '-' : '') + '€ ' + Math.abs(Number(v || 0)
 const HEAD = { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 }
 const BODY = { font: 'helvetica', fontSize: 8, cellPadding: 2.2, textColor: [20, 20, 20], lineColor: [200, 200, 200] }
 
+function disegnaRiquadroConsumo(doc, x, y, titolo, valoreCorr, valorePrec, variazione, annoCorr, annoPrec, haPrecedente) {
+  const W = 82
+  const H = 58
+  // Riquadro di sfondo chiaro
+  doc.setFillColor(248, 250, 252) // slate 50
+  doc.setDrawColor(226, 232, 240) // slate 200
+  doc.setLineWidth(0.3)
+  doc.rect(x, y, W, H, 'FD')
+
+  // Titolo riquadro
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8.5)
+  doc.setTextColor(30, 41, 59) // slate 800
+  doc.text(titolo, x + 6, y + 8)
+
+  // Badge variazione
+  if (haPrecedente && valorePrec > 0) {
+    const isRisparmio = variazione <= 0
+    const badgeText = `${isRisparmio ? '' : '+'}${variazione}%`
+    const badgeBg = isRisparmio ? [209, 250, 229] : [254, 226, 226] // green 100 vs red 100
+    const badgeTextCol = isRisparmio ? [5, 150, 105] : [220, 38, 38] // green 600 vs red 600
+
+    doc.setFillColor(...badgeBg)
+    const textWidth = doc.getTextWidth(badgeText)
+    const badgeW = textWidth + 5
+    const badgeH = 4.5
+    const badgeX = x + W - badgeW - 6
+    const badgeY = y + 4.5
+    doc.rect(badgeX, badgeY, badgeW, badgeH, 'F')
+    
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...badgeTextCol)
+    doc.text(badgeText, badgeX + 2.5, badgeY + 3.4)
+  }
+
+  // Grafico a barre
+  const maxVal = Math.max(valoreCorr, valorePrec, 100)
+  const scale = 30 / maxVal // 30mm altezza massima
+
+  const barW = 12
+  const space = 10
+  
+  if (haPrecedente) {
+    // Barra Anno Precedente
+    const hPrec = valorePrec * scale
+    const yPrec = y + 46 - hPrec
+    const xPrec = x + 20
+    doc.setFillColor(148, 163, 184)
+    doc.rect(xPrec, yPrec, barW, hPrec, 'F')
+    
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`€ ${Math.round(valorePrec)}`, xPrec + barW / 2, yPrec - 2, { align: 'center' })
+    doc.text(String(annoPrec), xPrec + barW / 2, y + 51, { align: 'center' })
+
+    // Barra Anno Corrente
+    const hCorr = valoreCorr * scale
+    const yCorr = y + 46 - hCorr
+    const xCorr = xPrec + barW + space
+    doc.setFillColor(37, 99, 235)
+    doc.rect(xCorr, yCorr, barW, hCorr, 'F')
+    
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.setTextColor(30, 41, 59)
+    doc.text(`€ ${Math.round(valoreCorr)}`, xCorr + barW / 2, yCorr - 2, { align: 'center' })
+    doc.text(String(annoCorr), xCorr + barW / 2, y + 51, { align: 'center' })
+  } else {
+    // Solo corrente
+    const hCorr = valoreCorr * scale
+    const yCorr = y + 46 - hCorr
+    const xCorr = x + W / 2 - barW / 2
+    doc.setFillColor(37, 99, 235)
+    doc.rect(xCorr, yCorr, barW, hCorr, 'F')
+    
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.setTextColor(30, 41, 59)
+    doc.text(`€ ${Math.round(valoreCorr)}`, xCorr + barW / 2, yCorr - 2, { align: 'center' })
+    
+    doc.setFont('helvetica', 'normal')
+    doc.text(String(annoCorr), xCorr + barW / 2, y + 51, { align: 'center' })
+  }
+
+  // Linea base
+  doc.setDrawColor(200, 200, 200)
+  doc.setLineWidth(0.2)
+  doc.line(x + 10, y + 46, x + W - 10, y + 46)
+}
+
+function disegnaGraficoCategorie(doc, x, y, categorie, valoriCorr, valoriPrec, etichette, titolo, labelCorr, labelPrec, haPrecedente) {
+  const W = 178
+  const H = 68
+  
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9.5)
+  doc.setTextColor(30, 41, 59)
+  doc.text(titolo, x, y - 4)
+
+  // Legenda
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7.5)
+  
+  doc.setFillColor(37, 99, 235)
+  doc.rect(x + W - 56, y - 7.5, 3, 3, 'F')
+  doc.setTextColor(80, 80, 80)
+  doc.text(labelCorr, x + W - 51, y - 5)
+
+  doc.setFillColor(148, 163, 184)
+  doc.rect(x + W - 28, y - 7.5, 3, 3, 'F')
+  doc.text(labelPrec, x + W - 23, y - 5)
+
+  const graphH = 46
+  const graphW = W - 22
+  const startX = x + 18
+  const endY = y + graphH
+
+  const allVals = [...valoriCorr, ...valoriPrec]
+  const maxVal = Math.max(...allVals, 100)
+  const scale = (graphH - 8) / maxVal
+
+  doc.setLineWidth(0.1)
+  doc.setDrawColor(240, 240, 240)
+  doc.setFontSize(6.5)
+  doc.setTextColor(150, 150, 150)
+  for (let i = 0; i <= 4; i++) {
+    const val = Math.round((maxVal / 4) * i)
+    const gridY = endY - (val * scale)
+    doc.line(startX, gridY, x + W, gridY)
+    doc.text(`€ ${val.toLocaleString('it-IT')}`, startX - 2, gridY + 2, { align: 'right' })
+  }
+
+  const numCats = categorie.length
+  const groupW = graphW / numCats
+  const barW = Math.min(8, groupW * 0.3)
+  const space = barW * 0.25
+  
+  categorie.forEach((cat, idx) => {
+    const valCorr = valoriCorr[idx] || 0
+    const valPrec = valoriPrec[idx] || 0
+    const centerX = startX + (groupW * idx) + (groupW / 2)
+    
+    if (haPrecedente) {
+      const hPrec = valPrec * scale
+      const yPrec = endY - hPrec
+      const xPrec = centerX - barW - space / 2
+      doc.setFillColor(148, 163, 184)
+      doc.rect(xPrec, yPrec, barW, hPrec, 'F')
+      if (valPrec > 0) {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(6)
+        doc.setTextColor(120, 120, 120)
+        doc.text(Math.round(valPrec).toLocaleString('it-IT'), xPrec + barW / 2, yPrec - 1.5, { align: 'center' })
+      }
+
+      const hCorr = valCorr * scale
+      const yCorr = endY - hCorr
+      const xCorr = centerX + space / 2
+      doc.setFillColor(37, 99, 235)
+      doc.rect(xCorr, yCorr, barW, hCorr, 'F')
+      if (valCorr > 0) {
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(6)
+        doc.setTextColor(30, 41, 59)
+        doc.text(Math.round(valCorr).toLocaleString('it-IT'), xCorr + barW / 2, yCorr - 1.5, { align: 'center' })
+      }
+    } else {
+      const hCorr = valCorr * scale
+      const yCorr = endY - hCorr
+      const xCorr = centerX - barW / 2
+      doc.setFillColor(37, 99, 235)
+      doc.rect(xCorr, yCorr, barW, hCorr, 'F')
+      if (valCorr > 0) {
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(6)
+        doc.setTextColor(30, 41, 59)
+        doc.text(Math.round(valCorr).toLocaleString('it-IT'), xCorr + barW / 2, yCorr - 1.5, { align: 'center' })
+      }
+    }
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.setTextColor(80, 80, 80)
+    const label = etichette[cat] || cat.toUpperCase()
+    const displayLabel = label.length > 15 ? label.substring(0, 13) + '.' : label
+    doc.text(displayLabel, centerX, endY + 4, { align: 'center' })
+  })
+
+  doc.setLineWidth(0.3)
+  doc.setDrawColor(180, 180, 180)
+  doc.line(startX, endY, x + W, endY)
+}
+
 function intestazione(doc, condominio, esercizio, branding) {
   const W = doc.internal.pageSize.getWidth()
   let y = 14
@@ -162,6 +357,56 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
       columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' } },
       didParseCell: (d) => { if (d.section === 'body' && d.row.index === body.length - 1) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.fillColor = [219, 234, 254] } } })
     y = doc.lastAutoTable.finalY + 12
+  }
+
+  // SEZIONE F — Grafici & Analisi Storica dei Consumi
+  const storico = c.storico
+  if (storico) {
+    doc.addPage()
+    y = 20
+    y = sezioneTitolo(doc, y, 'F — Grafici & Analisi Storica dei Consumi')
+    y += 10
+
+    // Disegno grafico Categorie principali (le prime 5 categorie)
+    const cats = [...ordine, ...Object.keys(c.competenza.catMap).filter(k => !ordine.includes(k))]
+    const activeCats = cats.filter(k => {
+      const v = c.competenza.catMap[k]
+      return v && (v.ordinaria + v.straordinaria) > 0
+    }).slice(0, 5)
+    
+    const valoriCorr = activeCats.map(k => {
+      const v = c.competenza.catMap[k]
+      return v ? (v.ordinaria + v.straordinaria) : 0
+    })
+    const valoriPrec = activeCats.map(k => (storico.speseCategoriePrec[k]) || 0)
+
+    const labelCorr = `Consuntivo ${c.esercizio?.anno || ''}`
+    const labelPrec = storico.haPrecedente ? `Consuntivo ${storico.annoPrecedente}` : 'Preventivo (N.D.)'
+
+    disegnaGraficoCategorie(
+      doc, 16, y, activeCats, valoriCorr, valoriPrec, etich, 
+      'Confronto Spese per Categoria (€)', labelCorr, labelPrec, storico.haPrecedente
+    )
+    
+    y += 62
+
+    // Disegno riquadri per consumi specifici
+    const xEnergia = 16
+    const xGas = 112
+    
+    disegnaRiquadroConsumo(
+      doc, xEnergia, y, '🔋 CONSUMI ENERGIA ELETTRICA', 
+      storico.energia.corrente, storico.energia.precedente, storico.energia.variazione, 
+      c.esercizio?.anno, storico.annoPrecedente, storico.haPrecedente
+    )
+    
+    disegnaRiquadroConsumo(
+      doc, xGas, y, '🔥 CONSUMI RISCALDAMENTO & GAS', 
+      storico.riscaldamento.corrente, storico.riscaldamento.precedente, storico.riscaldamento.variazione, 
+      c.esercizio?.anno, storico.annoPrecedente, storico.haPrecedente
+    )
+    
+    y += 70
   }
 
   if (sez.nota_sintetica?.attiva !== false) {

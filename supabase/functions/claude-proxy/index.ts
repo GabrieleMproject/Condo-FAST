@@ -256,12 +256,15 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errText = await response.text()
-      const isQuota = response.status === 429 || 
-                      errText.includes('Quota exceeded') || 
-                      errText.includes('RESOURCE_EXHAUSTED') || 
-                      errText.includes('rate-limits')
+      const isQuotaOrUnavailable = response.status === 429 || 
+                                   response.status === 503 ||
+                                   errText.includes('Quota exceeded') || 
+                                   errText.includes('RESOURCE_EXHAUSTED') || 
+                                   errText.includes('rate-limits') ||
+                                   errText.includes('UNAVAILABLE') ||
+                                   errText.includes('high demand')
                       
-      if (isQuota) {
+      if (isQuotaOrUnavailable) {
         throw new Error('Servizio AI temporaneamente non disponibile. Riprova tra poco.')
       }
       throw new Error(`Errore API Gemini (${response.status}): ${errText}`)

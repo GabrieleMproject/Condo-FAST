@@ -774,16 +774,14 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 3. Statistiche Referral
 - **Metrica Conversioni**: Aggiunti KPI grafici nel tab Marketing per tracciare le performance del programma di referral "Invita un amico" (tasso di registrazione, tasso di abbonamento ed euro totali erogati).
 
-### 4. Fatti Verificati
+### 4. Bug Risolti (Fix Hot)
+- **Crash Realtime `AuthContext.jsx`**: Risolto un bug di race condition su Supabase Realtime per cui l'evento asincrono `.unsubscribe()` di un canale non completato prima della chiamata `.subscribe()` concorrente lanciava l'errore `cannot add postgres_changes callbacks... after subscribe()`. Risolto ripulendo in modo sequenziale con `await supabase.removeChannel(channel)` e nominando il canale con l'identificatore univoco di sessione (`currentSessionId`).
+
+### 5. Fatti Verificati
 - **Esecuzione SQL**: Lo script `sql/s39_backoffice_marketing.sql` è stato applicato con successo sul database di produzione tramite la CLI di Supabase (`supabase db query --linked`).
 - **Deploy Edge Function**: La Edge Function `invia-email-marketing` è stata caricata con successo su Supabase Cloud.
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
-- **Commit di sessione**: Registrato il commit di sessione S39 step 1.
-
-
-
-
-
+- **Commit di sessione**: Registrato il commit di sessione S40 step 3.
 
 
 

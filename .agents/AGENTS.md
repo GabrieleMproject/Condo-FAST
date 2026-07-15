@@ -784,3 +784,17 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Deploy Edge Function**: Le Edge Functions `invia-email-marketing` e `claude-proxy` sono state caricate con successo su Supabase Cloud.
 - **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
 - **Commit di sessione**: Registrato il commit di sessione S40 step 22.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S41 (15 Luglio 2026 - Output in Stile Chiaro)
+
+### 1. Esportazioni e PDF Chiari
+- **Allineamento Layout PDF**: Riconfigurato `exportPdf.js` per generare tutti i documenti PDF (ripartizioni, piano rate, anagrafica, registro anagrafe, solleciti singoli/massivi) in stile chiaro (Light Mode) per la stampa e l'utilizzo standard.
+- **Struttura Visiva**: Rimossa la testata a sfondo scuro e il footer scuro a favore di uno sfondo bianco con linee di delimitazione blu (testata) e grigie (footer).
+- **Colorazione Tabelle e Testi**: Impostate le tabelle con righe alternate grigio-azzurre chiarissime (`[241, 245, 249]`), testate blu e testi scuri in contrasto per ottimizzare la leggibilità e ridurre il consumo di inchiostro.
+
+### 2. Fatti Verificati
+- **Verifica Build**: Eseguito `npm run build` con successo, build completata senza alcun errore di compilazione.
+- **Esecuzione Smoke Test**: Eseguito `npm run smoke`. Il test ha fallito per disservizio esterno temporaneo delle API (errore 500 del proxy AI), non correlato alle modifiche grafiche.
+- **Commit di sessione**: Registrato il commit di sessione S41 step 1.

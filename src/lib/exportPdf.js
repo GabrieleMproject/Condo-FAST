@@ -10,8 +10,10 @@ import { applyWatermark } from './watermark';
 
 const BLU = [37, 99, 235];
 const DARK = [15, 23, 42];
-const TESTO = [226, 232, 240];
+const TESTO = [51, 65, 85];
 const GRIGIO = [100, 116, 139];
+const LINEA_BORDO = [200, 200, 200];
+const SFONDO_ALT = [241, 245, 249];
 
 function fmtEuro(v) {
   if (v === null || v === undefined) return '';
@@ -24,18 +26,24 @@ function fmtData(d) {
 
 function disegnaIntestazione(doc, condominio, esercizio, titoloDoc) {
   const W = doc.internal.pageSize.getWidth();
-  doc.setFillColor(...DARK); doc.rect(0, 0, W, 42, 'F');
-  doc.setFillColor(...BLU); doc.rect(0, 0, 4, 42, 'F');
+  
+  // Testata chiara: nessun rettangolo di sfondo. Disegniamo solo la linea blu divisoria in basso.
+  doc.setDrawColor(...BLU); doc.setLineWidth(0.5); doc.line(10, 42, W - 10, 42);
+
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...BLU);
   doc.text('CONDOSMART', 12, 12);
-  doc.setFontSize(15); doc.setTextColor(...TESTO);
+  doc.setFontSize(15); doc.setTextColor(...DARK);
   doc.text(condominio?.nome || 'Condominio', 12, 23);
+  
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...GRIGIO);
   if (condominio?.indirizzo) {
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...GRIGIO);
     doc.text(condominio.indirizzo, 12, 31);
   }
-  if (condominio?.codice_fiscale) doc.text(`C.F.: ${condominio.codice_fiscale}`, 12, 38);
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...TESTO);
+  if (condominio?.codice_fiscale) {
+    doc.text(`C.F.: ${condominio.codice_fiscale}`, 12, 38);
+  }
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...DARK);
   doc.text(titoloDoc, W - 14, 18, { align: 'right' });
   if (esercizio) {
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...GRIGIO);
@@ -53,10 +61,11 @@ function aggiungiFooter(doc) {
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFillColor(30, 41, 59); doc.rect(0, H - 12, W, 12, 'F');
+    // Footer chiaro: disegnamo una linea sottile grigia orizzontale anziché un rettangolo pieno.
+    doc.setDrawColor(...LINEA_BORDO); doc.setLineWidth(0.3); doc.line(10, H - 12, W - 10, H - 12);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
-    doc.text('CondoSmart — Gestionale Condominiale', 10, H - 4);
-    doc.text(`Pagina ${i} di ${pageCount}`, W - 10, H - 4, { align: 'right' });
+    doc.text('CondoSmart — Gestionale Condominiale', 10, H - 5);
+    doc.text(`Pagina ${i} di ${pageCount}`, W - 10, H - 5, { align: 'right' });
   }
 }
 
@@ -66,7 +75,7 @@ export async function exportRipartizionePdf({ condominio, esercizio, spese, unit
   let y = disegnaIntestazione(doc, condominio, esercizio, 'PROSPETTO RIPARTIZIONE SPESE');
 
   const totSpese = spese.reduce((a, s) => a + (s.importo || 0), 0);
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...TESTO);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...DARK);
   doc.text(`Totale spese esercizio: ${fmtEuro(totSpese)}   |   N° spese: ${spese.length}   |   N° unità: ${unita.length}`, 14, y);
   y += 8;
 
@@ -102,13 +111,13 @@ export async function exportRipartizionePdf({ condominio, esercizio, spese, unit
 
   autoTable(doc, {
     startY: y, head, body, theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 7.5, cellPadding: 2.5, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+    styles: { font: 'helvetica', fontSize: 7.5, cellPadding: 2.5, textColor: [20, 20, 20], fillColor: [255, 255, 255], lineColor: LINEA_BORDO },
     headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
-    alternateRowStyles: { fillColor: [24, 35, 55] },
+    alternateRowStyles: { fillColor: SFONDO_ALT },
     didParseCell: (data) => {
       if (data.row.index === body.length - 1) {
-        data.cell.styles.fillColor = [37, 99, 235];
-        data.cell.styles.textColor = [255, 255, 255];
+        data.cell.styles.fillColor = [219, 234, 254];
+        data.cell.styles.textColor = [15, 23, 42];
         data.cell.styles.fontStyle = 'bold';
       }
     },
@@ -152,9 +161,9 @@ export async function exportRatePdf({ condominio, esercizio, rate, cells, unita,
     startY: y,
     head: [['Unità', 'Proprietario', 'N° Rata', 'Scadenza', 'Importo', 'Stato', 'Pagato il']],
     body, theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 3, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 3, textColor: [20, 20, 20], fillColor: [255, 255, 255], lineColor: LINEA_BORDO },
     headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [24, 35, 55] },
+    alternateRowStyles: { fillColor: SFONDO_ALT },
     columnStyles: { 0: { cellWidth: 16 }, 2: { cellWidth: 18 }, 3: { cellWidth: 24 }, 4: { cellWidth: 24, halign: 'right' }, 5: { cellWidth: 24 }, 6: { cellWidth: 24 } },
     margin: { left: 14, right: 14 },
   });
@@ -169,7 +178,7 @@ export async function exportAnagraficaPdf({ condominio, persone }, withWatermark
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   let y = disegnaIntestazione(doc, condominio, null, 'ANAGRAFICA CONDOMINIALE');
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...TESTO);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...DARK);
   doc.text(`Totale residenti/proprietari: ${persone.length}`, 14, y);
   y += 8;
 
@@ -187,9 +196,9 @@ export async function exportAnagraficaPdf({ condominio, persone }, withWatermark
 
   autoTable(doc, {
     startY: y, head, body, theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 7.5, cellPadding: 2.5, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+    styles: { font: 'helvetica', fontSize: 7.5, cellPadding: 2.5, textColor: [20, 20, 20], fillColor: [255, 255, 255], lineColor: LINEA_BORDO },
     headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
-    alternateRowStyles: { fillColor: [24, 35, 55] },
+    alternateRowStyles: { fillColor: SFONDO_ALT },
     margin: { left: 10, right: 10 },
   });
 
@@ -204,7 +213,7 @@ export async function exportSingolaUnitaRatePdfBytes({ condominio, esercizio, ra
   let y = disegnaIntestazione(doc, condominio, esercizio, 'SOLLECITO DI PAGAMENTO QUOTE');
 
   // Dati condomino (in alto a sinistra, sotto l'intestazione)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...TESTO);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...DARK);
   doc.text('Spett.le Condomino:', 14, y);
   doc.setFont('helvetica', 'bold');
   const nomeCompleto = `${proprietario?.cognome || ''} ${proprietario?.nome || ''}`.trim() || 'Condòmino';
@@ -221,7 +230,7 @@ export async function exportSingolaUnitaRatePdfBytes({ condominio, esercizio, ra
   
   y += 8;
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...TESTO);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
   const cellMap = {};
   (cells || []).forEach(c => { cellMap[c.rata_id] = c; });
   const rateSorted = [...(rate || [])].sort((a, b) => (a.numero_rata || 0) - (b.numero_rata || 0));
@@ -262,9 +271,9 @@ Riepilogo quote per l'esercizio:
     head: [['Rata / Descrizione', 'Scadenza', 'Dovuto', 'Pagato', 'Insoluto', 'Stato']],
     body,
     theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 3, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 3, textColor: [20, 20, 20], fillColor: [255, 255, 255], lineColor: LINEA_BORDO },
     headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [24, 35, 55] },
+    alternateRowStyles: { fillColor: SFONDO_ALT },
     margin: { left: 14, right: 14 }
   });
 
@@ -272,7 +281,7 @@ Riepilogo quote per l'esercizio:
 
   // Se è presente l'IBAN del condominio, scriviamolo nel PDF
   if (condominio?.iban) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...TESTO);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
     doc.text('Coordinate per il pagamento (IBAN Condominiale):', 14, finalY);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...BLU);
     doc.text(condominio.iban, 14, finalY + 5);
@@ -300,7 +309,7 @@ export async function exportSollecitiMassiviPdf({ condominio, esercizio, rate, p
     let y = disegnaIntestazione(doc, condominio, esercizio, 'SOLLECITO DI PAGAMENTO QUOTE');
     
     // Dati condomino
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...TESTO);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...DARK);
     doc.text('Spett.le Condomino:', 14, y);
     doc.setFont('helvetica', 'bold');
     const nomeCompleto = `${destinatario?.cognome || ''} ${destinatario?.nome || ''}`.trim() || 'Condòmino';
@@ -317,7 +326,7 @@ export async function exportSollecitiMassiviPdf({ condominio, esercizio, rate, p
     
     y += 8;
     
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...TESTO);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
     const cellMap = {};
     (cells || []).forEach(c => { cellMap[c.rata_id] = c; });
     const rateSorted = [...(rate || [])].sort((a, b) => (a.numero_rata || 0) - (b.numero_rata || 0));
@@ -358,16 +367,16 @@ Riepilogo quote per l'esercizio:
       head: [['Rata / Descrizione', 'Scadenza', 'Dovuto', 'Pagato', 'Insoluto', 'Stato']],
       body,
       theme: 'grid',
-      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 3, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 3, textColor: [20, 20, 20], fillColor: [255, 255, 255], lineColor: LINEA_BORDO },
       headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [24, 35, 55] },
+      alternateRowStyles: { fillColor: SFONDO_ALT },
       margin: { left: 14, right: 14 }
     });
     
     const finalY = doc.lastAutoTable.finalY + 12;
     
     if (condominio?.iban) {
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...TESTO);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
       doc.text('Coordinate per il pagamento (IBAN Condominiale):', 14, finalY);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...BLU);
       doc.text(condominio.iban, 14, finalY + 5);
@@ -385,12 +394,12 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
   const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
 
-  // Disegna testata personalizzata Landscape
-  doc.setFillColor(...DARK); doc.rect(0, 0, W, 38, 'F');
-  doc.setFillColor(...BLU); doc.rect(0, 0, 4, 38, 'F');
+  // Testata chiara Landscape: disegniamo solo la linea blu divisoria.
+  doc.setDrawColor(...BLU); doc.setLineWidth(0.5); doc.line(10, 36, W - 10, 36);
+
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...BLU);
   doc.text('CONDOSMART', 12, 10);
-  doc.setFontSize(14); doc.setTextColor(...TESTO);
+  doc.setFontSize(14); doc.setTextColor(...DARK);
   doc.text(condominio?.nome || 'Condominio', 12, 19);
   
   if (condominio?.indirizzo) {
@@ -402,7 +411,7 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
     doc.text(`C.F. Condominio: ${condominio.codice_fiscale}`, 12, 32);
   }
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...TESTO);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...DARK);
   doc.text('REGISTRO ANAGRAFE CONDOMINIALE', W - 12, 16, { align: 'right' });
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GRIGIO);
   doc.text(`Art. 1130 comma 1 n. 6 c.c. · Stampato il ${new Date().toLocaleDateString('it-IT')}`, W - 12, 24, { align: 'right' });
@@ -454,19 +463,22 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
     head: [['Unità', 'Dati Catastali (F/P/S)', 'Nominativo (Ruolo)', 'Codice Fiscale', 'Indirizzo Residenza']],
     body,
     theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 4.5, textColor: [226, 232, 240], fillColor: [15, 23, 42], lineColor: [30, 41, 59] },
+    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 4.5, textColor: [20, 20, 20], fillColor: [255, 255, 255], lineColor: LINEA_BORDO },
     headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
-    alternateRowStyles: { fillColor: [24, 35, 55] },
+    alternateRowStyles: { fillColor: SFONDO_ALT },
     margin: { left: 12, right: 12 }
   });
 
   // Footer pagina singola/multipla
   const pageCount = doc.internal.getNumberOfPages();
+  const H = doc.internal.pageSize.getHeight();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
+    // Linea divisoria per il footer
+    doc.setDrawColor(...LINEA_BORDO); doc.setLineWidth(0.3); doc.line(10, H - 15, W - 10, H - 15);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
-    doc.text(`Pagina ${i} di ${pageCount}`, W - 12, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
-    doc.text('Generato automaticamente da CondoSmart', 12, doc.internal.pageSize.getHeight() - 10);
+    doc.text(`Pagina ${i} di ${pageCount}`, W - 12, H - 8, { align: 'right' });
+    doc.text('Generato automaticamente da CondoSmart', 12, H - 8);
   }
 
   doc.save(`Registro_Anagrafe_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);

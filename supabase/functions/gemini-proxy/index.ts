@@ -166,10 +166,15 @@ serve(async (req) => {
       }]
     }
 
+    let maxTokens = body.maxTokens || body.max_tokens || 8192
+    if (maxTokens < 8192) {
+      maxTokens = 8192
+    }
+
     const geminiPayload: Record<string, any> = {
       contents,
       generationConfig: {
-        maxOutputTokens: body.maxTokens || body.max_tokens || 2048,
+        maxOutputTokens: maxTokens,
         temperature: 0.1, // Temperatura bassa per risposte strutturate e deterministiche
       },
       safetySettings: [

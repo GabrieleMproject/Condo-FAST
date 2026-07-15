@@ -22,6 +22,26 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
   // Rimuovi virgole pendenti (trailing commas) per conformità JSON
   clean = clean.replace(/,\s*\}/g, '}').replace(/,\s*\]/g, ']');
 
+  // Bilancia le parentesi graffe per tagliare caratteri spuri extra alla fine (es: }})
+  clean = clean.trim();
+  if (!isArray && clean.startsWith('{') && clean.endsWith('}')) {
+    let braceCount = 0;
+    let cutoff = -1;
+    for (let i = 0; i < clean.length; i++) {
+      if (clean[i] === '{') braceCount++;
+      else if (clean[i] === '}') {
+        braceCount--;
+        if (braceCount === 0) {
+          cutoff = i;
+          break;
+        }
+      }
+    }
+    if (cutoff !== -1 && cutoff < clean.length - 1) {
+      clean = clean.substring(0, cutoff + 1);
+    }
+  }
+
   try {
     return JSON.parse(clean);
   } catch (err) {
@@ -241,27 +261,27 @@ export async function estraiFattura(file) {
   const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di fatture di fornitori condominiali.
 Estrai i dati della fattura e restituisci SOLO un JSON valido, senza testo aggiuntivo.
 
-Formato JSON:
+Formato JSON atteso:
 {
-  "fornitore": "ragione sociale del fornitore",
-  "partita_iva_fornitore": "P.IVA o CF del fornitore" | null,
-  "numero_fattura": "numero documento" | null,
-  "data_fattura": "YYYY-MM-DD",
-  "data_scadenza": "YYYY-MM-DD" | null,
-  "importo_totale": number,
-  "importo_iva": number,
-  "importo_netto": number,
-  "aliquota_iva": number | null,
-  "descrizione": "descrizione dei lavori/servizi",
-  "categoria": "manutenzione" | "pulizie" | "utenze" | "assicurazione" | "amministrazione" | "altro",
-  "note": "note aggiuntive" | null,
-  "imponibile_ritenuta": number,
-  "aliquota_ritenuta_percentuale": number,
-  "importo_ritenuta": number,
-  "codice_tributo_f24": "1019" | "1020" | "1040" | null,
-  "condominio_destinatario_nome": "denominazione/ragione sociale del condominio destinatario della fattura (il cliente/ricevente)" | null,
-  "condominio_destinatario_codice_fiscale": "codice fiscale o partita iva del condominio destinatario della fattura (il cliente/ricevente)" | null,
-  "condominio_destinatario_indirizzo": "indirizzo del condominio destinatario della fattura" | null
+  "fornitore": "Ragione sociale del fornitore (stringa)",
+  "partita_iva_fornitore": "Partita IVA o Codice Fiscale del fornitore (stringa o null)",
+  "numero_fattura": "Numero della fattura/documento (stringa o null)",
+  "data_fattura": "Data della fattura in formato YYYY-MM-DD (stringa)",
+  "data_scadenza": "Data di scadenza in formato YYYY-MM-DD (stringa o null)",
+  "importo_totale": 0.00,
+  "importo_iva": 0.00,
+  "importo_netto": 0.00,
+  "aliquota_iva": 22.00,
+  "descrizione": "Descrizione sintetica dei lavori o servizi (stringa)",
+  "categoria": "Una tra: manutenzione, pulizie, utenze, assicurazione, amministrazione, altro",
+  "note": "Note aggiuntive (stringa o null)",
+  "imponibile_ritenuta": 0.00,
+  "aliquota_ritenuta_percentuale": 4.00,
+  "importo_ritenuta": 0.00,
+  "codice_tributo_f24": "Codice F24, uno tra: 1019, 1020, 1040, oppure null",
+  "condominio_destinatario_nome": "Denominazione/ragione sociale del condominio destinatario della fattura (stringa o null)",
+  "condominio_destinatario_codice_fiscale": "Codice fiscale o partita iva del condominio destinatario della fattura (stringa o null)",
+  "condominio_destinatario_indirizzo": "Indirizzo completo del condominio destinatario della fattura (stringa o null)"
 }
 
 Regole Ritenuta d'Acconto:

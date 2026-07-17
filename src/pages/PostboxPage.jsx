@@ -6,6 +6,7 @@ import { usePlan } from '../hooks/usePlan'
 import SpeseForm from '../components/SpeseForm'
 import SubentroValidator from '../components/SubentroValidator'
 import { toast } from 'react-hot-toast'
+import PlanGate from '../components/PlanGate'
 import {
   UploadCloud, FileText, CheckCircle2, AlertTriangle, Loader2,
   Building2, ArrowRight, Clock, RefreshCw, X, Receipt, Eye,
@@ -340,6 +341,7 @@ export default function PostboxPage() {
   const activeQueueList = getActiveQueue()
 
   return (
+    <PlanGate feature="postbox_studio">
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', background: 'var(--app-bg)' }}>
       
       {/* Tab in testa */}
@@ -610,5 +612,6 @@ export default function PostboxPage() {
       )}
 
     </div>
+    </PlanGate>
   )
 }

@@ -52,7 +52,7 @@ function UpgradePrompt({ feature, pianoMinimo, compact = false }) {
         </div>
       </div>
       <a href="/impostazioni" style={styles.upgradeBtn}>
-        Aggiorna a {info?.label} →
+        {feature === 'postbox_studio' ? 'Passa a Studio' : `Aggiorna a ${info?.label} →`}
       </a>
       <p style={styles.trialNote}>Sei in trial? Attiva un piano per sbloccare tutte le funzioni.</p>
     </div>
@@ -69,6 +69,7 @@ function getFeatureDesc(feature) {
     assemblee:            'Gestisci assemblee, presenze, deleghe, calcolo quorum e genera verbali con AI.',
     gestione_fornitori:   'Gestisci anagrafica fornitori, contratti, scadenze e storico fatture per condominio.',
     notifiche_auto:       'Invia automaticamente avvisi di rate scadute, solleciti e promemoria assemblea.',
+    postbox_studio:       'Gestisci centralmente tutta la posta dello studio: ricevi spese ed estrai i dati con l\'AI, gestisci subentri anagrafici e calcola i conguagli finanziari in due tempi inviando lettere di benvenuto, e archivia la cronologia di tutte le comunicazioni ricevute dai condòmini.',
     multi_utente:         'Aggiungi fino a 5 collaboratori con ruoli personalizzati (admin, collaboratore, sola lettura).',
     api_access:           'Accedi alle API per integrare con altri software gestionali.',
   }

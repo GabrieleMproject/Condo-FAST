@@ -72,6 +72,7 @@ const FEATURE_GATES = {
   alert_contratti:     ['studio', 'professional'],  // S15
   notifiche_auto:      ['studio', 'professional'],  // S11
   storico_3anni:       ['studio', 'professional'],
+  postbox_studio:      ['studio', 'professional'],
   multi_utente:        ['studio', 'professional'],   // Studio+ supporta ora collaboratori limitati
   api_access:          ['professional'],             // futuro
 }

@@ -807,3 +807,44 @@ Regole importanti:
 
   return pulisciEdEstraiJson(risposta, false);
 }
+
+// ─── Comprime e ridimensiona immagini client-side per salvaguardare lo storage ───
+export function comprimiImmagine(file, maxW = 1600, qualita = 0.8) {
+  if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    return Promise.resolve(file)
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, maxW / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, w, h)
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            resolve(file)
+            return
+          }
+          const compFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          })
+          resolve(compFile)
+        }, 'image/jpeg', qualita)
+      }
+      img.onerror = () => resolve(file)
+      img.src = reader.result
+    }
+    reader.onerror = () => resolve(file)
+    reader.readAsDataURL(file)
+  })
+}

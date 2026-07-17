@@ -210,6 +210,13 @@ serve(async (req) => {
       if (!fileRes.ok) continue
 
       const arrayBuffer = await fileRes.arrayBuffer()
+
+      // Controllo dimensione massima di 10MB per prevenire crash di RAM e storage
+      if (arrayBuffer.byteLength > 10 * 1024 * 1024) {
+        console.warn(`[Inbound Email] Allegato ${filename} saltato perché supera il limite di 10MB (dimensione: ${arrayBuffer.byteLength} byte)`)
+        continue
+      }
+
       const base64Content = encodeBase64(new Uint8Array(arrayBuffer))
 
       const timestamp = Date.now()

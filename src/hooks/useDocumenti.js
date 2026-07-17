@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { callGeminiDocument } from '../lib/geminiClient'
-import { docxToText } from '../lib/fileExtractor'
+import { docxToText, comprimiImmagine } from '../lib/fileExtractor'
 
 const BUCKET = 'documenti-condominio'
 
@@ -33,20 +33,27 @@ export function useDocumenti(condominioId) {
     setLoading(true)
     setError(null)
     try {
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Il file supera il limite massimo consentito di 10MB.')
+      }
+
+      // Applica compressione se è un'immagine
+      const compressedFile = await comprimiImmagine(file)
+
       // 1. Upload file su Storage
-      const ext = file.name.split('.').pop().toLowerCase()
-      const path = `${condominioId}/${Date.now()}_${file.name}`
+      const ext = compressedFile.name.split('.').pop().toLowerCase()
+      const path = `${condominioId}/${Date.now()}_${compressedFile.name}`
       const { error: uploadError } = await supabase.storage
           .from(BUCKET)
-          .upload(path, file, { upsert: false })
+          .upload(path, compressedFile, { upsert: false })
       if (uploadError) throw uploadError
 
       // 2. Estrai testo se PDF o DOCX
       let testo_estratto = null
       if (ext === 'pdf') {
-        testo_estratto = await estraiTestoPDF(file, condominioId)
+        testo_estratto = await estraiTestoPDF(compressedFile, condominioId)
       } else if (ext === 'docx') {
-        try { testo_estratto = await docxToText(file) } catch (e) { console.error(e) }
+        try { testo_estratto = await docxToText(compressedFile) } catch (e) { console.error(e) }
       }
 
       // 3. Salva record su DB
@@ -55,7 +62,7 @@ export function useDocumenti(condominioId) {
           .insert({
             condominio_id: condominioId,
             tipo,
-            nome: nome || file.name,
+            nome: nome || compressedFile.name,
             url_storage: path,
             testo_estratto,
             note,

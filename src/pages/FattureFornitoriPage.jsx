@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { estraiFattura, getTipoFile } from '../lib/fileExtractor';
+import { estraiFattura, getTipoFile, comprimiImmagine } from '../lib/fileExtractor';
 import { useFornitori } from '../hooks/useFornitori';
 import { Edit3, Trash2, AlertTriangle, Upload, Paperclip } from 'lucide-react';
 
@@ -122,22 +122,28 @@ export default function FattureFornitoriPage() {
       return;
     }
 
+    if (file.size > 10 * 1024 * 1024) {
+      setErroreUpload('Il file supera il limite massimo consentito di 10MB.');
+      return;
+    }
+
     setUploading(true);
     setErroreUpload('');
     setUploadProgress('Lettura file...');
 
     try {
+      const fileCompresso = await comprimiImmagine(file);
       setUploadProgress('Estrazione dati fattura con AI...');
-      const datiAI = await estraiFattura(file);
+      const datiAI = await estraiFattura(fileCompresso);
 
       let fileUrl = null;
       if (tipo !== 'unknown') {
         setUploadProgress('Caricamento file su storage...');
         const { data: { user } } = await supabase.auth.getUser();
-        const path = `${user.id}/${condominioId}/${Date.now()}_${file.name}`;
+        const path = `${user.id}/${condominioId}/${Date.now()}_${fileCompresso.name}`;
         const { data: storageData, error: storageErr } = await supabase.storage
           .from('fatture')
-          .upload(path, file, { contentType: file.type });
+          .upload(path, fileCompresso, { contentType: fileCompresso.type });
         if (!storageErr && storageData) {
           fileUrl = path;
         }

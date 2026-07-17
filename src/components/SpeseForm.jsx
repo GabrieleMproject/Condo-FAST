@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { callGemini, callGeminiDocument } from '../lib/geminiClient'
-import { estraiFattura, fileToBase64 } from '../lib/fileExtractor'
+import { estraiFattura, fileToBase64, comprimiImmagine } from '../lib/fileExtractor'
 import { supabase } from '../lib/supabaseClient'
 import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet } from 'lucide-react'
 
@@ -403,10 +403,15 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
  // ─── Import da fattura (via estraiFattura — fix #10) ────────────────────────
   const elaboraFattura = async (file) => {
     if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setErrFattura('Il file supera il limite massimo consentito di 10MB.')
+      return
+    }
     setLoadingFattura(true)
     setErrFattura(null)
     try {
-      const estratto = await estraiFattura(file)
+      const fileCompresso = await comprimiImmagine(file)
+      const estratto = await estraiFattura(fileCompresso)
 
       // Mappa categoria fattura → categoria spesa (set ristretto del form)
       const CAT_VALIDE = CATEGORIE.map(c => c.value)
@@ -424,7 +429,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
       }))
 
       setFatturaImportata(true)
-      setFileCaricato(file)
+      setFileCaricato(fileCompresso)
       setAiDatiEstratti(estratto)
     } catch (e) {
       console.error('Errore estrazione fattura:', e)

@@ -467,7 +467,7 @@ export default function PostboxPage() {
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
               
               {/* Sezione Convalida */}
-              <div style={{ flex: 1, height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', borderRight: activeItem.file_path ? '1px solid var(--border-color)' : 'none' }}>
+              <div style={{ flex: 1, height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
                 
                 {/* Banner Mittente / Informazioni Mail */}
                 <div style={{ padding: '16px 24px', background: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -479,8 +479,25 @@ export default function PostboxPage() {
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>
                       <strong>Da:</strong> {activeItem.email_mittente || '—'}
                     </div>
+                    {activeItem.file_path && (
+                      <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <FileText size={12} /> Allegato: <span style={{ fontWeight: 600 }}>{activeItem.file_name}</span>
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
+                    {activeItem.file_path && (
+                      <button 
+                        onClick={() => setShowZoomModal(true)}
+                        style={{ 
+                          padding: '8px 14px', background: '#2563eb', border: 'none', color: '#fff', 
+                          borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, 
+                          fontSize: 12, fontWeight: 600, boxShadow: '0 2px 4px rgba(37,99,235,0.2)' 
+                        }}
+                      >
+                        <Eye size={14} /> Visualizza Documento
+                      </button>
+                    )}
                     <button 
                       onClick={() => handleIgnoraDocumento(activeItem)}
                       style={{ padding: '8px 12px', background: 'transparent', border: '1px solid var(--border-color)', color: '#ef4444', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600 }}
@@ -562,53 +579,6 @@ export default function PostboxPage() {
                 )}
 
               </div>
-
-              {/* Anteprima Documento / File (Destra, solo se c'è file_path) */}
-              {activeItem.file_path && (
-                <div style={{ width: 420, height: '100%', background: 'var(--card-bg)', display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-color)' }}>
-                  <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <FileText size={14} /> Allegato: {activeItem.file_name}
-                    </span>
-                    <button 
-                      onClick={() => setShowZoomModal(true)}
-                      style={{ padding: '4px 8px', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                    >
-                      <Eye size={12} /> Espandi
-                    </button>
-                  </div>
-                  
-                  <div style={{ flex: 1, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--app-bg)', overflow: 'hidden' }}>
-                    {loadingFileUrl ? (
-                      <Loader2 className="animate-spin" size={24} style={{ color: 'var(--text-muted)' }} />
-                    ) : activeFileUrl ? (
-                      activeItem.file_name.toLowerCase().endsWith('.pdf') ? (
-                        <iframe 
-                          src={`${activeFileUrl}#toolbar=0&navpanes=0`} 
-                          style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8 }} 
-                        />
-                      ) : activeItem.file_name.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/) ? (
-                        <img 
-                          src={activeFileUrl} 
-                          alt="Anteprima" 
-                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} 
-                        />
-                      ) : (
-                        <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', border: '1px dashed var(--border-color)', borderRadius: 8 }}>
-                          <FileText size={40} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
-                          <div style={{ fontSize: 12, fontWeight: 600 }}>{activeItem.file_name}</div>
-                          <a href={activeFileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#2563eb', marginTop: 10, textDecoration: 'underline' }}>
-                            Scarica Allegato <ExternalLink size={12} />
-                          </a>
-                        </div>
-                      )
-                    ) : (
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Anteprima non disponibile</span>
-                    )}
-                  </div>
-                </div>
-              )}
-
             </div>
           )}
         </div>

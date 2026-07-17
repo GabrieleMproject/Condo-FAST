@@ -1025,6 +1025,8 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Deploy Edge Function**: Pubblicato l'aggiornamento di `inbound-email` abilitato alla classificazione a tre vie tramite Gemini Flash.
 - **Verifica Build**: Eseguito `npm run build` con successo (verde).
 - **Git Push**: Committato e spinto su GitHub con successo (main).
+- **Widget Postbox in Dashboard (`DashboardPage.jsx`)**: Sostituito il vecchio banner lineare con un widget grafico premium a griglia, contenente i contatori suddivisi con icone specifiche per spese (Receipt), subentri (User) e messaggi (MessageSquare) per una visione immediata dello stato della posta in arrivo.
+
 
 
 

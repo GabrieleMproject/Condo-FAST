@@ -1004,4 +1004,27 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build:** Eseguito `npm run build` con successo (build verde in 472ms).
 - **Push e Deploy:** Eseguito con successo `supabase db push` per aggiornare lo schema e `supabase functions deploy inbound-email` per pubblicare l'endpoint di ricezione.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S49 (17 Luglio 2026 - Postbox Studio Centralizzata, Subentri & Comunicazioni Ricevute)
+
+### 1. Decisioni su Postbox, Subentri e Comunicazioni
+- **Postbox Studio Centralizzata (`PostboxPage.jsx`)**: Creata una pagina unica (rotta `/postbox`) per gestire la corrispondenza e i documenti in ingresso, divisa in tre tab: Spese & Fatture, Anagrafiche & Subentri, e Messaggi & Segnalazioni.
+- **Subentri Condominiali in Due Tempi (`SubentroValidator.jsx`)**: Implementato un flusso che disaccoppia la convalida anagrafica da quella finanziaria:
+  * *Fase A (Anagrafica & Benvenuto)*: Salva il subentro su database aggiornando `occupanti_unita` ed invia istantaneamente una lettera di benvenuto automatica tramite Resend, chiedendo espressamente chiarimenti su eventuali accordi di spesa stipulati tra uscente ed entrante.
+  * *Fase B (Conguaglio & Chiusura)*: Calcola la differenza pro-rata (dovuto vs versato riconciliato) fino al giorno del subentro e propone lo storno sul nuovo condomino, fornendo al contempo un bypass manuale per evitare blocchi operativi ed errori contabili.
+- **Ingestione Email Senza Allegati**: Rimosso il blocco rigido sulle email senza allegati. Ogni mail arrivata viene registrata nel tab Messaggi come `'messaggio'` ed associata automaticamente al condominio e al condomino mittente confrontando l'indirizzo email (`from`).
+- **Esportazione Modulo Autocertificazione PDF**: Creata la funzione `exportModuloAutocertificazionePdf` per scaricare un PDF personalizzato con l'intestazione e i dati dello studio di amministrazione, precompilato con i dati catastali noti e contenente l'informativa privacy (Art. 13 GDPR) con spazio firma. Aggiunto il relativo pulsante "Modulo PDF" nella griglia catastale.
+
+### 2. Cybersecurity e Privacy
+- **Prevenzione Leak Storage**: Configurato lo scarto/cancellazione dei file fisici dal bucket `inbox-ricezione` su Supabase Storage non appena una mail viene scartata/cestinata, per ottimizzare lo spazio e minimizzare la ritenzione dei dati.
+- **Prevenzione IDOR su Allegati**: Enforzate le politiche di sicurezza che consentono l'accesso ai file solo tramite Signed URL provvisori con validità temporanea (15 minuti).
+
+### 3. Fatti Verificati sul Database
+- **Esecuzione Migrazione**: Applicata con successo la migrazione `supabase/migrations/20260717124800_s49_postbox_anagrafica_subentri.sql` che estende `inbox_documenti` (colonne `tipo`, `email_corpo` e `letta_il`), adegua i check constraints dello stato e crea la tabella `subentri_contabilizzazione` protetta da RLS.
+- **Deploy Edge Function**: Pubblicato l'aggiornamento di `inbound-email` abilitato alla classificazione a tre vie tramite Gemini Flash.
+- **Verifica Build**: Eseguito `npm run build` con successo (verde).
+- **Git Push**: Committato e spinto su GitHub con successo (main).
+
+
 

@@ -13,7 +13,9 @@ import {
   ArrowRight,
   Receipt,
   ShieldAlert,
-  ChevronRight
+  ChevronRight,
+  MessageSquare,
+  User
 } from 'lucide-react'
 
 // Funzione helper per formattare gli importi in Euro
@@ -55,8 +57,11 @@ export default function DashboardPage() {
     f24Scadenze: [],
     eserciziInScadenza: [],
     movimentiNonRiconciliatiAlerts: [],
-    condoData: {}, // key: condominio_id, value: { insoluti, movimenti, fatture, saldo }
+    condoData: {}, 
     inboxCount: 0,
+    inboxSpeseCount: 0,
+    inboxSubentriCount: 0,
+    inboxMessaggiCount: 0,
     inboxItems: []
   })
 
@@ -125,7 +130,7 @@ export default function DashboardPage() {
         // 5b. Carica documenti inbox pendenti
         const { data: inboxData, error: errInbox } = await supabase
           .from('inbox_documenti')
-          .select('id, file_name, email_mittente, data_ricezione, condominio_id, stato, dati_estratti')
+          .select('id, file_name, email_mittente, data_ricezione, condominio_id, stato, dati_estratti, tipo')
           .in('stato', ['nuovo', 'rilevato', 'da_smistare'])
 
         if (errInbox) throw errInbox
@@ -279,6 +284,16 @@ export default function DashboardPage() {
           }
         })
 
+        let inboxSpeseCount = 0
+        let inboxSubentriCount = 0
+        let inboxMessaggiCount = 0
+
+        ;(inboxData || []).forEach(item => {
+          if (item.tipo === 'subentro') inboxSubentriCount++
+          else if (item.tipo === 'messaggio') inboxMessaggiCount++
+          else inboxSpeseCount++
+        })
+
         setStats({
           insolutiTotali,
           rateScaduteCount,
@@ -290,6 +305,9 @@ export default function DashboardPage() {
           movimentiNonRiconciliatiAlerts: movimentiNonRiconciliatiAlertsList,
           condoData: condoMap,
           inboxCount: inboxData ? inboxData.length : 0,
+          inboxSpeseCount,
+          inboxSubentriCount,
+          inboxMessaggiCount,
           inboxItems: inboxData || []
         })
       } catch (err) {
@@ -332,45 +350,51 @@ export default function DashboardPage() {
       {/* Postbox Alert Banner */}
       {stats.inboxCount > 0 && (
         <div style={{
-          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(139, 92, 246, 0.12) 100%)',
+          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.06) 0%, rgba(139, 92, 246, 0.1) 100%)',
           border: '1px solid var(--border-color)',
-          borderRadius: 14,
-          padding: '16px 24px',
+          borderRadius: 16,
+          padding: '20px 24px',
           marginBottom: 24,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 4px 15px -3px rgba(124, 58, 237, 0.05)',
+          flexWrap: 'wrap',
+          gap: 16,
+          boxShadow: '0 4px 15px -3px rgba(124, 58, 237, 0.03)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{
-              background: '#7c3aed',
-              color: '#fff',
-              borderRadius: '50%',
-              width: 44,
-              height: 44,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 10px rgba(124, 58, 237, 0.2)'
-            }}>
-              <Receipt size={22} />
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <h4 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700 }}>
-                📬 Postbox Studio: {stats.inboxCount} {stats.inboxCount === 1 ? 'documento da verificare' : 'documenti da verificare'}
+              <h4 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                📬 Postbox Studio <span style={{ fontSize: 11, background: '#7c3aed', color: '#fff', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>{stats.inboxCount} da elaborare</span>
               </h4>
-              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
-                L'AI ha pre-elaborato le fatture ricevute via email. Clicca per convalidarle ed inserirle.
+              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 12.5 }}>
+                L'AI ha pre-elaborato i documenti in arrivo via email. Convalida o gestisci ciascuna pratica:
               </p>
             </div>
+            
+            {/* Contatori in linea */}
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)', background: 'var(--app-bg)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                <Receipt size={14} style={{ color: '#a78bfa' }} />
+                <span>Spese & Fatture: <strong>{stats.inboxSpeseCount}</strong></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)', background: 'var(--app-bg)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                <User size={14} style={{ color: '#60a5fa' }} />
+                <span>Subentri & Anagrafiche: <strong>{stats.inboxSubentriCount}</strong></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)', background: 'var(--app-bg)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                <MessageSquare size={14} style={{ color: '#34d399' }} />
+                <span>Messaggi & Segnalazioni: <strong>{stats.inboxMessaggiCount}</strong></span>
+              </div>
+            </div>
           </div>
+          
           <Link to="/postbox" style={{
             background: '#7c3aed',
             color: '#fff',
             textDecoration: 'none',
             borderRadius: 8,
-            padding: '10px 18px',
+            padding: '10px 20px',
             fontSize: 13,
             fontWeight: 600,
             display: 'inline-flex',

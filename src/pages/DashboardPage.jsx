@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCondomini } from '../hooks/useCondomini'
+import { usePlan } from '../hooks/usePlan'
 import { supabase } from '../lib/supabaseClient'
 import {
   Building2,
@@ -45,6 +46,7 @@ const MESI_IT = [
 export default function DashboardPage() {
   const { user } = useAuth()
   const { condomini, loading: loadingCondo } = useCondomini()
+  const { canUse } = usePlan()
 
   const [loadingStats, setLoadingStats] = useState(true)
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024)
@@ -354,79 +356,81 @@ export default function DashboardPage() {
       </div>
 
       {/* Postbox Alert Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.06) 0%, rgba(139, 92, 246, 0.1) 100%)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 16,
-        padding: '20px 24px',
-        marginBottom: 24,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 16,
-        boxShadow: '0 4px 15px -3px rgba(124, 58, 237, 0.03)',
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <h4 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-              📬 Postbox Studio 
-              <span style={{ 
-                fontSize: 11, 
-                background: stats.inboxCount > 0 ? '#7c3aed' : 'var(--border-color)', 
-                color: stats.inboxCount > 0 ? '#fff' : 'var(--text-secondary)', 
-                padding: '2px 8px', 
-                borderRadius: 12, 
-                fontWeight: 700 
-              }}>
-                {stats.inboxCount} {stats.inboxCount === 1 ? 'pratica da elaborare' : 'pratiche da elaborare'}
-              </span>
-            </h4>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 12.5 }}>
-              {stats.inboxCount > 0 
-                ? "L'AI ha pre-elaborato i documenti in arrivo via email. Convalida o gestisci ciascuna pratica:"
-                : "Tutti i documenti e le email in ingresso sono stati convalidati con successo. Ottimo lavoro!"
-              }
-            </p>
+      {canUse('postbox_studio') && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.06) 0%, rgba(139, 92, 246, 0.1) 100%)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 16,
+          padding: '20px 24px',
+          marginBottom: 24,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
+          boxShadow: '0 4px 15px -3px rgba(124, 58, 237, 0.03)',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <h4 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                📬 Postbox Studio 
+                <span style={{ 
+                  fontSize: 11, 
+                  background: stats.inboxCount > 0 ? '#7c3aed' : 'var(--border-color)', 
+                  color: stats.inboxCount > 0 ? '#fff' : 'var(--text-secondary)', 
+                  padding: '2px 8px', 
+                  borderRadius: 12, 
+                  fontWeight: 700 
+                }}>
+                  {stats.inboxCount} {stats.inboxCount === 1 ? 'pratica da elaborare' : 'pratiche da elaborare'}
+                </span>
+              </h4>
+              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 12.5 }}>
+                {stats.inboxCount > 0 
+                  ? "L'AI ha pre-elaborato i documenti in arrivo via email. Convalida o gestisci ciascuna pratica:"
+                  : "Tutti i documenti e le email in ingresso sono stati convalidati con successo. Ottimo lavoro!"
+                }
+              </p>
+            </div>
+            
+            {/* Contatori in linea */}
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)', background: 'var(--app-bg)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                <Receipt size={14} style={{ color: '#a78bfa' }} />
+                <span>Spese & Fatture: <strong>{stats.inboxSpeseCount}</strong></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)', background: 'var(--app-bg)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                <User size={14} style={{ color: '#60a5fa' }} />
+                <span>Subentri & Anagrafiche: <strong>{stats.inboxSubentriCount}</strong></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)', background: 'var(--app-bg)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                <MessageSquare size={14} style={{ color: '#34d399' }} />
+                <span>Messaggi & Segnalazioni: <strong>{stats.inboxMessaggiCount}</strong></span>
+              </div>
+            </div>
           </div>
           
-          {/* Contatori in linea */}
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)', background: 'var(--app-bg)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
-              <Receipt size={14} style={{ color: '#a78bfa' }} />
-              <span>Spese & Fatture: <strong>{stats.inboxSpeseCount}</strong></span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)', background: 'var(--app-bg)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
-              <User size={14} style={{ color: '#60a5fa' }} />
-              <span>Subentri & Anagrafiche: <strong>{stats.inboxSubentriCount}</strong></span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)', background: 'var(--app-bg)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
-              <MessageSquare size={14} style={{ color: '#34d399' }} />
-              <span>Messaggi & Segnalazioni: <strong>{stats.inboxMessaggiCount}</strong></span>
-            </div>
-          </div>
+          <Link to="/postbox" style={{
+            background: '#7c3aed',
+            color: '#fff',
+            textDecoration: 'none',
+            borderRadius: 8,
+            padding: '10px 20px',
+            fontSize: 13,
+            fontWeight: 600,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            transition: 'background-color 0.15s',
+            boxShadow: '0 4px 10px rgba(124, 58, 237, 0.15)'
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
+            onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}
+          >
+            Apri Postbox <ArrowRight size={14} />
+          </Link>
         </div>
-        
-        <Link to="/postbox" style={{
-          background: '#7c3aed',
-          color: '#fff',
-          textDecoration: 'none',
-          borderRadius: 8,
-          padding: '10px 20px',
-          fontSize: 13,
-          fontWeight: 600,
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          transition: 'background-color 0.15s',
-          boxShadow: '0 4px 10px rgba(124, 58, 237, 0.15)'
-        }}
-          onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
-          onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}
-        >
-          Apri Postbox <ArrowRight size={14} />
-        </Link>
-      </div>
+      )}
 
       {/* KPI Principali */}
       <div style={styles.kpiGrid}>

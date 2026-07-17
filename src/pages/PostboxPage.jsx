@@ -275,7 +275,7 @@ function PostboxPaywall() {
         <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.5, margin: '0 0 24px' }}>
           Passa al piano <strong>Studio</strong> per sbloccare la Postbox Studio, l'AI illimitata sui documenti, l'invio solleciti con Resend, l'assemblea digitale AI e il portale per ciascun condomino.
         </p>
-        <a href="/impostazioni" style={{
+        <a href="/impostazioni#piani-abbonamento" style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
           color: '#fff', textDecoration: 'none', padding: '14px 32px', borderRadius: 10,

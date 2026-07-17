@@ -256,6 +256,18 @@ export default function ImpostazioniPage() {
     }
   }, [profile])
 
+  useEffect(() => {
+    if (window.location.hash === '#piani-abbonamento') {
+      const timer = setTimeout(() => {
+        const element = document.getElementById('piani-abbonamento')
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
   async function onLogoSelected(e) {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -1342,7 +1354,7 @@ export default function ImpostazioniPage() {
 
         {/* ── UPGRADE PIANI ────────────────────────────────────────── */}
         {(isTrialActive || isTrialScaduto || piano !== 'professional') && (
-          <section style={styles.section}>
+          <section id="piani-abbonamento" style={styles.section}>
             <h2 style={styles.sectionTitle}>
               {isTrialActive || isTrialScaduto ? 'Scegli il tuo piano' : 'Cambia piano'}
             </h2>

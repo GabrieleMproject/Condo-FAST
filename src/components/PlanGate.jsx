@@ -22,7 +22,7 @@ function UpgradePrompt({ feature, pianoMinimo, compact = false }) {
         <Lock size={12} style={{ color: '#f59e0b', marginRight: 6 }} />
         <span style={styles.compactText}>
           Funzione {info?.label || pianoMinimo} — 
-          <a href="/impostazioni" style={styles.upgradeLink}> Aggiorna piano</a>
+          <a href="/impostazioni#piani-abbonamento" style={styles.upgradeLink}> Aggiorna piano</a>
         </span>
       </div>
     )
@@ -51,7 +51,7 @@ function UpgradePrompt({ feature, pianoMinimo, compact = false }) {
           ))}
         </div>
       </div>
-      <a href="/impostazioni" style={styles.upgradeBtn}>
+      <a href="/impostazioni#piani-abbonamento" style={styles.upgradeBtn}>
         {feature === 'postbox_studio' ? 'Passa a Studio' : `Aggiorna a ${info?.label} →`}
       </a>
       <p style={styles.trialNote}>Sei in trial? Attiva un piano per sbloccare tutte le funzioni.</p>

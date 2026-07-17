@@ -1055,6 +1055,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Git Push**: Committato e spinto su GitHub con successo (main).
 - **Quarta Card nel Paywall di Postbox (`PostboxPaywall` in `PostboxPage.jsx`)**: Aggiunta la quarta card per "Ticket & Sinistri Integrati" con mockup grafico animato CSS (chiave inglese e scudo con badge di stato) allineando la griglia a 4 spazi in modo fluido e responsivo.
 - **Autoscroll alla sezione Piani (`ImpostazioniPage.jsx` & `PlanGate.jsx`)**: Aggiunta la `section` con id `piani-abbonamento` in `ImpostazioniPage.jsx`. Configurato un `useEffect` che all'avvio controlla l'hash URL ed effettua lo scroll fluido ad essa. I link di upgrade di `PostboxPaywall` e `PlanGate` sono stati uniti puntando a `/impostazioni#piani-abbonamento`.
+- **Gating del Widget Postbox in Dashboard (`DashboardPage.jsx`)**: Modificato il widget permanente della Postbox Studio in `DashboardPage.jsx` racchiudendolo nel check `canUse('postbox_studio')`. In questo modo, gli utenti del piano Base non visualizzeranno più l'alert banner Postbox in Dashboard, garantendo un'interfaccia coerente con i limiti del proprio abbonamento.
 
 
 

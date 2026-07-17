@@ -1053,6 +1053,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Deploy locale**: Migrazione eseguita correttamente con `supabase db push`.
 - **Verifica Build**: Eseguito `npm run build` con successo (verde).
 - **Git Push**: Committato e spinto su GitHub con successo (main).
+- **Quarta Card nel Paywall di Postbox (`PostboxPaywall` in `PostboxPage.jsx`)**: Aggiunta la quarta card per "Ticket & Sinistri Integrati" con mockup grafico animato CSS (chiave inglese e scudo con badge di stato) allineando la griglia a 4 spazi in modo fluido e responsivo.
 
 
 

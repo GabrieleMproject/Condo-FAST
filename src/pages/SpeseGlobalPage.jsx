@@ -607,7 +607,7 @@ export default function SpeseGlobalPage() {
       </div>
 
       {/* Main Container */}
-      <div style={{ display: 'grid', gridTemplateColumns: isLargeScreen ? '350px 1fr' : '1fr', gap: 24, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isLargeScreen ? '280px 1fr' : '1fr', gap: 24, alignItems: 'start' }}>
         
         {/* LATO SINISTRO: Coda ed Inbound */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -790,7 +790,7 @@ export default function SpeseGlobalPage() {
               <p style={{ margin: 0, fontSize: 13 }}>Google Gemini sta estraendo i dati contabili ed il condominio di destinazione.</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: isLargeScreen ? '1.1fr 1fr' : '1fr', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isLargeScreen ? '420px 1fr' : '1fr', gap: 24 }}>
               
               {/* Sotto-Colonna Sinistra: PDF Preview */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

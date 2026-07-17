@@ -37,9 +37,10 @@ export default function SubentroValidator({ item, condomini, onComplete, onCance
   // Stato UI ed abbinamenti
   const [selectedUnitaId, setSelectedUnitaId] = useState('')
   const [personaUscenteId, setPersonaUscenteId] = useState('')
+  const [personaEntranteId, setPersonaEntranteId] = useState('')
   const [condominioId, setCondominioId] = useState(item?.condominioId || '')
   const [loading, setLoading] = useState(false)
-  const [fase, setFase] = useState('A') // 'A' = Anagrafica/Associazione, 'B' = Contabilità
+  const [fase, setFase] = useState(item?.stato === 'elaborato' ? 'B' : 'A') // 'A' = Anagrafica/Associazione, 'B' = Contabilità
   
   // Dati caricati per il condominio selezionato
   const [unitaList, setUnitaList] = useState([])
@@ -87,7 +88,7 @@ export default function SubentroValidator({ item, condomini, onComplete, onCance
     fetchUnita()
   }, [condominioId, interno, scala])
 
-  // Aggiorna la lista degli occupanti attivi dell'unità selezionata
+  // Aggiorna la lista degli occupanti dell'unità selezionata
   useEffect(() => {
     if (!selectedUnitaId || unitaList.length === 0) {
       setOccupantiAttivi([])
@@ -95,13 +96,26 @@ export default function SubentroValidator({ item, condomini, onComplete, onCance
     }
     const unit = unitaList.find(u => u.id === selectedUnitaId)
     if (unit && unit.occupanti_unita) {
-      const attivi = unit.occupanti_unita.filter(o => o.attivo && o.ruolo === ruolo)
-      setOccupantiAttivi(attivi)
-      if (attivi.length > 0) {
-        setPersonaUscenteId(attivi[0].persona.id)
+      if (item?.stato === 'elaborato') {
+        // Fase B (già elaborato Fase A)
+        const entrante = unit.occupanti_unita.find(o => o.attivo && o.ruolo === ruolo)
+        if (entrante) {
+          setPersonaEntranteId(entrante.persona.id)
+        }
+        const uscente = unit.occupanti_unita.find(o => !o.attivo && o.ruolo === ruolo)
+        if (uscente) {
+          setPersonaUscenteId(uscente.persona.id)
+        }
+      } else {
+        // Fase A
+        const attivi = unit.occupanti_unita.filter(o => o.attivo && o.ruolo === ruolo)
+        setOccupantiAttivi(attivi)
+        if (attivi.length > 0) {
+          setPersonaUscenteId(attivi[0].persona.id)
+        }
       }
     }
-  }, [selectedUnitaId, unitaList, ruolo])
+  }, [selectedUnitaId, unitaList, ruolo, item])
 
   // Calcola i saldi della Fase B
   const calcolaSituazioneContabile = async () => {
@@ -128,11 +142,11 @@ export default function SubentroValidator({ item, condomini, onComplete, onCance
         .from('rate_unita')
         .select(`
           dovuto, pagato,
-          rate!inner(scadenza)
+          rate!inner(data_scadenza)
         `)
         .eq('unita_id', selectedUnitaId)
         .eq('rate.esercizio_id', esercizioId)
-        .lte('rate.scadenza', dataSubentro)
+        .lte('rate.data_scadenza', dataSubentro)
 
       if (rateErr) throw rateErr
 
@@ -208,6 +222,7 @@ export default function SubentroValidator({ item, condomini, onComplete, onCance
         if (createErr) throw createErr
         personaId = nuovaPersona.id
       }
+      setPersonaEntranteId(personaId)
 
       // 2. Associa il nuovo occupante all'unità e disattiva il precedente (Fase A)
       await assegnaPersona(selectedUnitaId, personaId, ruolo, dataSubentro)
@@ -287,7 +302,7 @@ Lo Studio Amministrativo`
           inbox_documento_id: item.id,
           unita_id: selectedUnitaId,
           persona_uscente_id: personaUscenteId || null,
-          persona_entrante_id: (await supabase.from('persone').select('id').eq('email', email.trim().toLowerCase()).maybeSingle())?.data?.id || null,
+          persona_entrante_id: personaEntranteId,
           data_subentro: dataSubentro,
           stato_contabile: statoContabile,
           saldo_conguaglio: importoConguaglio,
@@ -299,13 +314,17 @@ Lo Studio Amministrativo`
         // Carica la prima rata dell'unità ancora non interamente pagata o futura
         const { data: rateAperte, error: rErr } = await supabase
           .from('rate_unita')
-          .select('id, dovuto')
+          .select('id, dovuto, rate:rata_id(data_scadenza)')
           .eq('unita_id', selectedUnitaId)
-          .order('id', { ascending: true })
 
         if (!rErr && rateAperte && rateAperte.length > 0) {
-          // Aggiunge/sottrae il conguaglio al dovuto della prima rata utile
-          const primaRata = rateAperte[0]
+          // Ordina deterministica mente le rate per data di scadenza
+          const rateOrdinate = [...rateAperte].sort((a, b) => {
+            const dateA = a.rate?.data_scadenza ? new Date(a.rate.data_scadenza).getTime() : 0
+            const dateB = b.rate?.data_scadenza ? new Date(b.rate.data_scadenza).getTime() : 0
+            return dateA - dateB
+          })
+          const primaRata = rateOrdinate[0]
           const nuovoDovuto = Math.max(0, Number(primaRata.dovuto || 0) + importoConguaglio)
           await supabase
             .from('rate_unita')

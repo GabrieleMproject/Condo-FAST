@@ -120,13 +120,18 @@ export default function AppLayout() {
     
     const fetchInboxCount = async () => {
       try {
-        const { count, error } = await supabase
+        const { data, error } = await supabase
           .from('inbox_documenti')
-          .select('*', { count: 'exact', head: true })
-          .in('stato', ['nuovo', 'rilevato', 'da_smistare']);
+          .select('id, tipo, stato')
+          .in('stato', ['nuovo', 'rilevato', 'da_smistare', 'elaborato']);
         
-        if (!error && count !== null) {
-          setInboxCount(count);
+        if (!error && data) {
+          const activeCount = data.filter(item => {
+            if (item.tipo === 'subentro') return item.stato !== 'conguagliato';
+            if (item.tipo === 'messaggio') return item.stato !== 'elaborato';
+            return item.stato !== 'inserito';
+          }).length;
+          setInboxCount(activeCount);
         }
       } catch (err) {
         console.error('Errore conteggio inbox:', err);

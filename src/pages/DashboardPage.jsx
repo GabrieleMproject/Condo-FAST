@@ -131,7 +131,7 @@ export default function DashboardPage() {
         const { data: inboxData, error: errInbox } = await supabase
           .from('inbox_documenti')
           .select('id, file_name, email_mittente, data_ricezione, condominio_id, stato, dati_estratti, tipo')
-          .in('stato', ['nuovo', 'rilevato', 'da_smistare'])
+          .in('stato', ['nuovo', 'rilevato', 'da_smistare', 'elaborato'])
 
         if (errInbox) throw errInbox
 
@@ -288,7 +288,13 @@ export default function DashboardPage() {
         let inboxSubentriCount = 0
         let inboxMessaggiCount = 0
 
-        ;(inboxData || []).forEach(item => {
+        const activeInbox = (inboxData || []).filter(item => {
+          if (item.tipo === 'subentro') return item.stato !== 'conguagliato'
+          if (item.tipo === 'messaggio') return item.stato !== 'elaborato'
+          return item.stato !== 'inserito'
+        })
+
+        activeInbox.forEach(item => {
           if (item.tipo === 'subentro') inboxSubentriCount++
           else if (item.tipo === 'messaggio') inboxMessaggiCount++
           else inboxSpeseCount++
@@ -304,11 +310,11 @@ export default function DashboardPage() {
           eserciziInScadenza: eserciziInScadenzaList,
           movimentiNonRiconciliatiAlerts: movimentiNonRiconciliatiAlertsList,
           condoData: condoMap,
-          inboxCount: inboxData ? inboxData.length : 0,
+          inboxCount: activeInbox.length,
           inboxSpeseCount,
           inboxSubentriCount,
           inboxMessaggiCount,
-          inboxItems: inboxData || []
+          inboxItems: activeInbox
         })
       } catch (err) {
         console.error("Errore caricamento statistiche dashboard:", err)

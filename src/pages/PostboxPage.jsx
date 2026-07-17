@@ -10,7 +10,7 @@ import PlanGate from '../components/PlanGate'
 import {
   UploadCloud, FileText, CheckCircle2, AlertTriangle, Loader2,
   Building2, ArrowRight, Clock, RefreshCw, X, Receipt, Eye,
-  Inbox, User, Mail, MessageSquare, Trash2, Check, ExternalLink
+  Inbox, User, Mail, MessageSquare, Trash2, Check, ExternalLink, Zap
 } from 'lucide-react'
 
 // Helper per formattare la dimensione del file
@@ -534,20 +534,31 @@ export default function PostboxPage() {
         const cleanName = activeItem.file_name.replace(/\s+/g, '_')
         const newPath = `${activeItem.condominioId}/${Date.now()}_${cleanName}`
         
-        const { error: copyErr } = await supabase.storage
+        // Scarica temporaneamente il file dal bucket di ricezione email
+        const { data: fileData, error: downloadErr } = await supabase.storage
+          .from('inbox-ricezione')
+          .download(activeItem.file_path)
+
+        if (downloadErr) throw downloadErr
+
+        // Carica il file nel bucket documenti definitivo
+        const { error: uploadErr } = await supabase.storage
           .from('documenti-condominio')
-          .copy(activeItem.file_path, newPath)
+          .upload(newPath, fileData, {
+            contentType: fileData.type || 'application/pdf',
+            upsert: true
+          })
+
+        if (uploadErr) throw uploadErr
         
-        if (!copyErr) {
-          await supabase.from('documenti_condominio').insert([{
-            condominio_id: activeItem.condominioId,
-            nome: activeItem.file_name,
-            tipo: 'fattura',
-            pdf_url: newPath,
-            data_documento: spesaPayload.data_spesa
-          }])
-          await supabase.storage.from('inbox-ricezione').remove([activeItem.file_path])
-        }
+        await supabase.from('documenti_condominio').insert([{
+          condominio_id: activeItem.condominioId,
+          nome: activeItem.file_name,
+          tipo: 'fattura',
+          pdf_url: newPath,
+          data_documento: spesaPayload.data_spesa
+        }])
+        await supabase.storage.from('inbox-ricezione').remove([activeItem.file_path])
       }
 
       // Aggiorna lo stato in Postbox

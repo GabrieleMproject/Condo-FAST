@@ -76,7 +76,7 @@ serve(async (req) => {
     // Cerca l'amministratore associato al prefisso
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, email')
       .eq('inbound_email_prefix', prefix)
       .maybeSingle()
 
@@ -119,14 +119,25 @@ serve(async (req) => {
     }
 
     // Verifica se il mittente è l'amministratore stesso o un collaboratore registrato
-    const { data: staffMember, error: staffErr } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', emailMittente)
-      .or(`id.eq.${amministratoreId},amministratore_id.eq.${amministratoreId}`)
-      .maybeSingle()
-
-    let isAuthorized = !!staffMember
+    let isAuthorized = false
+    if (profile && emailMittente) {
+      if (profile.email && profile.email.toLowerCase() === emailMittente) {
+        isAuthorized = true
+      } else {
+        // Cerca tra i collaboratori attivi dello studio dell'amministratore
+        const { data: collab } = await supabase
+          .from('collaboratori_studio')
+          .select('id')
+          .eq('amministratore_id', amministratoreId)
+          .eq('email_collaboratore', emailMittente)
+          .eq('attivo', true)
+          .maybeSingle()
+        
+        if (collab) {
+          isAuthorized = true
+        }
+      }
+    }
 
     let matchedPersonaId = null
     let matchedCondoId = null

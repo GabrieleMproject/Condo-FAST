@@ -166,12 +166,12 @@ export default function SubentroValidator({ item, condomini, onComplete, onCance
     }
   }
 
-  // Esegui calcolo saldi quando si passa alla Fase B
+  // Esegui calcolo saldi quando si passa alla Fase B o quando cambia l'unità/data
   useEffect(() => {
-    if (fase === 'B') {
+    if (fase === 'B' && selectedUnitaId) {
       calcolaSituazioneContabile()
     }
-  }, [fase])
+  }, [fase, selectedUnitaId, dataSubentro])
 
   // FASE A: Salvataggio dell'anagrafica del nuovo condomino ed associazione
   const handleSalvaAnagrafica = async (e) => {

@@ -1061,6 +1061,9 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
   - *Allineamento Paywall*: Corretto il testo del paywall in `PostboxPage.jsx` specificando *"AI inclusa (500 scansioni/mese)"* anziché *"illimitata"*, allineandolo con i reali limiti di `usePlan.js`.
   - *Blocco Esercizi Chiusi*: In `SubentroValidator.jsx` (Fase B), se nessun esercizio contabile è aperto per il condominio selezionato, viene mostrato un banner di allerta rosso e viene disabilitato/bloccato il bottone di completamento della ripartizione contabile, prevenendo modifiche a consuntivi approvati. La query per adeguare la prima rata utile è stata ristretta all'esercizio aperto.
   - *Validazione Sicurezza Inbound*: Modificata la Edge Function `inbound-email` per verificare che l'email mittente `From` appartenga a un amministratore o collaboratore registrato in `profiles` o a un condomino di uno dei condomini gestiti, rifiutando email di spoofing o sconosciute.
+- **Compressione delle Immagini Client-Side & Limite Upload 10MB (`fileExtractor.js`, `SpeseForm.jsx`, `useDocumenti.js`, `FattureFornitoriPage.jsx` & Edge Function)**:
+  - *Compressione client-side*: Creata ed esportata la funzione `comprimiImmagine` in `fileExtractor.js` che ridimensiona le immagini (max 1600px) e applica la compressione JPEG all'80% di qualità prima dell'upload su Supabase Storage, risparmiando oltre il 90% del peso senza alterare la leggibilità per l'AI o l'amministratore. Integrata in `SpeseForm.jsx`, `useDocumenti.js` (Documenti e Verbali) e `FattureFornitoriPage.jsx`.
+  - *Tetto massimo 10MB*: Aggiunta la validazione sulla dimensione del file a 10MB sia lato frontend (con blocco e banner di errore/avviso) che all'interno della Edge Function `inbound-email` (scartando l'elaborazione di allegati pesanti che causerebbero il crash della RAM di Deno), proteggendo la banda ed i costi del database.
 
 
 

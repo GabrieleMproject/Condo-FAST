@@ -365,7 +365,7 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
-          <Link to="/spese" style={{
+          <Link to="/postbox" style={{
             background: '#7c3aed',
             color: '#fff',
             textDecoration: 'none',

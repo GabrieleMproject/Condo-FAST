@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { exportAnagraficaXlsx } from '../lib/exportXlsx'
 import { exportAnagraficaPdf } from '../lib/exportPdf'
-import { exportRegistroAnagrafePdf } from '../lib/exportPdf'
+import { exportRegistroAnagrafePdf, exportModuloAutocertificazionePdf } from '../lib/exportPdf'
 import { estraiDatiAnagrafeDaModulo } from '../lib/fileExtractor'
 import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
@@ -903,6 +903,18 @@ Lo Studio Amministrativo`
                                     onChange={e => handleFileChange(u, e)}
                                     style={{ display: 'none' }}
                                   />
+                                  <button 
+                                    onClick={() => exportModuloAutocertificazionePdf({ 
+                                      condominio, 
+                                      unita: u, 
+                                      occupante: occupanti[0],
+                                      profilo: profile 
+                                    })}
+                                    title="Scarica modulo autocertificazione precompilato per il condomino"
+                                    style={{ ...styles.btnEdit, marginRight: 6, color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                                  >
+                                    📄 Modulo PDF
+                                  </button>
                                   <button 
                                     onClick={() => fileInputRefs.current[u.id]?.click()}
                                     title="Carica modulo autocertificazione compilato"

@@ -25,7 +25,8 @@ import {
   LifeBuoy,
   Landmark,
   ArrowLeftRight,
-  Bot
+  Bot,
+  Inbox
 } from 'lucide-react';
 
 
@@ -66,7 +67,7 @@ const NAV_ITEMS = [
   { path: '/dashboard',    label: 'Dashboard',            icon: LayoutDashboard },
   { path: '/condomini',    label: 'Condomini',             icon: Building2 },
   { path: '/anagrafica',   label: 'Anagrafica',            icon: Users },
-  { path: '/spese',        label: 'Spese',                 icon: Receipt },
+  { path: '/postbox',      label: 'Postbox Studio',        icon: Inbox },
   { path: '/comunicazioni', label: 'Comunicazioni',        icon: Send },
   { path: '/fiscale',      label: 'Certificazioni',        icon: Landmark },
   { path: '/archivio',     label: 'Storico operazioni',    icon: Archive }, // ✅ rinominato
@@ -271,7 +272,7 @@ export default function AppLayout() {
         <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV_ITEMS.map(({ path, label, icon: Icon, badge }) => {
             const active = location.pathname.startsWith(path);
-            const activeBadge = path === '/spese' && inboxCount > 0 ? String(inboxCount) : badge;
+            const activeBadge = path === '/postbox' && inboxCount > 0 ? String(inboxCount) : badge;
             return (
               <Link key={path} to={path} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
@@ -291,7 +292,7 @@ export default function AppLayout() {
                 {!collapsed && activeBadge && (
                   <span style={{
                     marginLeft: 'auto', fontSize: 9, fontWeight: 700,
-                    background: path === '/spese' && inboxCount > 0 ? 'linear-gradient(135deg,#7c3aed,#9061f9)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                    background: path === '/postbox' && inboxCount > 0 ? 'linear-gradient(135deg,#7c3aed,#9061f9)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
                     color: '#fff', borderRadius: 4, padding: '2px 5px',
                     letterSpacing: '0.05em',
                   }}>{activeBadge}</span>

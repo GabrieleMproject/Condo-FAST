@@ -483,3 +483,162 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
 
   doc.save(`Registro_Anagrafe_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
 }
+
+// ─── ANAGRAFE: Esportazione Modulo di Autocertificazione Anagrafica e Catastale (Art. 1130 c.c. + GDPR)
+export function exportModuloAutocertificazionePdf({ condominio, unita, occupante, profilo }) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  
+  // 1. Intestazione Studio Amministrazione (Branding)
+  doc.setDrawColor(...BLU); doc.setLineWidth(0.5); doc.line(10, 36, W - 10, 36);
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...BLU);
+  doc.text('CONDOSMART', 12, 12);
+  
+  // Dati dell'amministratore / studio
+  const studioNome = profilo?.ragione_sociale || profilo?.studio_nome || 'Studio Amministrazione';
+  doc.setFontSize(13); doc.setTextColor(...DARK);
+  doc.text(studioNome, 12, 20);
+  
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GRIGIO);
+  let intestazioneStudio = [];
+  if (profilo?.studio_indirizzo) intestazioneStudio.push(profilo.studio_indirizzo);
+  if (profilo?.partita_iva) intestazioneStudio.push(`P.IVA: ${profilo.partita_iva}`);
+  if (profilo?.codice_fiscale) intestazioneStudio.push(`C.F.: ${profilo.codice_fiscale}`);
+  if (profilo?.studio_contatti) intestazioneStudio.push(profilo.studio_contatti);
+  
+  doc.text(intestazioneStudio.slice(0, 2).join('  ·  '), 12, 26);
+  doc.text(intestazioneStudio.slice(2).join('  ·  '), 12, 31);
+
+  // Titolo Modulo a destra
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...DARK);
+  doc.text('SCHEDA ANAGRAFE CONDOMINIALE', W - 12, 16, { align: 'right' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
+  doc.text('Richiesta dati ai sensi dell\'Art. 1130 c.c.', W - 12, 22, { align: 'right' });
+  doc.text(`Data: ${new Date().toLocaleDateString('it-IT')}`, W - 12, 28, { align: 'right' });
+
+  let y = 42;
+
+  // 2. Oggetto e Introduzione di Legge
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
+  doc.text(`Condominio: ${condominio?.nome || '—'}`, 12, y);
+  if (condominio?.indirizzo) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GRIGIO);
+    doc.text(`Indirizzo: ${condominio.indirizzo}`, 12, y + 4.5);
+    y += 10;
+  } else {
+    y += 6;
+  }
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...TESTO);
+  const introTxt = `Ai sensi dell'art. 1130, comma 1, n. 6 del Codice Civile, l'amministratore è tenuto a redigere e curare il Registro di Anagrafe Condominiale. La preghiamo di verificare i dati sotto riportati, correggere o integrare quelli mancanti e rispedire il modulo compilato e firmato all'amministrazione, allegando copia del documento di identità e codice fiscale.`;
+  const splitIntro = doc.splitTextToSize(introTxt, W - 24);
+  doc.text(splitIntro, 12, y);
+  y += splitIntro.length * 3.8 + 2;
+
+  // Unità precompilata (se presente)
+  const unitaTxt = unita 
+    ? `Unità immobiliare di riferimento: Scala ${unita.scala || '—'} · Piano ${unita.piano != null ? unita.piano : '—'} · Interno/N° ${unita.numero || '—'}`
+    : 'Unità immobiliare di riferimento: Scala ____ · Piano ____ · Interno ____';
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...DARK);
+  doc.text(unitaTxt, 12, y);
+  y += 5;
+
+  // 3. Tabella Dati Anagrafici (autoTable)
+  const persona = occupante?.persona || {};
+  const datiAnagrafici = [
+    ['Cognome e Nome / Ragione Sociale', `${persona.cognome || ''} ${persona.nome || ''}`.trim(), ''],
+    ['Codice Fiscale / P.IVA', persona.codice_fiscale || '', ''],
+    ['Indirizzo di Residenza', [persona.indirizzo, persona.citta].filter(Boolean).join(', ') || '', ''],
+    ['Email / PEC', persona.email || '', ''],
+    ['Recapito Telefonico', persona.telefono || '', ''],
+    ['Ruolo (Proprietario/Inquilino/Usufruttuario)', occupante?.ruolo || '', '']
+  ];
+
+  autoTable(doc, {
+    startY: y,
+    head: [['DATI ANAGRAFICI DEL DICHIARANTE', 'VALORE REGISTRATO', 'CORREZIONI / NUOVI DATI']],
+    body: datiAnagrafici,
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 8, cellPadding: 3.5, textColor: [20, 20, 20], lineColor: LINEA_BORDO },
+    headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
+    columnStyles: {
+      0: { cellWidth: 55, fontStyle: 'bold', fillColor: SFONDO_ALT },
+      1: { cellWidth: 65 },
+      2: { cellWidth: W - 12 - 12 - 55 - 65 }
+    },
+    margin: { left: 12, right: 12 }
+  });
+
+  y = doc.lastAutoTable.finalY + 5;
+
+  // 4. Tabella Dati Catastali
+  const datiCatastali = [
+    ['Foglio Catastale', unita?.catasto_foglio || '', ''],
+    ['Particella / Mappale', unita?.catasto_particella || '', ''],
+    ['Subalterno Catastale', unita?.catasto_subalterno || '', ''],
+    ['Categoria / Classe', unita?.catasto_categoria || '', ''],
+    ['Rendita Catastale (€)', unita?.catasto_rendita != null ? fmtEuro(unita.catasto_rendita) : '', '']
+  ];
+
+  autoTable(doc, {
+    startY: y,
+    head: [['DATI CATASTALI DELLO STATO DI FATTO', 'VALORE REGISTRATO', 'CORREZIONI / NUOVI DATI']],
+    body: datiCatastali,
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 8, cellPadding: 3.5, textColor: [20, 20, 20], lineColor: LINEA_BORDO },
+    headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
+    columnStyles: {
+      0: { cellWidth: 55, fontStyle: 'bold', fillColor: SFONDO_ALT },
+      1: { cellWidth: 65 },
+      2: { cellWidth: W - 12 - 12 - 55 - 65 }
+    },
+    margin: { left: 12, right: 12 }
+  });
+
+  y = doc.lastAutoTable.finalY + 5;
+
+  // 5. Sezione Accordi Spese (Uscente/Entrante)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...DARK);
+  doc.text('ACCORDI SUL RIPARTO DELLE SPESE CONDOMINIALI (In caso di Subentri/Cessioni)', 12, y);
+  y += 4;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...TESTO);
+  const accordiInfo = 'Specificare eventuali patti tra venditore e acquirente in merito alle spese condominiali dell\'anno in corso (es: ripartizione pro-rata, accollo totale di rate scadute o spese straordinarie approvate).';
+  const splitAccordiInfo = doc.splitTextToSize(accordiInfo, W - 24);
+  doc.text(splitAccordiInfo, 12, y);
+  y += splitAccordiInfo.length * 3.8 + 2;
+
+  // Righe vuote per compilazione accordi
+  doc.setDrawColor(...LINEA_BORDO); doc.setLineWidth(0.3);
+  doc.line(12, y + 6, W - 12, y + 6);
+  doc.line(12, y + 13, W - 12, y + 13);
+  y += 18;
+
+  // 6. Informativa Privacy (Art. 13 GDPR)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...DARK);
+  doc.text('INFORMATIVA SUL TRATTAMENTO DEI DATI PERSONALI (Regolamento UE 2016/679 - GDPR)', 12, y);
+  y += 4;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...GRIGIO);
+  const privacyText = `I dati sopra indicati sono raccolti esclusivamente per le finalità connesse alla corretta tenuta del Registro Anagrafe Condominiale obbligatorio ai sensi dell'art. 1130 c.c., e per l'invio delle comunicazioni inerenti la gestione del condominio. Il trattamento avverrà con strumenti informatici e cartacei ad opera del titolare del trattamento [${studioNome}]. I dati non verranno comunicati a terzi al di fuori dei casi espressamente previsti dalla legge. Con la sottoscrizione del presente modulo si autorizza il trattamento dei dati personali per le finalità specificate.`;
+  const splitPrivacy = doc.splitTextToSize(privacyText, W - 24);
+  doc.text(splitPrivacy, 12, y);
+  y += splitPrivacy.length * 3.2 + 8;
+
+  // 7. Firma e data
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...DARK);
+  doc.text('Luogo e data: ________________________', 12, y);
+  doc.text('Firma del condomino dichiarante: ________________________', W - 12, y, { align: 'right' });
+
+  // Aggiungi footer
+  const pageCountMod = doc.internal.getNumberOfPages();
+  const HMod = doc.internal.pageSize.getHeight();
+  for (let i = 1; i <= pageCountMod; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(...LINEA_BORDO); doc.setLineWidth(0.3); doc.line(10, HMod - 12, W - 10, HMod - 12);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...GRIGIO);
+    doc.text(`Pagina ${i} di ${pageCountMod}`, W - 12, HMod - 5, { align: 'right' });
+    doc.text(`Richiesta compilazione Registro Anagrafe - ${condominio?.nome || 'Condominio'}`, 12, HMod - 5);
+  }
+
+  doc.save(`Modulo_Anagrafe_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
+}

@@ -1030,6 +1030,15 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Limitazione di Piano per la Postbox (`PlanGate.jsx` & `PostboxPage.jsx`)**: Aggiunta la feature `postbox_studio` ai piani abilitati (Studio e Professional). Wrappato l'intero contenuto di `PostboxPage` con `<PlanGate feature="postbox_studio">`. Per gli utenti con piano Base, cliccare su "Postbox Studio" (visibile in sidebar) mostra una schermata d'upgrade (paywall) che elenca vantaggi e funzionalità con il pulsante dedicato "Passa a Studio".
 - **Schermata Paywall Premium (`PostboxPaywall` in `PostboxPage.jsx`)**: Creata una schermata di paywall custom di grande impatto estetico per la Postbox Studio, contenente mockup grafici CSS interattivi ed animati che simulano le funzioni chiave del servizio (la linea laser di scansione AI della fattura, la timeline di congiunzione in 2 fasi del subentro, e l'ingestione della posta in arrivo divisa per categorie).
 
+### 2. Bug e Regressioni Risolti (Fix Bug Triager)
+- **ReferenceError icona Zap in PostboxPaywall**: Risolto crash fatale all'accesso per utenti con piano Base importando correttamente l'icona `Zap` da `lucide-react` in `PostboxPage.jsx`.
+- **Fallimento Copia File Incrociata tra Bucket Storage**: Modificata la procedura di salvataggio spese in `PostboxPage.jsx` per scaricare temporaneamente il file da `inbox-ricezione` e caricarlo su `documenti-condominio` (evitando il limite di `.copy()` nativo di Supabase per bucket differenti).
+- **Crash Vincolo NOT NULL su persona_entrante_id in Subentro**: Sostituita la query PostgREST basata su email in `SubentroValidator.jsx` (Fase B) con l'ID della persona entrante (`personaEntranteId`) salvato in Fase A, eliminando crash in caso di subentri inseriti senza indirizzo email.
+- **Errore PostgREST 400 su rate.scadenza**: Corretto il riferimento del nome colonna DB in `SubentroValidator.jsx` da `scadenza` a `data_scadenza` per calcolare correttamente i pro-rata.
+- **Ordinamento Casuale Rate per Conguaglio**: Sostituito l'ordinamento delle rate su UUID in `SubentroValidator.jsx` con l'ordinamento cronologico in JavaScript, garantendo che il conguaglio modifichi sempre la prima rata utile cronologica.
+- **Allineamento Conteggi Postbox per Subentri Fase B**: Estese le query di conteggio in `DashboardPage.jsx` e `AppLayout.jsx` allo stato `'elaborato'` (Fase B del subentro in sospeso), allineando sidebar e widget Dashboard con l'effettivo contenuto inevaso della Postbox.
+
+
 
 
 

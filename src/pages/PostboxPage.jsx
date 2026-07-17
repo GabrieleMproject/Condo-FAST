@@ -10,7 +10,7 @@ import PlanGate from '../components/PlanGate'
 import {
   UploadCloud, FileText, CheckCircle2, AlertTriangle, Loader2,
   Building2, ArrowRight, Clock, RefreshCw, X, Receipt, Eye,
-  Inbox, User, Mail, MessageSquare, Trash2, Check, ExternalLink, Zap
+  Inbox, User, Mail, MessageSquare, Trash2, Check, ExternalLink, Zap, Wrench, Shield
 } from 'lucide-react'
 
 // Helper per formattare la dimensione del file
@@ -279,6 +279,12 @@ export default function PostboxPage() {
   const [activeFileUrl, setActiveFileUrl] = useState(null)
   const [loadingFileUrl, setLoadingFileUrl] = useState(false)
   const [showZoomModal, setShowZoomModal] = useState(false)
+  const [showSegnalazioneModal, setShowSegnalazioneModal] = useState(false)
+  const [segnalazioneTipo, setSegnalazioneTipo] = useState('manutenzione')
+  const [segnalazioneTitolo, setSegnalazioneTitolo] = useState('')
+  const [segnalazioneDescrizione, setSegnalazioneDescrizione] = useState('')
+  const [segnalazioneUnitaId, setSegnalazioneUnitaId] = useState('')
+  const [segnalazionePersonaId, setSegnalazionePersonaId] = useState('')
 
   if (loadingPlan) {
     return (
@@ -319,7 +325,7 @@ export default function PostboxPage() {
         .from('inbox_documenti')
         .select('*')
         .in('stato', ['nuovo', 'rilevato', 'da_smistare', 'elaborato'])
-        .order('data_ricezione', { ascending: false })
+        .order('data_ricezione', { ascending: true })
       
       if (error) throw error
 
@@ -577,6 +583,70 @@ export default function PostboxPage() {
     }
   }
 
+  const apriSegnalazioneForm = (tipo) => {
+    setSegnalazioneTipo(tipo)
+    setSegnalazioneTitolo(activeItem.email_oggetto || '')
+    setSegnalazioneDescrizione(activeItem.extractedData?.sintesi_richiesta || activeItem.email_corpo || '')
+    setSegnalazioneUnitaId('')
+    setSegnalazionePersonaId('')
+    setShowSegnalazioneModal(true)
+  }
+
+  const handleSalvaSegnalazione = async (e) => {
+    e.preventDefault()
+    if (!segnalazioneTitolo.trim() || !segnalazioneDescrizione.trim()) {
+      toast.error('Inserisci titolo e descrizione per la segnalazione.')
+      return
+    }
+
+    setSaving(true)
+    try {
+      let personaId = segnalazionePersonaId || null
+      if (!personaId && activeItem.email_mittente) {
+        const { data: p } = await supabase
+          .from('persone')
+          .select('id')
+          .eq('email', activeItem.email_mittente.trim().toLowerCase())
+          .maybeSingle()
+        if (p) {
+          personaId = p.id
+        }
+      }
+
+      const { error: insErr } = await supabase
+        .from('segnalazioni_condominio')
+        .insert([{
+          condominio_id: activeItem.condominioId,
+          unita_id: segnalazioneUnitaId || null,
+          persona_id: personaId,
+          titolo: segnalazioneTitolo.trim(),
+          descrizione: segnalazioneDescrizione.trim(),
+          tipo: segnalazioneTipo,
+          stato: 'nuovo',
+          inbox_documento_id: activeItem.id
+        }])
+
+      if (insErr) throw insErr
+
+      await supabase
+        .from('inbox_documenti')
+        .update({ stato: 'elaborato' })
+        .eq('id', activeItem.id)
+
+      toast.success(segnalazioneTipo === 'sinistro' 
+        ? 'Sinistro registrato correttamente!' 
+        : 'Ticket di manutenzione aperto correttamente!'
+      )
+      setShowSegnalazioneModal(false)
+      fetchQueue()
+    } catch (err) {
+      console.error('[PostboxPage] Errore salvataggio segnalazione:', err)
+      toast.error('Errore durante la registrazione.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Filtra la coda in base al tab attivo
   const queueSpese = queue.filter(q => q.tipo === 'spesa' && q.stato !== 'inserito')
   const queueSubentri = queue.filter(q => q.tipo === 'subentro' && q.stato !== 'conguagliato')
@@ -688,6 +758,16 @@ export default function PostboxPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                       <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Clock size={10} /> {formattaData(doc.data_ricezione)}
+                        {(() => {
+                          const giacenzaGiorni = doc.data_ricezione 
+                            ? Math.floor((new Date() - new Date(doc.data_ricezione)) / (1000 * 60 * 60 * 24))
+                            : 0
+                          return giacenzaGiorni >= 5 ? (
+                            <span style={{ fontSize: 9, background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 5px', borderRadius: 4, marginLeft: 6, fontWeight: 700 }}>
+                              ⚠️ Giacenza: {giacenzaGiorni}gg
+                            </span>
+                          ) : null
+                        })()}
                       </span>
                       {doc.stato === 'elaborato' && doc.tipo === 'subentro' && (
                         <span style={{ fontSize: 10, background: '#eab308', color: '#fff', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>Fase B</span>
@@ -759,6 +839,24 @@ export default function PostboxPage() {
                   </div>
                 </div>
 
+                {/* Alert Giacenza in Dettaglio */}
+                {(() => {
+                  const giacenza = activeItem.data_ricezione
+                    ? Math.floor((new Date() - new Date(activeItem.data_ricezione)) / (1000 * 60 * 60 * 24))
+                    : 0
+                  if (giacenza >= 5) {
+                    return (
+                      <div style={{ margin: '16px 24px 0', padding: '12px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <AlertTriangle size={16} color="#f87171" />
+                        <span style={{ fontSize: 13, color: '#f87171', fontWeight: 600 }}>
+                          Questa comunicazione è in sospeso da ben {giacenza} giorni e richiede attenzione prioritaria.
+                        </span>
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+
                 {/* Switch form in base alla tipologia */}
                 {activeTab === 'spese' && (
                   <div style={{ padding: '24px 0' }}>
@@ -821,10 +919,22 @@ export default function PostboxPage() {
 
                     <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
                       <button 
-                        onClick={() => handleLavoratoMessaggio(activeItem.id)}
-                        style={{ flex: 1, padding: 12, background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 600 }}
+                        onClick={() => apriSegnalazioneForm('manutenzione')}
+                        style={{ flex: 1, padding: '12px 8px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 600, fontSize: 13 }}
                       >
-                        <Check size={16} /> Segna come Lavorato
+                        <Wrench size={16} /> Apri Manutenzione
+                      </button>
+                      <button 
+                        onClick={() => apriSegnalazioneForm('sinistro')}
+                        style={{ flex: 1, padding: '12px 8px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 600, fontSize: 13 }}
+                      >
+                        <Shield size={16} /> Registra Sinistro
+                      </button>
+                      <button 
+                        onClick={() => handleLavoratoMessaggio(activeItem.id)}
+                        style={{ flex: 1, padding: '12px 8px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 600, fontSize: 13 }}
+                      >
+                        <Check size={16} /> Segna Lavorato
                       </button>
                     </div>
                   </div>
@@ -858,6 +968,109 @@ export default function PostboxPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modale per Apertura Segnalazione / Sinistro */}
+      {showSegnalazioneModal && activeItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <form 
+            onSubmit={handleSalvaSegnalazione}
+            style={{ width: 500, background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          >
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--app-bg)' }}>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+                {segnalazioneTipo === 'sinistro' ? (
+                  <>
+                    <Shield size={18} color="#ef4444" /> Registra Segnalazione Sinistro
+                  </>
+                ) : (
+                  <>
+                    <Wrench size={18} color="#3b82f6" /> Apri Ticket Manutenzione
+                  </>
+                )}
+              </span>
+              <button 
+                type="button"
+                onClick={() => setShowSegnalazioneModal(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Titolo / Oggetto</label>
+                <input 
+                  type="text"
+                  value={segnalazioneTitolo}
+                  onChange={(e) => setSegnalazioneTitolo(e.target.value)}
+                  placeholder="Es: Rottura serratura cancello carraio"
+                  required
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 13 }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Dettaglio Guasto / Descrizione</label>
+                <textarea 
+                  value={segnalazioneDescrizione}
+                  onChange={(e) => setSegnalazioneDescrizione(e.target.value)}
+                  placeholder="Inserisci dettagli utili..."
+                  required
+                  rows={4}
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 13, resize: 'none', lineHeight: 1.4 }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Unità Immobiliare Associata (Opzionale)</label>
+                <select
+                  value={segnalazioneUnitaId}
+                  onChange={(e) => setSegnalazioneUnitaId(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 13 }}
+                >
+                  <option value="">— Condominio Generale (Parti Comuni) —</option>
+                  {(activeItem.unita || []).map((u) => (
+                    <option key={u.id} value={u.id}>
+                      Scala {u.scala || '—'} · Piano {u.piano ?? '—'} · Int. {u.numero}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: 12, background: 'var(--app-bg)' }}>
+              <button 
+                type="button"
+                onClick={() => setShowSegnalazioneModal(false)}
+                style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+              >
+                Annulla
+              </button>
+              <button 
+                type="submit"
+                disabled={saving}
+                style={{ 
+                  padding: '8px 20px', 
+                  background: segnalazioneTipo === 'sinistro' ? '#dc2626' : '#2563eb', 
+                  color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 8
+                }}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="animate-spin" size={14} /> Salvataggio...
+                  </>
+                ) : (
+                  <>
+                    Salva Segnalazione
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

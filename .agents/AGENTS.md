@@ -1027,6 +1027,8 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Git Push**: Committato e spinto su GitHub con successo (main).
 - **Widget Postbox in Dashboard (`DashboardPage.jsx`)**: Sostituito il vecchio banner lineare con un widget grafico premium a griglia, reso **permanente** (visibile sempre, anche con 0 elementi) per mostrare i contatori suddivisi con icone specifiche per spese (Receipt), subentri (User) e messaggi (MessageSquare).
 - **Rimozione Anteprima Fissa (`PostboxPage.jsx`)**: Eliminata la colonna fissa di destra per l'anteprima allegati che riduceva troppo lo spazio per `SpeseForm`. Al suo posto, è stata adottata la politica di S48: l'anteprima si apre solo tramite modale zoom in overlay a schermo intero al clic del nuovo pulsante "Visualizza Documento" nell'header del dettaglio, lasciando il 100% dello spazio fluido al modulo di convalida.
+- **Limitazione di Piano per la Postbox (`PlanGate.jsx` & `PostboxPage.jsx`)**: Aggiunta la feature `postbox_studio` ai piani abilitati (Studio e Professional). Wrappato l'intero contenuto di `PostboxPage` con `<PlanGate feature="postbox_studio">`. Per gli utenti con piano Base, cliccare su "Postbox Studio" (visibile in sidebar) mostra una schermata d'upgrade (paywall) che elenca vantaggi e funzionalità con il pulsante dedicato "Passa a Studio".
+
 
 
 

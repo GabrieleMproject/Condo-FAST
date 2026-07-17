@@ -22,6 +22,233 @@ const formatSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+// // Componente Paywall premium e interattivo per la Postbox
+function PostboxPaywall() {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      minHeight: 'calc(100vh - 64px)', background: 'var(--app-bg)', padding: '40px 24px',
+      fontFamily: 'Sora, sans-serif', overflowY: 'auto'
+    }}>
+      {/* CSS Keyframes per animazioni premium */}
+      <style>{`
+        @keyframes laserScan {
+          0% { top: 0%; opacity: 0.3; }
+          50% { top: 100%; opacity: 0.8; }
+          100% { top: 0%; opacity: 0.3; }
+        }
+        @keyframes pulseGlow {
+          0% { transform: scale(0.95); opacity: 0.5; }
+          70% { transform: scale(1.02); opacity: 0.9; }
+          100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .paywall-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 12px 24px -10px rgba(124, 58, 237, 0.25) !important;
+          border-color: rgba(124, 58, 237, 0.4) !important;
+        }
+      `}</style>
+
+      {/* Badge e Titolo */}
+      <div style={{ textAlign: 'center', marginBottom: 40, maxWidth: 700 }}>
+        <span style={{
+          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(139, 92, 246, 0.2) 100%)',
+          color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.3)',
+          padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: '0.1em', display: 'inline-block', marginBottom: 16
+        }}>
+          Esclusiva Piano Studio o Superiore
+        </span>
+        <h1 style={{
+          fontSize: 36, fontWeight: 800, margin: '0 0 16px',
+          background: 'linear-gradient(135deg, var(--text-primary) 30%, #a78bfa 100%)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          lineHeight: 1.2
+        }}>
+          Postbox Studio: la tua posta, automatizzata
+        </h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1.5, margin: 0 }}>
+          Centralizza la corrispondenza dello studio. L'intelligenza artificiale estrae spese, classifica i messaggi e gestisce i subentri in due tempi senza errori.
+        </p>
+      </div>
+
+      {/* Griglia delle Funzionalità con Mockup Grafici CSS */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: 24, width: '100%', maxWidth: 1100, marginBottom: 48
+      }}>
+        
+        {/* Card 1: Scansione AI Spese */}
+        <div className="paywall-card" style={{
+          background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
+          padding: 24, display: 'flex', flexDirection: 'column', gap: 20, transition: 'all 0.3s ease',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+        }}>
+          {/* Mockup Scansione AI */}
+          <div style={{
+            height: 140, background: 'var(--app-bg)', borderRadius: 12, border: '1px solid var(--border-color)',
+            position: 'relative', overflow: 'hidden', padding: 16, display: 'flex', flexDirection: 'column', gap: 8
+          }}>
+            {/* Linea Laser */}
+            <div style={{
+              position: 'absolute', left: 0, right: 0, height: 2, background: '#7c3aed',
+              boxShadow: '0 0 8px #7c3aed', animation: 'laserScan 3s infinite ease-in-out'
+            }} />
+            
+            {/* Finto Foglio Fattura */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed var(--border-color)', paddingBottom: 6 }}>
+              <div style={{ width: 60, height: 8, background: 'var(--border-color)', borderRadius: 4 }} />
+              <div style={{ width: 40, height: 8, background: 'var(--border-color)', borderRadius: 4 }} />
+            </div>
+            <div style={{ width: '80%', height: 6, background: 'var(--border-color)', borderRadius: 3 }} />
+            <div style={{ width: '60%', height: 6, background: 'var(--border-color)', borderRadius: 3 }} />
+            
+            {/* Campi Rilevati dall'AI */}
+            <div style={{ display: 'flex', gap: 6, marginTop: 'auto', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 9, background: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', padding: '3px 6px', borderRadius: 4, border: '1px solid rgba(124, 58, 237, 0.2)', fontWeight: 600 }}>
+                Fornitore: Rossi Srl
+              </span>
+              <span style={{ fontSize: 9, background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', padding: '3px 6px', borderRadius: 4, border: '1px solid rgba(16, 185, 129, 0.2)', fontWeight: 600 }}>
+                Importo: €450,00
+              </span>
+            </div>
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Receipt size={20} style={{ color: '#a78bfa' }} /> Estrattore AI Spese
+            </h3>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13.5, lineHeight: 1.5 }}>
+              L'AI legge le fatture e le ricevute allegate alle email. Estrae automaticamente fornitore, importo, data e propone la ripartizione millesimale pronta da registrare.
+            </p>
+          </div>
+        </div>
+
+        {/* Card 2: Subentri Guidati in 2 Tempi */}
+        <div className="paywall-card" style={{
+          background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
+          padding: 24, display: 'flex', flexDirection: 'column', gap: 20, transition: 'all 0.3s ease',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+        }}>
+          {/* Mockup Timeline Subentri */}
+          <div style={{
+            height: 140, background: 'var(--app-bg)', borderRadius: 12, border: '1px solid var(--border-color)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, position: 'relative'
+          }}>
+            {/* Linea di collegamento */}
+            <div style={{ position: 'absolute', width: '60%', height: 2, background: 'var(--border-color)', zIndex: 1 }} />
+            <div style={{ position: 'absolute', width: '30%', height: 2, background: '#3b82f6', left: '20%', zIndex: 1 }} />
+            
+            {/* Step A */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, zIndex: 2, width: '40%' }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', background: '#3b82f6', color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700,
+                boxShadow: '0 0 10px rgba(59, 130, 246, 0.4)'
+              }}>
+                A
+              </div>
+              <span style={{ fontSize: 9, color: 'var(--text-primary)', fontWeight: 600 }}>Anagrafica & Benvenuto</span>
+            </div>
+
+            {/* Step B */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, zIndex: 2, width: '40%' }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', background: 'var(--card-bg)', color: 'var(--text-secondary)',
+                border: '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700
+              }}>
+                B
+              </div>
+              <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>Calcolo Pro-Rata</span>
+            </div>
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <User size={20} style={{ color: '#60a5fa' }} /> Subentri Guidati a 2 Tempi
+            </h3>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13.5, lineHeight: 1.5 }}>
+              Dividi l'aggiornamento giuridico (subito email di benvenuto e modulo autocertificazione catastale) dal conguaglio finanziario pro-rata, calcolato solo dopo la riconciliazione contabile.
+            </p>
+          </div>
+        </div>
+
+        {/* Card 3: Registro Messaggi Unificato */}
+        <div className="paywall-card" style={{
+          background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
+          padding: 24, display: 'flex', flexDirection: 'column', gap: 20, transition: 'all 0.3s ease',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+        }}>
+          {/* Mockup Registro Inbox */}
+          <div style={{
+            height: 140, background: 'var(--app-bg)', borderRadius: 12, border: '1px solid var(--border-color)',
+            padding: 12, display: 'flex', flexDirection: 'column', gap: 8
+          }}>
+            {/* Messaggio 1 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--card-bg)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border-color)' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ width: '70%', height: 6, background: 'var(--text-primary)', opacity: 0.8, borderRadius: 2 }} />
+                <div style={{ width: '40%', height: 4, background: 'var(--text-muted)', borderRadius: 2 }} />
+              </div>
+              <span style={{ fontSize: 8, background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', padding: '1px 4px', borderRadius: 4, fontWeight: 700 }}>SPESA</span>
+            </div>
+            
+            {/* Messaggio 2 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--card-bg)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border-color)' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ width: '60%', height: 6, background: 'var(--text-primary)', opacity: 0.8, borderRadius: 2 }} />
+                <div style={{ width: '50%', height: 4, background: 'var(--text-muted)', borderRadius: 2 }} />
+              </div>
+              <span style={{ fontSize: 8, background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', padding: '1px 4px', borderRadius: 4, fontWeight: 700 }}>INFO</span>
+            </div>
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <MessageSquare size={20} style={{ color: '#34d399' }} /> Comunicazioni Ricevute
+            </h3>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13.5, lineHeight: 1.5 }}>
+              Ricevi ed archivia automaticamente tutte le email dei condòmini (anche solo testo senza allegati). Crea un diario storico ordinato delle comunicazioni per condomino e condominio.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      {/* CTA Box (Upgrade Box) */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)',
+        border: '1px solid rgba(124, 58, 237, 0.3)', borderRadius: 16,
+        padding: '32px 40px', maxWidth: 600, width: '100%', textAlign: 'center',
+        boxShadow: '0 8px 30px rgba(124, 58, 237, 0.06)'
+      }}>
+        <div style={{ fontSize: 13, color: '#a78bfa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+          SBLOCCA ORA POSTBOX STUDIO
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 6, marginBottom: 16 }}>
+          <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)' }}>249€</span>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>/ mese + IVA (include 50 condomini)</span>
+        </div>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.5, margin: '0 0 24px' }}>
+          Passa al piano <strong>Studio</strong> per sbloccare la Postbox Studio, l'AI illimitata sui documenti, l'invio solleciti con Resend, l'assemblea digitale AI e il portale per ciascun condomino.
+        </p>
+        <a href="/impostazioni" style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
+          color: '#fff', textDecoration: 'none', padding: '14px 32px', borderRadius: 10,
+          fontSize: 15, fontWeight: 700, transition: 'transform 0.15s, box-shadow 0.15s',
+          boxShadow: '0 4px 15px rgba(124, 58, 237, 0.35)', cursor: 'pointer'
+        }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(124, 58, 237, 0.45)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(124, 58, 237, 0.35)'; }}
+        >
+          Passa a Studio <Zap size={16} />
+        </a>
+      </div>
+    </div>
+  )
+}
+
 // Helper per formattare la data
 const formattaData = (d) => {
   if (!d) return ''
@@ -30,7 +257,7 @@ const formattaData = (d) => {
 
 export default function PostboxPage() {
   const { user } = useAuth()
-  const { profile } = usePlan()
+  const { profile, canUse, loading: loadingPlan } = usePlan()
   
   const [condomini, setCondomini] = useState([])
   const [loadingCondomini, setLoadingCondomini] = useState(true)
@@ -52,6 +279,18 @@ export default function PostboxPage() {
   const [activeFileUrl, setActiveFileUrl] = useState(null)
   const [loadingFileUrl, setLoadingFileUrl] = useState(false)
   const [showZoomModal, setShowZoomModal] = useState(false)
+
+  if (loadingPlan) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 64px)', background: 'var(--app-bg)', color: 'var(--text-muted)' }}>
+        <Loader2 className="animate-spin" size={32} />
+      </div>
+    )
+  }
+
+  if (!canUse('postbox_studio')) {
+    return <PostboxPaywall />
+  }
 
   // 1. Carica i condomini all'avvio
   useEffect(() => {

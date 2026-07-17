@@ -213,6 +213,49 @@ function PostboxPaywall() {
           </div>
         </div>
 
+        {/* Card 4: Ticket & Sinistri Integrati */}
+        <div className="paywall-card" style={{
+          background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
+          padding: 24, display: 'flex', flexDirection: 'column', gap: 20, transition: 'all 0.3s ease',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+        }}>
+          {/* Mockup Ticket e Sinistri */}
+          <div style={{
+            height: 140, background: 'var(--app-bg)', borderRadius: 12, border: '1px solid var(--border-color)',
+            padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12, position: 'relative'
+          }}>
+            {/* Ticket di Manutenzione */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card-bg)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Wrench size={14} style={{ color: '#3b82f6' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>Rottura Serratura</span>
+              </div>
+              <span style={{ fontSize: 8, background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', padding: '2px 6px', borderRadius: 4, fontWeight: 700, marginLeft: 'auto' }}>
+                APERTO
+              </span>
+            </div>
+
+            {/* Segnalazione Sinistro */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card-bg)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Shield size={14} style={{ color: '#ef4444' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' }}>Infiltrazione A/1</span>
+              </div>
+              <span style={{ fontSize: 8, background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', padding: '2px 6px', borderRadius: 4, fontWeight: 700, marginLeft: 'auto' }}>
+                SINISTRO
+              </span>
+            </div>
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Wrench size={20} style={{ color: '#3b82f6' }} /> Ticket & Sinistri Integrati
+            </h3>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13.5, lineHeight: 1.5 }}>
+              Apri ticket di manutenzione o registra sinistri condominiali direttamente dai messaggi ricevuti. Tutto integrato con scadenze, stati e allegati per non dimenticare nulla.
+            </p>
+          </div>
+        </div>
+
       </div>
 
       {/* CTA Box (Upgrade Box) */}

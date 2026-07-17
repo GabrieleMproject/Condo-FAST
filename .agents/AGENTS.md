@@ -1038,6 +1038,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Ordinamento Casuale Rate per Conguaglio**: Sostituito l'ordinamento delle rate su UUID in `SubentroValidator.jsx` con l'ordinamento cronologico in JavaScript, garantendo che il conguaglio modifichi sempre la prima rata utile cronologica.
 - **Allineamento Conteggi Postbox per Subentri Fase B**: Estese le query di conteggio in `DashboardPage.jsx` e `AppLayout.jsx` allo stato `'elaborato'` (Fase B del subentro in sospeso), allineando sidebar e widget Dashboard con l'effettivo contenuto inevaso della Postbox.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S50 (17 Luglio 2026)
+
+### 1. Decisioni su Ticket, Sinistri e Ordinamento Postbox
+- **Ordinamento FIFO per Smistamento Postbox**: Concordata l'inversione dell'ordinamento in `PostboxPage.jsx` da discendente ad ascendente (FIFO) per elaborare per primi i messaggi più vecchi, evitando accumuli e dimenticanze.
+- **Alert di Giacenza**: Introdotta l'evidenziazione visiva degli elementi fermi in coda da oltre 5 giorni in Postbox, con l'esposizione di badge e avvisi di priorità.
+- **Ticket di Manutenzione e Gestione Sinistri**: Implementata la tabella `segnalazioni_condominio` per consentire all'amministratore di creare segnalazioni/sinistri condominiali direttamente dal tab Messaggi della Postbox, collegando i documenti ed archiviando l'email come lavorata.
+- **Architettura Diario Storico CCN (BCC)**: Proposta la generazione di un indirizzo email di studio unico (es: `registro-studio@inbound.condosmart.it`) da inserire in CCN per tracciare e storicizzare le email inviate/risposte esternamente (es: da Outlook o Gmail) senza violare la privacy dell'utente o integrare complessi sistemi IMAP/OAuth.
+
+### 2. Fatti Verificati sul Database
+- **Tabella `segnalazioni_condominio`**: Creata con successo tramite la migrazione `supabase/migrations/20260717132000_s50_segnalazioni_e_sinistri.sql`. La tabella supporta i tipi `'manutenzione'` e `'sinistro'`, RLS sicure ancorate a `public.user_owns_condominio` e relazioni a chiavi esterne per unità, persone e documenti Postbox.
+- **Deploy locale**: Migrazione eseguita correttamente con `supabase db push`.
+- **Verifica Build**: Eseguito `npm run build` con successo (verde).
+- **Git Push**: Committato e spinto su GitHub con successo (main).
 
 
 

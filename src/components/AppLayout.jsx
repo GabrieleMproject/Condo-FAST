@@ -111,6 +111,46 @@ export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme } = useTheme();
+  
+  // Conteggio documenti Postbox pendenti
+  const [inboxCount, setInboxCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchInboxCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('inbox_documenti')
+          .select('*', { count: 'exact', head: true })
+          .in('stato', ['nuovo', 'rilevato', 'da_smistare']);
+        
+        if (!error && count !== null) {
+          setInboxCount(count);
+        }
+      } catch (err) {
+        console.error('Errore conteggio inbox:', err);
+      }
+    };
+
+    fetchInboxCount();
+
+    // Sottoscrizione realtime
+    const channel = supabase
+      .channel('inbox_layout_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'inbox_documenti'
+      }, () => {
+        fetchInboxCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // ── Gestione Piano e Profilo ──────────────────────────────────────────
   const {
@@ -232,6 +272,7 @@ export default function AppLayout() {
         <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV_ITEMS.map(({ path, label, icon: Icon, badge }) => {
             const active = location.pathname.startsWith(path);
+            const activeBadge = path === '/spese' && inboxCount > 0 ? String(inboxCount) : badge;
             return (
               <Link key={path} to={path} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
@@ -248,13 +289,13 @@ export default function AppLayout() {
               >
                 <Icon size={18} strokeWidth={active ? 2.5 : 1.8} style={{ flexShrink: 0 }} />
                 {!collapsed && label}
-                {!collapsed && badge && (
+                {!collapsed && activeBadge && (
                   <span style={{
                     marginLeft: 'auto', fontSize: 9, fontWeight: 700,
-                    background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                    background: path === '/spese' && inboxCount > 0 ? 'linear-gradient(135deg,#7c3aed,#9061f9)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
                     color: '#fff', borderRadius: 4, padding: '2px 5px',
                     letterSpacing: '0.05em',
-                  }}>{badge}</span>
+                  }}>{activeBadge}</span>
                 )}
               </Link>
             );

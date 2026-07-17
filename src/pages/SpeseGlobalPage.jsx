@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
-import { useSpeseQueue } from '../contexts/SpeseQueueContext'
 import { estraiFattura } from '../lib/fileExtractor'
 import SpeseForm from '../components/SpeseForm'
 import {
@@ -15,12 +14,13 @@ import {
   Clock,
   RefreshCw,
   X,
-  Receipt
+  Receipt,
+  Eye
 } from 'lucide-react'
 
 // Helper per formattare la dimensione del file
 const formatSize = (bytes) => {
-  if (bytes === 0) return '0 Bytes'
+  if (!bytes) return '0 Bytes'
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -32,13 +32,28 @@ export default function SpeseGlobalPage() {
   const [condomini, setCondomini] = useState([])
   const [loadingCondomini, setLoadingCondomini] = useState(true)
   
-  // Coda di elaborazione fatture (dallo SpeseQueueContext per persistere i dati)
-  const { queue, setQueue, activeQueueId, setActiveQueueId } = useSpeseQueue()
+  // Coda di elaborazione persistente (collegata al database public.inbox_documenti)
+  const [queue, setQueue] = useState([])
+  const [loadingQueue, setLoadingQueue] = useState(true)
+  const [activeQueueId, setActiveQueueId] = useState(null)
+  
+  // Stati di processo
   const [processing, setProcessing] = useState(false)
-  const [dragOver, setDragOver] = useState(false)
   const [saving, setSaving] = useState(false)
   
+  // Anteprima File
+  const [activeFileUrl, setActiveFileUrl] = useState(null)
+  const [loadingFileUrl, setLoadingFileUrl] = useState(false)
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024)
+  
   const fileInputRef = useRef()
+
+  // Responsive listener
+  useEffect(() => {
+    const handleResize = () => setIsLargeScreen(window.innerWidth > 1024)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // 1. Carica i condomini dell'amministratore all'avvio
   useEffect(() => {
@@ -59,16 +74,121 @@ export default function SpeseGlobalPage() {
     fetchCondomini()
   }, [])
 
-  // 1b. Ripristina gli elementi rimasti in 'analyzing' su 'idle' al mount per riprendere l'analisi
-  useEffect(() => {
-    setQueue(prev => {
-      const hasAnalyzing = prev.some(item => item.status === 'analyzing')
-      if (!hasAnalyzing) return prev
-      return prev.map(item => item.status === 'analyzing' ? { ...item, status: 'idle' } : item)
-    })
-  }, [])
+  // 2. Caricamento Coda da Database (inbox_documenti in stato nuovo, rilevato, da_smistare)
+  const fetchQueue = async () => {
+    if (!user) return
+    try {
+      const { data, error } = await supabase
+        .from('inbox_documenti')
+        .select('*')
+        .in('stato', ['nuovo', 'rilevato', 'da_smistare'])
+        .order('data_ricezione', { ascending: false })
+      
+      if (error) throw error
+      
+      const mapped = await Promise.all((data || []).map(async (doc) => {
+        // Recupera i dettagli del condominio se già abbinato
+        let condoDati = { esercizi: [], unita: [], tabelle: [], documenti: [] }
+        let selectedEsercizioId = null
+        
+        if (doc.condominio_id) {
+          condoDati = await fetchCondominioDati(doc.condominio_id)
+          const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
+          selectedEsercizioId = aperto?.id || null
+        }
+        
+        return {
+          id: doc.id,
+          file: null, // Nessun File object locale se caricato da DB
+          file_path: doc.file_path,
+          file_name: doc.file_name,
+          email_mittente: doc.email_mittente,
+          email_oggetto: doc.email_oggetto,
+          data_ricezione: doc.data_ricezione,
+          status: doc.stato === 'nuovo' ? 'idle' : 'ready',
+          errorMsg: null,
+          extractedData: doc.dati_estratti,
+          condominioId: doc.condominio_id,
+          esercizioId: selectedEsercizioId,
+          esercizi: condoDati.esercizi,
+          unita: condoDati.unita,
+          tabelle: condoDati.tabelle,
+          documenti: condoDati.documenti
+        }
+      }))
+      
+      setQueue(mapped)
+      
+      // Imposta il primo elemento attivo se non ce n'è nessuno selezionato
+      if (mapped.length > 0 && !activeQueueId) {
+        setActiveQueueId(mapped[0].id)
+      }
+    } catch (err) {
+      console.error('Errore recupero coda inbox:', err)
+    } finally {
+      setLoadingQueue(false)
+    }
+  }
 
-  // 2. Helper per recuperare i dettagli di un condominio selezionato
+  // 3. Inizializza Realtime Listener per la coda
+  useEffect(() => {
+    if (!user) return
+    fetchQueue()
+    
+    const channel = supabase
+      .channel('inbox_global_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'inbox_documenti'
+      }, () => {
+        fetchQueue()
+      })
+      .subscribe()
+      
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
+  // 4. Carica Signed URL del PDF quando cambia la fattura attiva
+  const activeItem = queue.find(q => q.id === activeQueueId)
+
+  useEffect(() => {
+    if (!activeItem) {
+      setActiveFileUrl(null)
+      return
+    }
+
+    if (activeItem.file) {
+      // Caricato localmente tramite drag & drop (non ancora nel DB)
+      setActiveFileUrl(URL.createObjectURL(activeItem.file))
+      return
+    }
+
+    if (activeItem.file_path) {
+      // Caricato da Storage remoto
+      const getSignedUrl = async () => {
+        setLoadingFileUrl(true)
+        try {
+          const { data, error } = await supabase.storage
+            .from('inbox-ricezione')
+            .createSignedUrl(activeItem.file_path, 900) // 15 minuti
+          
+          if (!error && data?.signedUrl) {
+            setActiveFileUrl(data.signedUrl)
+          }
+        } catch (err) {
+          console.error('Errore recupero Signed URL per anteprima:', err)
+        } finally {
+          setLoadingFileUrl(false)
+        }
+      }
+      getSignedUrl()
+    }
+  }, [activeQueueId])
+
+  // Helper per recuperare i dettagli di un condominio selezionato
   const fetchCondominioDati = async (condoId) => {
     if (!condoId) return { tabelle: [], unita: [], documenti: [], esercizi: [] }
     try {
@@ -90,7 +210,7 @@ export default function SpeseGlobalPage() {
     }
   }
 
-  // 3. Algoritmo di matching del condominio
+  // Algoritmo di matching del condominio
   const matchCondominio = (datiEstratti, condominiList) => {
     if (!datiEstratti || !condominiList || condominiList.length === 0) return null
 
@@ -134,26 +254,65 @@ export default function SpeseGlobalPage() {
     return null
   }
 
-  // 4. Sequencer di elaborazione sequenziale AI
-  useEffect(() => {
-    const runQueue = async () => {
-      if (processing) return
-      
-      const nextItem = queue.find(item => item.status === 'idle')
-      if (!nextItem) return
+  // 5. Caricamento File manuale e analisi AI (aggiorna DB)
+  const handleFilesAdded = async (fileList) => {
+    const files = Array.from(fileList)
+    if (files.length === 0) return
 
-      setProcessing(true)
+    if (queue.length >= 10) {
+      alert('La coda è piena. Gestisci o rimuovi le fatture presenti prima di caricarne altre (Max 10).')
+      return
+    }
 
-      // Aggiorna stato in elaborazione
-      setQueue(prev => prev.map(item => item.id === nextItem.id ? { ...item, status: 'analyzing' } : item))
-
-      try {
-        const estratto = await estraiFattura(nextItem.file)
+    setProcessing(true)
+    try {
+      for (const file of files) {
+        // Carica su Supabase Storage (inbox-ricezione)
+        const path = `${user.id}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+        const { error: uploadErr } = await supabase.storage
+          .from('inbox-ricezione')
+          .upload(path, file, { contentType: file.type })
         
-        // Cerca corrispondenza condominio
+        if (uploadErr) throw uploadErr
+
+        // Inserisci record in inbox_documenti
+        const { data: newDoc, error: insertErr } = await supabase
+          .from('inbox_documenti')
+          .insert({
+            amministratore_id: user.id,
+            file_path: path,
+            file_name: file.name,
+            stato: 'nuovo'
+          })
+          .select()
+          .single()
+
+        if (insertErr) throw insertErr
+
+        // Aggiungi elemento alla coda locale come 'analyzing'
+        const newItem = {
+          id: newDoc.id,
+          file,
+          file_path: path,
+          file_name: file.name,
+          status: 'analyzing',
+          errorMsg: null,
+          extractedData: null,
+          condominioId: null,
+          esercizioId: null,
+          esercizi: [],
+          unita: [],
+          tabelle: [],
+          documenti: []
+        }
+        
+        setQueue(prev => [newItem, ...prev])
+        setActiveQueueId(newDoc.id)
+
+        // Esegui estrazione AI
+        const estratto = await estraiFattura(file)
         const matchedCondoId = matchCondominio(estratto, condomini)
         
-        // Recupera dati del condominio (esercizi, unità, tabelle millesimali) se identificato
         let condoDati = { esercizi: [], unita: [], tabelle: [], documenti: [] }
         let selectedEsercizioId = null
         
@@ -163,8 +322,19 @@ export default function SpeseGlobalPage() {
           selectedEsercizioId = aperto?.id || null
         }
 
+        // Aggiorna DB con i dati estratti
+        await supabase
+          .from('inbox_documenti')
+          .update({
+            stato: 'rilevato',
+            condominio_id: matchedCondoId,
+            dati_estratti: estratto
+          })
+          .eq('id', newDoc.id)
+
+        // Aggiorna coda locale a 'ready'
         setQueue(prev => prev.map(item => {
-          if (item.id === nextItem.id) {
+          if (item.id === newDoc.id) {
             return {
               ...item,
               status: 'ready',
@@ -179,67 +349,13 @@ export default function SpeseGlobalPage() {
           }
           return item
         }))
-        
-        // Imposta automaticamente come attivo se nessun altro elemento è selezionato
-        setActiveQueueId(prev => prev === null ? nextItem.id : prev)
-      } catch (err) {
-        console.error('Errore estrazione AI per:', nextItem.file.name, err)
-        setQueue(prev => prev.map(item => 
-          item.id === nextItem.id 
-            ? { ...item, status: 'error', errorMsg: err.message || 'Errore di estrazione dati AI' } 
-            : item
-        ))
-      } finally {
-        setProcessing(false)
       }
-    }
-
-    runQueue()
-  }, [queue, processing, condomini])
-
-  // 5. Gestione caricamento file
-  const handleFilesAdded = (fileList) => {
-    const files = Array.from(fileList)
-    if (files.length === 0) return
-
-    // Limite 10 file totali in coda
-    const spazioDisponibile = 10 - queue.length
-    if (spazioDisponibile <= 0) {
-      alert('La coda è piena. Gestisci o rimuovi le fatture presenti prima di caricarne altre (Max 10).')
-      return
-    }
-
-    const filesDaCaricare = files.slice(0, spazioDisponibile)
-    if (files.length > spazioDisponibile) {
-      alert(`Puoi aggiungere solo fino a ${spazioDisponibile} fatture contemporaneamente. Alcuni file sono stati esclusi.`)
-    }
-
-    const nuoviElementi = filesDaCaricare
-      .filter(file => {
-        // Rilevamento duplicati locali in sessione (stesso nome e dimensione)
-        const esiste = queue.some(q => q.file.name === file.name && q.file.size === file.size)
-        if (esiste) {
-          console.warn(`File ignorato (duplicato in sessione): ${file.name}`)
-          return false
-        }
-        return true
-      })
-      .map(file => ({
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        file,
-        status: 'idle',
-        errorMsg: null,
-        extractedData: null,
-        condominioId: null,
-        esercizioId: null,
-        esercizi: [],
-        unita: [],
-        tabelle: [],
-        documenti: []
-      }))
-
-    if (nuoviElementi.length > 0) {
-      setQueue(prev => [...prev, ...nuoviElementi])
+    } catch (err) {
+      console.error('Errore caricamento o estrazione AI:', err)
+      alert('Impossibile elaborare il file: ' + err.message)
+    } finally {
+      setProcessing(false)
+      fetchQueue() // Ricarica la coda dal DB per sicurezza
     }
   }
 
@@ -253,7 +369,9 @@ export default function SpeseGlobalPage() {
     if (e.target.files) handleFilesAdded(e.target.files)
   }
 
-  // 6. Cambiamenti condominio / esercizio selezionati dall'utente
+  const [dragOver, setDragOver] = useState(false)
+
+  // 6. Cambiamento condominio o esercizio
   const handleCondominioChange = async (itemId, condoId) => {
     setQueue(prev => prev.map(item => item.id === itemId ? { ...item, status: 'updating_data' } : item))
     
@@ -275,6 +393,12 @@ export default function SpeseGlobalPage() {
       }
       return item
     }))
+
+    // Salva la preferenza di condominio sul DB
+    await supabase
+      .from('inbox_documenti')
+      .update({ condominio_id: condoId || null })
+      .eq('id', itemId)
   }
 
   const handleEsercizioChange = (itemId, esId) => {
@@ -286,22 +410,45 @@ export default function SpeseGlobalPage() {
     }))
   }
 
-  const rimuoviDallaCoda = (itemId, e) => {
+  // 7. Scarta e rimuovi dalla Postbox (cancella file e imposta stato scartato)
+  const rimuoviDallaCoda = async (itemId, e) => {
     e.stopPropagation()
-    setQueue(prev => prev.filter(item => item.id !== itemId))
-    if (activeQueueId === itemId) {
-      setActiveQueueId(null)
+    const item = queue.find(q => q.id === itemId)
+    if (!item) return
+
+    if (!confirm('Sei sicuro di voler eliminare questo documento dalla Postbox?')) return
+
+    try {
+      // Elimina il file da storage se presente
+      if (item.file_path) {
+        await supabase.storage.from('inbox-ricezione').remove([item.file_path])
+      }
+
+      // Imposta stato scartato sul database (soft delete)
+      await supabase
+        .from('inbox_documenti')
+        .update({ stato: 'scartato' })
+        .eq('id', itemId)
+
+      setQueue(prev => prev.filter(q => q.id !== itemId))
+      if (activeQueueId === itemId) {
+        setActiveQueueId(null)
+      }
+    } catch (err) {
+      console.error('Errore rimozione documento:', err)
     }
   }
 
-  // 7. Salvataggio effettivo
+  // 8. Salvataggio ed Inserimento Spesa + Fattura
   const handleSaveSpesaGlobale = async (itemId, payload, ripartizioni, fileCaricato, aiDatiEstratti) => {
     const item = queue.find(q => q.id === itemId)
     if (!item) return
 
     setSaving(true)
     try {
-      // a. Crea spesa
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+
+      // a. Crea spesa condominiale
       const { data: nuovaSpesa, error: spesaErr } = await supabase
         .from('spese')
         .insert([{
@@ -327,7 +474,7 @@ export default function SpeseGlobalPage() {
       if (spesaErr) throw spesaErr
       const spesaId = nuovaSpesa.id
 
-      // b. Salva ripartizioni
+      // b. Registra ripartizioni
       const righeRipartizioni = ripartizioni.map(r => ({
         spesa_id: spesaId,
         unita_id: r.unita_id,
@@ -340,14 +487,25 @@ export default function SpeseGlobalPage() {
       const { error: ripErr } = await supabase.from('ripartizioni').insert(righeRipartizioni)
       if (ripErr) throw ripErr
 
-      // c. Salva allegato fattura
-      if (fileCaricato && spesaId) {
-        const { data: { user: currentUser } } = await supabase.auth.getUser()
-        const path = `${currentUser.id}/${item.condominioId}/${Date.now()}_${fileCaricato.name}`
-        const { error: storageErr } = await supabase.storage
+      // c. Gestione file e fattura fornitore
+      if (item.file_path) {
+        // Scarica il file dal bucket temporaneo 'inbox-ricezione'
+        const { data: fileData, error: downloadErr } = await supabase.storage
+          .from('inbox-ricezione')
+          .download(item.file_path)
+
+        if (downloadErr) throw downloadErr
+
+        // Copia il file nel bucket ufficiale 'fatture'
+        const newPath = `${currentUser.id}/${item.condominioId}/${Date.now()}_${item.file_name.replace(/\s+/g, '_')}`
+        const { error: uploadErr } = await supabase.storage
           .from('fatture')
-          .upload(path, fileCaricato, { contentType: fileCaricato.type })
-        if (storageErr) throw storageErr
+          .upload(newPath, fileData, { contentType: fileData.type })
+
+        if (uploadErr) throw uploadErr
+
+        // Elimina file dal bucket temporaneo
+        await supabase.storage.from('inbox-ricezione').remove([item.file_path])
 
         // Cerca fornitore_id
         let fornitoreId = null
@@ -371,7 +529,7 @@ export default function SpeseGlobalPage() {
           console.error('Errore ricerca fornitore:', fornErr)
         }
 
-        // Crea record in fatture_fornitori
+        // Crea il record in fatture_fornitori
         const datiFattura = {
           condominio_id: item.condominioId,
           user_id: currentUser.id,
@@ -387,7 +545,7 @@ export default function SpeseGlobalPage() {
           descrizione: payload.descrizione || '',
           categoria: payload.categoria || 'altro',
           stato: 'attesa',
-          pdf_url: path,
+          pdf_url: newPath,
           ai_dati_estratti: aiDatiEstratti,
           imponibile_ritenuta: aiDatiEstratti?.imponibile_ritenuta || 0.00,
           aliquota_ritenuta_percentuale: aiDatiEstratti?.aliquota_ritenuta_percentuale || 0.00,
@@ -401,10 +559,15 @@ export default function SpeseGlobalPage() {
         if (invoiceErr) throw invoiceErr
       }
 
-      // Segna come salvato
-      setQueue(prev => prev.map(q => q.id === itemId ? { ...q, status: 'saved' } : q))
+      // d. Aggiorna record inbox_documenti a 'inserito'
+      await supabase
+        .from('inbox_documenti')
+        .update({ stato: 'inserito', spesa_id: spesaId })
+        .eq('id', itemId)
+
+      // Rimuovi dalla coda locale ed imposta il successivo
+      setQueue(prev => prev.filter(q => q.id !== itemId))
       
-      // Passa alla fattura pronta successiva
       const rinvioPronta = queue.find(q => q.id !== itemId && q.status === 'ready')
       if (rinvioPronta) {
         setActiveQueueId(rinvioPronta.id)
@@ -412,7 +575,7 @@ export default function SpeseGlobalPage() {
         setActiveQueueId(null)
       }
       
-      alert('Spesa salvata ed associata correttamente!')
+      alert('Spesa e fattura registrate correttamente!')
     } catch (err) {
       console.error('Errore durante il salvataggio:', err)
       alert('Errore durante il salvataggio: ' + err.message)
@@ -421,41 +584,38 @@ export default function SpeseGlobalPage() {
     }
   }
 
-  // Seleziona elemento attivo nella coda
-  const activeItem = queue.find(q => q.id === activeQueueId)
-
   return (
-    <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto', fontFamily: 'Sora, sans-serif' }}>
+    <div style={{ padding: 24, maxWidth: 1600, margin: '0 auto', fontFamily: 'Sora, sans-serif' }}>
       
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: '0 0 6px', color: 'var(--text-primary)', fontSize: 24, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Receipt size={28} style={{ color: 'var(--accent)' }} /> Inserimento Rapido Spese (AI)
+          <Receipt size={28} style={{ color: '#7c3aed' }} /> Postbox & Inserimento Rapido Spese (AI)
         </h1>
         <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>
-          Trascina qui le fatture. L'intelligenza artificiale le analizzerà una alla volta e tenterà di abbinarle al condominio corretto.
+          Tutte le fatture ricevute via email o caricate manualmente appaiono qui. L'intelligenza artificiale estrae i dati contabili ed abbina il condominio.
         </p>
       </div>
 
       {/* Main Container */}
-      <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: 24, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isLargeScreen ? '350px 1fr' : '1fr', gap: 24, alignItems: 'start' }}>
         
-        {/* LATO SINISTRO: Coda e Dropzone */}
+        {/* LATO SINISTRO: Coda ed Inbound */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           
-          {/* Dropzone */}
+          {/* Dropzone manuale */}
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => !processing && fileInputRef.current?.click()}
             style={{
-              border: `2px dashed ${dragOver ? 'var(--accent)' : 'var(--border-color)'}`,
+              border: `2px dashed ${dragOver ? '#7c3aed' : 'var(--border-color)'}`,
               borderRadius: 12,
               padding: '24px 16px',
               textAlign: 'center',
-              cursor: 'pointer',
-              background: dragOver ? 'rgba(37,99,235,0.08)' : 'var(--card-bg)',
+              cursor: processing ? 'not-allowed' : 'pointer',
+              background: dragOver ? 'rgba(124,58,237,0.05)' : 'var(--card-bg)',
               color: 'var(--text-secondary)',
               transition: 'all 0.2s',
             }}
@@ -468,27 +628,40 @@ export default function SpeseGlobalPage() {
               style={{ display: 'none' }}
               onChange={handleFileInput}
             />
-            <UploadCloud size={32} style={{ margin: '0 auto 10px', color: 'var(--text-muted)' }} />
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
-              Rilascia fatture qui
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              Supporta fino a 10 PDF o immagini contemporaneamente
-            </div>
+            {processing ? (
+              <div>
+                <Loader2 size={32} style={{ margin: '0 auto 10px', color: '#7c3aed', animation: 'spin 1s linear infinite' }} />
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Elaborazione file...</div>
+              </div>
+            ) : (
+              <>
+                <UploadCloud size={32} style={{ margin: '0 auto 10px', color: 'var(--text-muted)' }} />
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+                  Trascina qui le fatture
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  Carica manualmente o inoltra alla tua email CondoSmart
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Lista in Coda */}
+          {/* Coda Postbox */}
           <div style={{ background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)', padding: 16 }}>
             <h3 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Coda Elaborazione</span>
+              <span>Documenti in Postbox</span>
               <span style={{ fontSize: 11, background: 'var(--app-bg)', padding: '2px 8px', borderRadius: 10, color: 'var(--text-muted)' }}>
-                {queue.length} / 10
+                {queue.length} pendenti
               </span>
             </h3>
 
-            {queue.length === 0 ? (
+            {loadingQueue ? (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-                Nessuna fattura caricata in coda
+                Caricamento Postbox...
+              </div>
+            ) : queue.length === 0 ? (
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+                Cassetta postale vuota! Ottimo lavoro.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '60vh', overflowY: 'auto', paddingRight: 4 }}>
@@ -503,14 +676,14 @@ export default function SpeseGlobalPage() {
                       style={{
                         padding: 12,
                         borderRadius: 8,
-                        background: isActive ? 'rgba(37,99,235,0.06)' : 'var(--app-bg)',
-                        border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border-color)'}`,
+                        background: isActive ? 'rgba(124,58,237,0.04)' : 'var(--app-bg)',
+                        border: `1px solid ${isActive ? '#7c3aed' : 'var(--border-color)'}`,
                         cursor: item.status === 'analyzing' ? 'not-allowed' : 'pointer',
                         transition: 'all 0.15s',
                         position: 'relative'
                       }}
                     >
-                      {/* Elimina file */}
+                      {/* Tasto scarta */}
                       <button
                         onClick={(e) => rimuoviDallaCoda(item.id, e)}
                         style={{
@@ -518,50 +691,52 @@ export default function SpeseGlobalPage() {
                           border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
                           padding: 2, borderRadius: '50%'
                         }}
-                        title="Rimuovi"
+                        title="Scarta"
                       >
                         <X size={14} />
                       </button>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, paddingRight: 20 }}>
-                        <FileText size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                        <FileText size={16} style={{ color: '#7c3aed', flexShrink: 0 }} />
                         <span style={{
                           color: 'var(--text-primary)', fontSize: 12, fontWeight: 600,
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                        }} title={item.file.name}>
-                          {item.file.name}
+                        }} title={item.file_name}>
+                          {item.file_name}
                         </span>
                       </div>
 
+                      {/* Info Mittente Email */}
+                      {item.email_mittente && (
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          Da: {item.email_mittente}
+                        </div>
+                      )}
+
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                          {formatSize(item.file.size)}
+                        <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
+                          {item.data_ricezione ? new Date(item.data_ricezione).toLocaleDateString('it-IT') : 'Adesso'}
                         </span>
                         
                         {/* Stati */}
                         {item.status === 'idle' && (
                           <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Clock size={11} /> In coda
+                            <Clock size={11} /> Da analizzare
                           </span>
                         )}
                         {item.status === 'analyzing' && (
                           <span style={{ fontSize: 10, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Loader2 size={11} className="spin" style={{ animation: 'spin 1s linear infinite' }} /> Analisi AI...
+                            <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> Analisi AI...
                           </span>
                         )}
                         {item.status === 'ready' && (
-                          <span style={{ fontSize: 10, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <ArrowRight size={11} /> Da confermare
+                          <span style={{ fontSize: 10, color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle2 size={11} /> Pronto
                           </span>
                         )}
                         {item.status === 'updating_data' && (
                           <span style={{ fontSize: 10, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Loader2 size={11} className="spin" style={{ animation: 'spin 1s linear infinite' }} /> Aggiornamento...
-                          </span>
-                        )}
-                        {item.status === 'saved' && (
-                          <span style={{ fontSize: 10, color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle2 size={11} /> Salvato
+                            <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> Caricamento...
                           </span>
                         )}
                         {item.status === 'error' && (
@@ -571,15 +746,15 @@ export default function SpeseGlobalPage() {
                         )}
                       </div>
 
-                      {/* Condominio Matchato */}
-                      {item.status === 'ready' && (
+                      {/* Condominio Abbinato */}
+                      {matchedCondo && (
                         <div style={{
-                          marginTop: 6, fontSize: 10, background: matchedCondo ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-                          color: matchedCondo ? '#10b981' : '#ef4444', borderRadius: 4, padding: '2px 6px',
+                          marginTop: 6, fontSize: 10, background: 'rgba(16,185,129,0.06)',
+                          color: '#10b981', borderRadius: 4, padding: '2px 6px',
                           display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
                         }}>
                           <Building2 size={10} />
-                          <span>{matchedCondo ? `Abbinato: ${matchedCondo.nome}` : 'Condominio non rilevato'}</span>
+                          <span>Abbinato: {matchedCondo.nome}</span>
                         </div>
                       )}
                     </div>
@@ -590,154 +765,169 @@ export default function SpeseGlobalPage() {
           </div>
         </div>
 
-        {/* LATO DESTRO: Dettaglio e Validazione SpesaForm */}
-        <div style={{ background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border-color)', padding: 24, minHeight: '500px' }}>
+        {/* LATO DESTRO: Anteprima Split Screen (PDF + SpeseForm) */}
+        <div style={{ background: 'var(--card-bg)', borderRadius: 14, border: '1px solid var(--border-color)', padding: 24, minHeight: '600px' }}>
           
-          {loadingCondomini ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'var(--text-muted)' }}>
-              <Loader2 size={36} className="spin" style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
-              <span>Inizializzazione caricamento...</span>
-            </div>
-          ) : !activeItem ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'var(--text-muted)' }}>
+          {!activeItem ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '500px', color: 'var(--text-muted)' }}>
               <Receipt size={48} style={{ color: 'var(--border-color)', marginBottom: 16 }} />
-              <h3 style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: 16, fontWeight: 600 }}>Nessuna fattura selezionata</h3>
-              <p style={{ margin: 0, fontSize: 13 }}>Seleziona una fattura "Da confermare" dalla coda di sinistra per completare l'inserimento.</p>
+              <h3 style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: 16, fontWeight: 600 }}>Nessun documento selezionato</h3>
+              <p style={{ margin: 0, fontSize: 13 }}>Seleziona una fattura in Postbox dalla lista a sinistra per procedere con la ripartizione.</p>
             </div>
           ) : activeItem.status === 'analyzing' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'var(--text-muted)' }}>
-              <Loader2 size={36} className="spin" style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)', marginBottom: 12 }} />
-              <h3 style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: 16, fontWeight: 600 }}>Analisi AI in corso...</h3>
-              <p style={{ margin: 0, fontSize: 13 }}>Gemini sta leggendo il PDF/Immagine della fattura di "{activeItem.file.name}".</p>
-            </div>
-          ) : activeItem.status === 'error' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'var(--text-muted)' }}>
-              <AlertTriangle size={48} style={{ color: '#ef4444', marginBottom: 16 }} />
-              <h3 style={{ margin: '0 0 6px', color: '#ef4444', fontSize: 16, fontWeight: 600 }}>Elaborazione Fallita</h3>
-              <p style={{ margin: '0 0 16px', fontSize: 13 }}>Si è verificato un errore durante l'estrazione: {activeItem.errorMsg}</p>
-              <button
-                onClick={() => setQueue(prev => prev.map(q => q.id === activeItem.id ? { ...q, status: 'idle' } : q))}
-                style={{
-                  background: 'var(--app-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)',
-                  borderRadius: 8, padding: '8px 16px', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
-                }}
-              >
-                <RefreshCw size={14} /> Riprova analisi
-              </button>
-            </div>
-          ) : activeItem.status === 'updating_data' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'var(--text-muted)' }}>
-              <Loader2 size={36} className="spin" style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)', marginBottom: 12 }} />
-              <h3 style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: 16, fontWeight: 600 }}>Aggiornamento dati condominio...</h3>
-              <p style={{ margin: 0, fontSize: 13 }}>Caricamento delle tabelle millesimali e degli esercizi contabili.</p>
-            </div>
-          ) : activeItem.status === 'saved' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: '#10b981' }}>
-              <CheckCircle2 size={48} style={{ marginBottom: 16 }} />
-              <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 600 }}>Spesa Salvata con Successo!</h3>
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>I dati di questa fattura sono stati registrati nella contabilità del condominio.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '500px', color: 'var(--text-muted)' }}>
+              <Loader2 size={36} style={{ animation: 'spin 1s linear infinite', color: '#7c3aed', marginBottom: 12 }} />
+              <h3 style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: 16, fontWeight: 600 }}>Lettura documento con AI...</h3>
+              <p style={{ margin: 0, fontSize: 13 }}>Google Gemini sta estraendo i dati contabili ed il condominio di destinazione.</p>
             </div>
           ) : (
-            <div>
-              {/* Selezione e abbinamento Condominio / Esercizio */}
-              <div style={{
-                background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12,
-                padding: 16, marginBottom: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16
-              }}>
-                <div>
-                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
-                    Condominio Destinatario
-                  </label>
-                  <select
-                    value={activeItem.condominioId || ''}
-                    disabled={saving}
-                    onChange={(e) => handleCondominioChange(activeItem.id, e.target.value)}
-                    style={{
-                      width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
-                      border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
-                      fontSize: 13, fontFamily: 'Sora, sans-serif',
-                      opacity: saving ? 0.6 : 1
-                    }}
-                  >
-                    <option value="">-- Seleziona condominio --</option>
-                    {condomini.map(c => (
-                      <option key={c.id} value={c.id}>{c.nome}</option>
-                    ))}
-                  </select>
-                  {!activeItem.condominioId && (
-                    <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <AlertTriangle size={10} /> Seleziona un condominio per procedere
-                    </div>
-                  )}
-                  {activeItem.condominioId && !activeItem.extractedData?.condominio_destinatario_nome && (
-                    <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>
-                      Condominio non rilevato in fattura, abbinamento manuale.
-                    </div>
-                  )}
-                  {activeItem.condominioId && activeItem.extractedData?.condominio_destinatario_nome && (
-                    <div style={{ color: '#10b981', fontSize: 10, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <CheckCircle2 size={10} /> Rilevato in fattura: "{activeItem.extractedData.condominio_destinatario_nome}"
-                    </div>
-                  )}
+            <div style={{ display: 'grid', gridTemplateColumns: isLargeScreen ? '1.1fr 1fr' : '1fr', gap: 24 }}>
+              
+              {/* Sotto-Colonna Sinistra: PDF Preview */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Eye size={15} style={{ color: '#7c3aed' }} /> Anteprima Allegato
                 </div>
-
-                <div>
-                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
-                    Esercizio Contabile
-                  </label>
-                  <select
-                    value={activeItem.esercizioId || ''}
-                    onChange={(e) => handleEsercizioChange(activeItem.id, e.target.value)}
-                    disabled={saving || !activeItem.condominioId || activeItem.esercizi.length === 0}
-                    style={{
-                      width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
-                      border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
-                      fontSize: 13, fontFamily: 'Sora, sans-serif',
-                      opacity: (saving || !activeItem.condominioId || activeItem.esercizi.length === 0) ? 0.6 : 1
-                    }}
-                  >
-                    {!activeItem.condominioId ? (
-                      <option value="">Scegli prima il condominio</option>
-                    ) : activeItem.esercizi.length === 0 ? (
-                      <option value="">Nessun esercizio presente</option>
-                    ) : (
-                      activeItem.esercizi.map(es => (
-                        <option key={es.id} value={es.id}>
-                          {es.anno} {es.tipo === 'straordinario' ? 'straordinaria' : 'ordinaria'} ({es.stato})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  {activeItem.condominioId && activeItem.esercizi.length === 0 && (
-                    <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <AlertTriangle size={10} /> Configura almeno un esercizio in contabilità per questo condominio.
+                <div style={{
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  height: '680px',
+                  background: '#1e293b',
+                  position: 'relative'
+                }}>
+                  {loadingFileUrl ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+                      <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', marginBottom: 8 }} />
+                      <span>Generazione anteprima sicura...</span>
+                    </div>
+                  ) : activeFileUrl ? (
+                    <iframe
+                      src={activeFileUrl}
+                      style={{ width: '100%', height: '100%', border: 'none' }}
+                      title="Anteprima PDF"
+                    />
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+                      Anteprima non disponibile per questo formato file
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Form dettagli spesa */}
-              {activeItem.condominioId && activeItem.esercizioId ? (
-                <SpeseForm
-                  key={`${activeItem.id}_${activeItem.condominioId}_${activeItem.esercizioId}`}
-                  esercizioId={activeItem.esercizioId}
-                  condominioId={activeItem.condominioId}
-                  tabelle={activeItem.tabelle}
-                  unita={activeItem.unita}
-                  documenti={activeItem.documenti}
-                  fromFattura={true}
-                  prefillData={null}
-                  initialFile={activeItem.file}
-                  initialAiDatiEstratti={activeItem.extractedData}
-                  onSave={(payload, ripartizioni, file, ai) => handleSaveSpesaGlobale(activeItem.id, payload, ripartizioni, file, ai)}
-                  onCancel={() => setActiveQueueId(null)}
-                />
-              ) : (
-                <div style={{ border: '2px dashed var(--border-color)', borderRadius: 12, padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <Building2 size={36} style={{ margin: '0 auto 12px', color: 'var(--border-color)' }} />
-                  <p style={{ margin: 0, fontSize: 13 }}>Abbina la fattura a un condominio ed esercizio validi per caricare il modulo di ripartizione.</p>
+              {/* Sotto-Colonna Destra: Modulo di Convalida */}
+              <div>
+                {/* Info Email Context */}
+                {activeItem.email_oggetto && (
+                  <div style={{
+                    background: 'var(--app-bg)', border: '1px solid var(--border-color)',
+                    borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 12
+                  }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Email Oggetto:</span> <strong style={{ color: 'var(--text-primary)' }}>{activeItem.email_oggetto}</strong>
+                  </div>
+                )}
+
+                {/* Selezione e abbinamento Condominio / Esercizio */}
+                <div style={{
+                  background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12,
+                  padding: 16, marginBottom: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16
+                }}>
+                  <div>
+                    <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
+                      Condominio Destinatario
+                    </label>
+                    <select
+                      value={activeItem.condominioId || ''}
+                      disabled={saving}
+                      onChange={(e) => handleCondominioChange(activeItem.id, e.target.value)}
+                      style={{
+                        width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
+                        fontSize: 13, fontFamily: 'Sora, sans-serif',
+                        opacity: saving ? 0.6 : 1
+                      }}
+                    >
+                      <option value="">-- Seleziona condominio --</option>
+                      {condomini.map(c => (
+                        <option key={c.id} value={c.id}>{c.nome}</option>
+                      ))}
+                    </select>
+                    {!activeItem.condominioId && (
+                      <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <AlertTriangle size={10} /> Seleziona un condominio per procedere
+                      </div>
+                    )}
+                    {activeItem.condominioId && !activeItem.extractedData?.condominio_destinatario_nome && (
+                      <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>
+                        Condominio non rilevato in fattura, abbinamento manuale.
+                      </div>
+                    )}
+                    {activeItem.condominioId && activeItem.extractedData?.condominio_destinatario_nome && (
+                      <div style={{ color: '#10b981', fontSize: 10, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle2 size={10} /> Rilevato in fattura: "{activeItem.extractedData.condominio_destinatario_nome}"
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
+                      Esercizio Contabile
+                    </label>
+                    <select
+                      value={activeItem.esercizioId || ''}
+                      onChange={(e) => handleEsercizioChange(activeItem.id, e.target.value)}
+                      disabled={saving || !activeItem.condominioId || activeItem.esercizi.length === 0}
+                      style={{
+                        width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
+                        fontSize: 13, fontFamily: 'Sora, sans-serif',
+                        opacity: (saving || !activeItem.condominioId || activeItem.esercizi.length === 0) ? 0.6 : 1
+                      }}
+                    >
+                      {!activeItem.condominioId ? (
+                        <option value="">Scegli prima il condominio</option>
+                      ) : activeItem.esercizi.length === 0 ? (
+                        <option value="">Nessun esercizio presente</option>
+                      ) : (
+                        activeItem.esercizi.map(es => (
+                          <option key={es.id} value={es.id}>
+                            {es.anno} {es.tipo === 'straordinario' ? 'straordinaria' : 'ordinaria'} ({es.stato})
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    {activeItem.condominioId && activeItem.esercizi.length === 0 && (
+                      <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <AlertTriangle size={10} /> Configura almeno un esercizio in contabilità per questo condominio.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+
+                {/* Form Dettaglio Spese */}
+                {activeItem.condominioId && activeItem.esercizioId ? (
+                  <SpeseForm
+                    key={`${activeItem.id}_${activeItem.condominioId}_${activeItem.esercizioId}`}
+                    esercizioId={activeItem.esercizioId}
+                    condominioId={activeItem.condominioId}
+                    tabelle={activeItem.tabelle}
+                    unita={activeItem.unita}
+                    documenti={activeItem.documenti}
+                    fromFattura={true}
+                    prefillData={null}
+                    initialFile={null} // Il file è già salvato su storage, non serve caricarlo di nuovo da client
+                    initialAiDatiEstratti={activeItem.extractedData}
+                    onSave={(payload, ripartizioni, file, ai) => handleSaveSpesaGlobale(activeItem.id, payload, ripartizioni, file, ai)}
+                    onCancel={() => setActiveQueueId(null)}
+                  />
+                ) : (
+                  <div style={{ border: '2px dashed var(--border-color)', borderRadius: 12, padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <Building2 size={36} style={{ margin: '0 auto 12px', color: 'var(--border-color)' }} />
+                    <p style={{ margin: 0, fontSize: 13 }}>Seleziona condominio ed esercizio per calcolare la griglia di ripartizione.</p>
+                  </div>
+                )}
+              </div>
+
             </div>
           )}
 

@@ -56,6 +56,8 @@ export default function DashboardPage() {
     eserciziInScadenza: [],
     movimentiNonRiconciliatiAlerts: [],
     condoData: {}, // key: condominio_id, value: { insoluti, movimenti, fatture, saldo }
+    inboxCount: 0,
+    inboxItems: []
   })
 
   // Gestione responsive
@@ -119,6 +121,14 @@ export default function DashboardPage() {
           .not('data_fine', 'is', null)
 
         if (errEs) throw errEs
+
+        // 5b. Carica documenti inbox pendenti
+        const { data: inboxData, error: errInbox } = await supabase
+          .from('inbox_documenti')
+          .select('id, file_name, email_mittente, data_ricezione, condominio_id, stato, dati_estratti')
+          .in('stato', ['nuovo', 'rilevato', 'da_smistare'])
+
+        if (errInbox) throw errInbox
 
         // --- ELABORAZIONE DATI ---
         const condoMap = {}
@@ -278,7 +288,9 @@ export default function DashboardPage() {
           f24Scadenze: f24ScadenzeList,
           eserciziInScadenza: eserciziInScadenzaList,
           movimentiNonRiconciliatiAlerts: movimentiNonRiconciliatiAlertsList,
-          condoData: condoMap
+          condoData: condoMap,
+          inboxCount: inboxData ? inboxData.length : 0,
+          inboxItems: inboxData || []
         })
       } catch (err) {
         console.error("Errore caricamento statistiche dashboard:", err)
@@ -316,6 +328,64 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* Postbox Alert Banner */}
+      {stats.inboxCount > 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(139, 92, 246, 0.12) 100%)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 14,
+          padding: '16px 24px',
+          marginBottom: 24,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 4px 15px -3px rgba(124, 58, 237, 0.05)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{
+              background: '#7c3aed',
+              color: '#fff',
+              borderRadius: '50%',
+              width: 44,
+              height: 44,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 10px rgba(124, 58, 237, 0.2)'
+            }}>
+              <Receipt size={22} />
+            </div>
+            <div>
+              <h4 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700 }}>
+                📬 Postbox Studio: {stats.inboxCount} {stats.inboxCount === 1 ? 'documento da verificare' : 'documenti da verificare'}
+              </h4>
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
+                L'AI ha pre-elaborato le fatture ricevute via email. Clicca per convalidarle ed inserirle.
+              </p>
+            </div>
+          </div>
+          <Link to="/spese" style={{
+            background: '#7c3aed',
+            color: '#fff',
+            textDecoration: 'none',
+            borderRadius: 8,
+            padding: '10px 18px',
+            fontSize: 13,
+            fontWeight: 600,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            transition: 'background-color 0.15s',
+            boxShadow: '0 4px 10px rgba(124, 58, 237, 0.15)'
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
+            onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}
+          >
+            Apri Postbox <ArrowRight size={14} />
+          </Link>
+        </div>
+      )}
 
       {/* KPI Principali */}
       <div style={styles.kpiGrid}>

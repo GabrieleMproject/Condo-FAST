@@ -21,9 +21,15 @@ serve(async (req) => {
     const token = url.searchParams.get('token')
     const expectedToken = Deno.env.get('INBOUND_EMAIL_TOKEN')
 
-    // Se il token non è impostato in Deno.env, ne consentiamo l'esecuzione per facilitare i test locali,
-    // altrimenti verifichiamo la corrispondenza esatta
-    if (expectedToken && token !== expectedToken) {
+    if (!expectedToken) {
+      console.error('[Inbound Email] ERRORE CONFIGURAZIONE: Variabile INBOUND_EMAIL_TOKEN mancante')
+      return new Response(JSON.stringify({ error: 'Errore interno di configurazione server' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (token !== expectedToken) {
       return new Response(JSON.stringify({ error: 'Unauthorized: invalid token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -32,7 +38,7 @@ serve(async (req) => {
 
     // 2. Parsing del Webhook Payload di Resend
     const payload = await req.json()
-    console.log('[Inbound Email] Ricevuto webhook payload:', JSON.stringify(payload))
+    console.log('[Inbound Email] Ricevuto webhook email.received, email_id:', payload?.data?.email_id || 'N/A')
 
     if (payload.type !== 'email.received' || !payload.data) {
       return new Response(JSON.stringify({ message: 'Ignorato: non è un evento email.received' }), {
@@ -234,7 +240,7 @@ Restituisci ESCLUSIVAMENTE il JSON valido, senza spiegazioni o markdown.`
         const geminiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
         
         extractedData = JSON.parse(geminiText.trim())
-        console.log(`[Inbound Email] Dati estratti da Gemini:`, JSON.stringify(extractedData))
+        console.log(`[Inbound Email] Dati estratti con successo da Gemini per il file: ${filename}`)
       } catch (geminiErr) {
         console.error(`[Inbound Email] Errore analisi Gemini per ${filename}:`, geminiErr)
       }
@@ -282,7 +288,7 @@ Restituisci ESCLUSIVAMENTE il JSON valido, senza spiegazioni o markdown.`
           file_name: filename,
           email_mittente: from,
           email_oggetto: subject,
-          stato: 'rilevato',
+          stato: extractedData ? 'rilevato' : 'da_smistare',
           dati_estratti: extractedData
         })
 

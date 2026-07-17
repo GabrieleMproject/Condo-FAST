@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { estraiFattura } from '../lib/fileExtractor'
 import SpeseForm from '../components/SpeseForm'
+import { toast } from 'react-hot-toast'
 import {
   UploadCloud,
   FileText,
@@ -85,17 +86,25 @@ export default function SpeseGlobalPage() {
         .order('data_ricezione', { ascending: false })
       
       if (error) throw error
+
+      // Raccogli condominio_id unici
+      const uniqueCondoIds = [...new Set((data || []).map(doc => doc.condominio_id).filter(Boolean))]
       
-      const mapped = await Promise.all((data || []).map(async (doc) => {
-        // Recupera i dettagli del condominio se già abbinato
-        let condoDati = { esercizi: [], unita: [], tabelle: [], documenti: [] }
-        let selectedEsercizioId = null
-        
-        if (doc.condominio_id) {
-          condoDati = await fetchCondominioDati(doc.condominio_id)
-          const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
-          selectedEsercizioId = aperto?.id || null
-        }
+      // Carica i dettagli per ciascuno una sola volta in parallelo (cache)
+      const cacheMap = new Map()
+      await Promise.all(uniqueCondoIds.map(async (cid) => {
+        const d = await fetchCondominioDati(cid)
+        cacheMap.set(cid, d)
+      }))
+      
+      const mapped = (data || []).map((doc) => {
+        // Recupera i dettagli dal cacheMap se già abbinato
+        const condoDati = doc.condominio_id
+          ? cacheMap.get(doc.condominio_id) || { esercizi: [], unita: [], tabelle: [], documenti: [] }
+          : { esercizi: [], unita: [], tabelle: [], documenti: [] }
+
+        const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
+        const selectedEsercizioId = aperto?.id || null
         
         return {
           id: doc.id,
@@ -115,7 +124,7 @@ export default function SpeseGlobalPage() {
           tabelle: condoDati.tabelle,
           documenti: condoDati.documenti
         }
-      }))
+      })
       
       setQueue(mapped)
       
@@ -260,7 +269,7 @@ export default function SpeseGlobalPage() {
     if (files.length === 0) return
 
     if (queue.length >= 10) {
-      alert('La coda è piena. Gestisci o rimuovi le fatture presenti prima di caricarne altre (Max 10).')
+      toast.error('La coda è piena. Gestisci o rimuovi le fatture presenti prima di caricarne altre (Max 10).')
       return
     }
 
@@ -352,7 +361,7 @@ export default function SpeseGlobalPage() {
       }
     } catch (err) {
       console.error('Errore caricamento o estrazione AI:', err)
-      alert('Impossibile elaborare il file: ' + err.message)
+      toast.error('Impossibile elaborare il file: ' + err.message)
     } finally {
       setProcessing(false)
       fetchQueue() // Ricarica la coda dal DB per sicurezza
@@ -575,10 +584,10 @@ export default function SpeseGlobalPage() {
         setActiveQueueId(null)
       }
       
-      alert('Spesa e fattura registrate correttamente!')
+      toast.success('Spesa e fattura registrate correttamente!')
     } catch (err) {
       console.error('Errore durante il salvataggio:', err)
-      alert('Errore durante il salvataggio: ' + err.message)
+      toast.error('Errore durante il salvataggio: ' + err.message)
     } finally {
       setSaving(false)
     }
@@ -802,14 +811,59 @@ export default function SpeseGlobalPage() {
                       <span>Generazione anteprima sicura...</span>
                     </div>
                   ) : activeFileUrl ? (
-                    <iframe
-                      src={activeFileUrl}
-                      style={{ width: '100%', height: '100%', border: 'none' }}
-                      title="Anteprima PDF"
-                    />
+                    (() => {
+                      const filename = activeItem.file_name || activeItem.file?.name || ''
+                      const ext = filename.split('.').pop()?.toLowerCase() || ''
+                      if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 16 }}>
+                            <img
+                              src={activeFileUrl}
+                              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }}
+                              alt="Anteprima"
+                            />
+                          </div>
+                        )
+                      }
+                      if (ext === 'pdf') {
+                        return (
+                          <iframe
+                            src={activeFileUrl}
+                            style={{ width: '100%', height: '100%', border: 'none' }}
+                            title="Anteprima PDF"
+                          />
+                        )
+                      }
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 32, textAlign: 'center', color: 'var(--text-secondary)' }}>
+                          <FileText size={48} style={{ color: 'var(--text-muted)', marginBottom: 16 }} />
+                          <h4 style={{ margin: '0 0 8px', fontWeight: 600 }}>Anteprima non supportata</h4>
+                          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-muted)' }}>
+                            Il browser non supporta la visualizzazione diretta dei file con estensione .{ext}.
+                          </p>
+                          <a
+                            href={activeFileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              background: '#7c3aed',
+                              color: '#fff',
+                              textDecoration: 'none',
+                              borderRadius: 8,
+                              padding: '8px 16px',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              boxShadow: '0 4px 10px rgba(124, 58, 237, 0.15)'
+                            }}
+                          >
+                            Scarica File
+                          </a>
+                        </div>
+                      )
+                    })()
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                      Anteprima non disponibile per questo formato file
+                      Anteprima non disponibile
                     </div>
                   )}
                 </div>

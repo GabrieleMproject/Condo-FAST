@@ -1,5 +1,5 @@
 // src/components/AppLayout.jsx
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlan } from '../hooks/usePlan';
@@ -110,7 +110,6 @@ export default function AppLayout() {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme } = useTheme();
   
   // Conteggio documenti Postbox pendenti
   const [inboxCount, setInboxCount] = useState(0);

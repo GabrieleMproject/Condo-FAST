@@ -109,7 +109,7 @@ serve(async (req) => {
       console.error('[Inbound Email] Errore recupero condomini:', condoErr)
     }
 
-    // 5. Matching del mittente (condòmino) ed associazione automatica Condominio
+    // 5. Matching del mittente ed associazione automatica Condominio (con validazione staff/condomini)
     let emailMittente = ''
     const fromMatch = from.match(/<([^>]+)>/)
     if (fromMatch) {
@@ -117,6 +117,16 @@ serve(async (req) => {
     } else {
       emailMittente = from.trim().toLowerCase()
     }
+
+    // Verifica se il mittente è l'amministratore stesso o un collaboratore registrato
+    const { data: staffMember, error: staffErr } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', emailMittente)
+      .or(`id.eq.${amministratoreId},amministratore_id.eq.${amministratoreId}`)
+      .maybeSingle()
+
+    let isAuthorized = !!staffMember
 
     let matchedPersonaId = null
     let matchedCondoId = null
@@ -144,12 +154,21 @@ serve(async (req) => {
             if (condoId && condominiList.some(c => c.id === condoId)) {
               matchedPersonaId = p.id
               matchedCondoId = condoId
+              isAuthorized = true
               break
             }
           }
           if (matchedPersonaId) break
         }
       }
+    }
+
+    if (!isAuthorized) {
+      console.warn(`[Inbound Email] Ricevuta email da mittente non autorizzato: ${emailMittente}`)
+      return new Response(JSON.stringify({ message: `Ignorato: mittente ${emailMittente} non autorizzato` }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // 6. Download e caricamento allegati su Storage

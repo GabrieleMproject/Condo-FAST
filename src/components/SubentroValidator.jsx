@@ -53,6 +53,7 @@ export default function SubentroValidator({ item, condomini, onComplete, onCance
   const [dovutoVecchio, setDovutoVecchio] = useState(0)
   const [pagatoVecchio, setPagatoVecchio] = useState(0)
   const [conguaglioVecchio, setConguaglioVecchio] = useState(0)
+  const [isEsercizioAperto, setIsEsercizioAperto] = useState(true)
 
   // 1. Rilevamento unità condominio al cambio condominioId
   useEffect(() => {
@@ -131,10 +132,11 @@ export default function SubentroValidator({ item, condomini, onComplete, onCance
         .limit(1)
 
       if (esErr || !esercizi || esercizi.length === 0) {
-        toast.error("Nessun esercizio aperto trovato per questo condominio. Impossibile calcolare il pro-rata.")
+        setIsEsercizioAperto(false)
         setLoading(false)
         return
       }
+      setIsEsercizioAperto(true)
       const esercizioId = esercizi[0].id
 
       // 2. Recupera le rate scadute fino alla data del subentro
@@ -264,10 +266,14 @@ Lo Studio Amministrativo`
         toast.success("Subentro registrato con successo (email non specificata, invio saltato).")
       }
 
-      // 4. Aggiorna lo stato della mail in Postbox a 'elaborato'
+      // 4. Aggiorna lo stato della mail in Postbox a 'elaborato' ed elimina il corpo per GDPR
       await supabase
         .from('inbox_documenti')
-        .update({ stato: 'elaborato', condominio_id: condominioId })
+        .update({ 
+          stato: 'elaborato', 
+          condominio_id: condominioId,
+          email_corpo: 'Rimosso per conformità GDPR (Minimizzazione dei Dati)'
+        })
         .eq('id', item.id)
 
       // Passa alla Fase B
@@ -311,11 +317,27 @@ Lo Studio Amministrativo`
 
       // 2. Se l'importo è diverso da zero ed è accollato all'entrante, adegua la prima rata utile
       if (importoConguaglio !== 0 && destinatarioSaldo === 'entrante') {
-        // Carica la prima rata dell'unità ancora non interamente pagata o futura
+        // Recupera l'esercizio attivo aperto per il condominio
+        const { data: esercizi, error: esErr } = await supabase
+          .from('esercizi')
+          .select('id')
+          .eq('condominio_id', condominioId)
+          .eq('stato', 'aperto')
+          .limit(1)
+
+        if (esErr || !esercizi || esercizi.length === 0) {
+          toast.error("Nessun esercizio aperto trovato per questo condominio. Impossibile conguagliare la rata.")
+          setLoading(false)
+          return
+        }
+        const esercizioId = esercizi[0].id
+
+        // Carica la prima rata dell'unità ancora non interamente pagata o futura per l'esercizio aperto
         const { data: rateAperte, error: rErr } = await supabase
           .from('rate_unita')
-          .select('id, dovuto, rate:rata_id(data_scadenza)')
+          .select('id, dovuto, rate:rata_id(data_scadenza, esercizio_id)')
           .eq('unita_id', selectedUnitaId)
+          .eq('rate.esercizio_id', esercizioId)
 
         if (!rErr && rateAperte && rateAperte.length > 0) {
           // Ordina deterministica mente le rate per data di scadenza
@@ -526,6 +548,17 @@ Lo Studio Amministrativo`
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           
+          {/* Alert Esercizio Chiuso/Assente */}
+          {!isEsercizioAperto && (
+            <div style={{ display: 'flex', gap: 10, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '14px 18px', borderRadius: 12, color: '#f87171', fontSize: 13.5, marginBottom: 12 }}>
+              <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <strong style={{ display: 'block', marginBottom: 4 }}>Nessun Esercizio Contabile Aperto</strong>
+                Non è presente alcun esercizio contabile aperto per questo condominio. È necessario aprire un esercizio per calcolare il pro-rata o addebitare conguagli finanziari sulle rate.
+              </div>
+            </div>
+          )}
+
           {/* Riepilogo Saldo Calcolato (Fase B) */}
           <div style={{ padding: 20, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -625,8 +658,21 @@ Lo Studio Amministrativo`
             <button 
               type="button" 
               onClick={handleCompletaContabilita}
-              disabled={loading}
-              style={{ flex: 2, padding: 12, background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 600 }}
+              disabled={loading || !isEsercizioAperto}
+              style={{ 
+                flex: 2, 
+                padding: 12, 
+                background: !isEsercizioAperto ? 'var(--border-color)' : '#10b981', 
+                color: !isEsercizioAperto ? 'var(--text-muted)' : '#fff', 
+                border: 'none', 
+                borderRadius: 8, 
+                cursor: !isEsercizioAperto ? 'not-allowed' : 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: 8, 
+                fontWeight: 600 
+              }}
             >
               <CheckCircle2 size={16} /> {loading ? 'Elaborazione...' : 'Completa Ripartizione Contabile & Chiudi'}
             </button>

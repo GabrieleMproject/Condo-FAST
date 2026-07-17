@@ -273,7 +273,7 @@ function PostboxPaywall() {
           <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>/ mese + IVA (include 50 condomini)</span>
         </div>
         <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.5, margin: '0 0 24px' }}>
-          Passa al piano <strong>Studio</strong> per sbloccare la Postbox Studio, l'AI illimitata sui documenti, l'invio solleciti con Resend, l'assemblea digitale AI e il portale per ciascun condomino.
+          Passa al piano <strong>Studio</strong> per sbloccare la Postbox Studio, l'AI inclusa (500 scansioni/mese), l'invio solleciti con Resend, l'assemblea digitale AI e il portale per ciascun condomino.
         </p>
         <a href="/impostazioni#piani-abbonamento" style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -532,7 +532,10 @@ export default function PostboxPage() {
     try {
       const { error } = await supabase
         .from('inbox_documenti')
-        .update({ stato: 'elaborato' })
+        .update({ 
+          stato: 'elaborato',
+          email_corpo: 'Rimosso per conformità GDPR (Minimizzazione dei Dati)'
+        })
         .eq('id', docId)
       if (error) throw error
       toast.success('Comunicazione contrassegnata come lavorata.')
@@ -610,10 +613,14 @@ export default function PostboxPage() {
         await supabase.storage.from('inbox-ricezione').remove([activeItem.file_path])
       }
 
-      // Aggiorna lo stato in Postbox
+      // Aggiorna lo stato in Postbox ed elimina il corpo mail per GDPR
       await supabase
         .from('inbox_documenti')
-        .update({ stato: 'inserito', spesa_id: spesa.id })
+        .update({ 
+          stato: 'inserito', 
+          spesa_id: spesa.id,
+          email_corpo: 'Rimosso per conformità GDPR (Minimizzazione dei Dati)'
+        })
         .eq('id', activeItem.id)
 
       toast.success('Spesa inserita e ripartita correttamente!')
@@ -673,7 +680,10 @@ export default function PostboxPage() {
 
       await supabase
         .from('inbox_documenti')
-        .update({ stato: 'elaborato' })
+        .update({ 
+          stato: 'elaborato',
+          email_corpo: 'Rimosso per conformità GDPR (Minimizzazione dei Dati)'
+        })
         .eq('id', activeItem.id)
 
       toast.success(segnalazioneTipo === 'sinistro' 

@@ -982,3 +982,25 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Build:** Esecuzione di `npm run build` con successo (build verde in 494ms).
 - **Verifica Git:** Modifiche committate in locale con messaggio `S47 step1: risoluzione bug DB, UI, contrasto e ridenominazione MigrazionePage`.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S48 (17 Luglio 2026 - Postbox Centralizzata & Ingestione Email AI)
+
+### 1. Decisioni su Postbox ed Ingestione Email AI
+- **Allineamento Schema Collaboratori (S37):** Durante l'applicazione della nuova migrazione `s48_inbox_documenti.sql` per la Postbox, si è riscontrato che le tabelle dei collaboratori (`collaboratori_studio`, `user_sessions`, `collaboratori_condomini`) e le funzioni RLS associate non erano presenti sul database remoto. Tali schemi sono stati inseriti all'interno dello stesso file di migrazione per allineare il database in un unico passaggio sicuro.
+- **Visualizzazione Dinamica Allegati (UX Avanzata):** Sostituito l'iframe statico in `SpeseGlobalPage.jsx` con un visualizzatore dinamico: i PDF mantengono il tag `iframe`, le immagini utilizzano il tag `<img>` con ridimensionamento proporzionale, mentre gli altri formati (.xlsx, .docx) mostrano una card descrittiva e un pulsante per il download del Signed URL temporaneo.
+- **Sanitizzazione GDPR Logs:** Rimosso il log del payload completo di Resend e dei dati estratti da Gemini nella Edge Function `inbound-email`, tracciando unicamente metadati anonimi (`email_id` e `filename`) per garantire la conformità al GDPR e alle linee guida sulla privacy.
+- **Gestione Errori AI (Stati transito):** Modificato lo stato del documento a `'da_smistare'` invece di `'rilevato'` in caso di fallimento o errore durante il parsing AI di Gemini Flash, indicando chiaramente in griglia che i dati richiedono un inserimento manuale.
+
+### 2. Bug Risolti
+- **ReferenceError useEffect in AppLayout.jsx:** Risolto un crash di rendering fatale all'avvio importando l'hook `useEffect` da `'react'` che era stato omesso durante il setup della sottoscrizione realtime dei messaggi Postbox.
+- **N+1 Query in SpeseGlobalPage.jsx:** Ottimizzato il caricamento contabile della coda Postbox. Invece di lanciare chiamate multiple ridondanti su Supabase per ciascuna riga, il sistema raccoglie a monte tutti i `condominio_id` unici e ne carica i dettagli una sola volta in parallelo, salvandoli in una cache temporanea.
+- **Obbligatorietà Token Sicurezza:** Enforzata la validazione del parametro `INBOUND_EMAIL_TOKEN` nella Edge Function, bloccando l'elaborazione delle richieste esterne se il token non coincide o non è configurato.
+- **Risoluzione alert nativi:** Sostituiti tutti i messaggi `alert()` sincroni del browser all'interno di `SpeseGlobalPage.jsx` con le notifiche asincrone `toast` (successo/errore) di `react-hot-toast` allineate al resto dell'app.
+
+### 3. Fatti Verificati sul Database
+- **Bucket storage inbox-ricezione:** Il bucket privato è protetto da politiche RLS su `storage.objects` che consentono SELECT, INSERT e DELETE unicamente all'amministratore (verificando che il prefisso del percorso corrisponda al suo UID) o ai suoi collaboratori attivi.
+- **Verifica Build:** Eseguito `npm run build` con successo (build verde in 472ms).
+- **Push e Deploy:** Eseguito con successo `supabase db push` per aggiornare lo schema e `supabase functions deploy inbound-email` per pubblicare l'endpoint di ricezione.
+
+

@@ -1064,6 +1064,11 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Compressione delle Immagini Client-Side & Limite Upload 10MB (`fileExtractor.js`, `SpeseForm.jsx`, `useDocumenti.js`, `FattureFornitoriPage.jsx` & Edge Function)**:
   - *Compressione client-side*: Creata ed esportata la funzione `comprimiImmagine` in `fileExtractor.js` che ridimensiona le immagini (max 1600px) e applica la compressione JPEG all'80% di qualità prima dell'upload su Supabase Storage, risparmiando oltre il 90% del peso senza alterare la leggibilità per l'AI o l'amministratore. Integrata in `SpeseForm.jsx`, `useDocumenti.js` (Documenti e Verbali) e `FattureFornitoriPage.jsx`.
   - *Tetto massimo 10MB*: Aggiunta la validazione sulla dimensione del file a 10MB sia lato frontend (con blocco e banner di errore/avviso) che all'interno della Edge Function `inbound-email` (scartando l'elaborazione di allegati pesanti che causerebbero il crash della RAM di Deno), proteggendo la banda ed i costi del database.
+- **Bug Risolti dal Bug Triager (Sessione S50)**:
+  - *Bug A (Edge Function)*: Risolto il crash ed il rifiuto di email inbound per collaboratori dello studio interrogando la tabella `collaboratori_studio` ed effettuando la select di `email` da `profiles` (la colonna `amministratore_id` non esiste nella tabella `profiles`).
+  - *Bug B (Edge Function / Database)*: Creata e applicata la migrazione `20260717141500_s50_inbox_documenti_nullable.sql` per rimuovere il vincolo `NOT NULL` da `file_path` e `file_name` in `inbox_documenti`, prevenendo il crash all'inserimento di email prive di allegati.
+  - *Bug C (React / Subentri)*: Corretto un bug di reattività in `SubentroValidator.jsx` aggiungendo `selectedUnitaId` e `dataSubentro` alle dipendenze dell'effetto `useEffect` che calcola i saldi della Fase B, garantendo il calcolo automatico anche in caso di caricamento dati asincrono ed il corretto funzionamento dell'alert di esercizio chiuso.
+
 
 
 

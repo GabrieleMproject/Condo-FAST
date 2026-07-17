@@ -46,6 +46,12 @@ export default function SpeseGlobalPage() {
   const [activeFileUrl, setActiveFileUrl] = useState(null)
   const [loadingFileUrl, setLoadingFileUrl] = useState(false)
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024)
+  const [showZoomModal, setShowZoomModal] = useState(false)
+
+  // Resetta lo zoom al cambio di elemento
+  useEffect(() => {
+    setShowZoomModal(false)
+  }, [activeQueueId])
   
   const fileInputRef = useRef()
 
@@ -790,198 +796,309 @@ export default function SpeseGlobalPage() {
               <p style={{ margin: 0, fontSize: 13 }}>Google Gemini sta estraendo i dati contabili ed il condominio di destinazione.</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: isLargeScreen ? '420px 1fr' : '1fr', gap: 24 }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               
-              {/* Sotto-Colonna Sinistra: PDF Preview */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Eye size={15} style={{ color: '#7c3aed' }} /> Anteprima Allegato
-                </div>
-                <div style={{
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  height: '680px',
-                  background: '#1e293b',
-                  position: 'relative'
-                }}>
-                  {loadingFileUrl ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                      <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', marginBottom: 8 }} />
-                      <span>Generazione anteprima sicura...</span>
-                    </div>
-                  ) : activeFileUrl ? (
-                    (() => {
+              {/* Compact Preview Card */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'var(--app-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 12,
+                padding: '12px 18px',
+                marginBottom: 20
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, overflow: 'hidden' }}>
+                  <div style={{
+                    width: 52,
+                    height: 52,
+                    background: '#1e293b',
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    border: '1px solid var(--border-color)',
+                    flexShrink: 0
+                  }}>
+                    {(() => {
                       const filename = activeItem.file_name || activeItem.file?.name || ''
                       const ext = filename.split('.').pop()?.toLowerCase() || ''
-                      if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
-                        return (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 16 }}>
-                            <img
-                              src={activeFileUrl}
-                              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }}
-                              alt="Anteprima"
-                            />
-                          </div>
-                        )
+                      if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) && activeFileUrl) {
+                        return <img src={activeFileUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       }
-                      if (ext === 'pdf') {
-                        return (
-                          <iframe
-                            src={activeFileUrl}
-                            style={{ width: '100%', height: '100%', border: 'none' }}
-                            title="Anteprima PDF"
-                          />
-                        )
-                      }
-                      return (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 32, textAlign: 'center', color: 'var(--text-secondary)' }}>
-                          <FileText size={48} style={{ color: 'var(--text-muted)', marginBottom: 16 }} />
-                          <h4 style={{ margin: '0 0 8px', fontWeight: 600 }}>Anteprima non supportata</h4>
-                          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-muted)' }}>
-                            Il browser non supporta la visualizzazione diretta dei file con estensione .{ext}.
-                          </p>
-                          <a
-                            href={activeFileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              background: '#7c3aed',
-                              color: '#fff',
-                              textDecoration: 'none',
-                              borderRadius: 8,
-                              padding: '8px 16px',
-                              fontSize: 13,
-                              fontWeight: 600,
-                              boxShadow: '0 4px 10px rgba(124, 58, 237, 0.15)'
-                            }}
-                          >
-                            Scarica File
-                          </a>
-                        </div>
-                      )
-                    })()
+                      return <FileText size={22} style={{ color: '#7c3aed' }} />
+                    })()}
+                  </div>
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={activeItem.file_name}>
+                      {activeItem.file_name}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                      {activeItem.email_mittente ? `Inviato da: ${activeItem.email_mittente}` : 'Caricato manualmente'}
+                    </div>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setShowZoomModal(true)}
+                  disabled={loadingFileUrl || !activeFileUrl}
+                  style={{
+                    background: 'rgba(124, 58, 237, 0.08)',
+                    border: '1px solid rgba(124, 58, 237, 0.2)',
+                    borderRadius: 8,
+                    padding: '8px 16px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#7c3aed',
+                    cursor: (loadingFileUrl || !activeFileUrl) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.15s',
+                    opacity: (loadingFileUrl || !activeFileUrl) ? 0.6 : 1
+                  }}
+                >
+                  {loadingFileUrl ? (
+                    <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                      Anteprima non disponibile
+                    <Eye size={14} />
+                  )}
+                  Visualizza Documento
+                </button>
+              </div>
+
+              {/* Info Email Context */}
+              {activeItem.email_oggetto && (
+                <div style={{
+                  background: 'var(--app-bg)', border: '1px solid var(--border-color)',
+                  borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 12
+                }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Email Oggetto:</span> <strong style={{ color: 'var(--text-primary)' }}>{activeItem.email_oggetto}</strong>
+                </div>
+              )}
+
+              {/* Selezione e abbinamento Condominio / Esercizio */}
+              <div style={{
+                background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12,
+                padding: 16, marginBottom: 20, display: 'grid', gridTemplateColumns: isLargeScreen ? '1fr 1fr' : '1fr', gap: 16
+              }}>
+                <div>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
+                    Condominio Destinatario
+                  </label>
+                  <select
+                    value={activeItem.condominioId || ''}
+                    disabled={saving}
+                    onChange={(e) => handleCondominioChange(activeItem.id, e.target.value)}
+                    style={{
+                      width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
+                      fontSize: 13, fontFamily: 'Sora, sans-serif',
+                      opacity: saving ? 0.6 : 1
+                    }}
+                  >
+                    <option value="">-- Seleziona condominio --</option>
+                    {condomini.map(c => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                  {!activeItem.condominioId && (
+                    <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <AlertTriangle size={10} /> Seleziona un condominio per procedere
+                    </div>
+                  )}
+                  {activeItem.condominioId && !activeItem.extractedData?.condominio_destinatario_nome && (
+                    <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>
+                      Condominio non rilevato in fattura, abbinamento manuale.
+                    </div>
+                  )}
+                  {activeItem.condominioId && activeItem.extractedData?.condominio_destinatario_nome && (
+                    <div style={{ color: '#10b981', fontSize: 10, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <CheckCircle2 size={10} /> Rilevato in fattura: "{activeItem.extractedData.condominio_destinatario_nome}"
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
+                    Esercizio Contabile
+                  </label>
+                  <select
+                    value={activeItem.esercizioId || ''}
+                    onChange={(e) => handleEsercizioChange(activeItem.id, e.target.value)}
+                    disabled={saving || !activeItem.condominioId || activeItem.esercizi.length === 0}
+                    style={{
+                      width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
+                      fontSize: 13, fontFamily: 'Sora, sans-serif',
+                      opacity: (saving || !activeItem.condominioId || activeItem.esercizi.length === 0) ? 0.6 : 1
+                    }}
+                  >
+                    {!activeItem.condominioId ? (
+                      <option value="">Scegli prima il condominio</option>
+                    ) : activeItem.esercizi.length === 0 ? (
+                      <option value="">Nessun esercizio presente</option>
+                    ) : (
+                      activeItem.esercizi.map(es => (
+                        <option key={es.id} value={es.id}>
+                          {es.anno} {es.tipo === 'straordinario' ? 'straordinaria' : 'ordinaria'} ({es.stato})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  {activeItem.condominioId && activeItem.esercizi.length === 0 && (
+                    <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <AlertTriangle size={10} /> Configura almeno un esercizio in contabilità per questo condominio.
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Sotto-Colonna Destra: Modulo di Convalida */}
-              <div>
-                {/* Info Email Context */}
-                {activeItem.email_oggetto && (
-                  <div style={{
-                    background: 'var(--app-bg)', border: '1px solid var(--border-color)',
-                    borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 12
-                  }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Email Oggetto:</span> <strong style={{ color: 'var(--text-primary)' }}>{activeItem.email_oggetto}</strong>
-                  </div>
-                )}
+              {/* Form Dettaglio Spese */}
+              {activeItem.condominioId && activeItem.esercizioId ? (
+                <SpeseForm
+                  key={`${activeItem.id}_${activeItem.condominioId}_${activeItem.esercizioId}`}
+                  esercizioId={activeItem.esercizioId}
+                  condominioId={activeItem.condominioId}
+                  tabelle={activeItem.tabelle}
+                  unita={activeItem.unita}
+                  documenti={activeItem.documenti}
+                  fromFattura={true}
+                  prefillData={null}
+                  initialFile={null} // Il file è già salvato su storage, non serve caricarlo di nuovo da client
+                  initialAiDatiEstratti={activeItem.extractedData}
+                  onSave={(payload, ripartizioni, file, ai) => handleSaveSpesaGlobale(activeItem.id, payload, ripartizioni, file, ai)}
+                  onCancel={() => setActiveQueueId(null)}
+                />
+              ) : (
+                <div style={{ border: '2px dashed var(--border-color)', borderRadius: 12, padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <Building2 size={36} style={{ margin: '0 auto 12px', color: 'var(--border-color)' }} />
+                  <p style={{ margin: 0, fontSize: 13 }}>Seleziona condominio ed esercizio per calcolare la griglia di ripartizione.</p>
+                </div>
+              )}
 
-                {/* Selezione e abbinamento Condominio / Esercizio */}
+              {/* Modal Zoom del Documento */}
+              {showZoomModal && (
                 <div style={{
-                  background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12,
-                  padding: 16, marginBottom: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  width: '100vw',
+                  height: '100vh',
+                  background: 'rgba(0, 0, 0, 0.65)',
+                  backdropFilter: 'blur(6px)',
+                  zIndex: 9999,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                  <div>
-                    <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
-                      Condominio Destinatario
-                    </label>
-                    <select
-                      value={activeItem.condominioId || ''}
-                      disabled={saving}
-                      onChange={(e) => handleCondominioChange(activeItem.id, e.target.value)}
-                      style={{
-                        width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
-                        border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
-                        fontSize: 13, fontFamily: 'Sora, sans-serif',
-                        opacity: saving ? 0.6 : 1
-                      }}
-                    >
-                      <option value="">-- Seleziona condominio --</option>
-                      {condomini.map(c => (
-                        <option key={c.id} value={c.id}>{c.nome}</option>
-                      ))}
-                    </select>
-                    {!activeItem.condominioId && (
-                      <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <AlertTriangle size={10} /> Seleziona un condominio per procedere
-                      </div>
-                    )}
-                    {activeItem.condominioId && !activeItem.extractedData?.condominio_destinatario_nome && (
-                      <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>
-                        Condominio non rilevato in fattura, abbinamento manuale.
-                      </div>
-                    )}
-                    {activeItem.condominioId && activeItem.extractedData?.condominio_destinatario_nome && (
-                      <div style={{ color: '#10b981', fontSize: 10, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <CheckCircle2 size={10} /> Rilevato in fattura: "{activeItem.extractedData.condominio_destinatario_nome}"
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
-                      Esercizio Contabile
-                    </label>
-                    <select
-                      value={activeItem.esercizioId || ''}
-                      onChange={(e) => handleEsercizioChange(activeItem.id, e.target.value)}
-                      disabled={saving || !activeItem.condominioId || activeItem.esercizi.length === 0}
-                      style={{
-                        width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
-                        border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
-                        fontSize: 13, fontFamily: 'Sora, sans-serif',
-                        opacity: (saving || !activeItem.condominioId || activeItem.esercizi.length === 0) ? 0.6 : 1
-                      }}
-                    >
-                      {!activeItem.condominioId ? (
-                        <option value="">Scegli prima il condominio</option>
-                      ) : activeItem.esercizi.length === 0 ? (
-                        <option value="">Nessun esercizio presente</option>
+                  <div style={{
+                    background: 'var(--card-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 16,
+                    width: '90%',
+                    maxWidth: '1100px',
+                    height: '88vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                  }}>
+                    {/* Header Modale */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '16px 24px',
+                      borderBottom: '1px solid var(--border-color)',
+                      background: 'var(--app-bg)'
+                    }}>
+                      <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <FileText size={18} style={{ color: '#7c3aed' }} /> {activeItem.file_name}
+                      </h4>
+                      <button
+                        onClick={() => setShowZoomModal(false)}
+                        style={{
+                          background: 'var(--border-color)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: 32,
+                          height: 32,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--text-primary)',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s'
+                        }}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    
+                    {/* Contenuto Modale (Preview) */}
+                    <div style={{ flex: 1, background: '#0f172a', position: 'relative' }}>
+                      {activeFileUrl ? (
+                        (() => {
+                          const filename = activeItem.file_name || activeItem.file?.name || ''
+                          const ext = filename.split('.').pop()?.toLowerCase() || ''
+                          if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+                            return (
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24 }}>
+                                <img
+                                  src={activeFileUrl}
+                                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }}
+                                  alt="Documento Zoom"
+                                />
+                              </div>
+                            )
+                          }
+                          if (ext === 'pdf') {
+                            return (
+                              <iframe
+                                src={activeFileUrl}
+                                style={{ width: '100%', height: '100%', border: 'none' }}
+                                title="Documento PDF Zoom"
+                              />
+                            )
+                          }
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 32, textAlign: 'center', color: '#cbd5e1' }}>
+                              <FileText size={48} style={{ color: '#64748b', marginBottom: 16 }} />
+                              <h4 style={{ margin: '0 0 8px', fontWeight: 600 }}>Visualizzazione diretta non supportata</h4>
+                              <p style={{ margin: '0 0 16px', fontSize: 13, color: '#94a3b8' }}>
+                                Il file non può essere visualizzato direttamente.
+                              </p>
+                              <a
+                                href={activeFileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  background: '#7c3aed',
+                                  color: '#fff',
+                                  textDecoration: 'none',
+                                  borderRadius: 8,
+                                  padding: '10px 20px',
+                                  fontSize: 13,
+                                  fontWeight: 600
+                                }}
+                              >
+                                Scarica File
+                              </a>
+                            </div>
+                          )
+                        })()
                       ) : (
-                        activeItem.esercizi.map(es => (
-                          <option key={es.id} value={es.id}>
-                            {es.anno} {es.tipo === 'straordinario' ? 'straordinaria' : 'ordinaria'} ({es.stato})
-                          </option>
-                        ))
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
+                          Anteprima non caricata
+                        </div>
                       )}
-                    </select>
-                    {activeItem.condominioId && activeItem.esercizi.length === 0 && (
-                      <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <AlertTriangle size={10} /> Configura almeno un esercizio in contabilità per questo condominio.
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
-
-                {/* Form Dettaglio Spese */}
-                {activeItem.condominioId && activeItem.esercizioId ? (
-                  <SpeseForm
-                    key={`${activeItem.id}_${activeItem.condominioId}_${activeItem.esercizioId}`}
-                    esercizioId={activeItem.esercizioId}
-                    condominioId={activeItem.condominioId}
-                    tabelle={activeItem.tabelle}
-                    unita={activeItem.unita}
-                    documenti={activeItem.documenti}
-                    fromFattura={true}
-                    prefillData={null}
-                    initialFile={null} // Il file è già salvato su storage, non serve caricarlo di nuovo da client
-                    initialAiDatiEstratti={activeItem.extractedData}
-                    onSave={(payload, ripartizioni, file, ai) => handleSaveSpesaGlobale(activeItem.id, payload, ripartizioni, file, ai)}
-                    onCancel={() => setActiveQueueId(null)}
-                  />
-                ) : (
-                  <div style={{ border: '2px dashed var(--border-color)', borderRadius: 12, padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
-                    <Building2 size={36} style={{ margin: '0 auto 12px', color: 'var(--border-color)' }} />
-                    <p style={{ margin: 0, fontSize: 13 }}>Seleziona condominio ed esercizio per calcolare la griglia di ripartizione.</p>
-                  </div>
-                )}
-              </div>
-
+              )}
             </div>
           )}
 

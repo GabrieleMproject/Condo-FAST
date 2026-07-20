@@ -1152,3 +1152,41 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 2. Nomenclatura e Terminologia Professionale
 - **"Soggetto Versante":** Rinominato globalmente il concetto e la UI di "Pagante" in "Versante" (o Soggetto Versante) per allineare l'applicazione alla terminologia formale e professionale degli amministratori di condominio, in particolare all'interno del modulo delle `RiconciliazioniIncassiPage.jsx`.
 - **UX Riconciliazione:** Introdotto un modale per inserire rapidamente un nuovo "Versante" qualora il sistema o l'AI non trovino corrispondenze nell'anagrafica degli occupanti dell'unità selezionata, confermando il pattern "Proporre → Conferma".
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S57 (20 Luglio 2026 - Audit Sicurezza & Hardening)
+
+### 1. Audit di Sicurezza Completo
+- **Metodologia:** Analisi statica esaustiva con 3 agenti paralleli (Edge Functions Auditor, Frontend Security Auditor, Data Flow Security Auditor) su tutto il codebase.
+- **Risultato:** 19 vulnerabilità individuate (3 CRITICAL, 5 HIGH, 5 MEDIUM, 3 LOW, 3 INFO). Tutte le CRITICAL e HIGH fixate e deployate.
+
+### 2. Vulnerabilità CRITICAL Risolte
+- **C1+C2 — Brace extra + CORS fuori handler (7 Edge Functions):** In `stripe-checkout`, `delete-account`, `invia-comunicazione`, `invia-email-marketing`, `gocardless-proxy`, `sync-bank-transactions` e `inbound-email` c'era una `}` extra dopo il blocco OPTIONS che chiudeva prematuramente il handler `serve()`, rendendo dead code tutto il corpo della funzione. Inoltre, in 6 di queste funzioni, `corsHeaders` era inizializzato fuori dal handler con `getCorsHeaders(req)` dove `req` non esisteva. Fix: rimossa brace, spostato CORS dentro handler.
+- **C3 — Privilege Escalation via `stripe_status`:** La colonna `stripe_status` nella tabella `profiles` non era protetta da trigger, permettendo a un utente di auto-attivarsi un piano pagante senza pagare. Fix: creato trigger `trg_check_stripe_fields_update` (`sql/s57_stripe_fields_protection.sql`) che protegge `stripe_status`, `stripe_customer_id`, `stripe_subscription_id` e `stripe_condomini_item_id` — solo `service_role` e SuperAdmin possono modificarli.
+
+### 3. Vulnerabilità HIGH Risolte
+- **H1 — GoCardless senza check piano:** Qualsiasi utente autenticato poteva usare l'Open Banking. Fix: aggiunto controllo server-side in `gocardless-proxy` che verifica piano `professional` o SuperAdmin.
+- **H2 — IDOR condominioId in GoCardless:** L'azione `create_requisition` accettava un `condominioId` qualsiasi senza verificare l'ownership. Fix: aggiunta verifica via RLS (`supabaseClient.from('condomini').select('id').eq('id', payload.condominioId)`).
+- **H3 — File upload senza validazione server-side:** La validazione MIME e dimensione avveniva solo nel browser. Fix: creato script `sql/s57_bucket_security.sql` che configura `allowed_mime_types` e `file_size_limit` (10MB) sui bucket `documenti-condominio`, `fatture` e `inbox-ricezione`.
+- **H4 — Token inbound-email esposto in query string:** Fix: il webhook ora accetta il token sia dall'header `X-Webhook-Token` (più sicuro) che dal query string (retrocompatibilità).
+- **H5 — Prompt injection nel proxy AI:** Fix in `gemini-proxy`: validazione del campo `type` contro allowlist, cap lunghezza prompt a 100K caratteri, cap `maxTokens` a 16384, e canary server-side nel system prompt che istruisce l'AI a non rivelare le istruzioni di sistema.
+
+### 4. Fatti Verificati sulla Sicurezza Esistente (già OK)
+- **XSS:** Tutti gli usi di `dangerouslySetInnerHTML` passano attraverso `sanitizeHtml()` (DOMPurify con `FORBID_TAGS: ['style', 'script']`). ✅
+- **CSRF:** Architettura JWT-based (header Authorization), immune a CSRF. ✅
+- **Stripe Webhook:** Verifica firma con `constructEventAsync()`. ✅
+- **CORS:** Whitelist corretta (`localhost:5173`, `condosmart.it`, `www.condosmart.it`), nessun `*`. ✅
+- **SuperAdmin:** Protetto da trigger `trg_check_superadmin_update`. ✅
+- **Piano:** Protetto da trigger `trg_check_piano_update`. ✅
+- **Auth JWT:** Tutte le Edge Functions usano `auth.getUser()` (validazione crittografica server-side). ✅
+- **Sessione unica:** Sistema `user_sessions` + Realtime blocca uso simultaneo. ✅
+- **Console.log frontend:** Zero log sensibili nel client. ✅
+
+### 5. Script SQL Creati
+- `sql/s57_stripe_fields_protection.sql` — Trigger protezione campi Stripe (eseguito ✅)
+- `sql/s57_bucket_security.sql` — Policy bucket Storage (eseguito ✅)
+
+### 6. Edge Functions Ridispiegate
+- Tutte e 8 ridispiegate con successo: `stripe-checkout`, `delete-account`, `invia-comunicazione`, `invia-email-marketing`, `gocardless-proxy`, `sync-bank-transactions`, `inbound-email`, `gemini-proxy`.
+

@@ -1140,3 +1140,15 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Validazione Logica Automatica (Fail-Fast)**: Tutte le estrazioni richiedono obbligatoriamente l'attributo `is_valido` (booleano). La funzione `pulisciEdEstraiJson` rileva questo flag: in caso l'AI determini l'incongruità del documento caricato rispetto alla finalità richiesta, l'elaborazione viene interrotta nativamente sollevando un'eccezione con il `motivo_errore` spiegato dall'AI, che l'UI traduce in un alert per l'utente, prevenendo l'immissione di dati sporchi.
 - **Snellimento dei Prompt**: Rimossi tutti i blocchi di spiegazione testuale del formato JSON ("Restituisci un JSON con questa struttura..."), abbattendo il costo dei token in input.
 - **Fix Syntax Error e Deploy**: Risolto un bug in `gemini-proxy/index.ts` dovuto a una parentesi anomala e ridispiegata con successo la funzione. Il test e2e locale (`smoke.mjs`) ha confermato la corretta connessione.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S56 (20 Luglio 2026 - Collaudo E2E Consuntivo)
+
+### 1. Collaudo Algoritmo Finanziario (E2E)
+- **Motore Matematico Validato:** Lo script `useConsuntivo.js` (Sezioni A→E) e la quadratura contabile sono stati testati e validati con successo (0,00€ di scarto) contro dati reali iniettati tramite `sql/seed_e2e_consuntivo.sql`. Il motore gestisce perfettamente i millesimi imperfetti, i saldi di partenza, le rate parziali e i mix di categorie di spesa.
+- **Automazione Test UI:** L'agente browser ha certificato la totale aderenza dei totali estratti a schermo con il "file d'oro" delle aspettative. L'MVP del core contabile/consuntivo è pronto per la produzione.
+
+### 2. Nomenclatura e Terminologia Professionale
+- **"Soggetto Versante":** Rinominato globalmente il concetto e la UI di "Pagante" in "Versante" (o Soggetto Versante) per allineare l'applicazione alla terminologia formale e professionale degli amministratori di condominio, in particolare all'interno del modulo delle `RiconciliazioniIncassiPage.jsx`.
+- **UX Riconciliazione:** Introdotto un modale per inserire rapidamente un nuovo "Versante" qualora il sistema o l'AI non trovino corrispondenze nell'anagrafica degli occupanti dell'unità selezionata, confermando il pattern "Proporre → Conferma".

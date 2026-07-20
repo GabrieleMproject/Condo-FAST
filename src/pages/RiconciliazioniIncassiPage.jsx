@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Bot, Check, X, AlertTriangle, Lightbulb, CheckCircle2, XCircle, Calendar, User, RefreshCw } from 'lucide-react';
+import { Bot, Check, X, AlertTriangle, Lightbulb, CheckCircle2, XCircle, Calendar, User, RefreshCw, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callGemini } from '../lib/geminiClient';
+import toast from 'react-hot-toast';
 
 // ─── Helper deterministici (nessuna AI) ────────────────────────────────────
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -26,6 +27,21 @@ function estraiOccupanti(cella) {
 
 const STATI_APERTI = ['non_pagata', 'parziale'];
 
+function rilevaSconosciuto(mov, cella) {
+  const pagante = mov?.pagante_rilevato;
+  if (!pagante) return null;
+  const occupanti = estraiOccupanti(cella);
+  const nomiCella = occupanti.filter(o => o.attivo && o.persona).map(o => `${o.persona.nome} ${o.persona.cognome}`.toLowerCase());
+  
+  const clean = str => str.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const isPresent = nomiCella.some(nome => clean(nome).includes(clean(pagante)) || clean(pagante).includes(clean(nome)));
+  
+  if (!isPresent && pagante.trim().length > 3) {
+    return pagante.trim();
+  }
+  return null;
+}
+
 export default function RiconciliazioniIncassiPage() {
   const { condominioId } = useParams();
 
@@ -37,6 +53,7 @@ export default function RiconciliazioniIncassiPage() {
   const [progressoAI, setProgressoAI] = useState('');
   const [filtroStato, setFiltroStato] = useState('suggerita');
   const [showOrfaniModal, setShowOrfaniModal] = useState(false);
+  const [nuovoPagantePrompt, setNuovoPagantePrompt] = useState(null);
 
   useEffect(() => {
     if (condominioId) loadAll();
@@ -62,7 +79,7 @@ export default function RiconciliazioniIncassiPage() {
           id, importo, importo_pagato, stato,
           rata:rate(numero_rata, data_scadenza, descrizione, esercizio_id),
           unita:unita(
-            numero, tipo, scala, piano,
+            id, numero, tipo, scala, piano,
             occupanti:occupanti_unita(ruolo, attivo, persona:persone(nome, cognome))
           )
         `)
@@ -78,7 +95,7 @@ export default function RiconciliazioniIncassiPage() {
             id, importo, importo_pagato, stato,
             rata:rate(numero_rata, data_scadenza),
             unita:unita(
-              numero, tipo, scala, piano,
+              id, numero, tipo, scala, piano,
               occupanti:occupanti_unita(ruolo, attivo, persona:persone(nome, cognome))
             )
           )
@@ -249,8 +266,15 @@ Abbina i bonifici alle celle.`;
       if (errMov) throw errMov;
 
       await loadAll();
+      
+      const sconosciuto = rilevaSconosciuto(mov, cella);
+      if (sconosciuto && cella.unita?.id) {
+        setNuovoPagantePrompt({ cella, movimento: mov, nomeEsteso: sconosciuto });
+      } else {
+        toast.success("Abbinamento confermato");
+      }
     } catch (err) {
-      alert('Errore conferma abbinamento incasso: ' + err.message);
+      toast.error('Errore conferma abbinamento incasso: ' + err.message);
     }
   }
 
@@ -261,8 +285,9 @@ Abbina i bonifici alle celle.`;
         .eq('id', ab.id);
       if (error) throw error;
       await loadAll();
+      toast.success("Abbinamento rifiutato");
     } catch (err) {
-      alert('Errore rifiuto abbinamento: ' + err.message);
+      toast.error('Errore rifiuto abbinamento: ' + err.message);
     }
   }
 
@@ -311,8 +336,15 @@ Abbina i bonifici alle celle.`;
       if (errMov) throw errMov;
 
       await loadAll();
+
+      const sconosciuto = rilevaSconosciuto(mov, cella);
+      if (sconosciuto && cella.unita?.id) {
+        setNuovoPagantePrompt({ cella, movimento: mov, nomeEsteso: sconosciuto });
+      } else {
+        toast.success("Bonifico abbinato e saldato");
+      }
     } catch (err) {
-      alert('Errore abbinamento manuale: ' + err.message);
+      toast.error('Errore abbinamento manuale: ' + err.message);
     }
   }
 
@@ -426,6 +458,19 @@ Abbina i bonifici alle celle.`;
             />
           ))}
         </div>
+      )}
+
+      {/* Modal Nuovo Pagante Sconosciuto */}
+      {nuovoPagantePrompt && (
+        <NuovoPaganteModal
+          prompt={nuovoPagantePrompt}
+          condominioId={condominioId}
+          onClose={() => setNuovoPagantePrompt(null)}
+          onSuccess={() => {
+            setNuovoPagantePrompt(null);
+            loadAll();
+          }}
+        />
       )}
 
       {/* Modal Avviso Entrate Orfane */}
@@ -645,6 +690,101 @@ function EntrataOrfanaCard({ mov, celleAperte, onAbbina }) {
         >
           🔗 Abbina e Salda
         </button>
+      </div>
+    </div>
+  );
+}
+
+function NuovoPaganteModal({ prompt, condominioId, onClose, onSuccess }) {
+  const [nome, setNome] = useState('');
+  const [cognome, setCognome] = useState('');
+  const [ruolo, setRuolo] = useState('pagante');
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    if (prompt?.nomeEsteso) {
+      const parts = prompt.nomeEsteso.trim().split(' ');
+      if (parts.length > 1) {
+        setCognome(parts.pop());
+        setNome(parts.join(' '));
+      } else {
+        setCognome(prompt.nomeEsteso);
+      }
+    }
+  }, [prompt]);
+
+  async function handleSalva() {
+    if (!nome.trim() || !cognome.trim()) {
+      toast.error('Nome e cognome sono obbligatori');
+      return;
+    }
+    setSalvando(true);
+    try {
+      // 1. Crea persona
+      const { data: pData, error: pErr } = await supabase.from('persone')
+        .insert([{ condominio_id: condominioId, nome: nome.trim(), cognome: cognome.trim() }])
+        .select().single();
+      if (pErr) throw pErr;
+
+      // 2. Crea occupante
+      const oggi = new Date().toISOString().split('T')[0];
+      const { error: oErr } = await supabase.from('occupanti_unita')
+        .insert([{
+          unita_id: prompt.cella.unita.id,
+          persona_id: pData.id,
+          ruolo: ruolo,
+          attivo: true,
+          data_inizio: oggi
+        }]);
+      if (oErr) throw oErr;
+
+      toast.success('Nuovo pagante aggiunto con successo all\'unità!');
+      onSuccess();
+    } catch (e) {
+      toast.error('Errore durante il salvataggio: ' + e.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}>
+      <div style={{ background: 'var(--card-bg)', borderRadius: 16, border: '1px solid var(--border-color)', width: '100%', maxWidth: 450, display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#60a5fa', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <UserPlus size={18} /> Pagante Sconosciuto
+          </h3>
+          <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={onClose} type="button"><X size={20} /></button>
+        </div>
+        <div style={{ padding: '24px' }}>
+          <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            Il bonifico proviene da <b>{prompt?.nomeEsteso}</b>, che non risulta tra i paganti dell'<b>Unità {prompt?.cella?.unita?.numero}</b>. Vuoi registrarlo nell'anagrafica di questa unità?
+          </p>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: 12, marginBottom: 4, color: 'var(--text-muted)' }}>Nome</label>
+              <input type="text" value={nome} onChange={e => setNome(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--app-bg)', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif" }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: 12, marginBottom: 4, color: 'var(--text-muted)' }}>Cognome</label>
+              <input type="text" value={cognome} onChange={e => setCognome(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--app-bg)', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif" }} />
+            </div>
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', fontSize: 12, marginBottom: 4, color: 'var(--text-muted)' }}>Ruolo</label>
+            <select value={ruolo} onChange={e => setRuolo(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--app-bg)', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif" }}>
+              <option value="pagante">Pagante (Altro)</option>
+              <option value="inquilino">Inquilino</option>
+              <option value="proprietario">Proprietario</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: 8, background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Ignora</button>
+            <button onClick={handleSalva} disabled={salvando} style={{ padding: '8px 16px', borderRadius: 8, background: '#3b82f6', border: 'none', color: '#fff', cursor: salvando ? 'not-allowed' : 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, opacity: salvando ? 0.7 : 1 }}>
+              {salvando ? 'Salvataggio...' : 'Aggiungi Pagante'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

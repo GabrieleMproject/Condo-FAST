@@ -460,9 +460,9 @@ Abbina i bonifici alle celle.`;
         </div>
       )}
 
-      {/* Modal Nuovo Pagante Sconosciuto */}
+      {/* Modal Nuovo Versante Sconosciuto */}
       {nuovoPagantePrompt && (
-        <NuovoPaganteModal
+        <NuovoVersanteModal
           prompt={nuovoPagantePrompt}
           condominioId={condominioId}
           onClose={() => setNuovoPagantePrompt(null)}
@@ -695,10 +695,10 @@ function EntrataOrfanaCard({ mov, celleAperte, onAbbina }) {
   );
 }
 
-function NuovoPaganteModal({ prompt, condominioId, onClose, onSuccess }) {
+function NuovoVersanteModal({ prompt, condominioId, onClose, onSuccess }) {
   const [nome, setNome] = useState('');
   const [cognome, setCognome] = useState('');
-  const [ruolo, setRuolo] = useState('pagante');
+  const [ruolo, setRuolo] = useState('versante');
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
@@ -738,7 +738,7 @@ function NuovoPaganteModal({ prompt, condominioId, onClose, onSuccess }) {
         }]);
       if (oErr) throw oErr;
 
-      toast.success('Nuovo pagante aggiunto con successo all\'unità!');
+      toast.success('Nuovo versante aggiunto con successo all\'unità!');
       onSuccess();
     } catch (e) {
       toast.error('Errore durante il salvataggio: ' + e.message);
@@ -752,13 +752,13 @@ function NuovoPaganteModal({ prompt, condominioId, onClose, onSuccess }) {
       <div style={{ background: 'var(--card-bg)', borderRadius: 16, border: '1px solid var(--border-color)', width: '100%', maxWidth: 450, display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
         <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#60a5fa', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <UserPlus size={18} /> Pagante Sconosciuto
+            <UserPlus size={18} /> Versante Sconosciuto
           </h3>
           <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={onClose} type="button"><X size={20} /></button>
         </div>
         <div style={{ padding: '24px' }}>
           <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            Il bonifico proviene da <b>{prompt?.nomeEsteso}</b>, che non risulta tra i paganti dell'<b>Unità {prompt?.cella?.unita?.numero}</b>. Vuoi registrarlo nell'anagrafica di questa unità?
+            Il bonifico proviene da <b>{prompt?.nomeEsteso}</b>, che non risulta tra i versanti dell'<b>Unità {prompt?.cella?.unita?.numero}</b>. Vuoi registrarlo nell'anagrafica di questa unità?
           </p>
           <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
             <div style={{ flex: 1 }}>
@@ -773,7 +773,7 @@ function NuovoPaganteModal({ prompt, condominioId, onClose, onSuccess }) {
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', fontSize: 12, marginBottom: 4, color: 'var(--text-muted)' }}>Ruolo</label>
             <select value={ruolo} onChange={e => setRuolo(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--app-bg)', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif" }}>
-              <option value="pagante">Pagante (Altro)</option>
+              <option value="versante">Soggetto Versante</option>
               <option value="inquilino">Inquilino</option>
               <option value="proprietario">Proprietario</option>
             </select>
@@ -781,7 +781,7 @@ function NuovoPaganteModal({ prompt, condominioId, onClose, onSuccess }) {
           <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
             <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: 8, background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Ignora</button>
             <button onClick={handleSalva} disabled={salvando} style={{ padding: '8px 16px', borderRadius: 8, background: '#3b82f6', border: 'none', color: '#fff', cursor: salvando ? 'not-allowed' : 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, opacity: salvando ? 0.7 : 1 }}>
-              {salvando ? 'Salvataggio...' : 'Aggiungi Pagante'}
+              {salvando ? 'Salvataggio...' : 'Aggiungi Versante'}
             </button>
           </div>
         </div>

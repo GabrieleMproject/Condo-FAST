@@ -26,7 +26,8 @@ import {
   Landmark,
   ArrowLeftRight,
   Bot,
-  Inbox
+  Inbox,
+  Menu
 } from 'lucide-react';
 
 
@@ -111,6 +112,14 @@ export default function AppLayout() {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Menu Mobile Drawer
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Chiudi menu al cambio pagina
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
   
   // Conteggio documenti Postbox pendenti
   const [inboxCount, setInboxCount] = useState(0);
@@ -257,8 +266,24 @@ export default function AppLayout() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--app-bg)', fontFamily: 'Sora, sans-serif' }}>
+      
+      {/* Sidebar Overlay Mobile */}
+      {isMobileMenuOpen && (
+        <div
+          className="mobile-sidebar-overlay"
+          onClick={() => setIsMobileMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            zIndex: 1000,
+            backdropFilter: 'blur(2px)'
+          }}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside style={{
+      <aside className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`} style={{
         width: collapsed ? 64 : 240,
         background: 'var(--app-bg)',
         borderRight: '1px solid var(--border-color-2)',
@@ -367,8 +392,28 @@ export default function AppLayout() {
         {/* Topbar */}
         <header style={{ height: 64, background: 'var(--app-bg)', borderBottom: '1px solid var(--border-color-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
           {/* ✅ breadcrumb legge la label aggiornata da NAV_ITEMS */}
-          <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-            {NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.label ?? 'CondoSmart'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              className="mobile-menu-btn"
+              onClick={() => setIsMobileMenuOpen(true)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginLeft: -8
+              }}
+              aria-label="Menu Mobile"
+            >
+              <Menu size={22} />
+            </button>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500 }}>
+              {NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.label ?? 'CondoSmart'}
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {/* ── Campanella Notifiche ── */}

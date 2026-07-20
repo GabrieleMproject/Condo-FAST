@@ -49,7 +49,17 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
   }
 
   try {
-    return JSON.parse(clean);
+    const parsed = JSON.parse(clean);
+    
+    // Supporto per il nuovo schema OpenAPI con validazione congruenza
+    if (parsed && typeof parsed === 'object' && 'is_valido' in parsed) {
+      if (parsed.is_valido === false) {
+        throw new Error(parsed.motivo_errore || "Il documento caricato non è congruo alla funzione richiesta.");
+      }
+      return parsed.dati;
+    }
+    
+    return parsed;
   } catch (err) {
     console.error('[pulisciEdEstraiJson] Errore parsing JSON. Stringa estratta:', clean);
     console.error('[pulisciEdEstraiJson] Errore originale:', err);
@@ -205,30 +215,7 @@ export async function estraiMovimentiBancari(file) {
   const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
 
   const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di estratti conto bancari condominiali.
-Estrai i movimenti bancari dal documento fornito e restituisci SOLO un JSON valido, senza testo aggiuntivo.
-
-Formato JSON richiesto:
-{
-  "saldo_iniziale": number | null,
-  "saldo_finale": number | null,
-  "periodo_da": "YYYY-MM-DD" | null,
-  "periodo_a": "YYYY-MM-DD" | null,
-  "banca": "nome banca" | null,
-  "conto": "numero conto / IBAN" | null,
-  "movimenti": [
-    {
-      "data": "YYYY-MM-DD",
-      "causale": "descrizione completa del movimento",
-      "importo": number,
-      "saldo": number | null,
-      "tipo": "entrata" | "uscita" | "giroconto",
-      "fornitore_rilevato": "nome fornitore se identificabile dalla causale (tipico delle USCITE)" | null,
-      "pagante_rilevato": "nome del condòmino/pagante se identificabile dalla causale (tipico delle ENTRATE)" | null,
-      "riferimento_esterno": "numero assegno/bonifico se presente" | null
-    }
-  ],
-  "note": "eventuali osservazioni o anomalie rilevate" | null
-}
+Estrai i movimenti bancari dal documento fornito.
 
 Regole importanti:
 - Gli importi in USCITA (addebiti, pagamenti) devono essere NEGATIVI
@@ -236,22 +223,58 @@ Regole importanti:
 - Le date devono essere in formato ISO YYYY-MM-DD
 - Se la data ha solo giorno e mese, usa l'anno del periodo dell'estratto conto
 - Per le USCITE: identifica il fornitore dalla causale quando possibile → "fornitore_rilevato"
-- Per le ENTRATE (accrediti/bonifici dei condòmini): identifica il nominativo del PAGANTE dalla causale quando possibile → "pagante_rilevato". Esempio: "BONIFICO DA MARIO ROSSI - RATA CONDOMINIO" → pagante_rilevato: "Mario Rossi". Estrai solo nome e cognome della persona, senza la parte descrittiva.
-- "fornitore_rilevato" e "pagante_rilevato" sono mutuamente alternativi: un movimento avrà valorizzato l'uno (uscite) o l'altro (entrate), non entrambi
-- Se non riesci a interpretare un movimento, includilo comunque con i dati disponibili`;
+- Per le ENTRATE (accrediti/bonifici dei condòmini): identifica il nominativo del PAGANTE dalla causale quando possibile → "pagante_rilevato". Estrai solo nome e cognome della persona, senza la parte descrittiva.
+- "fornitore_rilevato" e "pagante_rilevato" sono mutuamente alternativi.
+- Se non riesci a interpretare un movimento, includilo comunque con i dati disponibili.`;
 
-  // PDF e immagini: il contenuto sta nel blocco file → userPrompt "corto".
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      is_valido: { type: "BOOLEAN", description: "True se il file è realmente un estratto conto bancario o lista movimenti. False se è palesemente un altro tipo di documento." },
+      motivo_errore: { type: "STRING", description: "Spiega brevemente perché il file non è valido, se is_valido è false." },
+      dati: {
+        type: "OBJECT",
+        properties: {
+          saldo_iniziale: { type: "NUMBER", nullable: true },
+          saldo_finale: { type: "NUMBER", nullable: true },
+          periodo_da: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
+          periodo_a: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
+          banca: { type: "STRING", nullable: true },
+          conto: { type: "STRING", nullable: true },
+          note: { type: "STRING", nullable: true },
+          movimenti: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                data: { type: "STRING", description: "YYYY-MM-DD" },
+                causale: { type: "STRING" },
+                importo: { type: "NUMBER", description: "NEGATIVI per uscite/addebiti, POSITIVI per entrate/accrediti" },
+                saldo: { type: "NUMBER", nullable: true },
+                tipo: { type: "STRING", description: "entrata, uscita o giroconto" },
+                fornitore_rilevato: { type: "STRING", nullable: true },
+                pagante_rilevato: { type: "STRING", nullable: true },
+                riferimento_esterno: { type: "STRING", nullable: true }
+              },
+              required: ["data", "causale", "importo", "tipo"]
+            }
+          }
+        },
+        required: ["movimenti"]
+      }
+    },
+    required: ["is_valido"]
+  };
+
   const userPrompt = (isVisual || isPdf)
-    ? 'Analizza questo estratto conto bancario ed estrai tutti i movimenti nel formato JSON richiesto.'
-    : `Analizza questo estratto conto bancario ed estrai tutti i movimenti nel formato JSON richiesto.\n\nContenuto del file:\n${contenuto}`;
+    ? 'Analizza questo estratto conto bancario ed estrai tutti i movimenti.'
+    : `Analizza questo estratto conto bancario ed estrai tutti i movimenti.\n\nContenuto del file:\n${contenuto}`;
 
-  // vision → system accorpato al prompt (il client vision non inoltra system)
-  // document/text → system in opts
   const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 4000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 4000, jsonMode: true, jsonSchema })
     : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000, jsonMode: true, jsonSchema })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000, jsonMode: true, jsonSchema });
 
   return pulisciEdEstraiJson(risposta, true);
 }
@@ -265,60 +288,73 @@ export async function estraiFattura(file) {
   const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
 
   const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di fatture di fornitori condominiali.
-Estrai i dati della fattura e restituisci SOLO un JSON valido, senza testo aggiuntivo.
-
-Formato JSON atteso:
-{
-  "fornitore": "Ragione sociale del fornitore (stringa)",
-  "partita_iva_fornitore": "Partita IVA o Codice Fiscale del fornitore (stringa o null)",
-  "numero_fattura": "Numero della fattura/documento (stringa o null)",
-  "data_fattura": "Data della fattura in formato YYYY-MM-DD (stringa)",
-  "data_scadenza": "Data di scadenza in formato YYYY-MM-DD (stringa o null)",
-  "importo_totale": 0.00,
-  "importo_iva": 0.00,
-  "importo_netto": 0.00,
-  "aliquota_iva": 22.00,
-  "descrizione": "Descrizione sintetica dei lavori o servizi (stringa)",
-  "categoria": "Una tra: manutenzione, pulizie, utenze, assicurazione, amministrazione, altro",
-  "note": "Note aggiuntive (stringa o null)",
-  "imponibile_ritenuta": 0.00,
-  "aliquota_ritenuta_percentuale": 4.00,
-  "importo_ritenuta": 0.00,
-  "codice_tributo_f24": "Codice F24, uno tra: 1019, 1020, 1040, oppure null",
-  "condominio_destinatario_nome": "Denominazione/ragione sociale del condominio destinatario della fattura (stringa o null)",
-  "condominio_destinatario_codice_fiscale": "Codice fiscale o partita iva del condominio destinatario della fattura (stringa o null)",
-  "condominio_destinatario_indirizzo": "Indirizzo completo del condominio destinatario della fattura (stringa o null)"
-}
+Estrai i dati della fattura.
 
 Regole Ritenuta d'Acconto:
-- Se la fattura appartiene alla categoria "utenze" (es. acqua, luce, gas, telefonia) o "assicurazione", o se si tratta di semplice acquisto di materiali/beni non soggetti, la ritenuta d'acconto NON si applica. In tal caso, imposta "imponibile_ritenuta" a 0.00, "aliquota_ritenuta_percentuale" a 0.00, "importo_ritenuta" a 0.00 e "codice_tributo_f24" a null.
-- Se il fornitore specifica in fattura di far parte del "Regime Forfettario ai sensi della L. 190/2014" o regime dei minimi o simile, la ritenuta d'acconto NON si applica. In tal caso, imposta "imponibile_ritenuta" a 0.00, "aliquota_ritenuta_percentuale" a 0.00, "importo_ritenuta" a 0.00 e "codice_tributo_f24" a null.
-- Negli altri casi soggetti (es. prestazioni di servizi, contratti d'appalto come pulizie, manutenzione ascensori, giardinaggio, edilizia, o parcelle di liberi professionisti), calcola la ritenuta:
-  - "imponibile_ritenuta" è l'imponibile su cui si calcola la ritenuta (solitamente coincide con l'importo_netto o la quota imponibile esposta).
-  - "aliquota_ritenuta_percentuale" è la percentuale di ritenuta applicata (es. 4.00 per contratti d'appalto/servizi di imprese, 20.00 per liberi professionisti/amministratori).
-  - "importo_ritenuta" è l'importo della ritenuta (imponibile_ritenuta * aliquota_ritenuta_percentuale / 100).
-- Determina "codice_tributo_f24" in base al tipo di prestazione:
-  - "1019" per contratti d'appalto condominio (es: ditte di pulizie, imprese edili, manutenzione ascensori, giardinaggio - ritenuta tipica 4%).
-  - "1020" per contratti d'opera (ritenuta 4%).
-  - "1040" per compensi per prestazioni di lavoro autonomo/professionisti (es: amministratore, geometra, ingegnere, avvocato - ritenuta tipica 20%).
-  - Se non si applica ritenuta, imposta a null.
+- Se la fattura appartiene alla categoria "utenze" (es. acqua, luce, gas, telefonia) o "assicurazione", o acquisto beni, ritenuta NON si applica (imponibile 0, aliquota 0, importo 0, tributo null).
+- Se fornitore è in Regime Forfettario o dei minimi, ritenuta NON si applica (tutto 0/null).
+- Negli altri casi (prestazioni di servizi, appalto, professionisti):
+  - "imponibile_ritenuta": solitamente coincide con l'importo netto.
+  - "aliquota_ritenuta_percentuale": es. 4.00 per ditte/appalti, 20.00 per professionisti.
+  - "importo_ritenuta": (imponibile_ritenuta * aliquota / 100).
+- "codice_tributo_f24":
+  - "1019" per contratti d'appalto condominio (es: ditte di pulizie, imprese edili, ascensori, giardinaggio - 4%).
+  - "1020" per contratti d'opera (4%).
+  - "1040" per compensi per prestazioni di lavoro autonomo/professionisti (20%).
 
 Regole Generali:
 - Se la fattura ha più righe, somma gli importi
-- La categoria deve essere quella più appropriata tra quelle elencate
-- Gli importi devono essere numeri senza simboli €
-- Se un campo non è presente, usa null
-- Tutte le stringhe di testo nel JSON devono essere correttamente formattate. Se il testo del documento contiene virgolette doppie ("), queste devono essere OBBLIGATORIAMENTE escaped come \". Esempio: "lavori di riparazione \"chiavi in mano\"".`;
+- La categoria deve essere appropriata (manutenzione, pulizie, utenze, assicurazione, amministrazione, altro)
+- Gli importi devono essere numeri puri
+- Se un campo non è presente, usa null.`;
+
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      is_valido: { type: "BOOLEAN", description: "True se il file è realmente una fattura, scontrino o ricevuta. False se è palesemente un altro documento." },
+      motivo_errore: { type: "STRING", description: "Spiega brevemente perché il file non è valido, se is_valido è false." },
+      dati: {
+        type: "OBJECT",
+        properties: {
+          fornitore: { type: "STRING", description: "Ragione sociale del fornitore" },
+          partita_iva_fornitore: { type: "STRING", nullable: true },
+          numero_fattura: { type: "STRING", nullable: true },
+          data_fattura: { type: "STRING", description: "YYYY-MM-DD" },
+          data_scadenza: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
+          importo_totale: { type: "NUMBER" },
+          importo_iva: { type: "NUMBER" },
+          importo_netto: { type: "NUMBER" },
+          aliquota_iva: { type: "NUMBER", description: "Percentuale IVA" },
+          descrizione: { type: "STRING", description: "Descrizione sintetica lavori o servizi" },
+          categoria: { type: "STRING", description: "manutenzione, pulizie, utenze, assicurazione, amministrazione, altro" },
+          note: { type: "STRING", nullable: true },
+          imponibile_ritenuta: { type: "NUMBER" },
+          aliquota_ritenuta_percentuale: { type: "NUMBER" },
+          importo_ritenuta: { type: "NUMBER" },
+          codice_tributo_f24: { type: "STRING", nullable: true, description: "1019, 1020 o 1040" },
+          condominio_destinatario_nome: { type: "STRING", nullable: true },
+          condominio_destinatario_codice_fiscale: { type: "STRING", nullable: true },
+          condominio_destinatario_indirizzo: { type: "STRING", nullable: true }
+        },
+        required: [
+          "fornitore", "data_fattura", "importo_totale", "importo_iva", "importo_netto",
+          "aliquota_iva", "descrizione", "categoria", "imponibile_ritenuta",
+          "aliquota_ritenuta_percentuale", "importo_ritenuta"
+        ]
+      }
+    },
+    required: ["is_valido"]
+  };
 
   const userPrompt = (isVisual || isPdf)
-    ? 'Analizza questa fattura ed estrai i dati nel formato JSON richiesto.'
-    : `Analizza questa fattura ed estrai i dati nel formato JSON richiesto.\n\n${contenuto}`;
+    ? 'Analizza questa fattura ed estrai i dati.'
+    : `Analizza questa fattura ed estrai i dati.\n\n${contenuto}`;
 
   const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 2000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 2000, jsonMode: true, jsonSchema })
     : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000, jsonMode: true, jsonSchema })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000, jsonMode: true, jsonSchema });
 
   return pulisciEdEstraiJson(risposta, false);
 }
@@ -329,17 +365,28 @@ export async function determinaCriterioRipartizione({ descrizioneSpesa, categori
   const catSanitized  = String(categoriaSpesa  || '').replace(/<[^>]*>/g, '').substring(0, 100);
 
   const systemPrompt = `Sei un esperto di diritto condominiale italiano. 
-Analizza la spesa descritta e determina il corretto criterio di ripartizione basandoti sul regolamento condominiale fornito e, in mancanza, sul Codice Civile italiano (artt. 1117-1139).
+Analizza la spesa descritta e determina il corretto criterio di ripartizione basandoti sul regolamento condominiale fornito e, in mancanza, sul Codice Civile italiano (artt. 1117-1139).`;
 
-Restituisci SOLO un JSON valido:
-{
-  "criterio": "millesimi_generali" | "millesimi_scala" | "millesimi_riscaldamento" | "millesimi_acqua" | "quote_uguali" | "piano" | "personalizzato",
-  "tabella_millesimale": "nome della tabella da usare" | null,
-  "motivazione": "breve spiegazione del criterio scelto con riferimento normativo",
-  "fonte": "regolamento" | "codice_civile" | "accordo",
-  "articolo_riferimento": "art. X c.c. o riferimento al regolamento" | null,
-  "note": "eventuali avvertenze o casi particolari" | null
-}`;
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      is_valido: { type: "BOOLEAN", description: "True se la spesa e il contesto sono comprensibili. False altrimenti." },
+      motivo_errore: { type: "STRING", description: "Se is_valido è false, spiega perché." },
+      dati: {
+        type: "OBJECT",
+        properties: {
+          criterio: { type: "STRING", description: "millesimi_generali, millesimi_scala, millesimi_riscaldamento, millesimi_acqua, quote_uguali, piano o personalizzato" },
+          tabella_millesimale: { type: "STRING", nullable: true },
+          motivazione: { type: "STRING", description: "Breve spiegazione del criterio scelto con riferimento normativo" },
+          fonte: { type: "STRING", description: "regolamento, codice_civile o accordo" },
+          articolo_riferimento: { type: "STRING", nullable: true, description: "art. X c.c. o riferimento al regolamento" },
+          note: { type: "STRING", nullable: true }
+        },
+        required: ["criterio", "motivazione", "fonte"]
+      }
+    },
+    required: ["is_valido"]
+  };
 
   const userPrompt = `Spesa: "${descSanitized}" (categoria: ${catSanitized || 'non specificata'})
 
@@ -347,7 +394,7 @@ Tabelle millesimali disponibili: ${tabelleMillesimali?.map(t => t.nome).join(', 
 
 ${testoRegolamento ? `Regolamento condominiale:\n${testoRegolamento.substring(0, 3000)}` : 'Nessun regolamento disponibile. Usa il Codice Civile.'}`;
 
-  const risposta = await callGemini(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500 });
+  const risposta = await callGemini(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500, jsonMode: true, jsonSchema });
   return pulisciEdEstraiJson(risposta, false);
 }
 // ─── CONSUNTIVO ANNO PRECEDENTE: estrai saldi di chiusura per riporto ─────────
@@ -359,21 +406,6 @@ export async function estraiSaldiConsuntivo(file) {
   const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
 
   const systemPrompt = `Sei un esperto contabile italiano. Analizzi un CONSUNTIVO/rendiconto condominiale annuale e ne estrai i SALDI DI CHIUSURA, da riportare come saldi iniziali dell'anno successivo.
-Restituisci SOLO un JSON valido, senza testo prima o dopo.
-
-Formato JSON:
-{
-  "anno": number | null,
-  "saldo_cassa_finale": number | null,
-  "saldi_unita": [
-    {
-      "numero": "numero/identificativo colonna dell'unità nel riparto, se presente" | null,
-      "nominativo": "nome del condòmino come riportato nel prospetto di riparto",
-      "saldo": number
-    }
-  ],
-  "note": "eventuali osservazioni" | null
-}
 
 Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
 - saldo POSITIVO (senza segno) = CREDITO del condòmino verso il condominio
@@ -382,15 +414,45 @@ Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
 - "saldo_cassa_finale" = saldo del conto corrente bancario al 31/12 (sezione di verifica/controllo cassa).
 - Estrai UNA riga per ciascun condòmino presente nel prospetto di riparto per unità.`;
 
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      is_valido: { type: "BOOLEAN", description: "True se il file è un consuntivo/rendiconto condominiale. False altrimenti." },
+      motivo_errore: { type: "STRING", description: "Se is_valido è false, spiega perché." },
+      dati: {
+        type: "OBJECT",
+        properties: {
+          anno: { type: "NUMBER", nullable: true },
+          saldo_cassa_finale: { type: "NUMBER", nullable: true },
+          saldi_unita: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                numero: { type: "STRING", nullable: true },
+                nominativo: { type: "STRING" },
+                saldo: { type: "NUMBER" }
+              },
+              required: ["nominativo", "saldo"]
+            }
+          },
+          note: { type: "STRING", nullable: true }
+        },
+        required: ["saldi_unita"]
+      }
+    },
+    required: ["is_valido"]
+  };
+
   const userPrompt = (isVisual || isPdf)
-    ? 'Analizza questo consuntivo condominiale ed estrai i saldi di chiusura nel formato JSON richiesto.'
-    : `Analizza questo consuntivo condominiale ed estrai i saldi di chiusura nel formato JSON richiesto.\n\nContenuto del file:\n${contenuto}`;
+    ? 'Analizza questo consuntivo condominiale ed estrai i saldi di chiusura.'
+    : `Analizza questo consuntivo condominiale ed estrai i saldi di chiusura.\n\nContenuto del file:\n${contenuto}`;
 
   const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema })
     : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema });
 
   return pulisciEdEstraiJson(risposta, false);
 }// ── Estrae il PROFILO/struttura del modello consuntivo dell'amministratore ──
@@ -402,23 +464,37 @@ export async function estraiStrutturaConsuntivo(file) {
 
   const system =
     `Sei un assistente che analizza la STRUTTURA di un rendiconto/consuntivo condominiale italiano (art. 1130-bis c.c.).
-Devi restituire SOLO la presentazione, NON i numeri. Rispondi ESCLUSIVAMENTE con JSON valido, senza testo né backtick.
-Schema richiesto:
-{
-  "ordine_categorie": ["assicurazione","amministrazione","utenze","manutenzione","straordinaria","altro"],
-  "etichette_categorie": { "assicurazione":"ASSICURAZIONE", "amministrazione":"AMMINISTRAZIONE", "...":"..." },
-  "sezioni": {
-    "competenza":     { "attiva": true },
-    "riparto":        { "attiva": true },
-    "cassa":          { "attiva": true },
-    "fatture":        { "attiva": true },
-    "confronto_prev": { "attiva": true },
-    "nota_sintetica": { "attiva": true }
-  },
-  "note": "eventuali peculiarità del modello"
-}
+Devi estrarre SOLO la presentazione, NON i numeri.
 Mappa le voci di spesa del documento alle categorie canoniche: assicurazione, amministrazione, utenze, manutenzione, straordinaria, altro.
 Imposta "attiva": true per ogni sezione effettivamente presente nel modello, false se assente. La nota sintetica è obbligatoria: tienila true.`
+
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      is_valido: { type: "BOOLEAN", description: "True se è un consuntivo o rendiconto condominiale. False altrimenti." },
+      motivo_errore: { type: "STRING" },
+      dati: {
+        type: "OBJECT",
+        properties: {
+          ordine_categorie: { type: "ARRAY", items: { type: "STRING" } },
+          etichette_categorie: { type: "OBJECT" },
+          sezioni: {
+            type: "OBJECT",
+            properties: {
+              competenza: { type: "OBJECT", properties: { attiva: { type: "BOOLEAN" } } },
+              riparto: { type: "OBJECT", properties: { attiva: { type: "BOOLEAN" } } },
+              cassa: { type: "OBJECT", properties: { attiva: { type: "BOOLEAN" } } },
+              fatture: { type: "OBJECT", properties: { attiva: { type: "BOOLEAN" } } },
+              confronto_prev: { type: "OBJECT", properties: { attiva: { type: "BOOLEAN" } } },
+              nota_sintetica: { type: "OBJECT", properties: { attiva: { type: "BOOLEAN" } } }
+            }
+          },
+          note: { type: "STRING", nullable: true }
+        }
+      }
+    },
+    required: ["is_valido"]
+  };
 
   const userPrompt =
     `Analizza la struttura di questo consuntivo e restituisci il JSON del profilo (solo presentazione).`
@@ -427,15 +503,15 @@ Imposta "attiva": true per ogni sezione effettivamente presente nel modello, fal
   if (prep.isPdf) {
     raw = await callGeminiDocument(userPrompt, prep.contenuto, {
       system, mediaType: prep.mediaType || 'application/pdf',
-      funzione: 'estrai_struttura_consuntivo', maxTokens: 3000,
+      funzione: 'estrai_struttura_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema
     })
   } else if (prep.isVisual) {
     raw = await callGeminiVision(`${system}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
-      funzione: 'estrai_struttura_consuntivo', maxTokens: 3000,
+      funzione: 'estrai_struttura_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema
     })
   } else {
     raw = await callGemini(`${userPrompt}\n\n--- DOCUMENTO ---\n${prep.contenuto}`, {
-      system, funzione: 'estrai_struttura_consuntivo', maxTokens: 3000,
+      system, funzione: 'estrai_struttura_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema
     })
   }
 
@@ -451,17 +527,38 @@ export async function estraiAnagraficaDaFile(file) {
 Il tuo compito è scansionare in modo estremamente accurato il documento per estrarre tutti i dati anagrafici di persone o condòmini.
 
 REGOLE CRITICHE PER I CONTATTI (EVITA ERRORI O OMISSIONI):
-1. EMAIL/PEC: Cerca accuratamente in ogni sezione o colonna del documento qualsiasi stringa che contenga il carattere "@" (es. email, e-mail, pec, posta elettronica). Associala alla persona corretta e inseriscila nel campo "email" (se sono presenti sia email che PEC, preferisci l'email ordinaria o separale con una virgola).
-2. TELEFONO/CELLULARE: Cerca in modo approfondito qualsiasi numero di telefono o cellulare associato alle persone. Solitamente si trovano sotto colonne o diciture come "Tel", "Tel.", "Cell", "Cell.", "Cellulare", "Telefono", "Recapito", "Contatto" o "Mobile". Estrai la sequenza numerica (di solito 9-11 cifre, es. 3331234567 o 02123456) pulendola da spazi o trattini intermedi, e inseriscila nel campo "telefono".
-3. ASSOCIAZIONE DI RIGA: Presta attenzione a non saltare le colonne dei contatti. Spesso i contatti sono scritti in fondo alla riga o in una sezione separata ("Elenco contatti"): associali correttamente tramite il nome/cognome o l'interno dell'unità.
-4. NOME E COGNOME: Dividi accuratamente il Nome e il Cognome. Se nel documento è presente un'unica colonna "Nominativo" o "Cognome Nome", separa la parte del cognome (spesso in maiuscolo) dal nome.
+1. EMAIL/PEC: Cerca accuratamente in ogni sezione o colonna del documento qualsiasi stringa che contenga il carattere "@" (es. email, e-mail, pec, posta elettronica).
+2. TELEFONO/CELLULARE: Cerca in modo approfondito qualsiasi numero di telefono o cellulare associato alle persone. Estrai la sequenza numerica pulendola da spazi o trattini.
+3. ASSOCIAZIONE DI RIGA: Presta attenzione a non saltare le colonne dei contatti. Spesso i contatti sono scritti in fondo alla riga o in una sezione separata.
+4. NOME E COGNOME: Dividi accuratamente il Nome e il Cognome.`;
 
-Per ogni persona restituisci un oggetto JSON con questi campi esattamente (lascia vuoto "" se non presente):
-nome, cognome, email, telefono, indirizzo, citta, cap, provincia, codice_fiscale, ruolo ("proprietario"|"inquilino"|""), unita (numero unità/appartamento se presente).
-
-Rispondi SOLO con un array JSON valido, senza testo aggiuntivo, senza backtick markdown.
-
-Esempio: [{"nome":"Mario","cognome":"Rossi","email":"mario@example.com","telefono":"3331234567","indirizzo":"Via Roma 1","citta":"Milano","cap":"20100","provincia":"MI","codice_fiscale":"RSSMRA80A01F205X","ruolo":"proprietario","unita":"3"}]`
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      is_valido: { type: "BOOLEAN", description: "True se il file contiene liste di condomini, anagrafiche o contatti. False se il file non contiene dati anagrafici." },
+      motivo_errore: { type: "STRING" },
+      dati: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            nome: { type: "STRING", nullable: true },
+            cognome: { type: "STRING", nullable: true },
+            email: { type: "STRING", nullable: true },
+            telefono: { type: "STRING", nullable: true },
+            indirizzo: { type: "STRING", nullable: true },
+            citta: { type: "STRING", nullable: true },
+            cap: { type: "STRING", nullable: true },
+            provincia: { type: "STRING", nullable: true },
+            codice_fiscale: { type: "STRING", nullable: true },
+            ruolo: { type: "STRING", nullable: true },
+            unita: { type: "STRING", nullable: true }
+          }
+        }
+      }
+    },
+    required: ["is_valido"]
+  };
 
   const userPrompt = `Estrai l'elenco di tutte le persone e i loro dati anagrafici presenti in questo contenuto:`
 
@@ -472,30 +569,25 @@ Esempio: [{"nome":"Mario","cognome":"Rossi","email":"mario@example.com","telefon
       mediaType: prep.mediaType || 'application/pdf',
       funzione: 'import_anagrafica',
       maxTokens: 8000,
+      jsonMode: true, jsonSchema
     })
   } else if (prep.isVisual) {
     raw = await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
       funzione: 'import_anagrafica',
       maxTokens: 8000,
+      jsonMode: true, jsonSchema
     })
   } else {
     raw = await callGemini(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
       system: systemPrompt,
       funzione: 'import_anagrafica',
       maxTokens: 8000,
+      jsonMode: true, jsonSchema
     })
   }
 
-  const rawStr = String(raw || '');
-  const match = rawStr.match(/\[[\s\S]*\]/);
-  const clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
-  try {
-    const parsed = JSON.parse(clean);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    console.error('Errore parsing JSON anagrafica:', e, clean);
-    throw new Error('L\'AI non ha restituito un formato JSON valido per l\'anagrafica.');
-  }
+  const parsed = pulisciEdEstraiJson(raw, false);
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 // ── Estrae una o più tabelle millesimali da un file (PDF, XLSX, CSV, DOCX, Immagine) ──
@@ -507,31 +599,52 @@ export async function estraiTabelleMillesimali(file) {
   const prep = await preparaContenuto(file);
 
   const systemPrompt = `Sei un esperto di amministrazione condominiale e catasto italiano.
-Il tuo compito è analizzare un documento o un foglio di calcolo contenente una o più TABELLE MILLESIMALI di un condominio (es. Tabella di Proprietà Generale, Scale, Ascensore, Riscaldamento, Box, ecc.).
+Il tuo compito è analizzare un documento o un foglio di calcolo contenente una o più TABELLE MILLESIMALI di un condominio.
 Estrai tutte le tabelle millesimali trovate e per ciascuna di esse le righe che associano l'unità immobiliare (o condòmino) ai rispettivi millesimi.
 
-Restituisci SOLO un oggetto JSON valido con questa esatta struttura, senza testo prima o dopo e senza markdown:
-{
-  "tabelle": [
-    {
-      "nome": "Nome della colonna millesimale o tabella (es. Proprietà generale, Scale & Ascensore, ecc.)",
-      "righe": [
-        {
-          "unita": "OBBLIGATORIO: L'identificativo univoco dell'unità immobiliare nel documento. REGOLE CRITICHE:\n1) Se nel documento è presente la colonna Subalterno (Sub.), USA QUELLO o formatta come 'Sub. X' (es. 'Sub. 7', 'Sub. 2').\n2) Se non c'è Subalterno, usa il Numero interno/ordine (es. 'Int. 1', '1').\n3) Se una riga di pertinenza (es. box, cantina, garage, posto auto) ha la colonna numero d'ordine o identificativo vuota, NON LASCIARE MAI VUOTO: usa il Subalterno (es. 'Box Sub. 2') o crea un identificativo univoco abbinato al proprietario (es. 'Box - Micieli'). Ogni riga deve avere un valore unita univoco e non vuoto!",
-          "piano": "Piano dell'unità se indicato (es. Terra, T, 1°, 2, -1, S. 1, Seminterrato, Attico... altrimenti stringa vuota)",
-          "destinazione": "Destinazione d'uso se indicata o intuibile dal contesto o classamento (es. appartamento, box, cantina, negozio, ufficio, posto_auto, soffitta, magazzino)",
-          "superficie_mq": numero (superficie in m² o mq se presente es. 85.5, oppure superficie lorda/virtuale se disponibile, altrimenti null),
-          "proprietario_nome": "Nome del proprietario (es. Mario, Laura... altrimenti stringa vuota). Se ci sono più comproprietari, estrai il nome del primo.",
-          "proprietario_cognome": "Cognome del proprietario o ragione sociale della ditta (es. Rossi, Bianchi...). Se per le righe di pertinenza (es. box/cantine) il nome non è ripetuto, RIPORTA IL COGNOME del proprietario dell'unità principale collegata (es. dell'appartamento sovrastante).",
-          "nominativo_completo": "Il nominativo intero così come scritto nel file (es. ROSSI MARIO, COOP SOC. ed altri) per riscontro diretto o fallback.",
-          "valore": numero (valore millesimale decimale, es. 166.57 o 150.55 o 0. Usa il punto decimale, non la virgola)"
-        }
-      ]
-    }
-  ]
-}
-
 Se nel documento è presente una tabella con più colonne millesimali (es. colonna 1 = Proprietà, colonna 2 = Scale & Ascensore), genera un elemento nell'array "tabelle" per ciascuna di queste colonne.`;
+
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      is_valido: { type: "BOOLEAN", description: "True se il file contiene tabelle millesimali. False altrimenti." },
+      motivo_errore: { type: "STRING" },
+      dati: {
+        type: "OBJECT",
+        properties: {
+          tabelle: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                nome: { type: "STRING", description: "Nome della colonna millesimale o tabella (es. Proprietà generale, Scale & Ascensore, ecc.)" },
+                righe: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      unita: { type: "STRING", description: "Identificativo univoco dell'unità immobiliare nel documento. Usa Subalterno se presente, o Numero interno. NON lasciare vuoto." },
+                      piano: { type: "STRING", nullable: true },
+                      destinazione: { type: "STRING", nullable: true },
+                      superficie_mq: { type: "NUMBER", nullable: true },
+                      proprietario_nome: { type: "STRING", nullable: true },
+                      proprietario_cognome: { type: "STRING", nullable: true },
+                      nominativo_completo: { type: "STRING", nullable: true },
+                      valore: { type: "NUMBER", description: "Valore millesimale decimale" }
+                    },
+                    required: ["unita", "valore"]
+                  }
+                }
+              },
+              required: ["nome", "righe"]
+            }
+          }
+        },
+        required: ["tabelle"]
+      }
+    },
+    required: ["is_valido"]
+  };
 
   const userPrompt = `Estrai le tabelle millesimali e i relativi valori presenti in questo contenuto:`;
 
@@ -542,30 +655,25 @@ Se nel documento è presente una tabella con più colonne millesimali (es. colon
       mediaType: prep.mediaType || 'application/pdf',
       funzione: 'estrai_tabelle_millesimali',
       maxTokens: 8000,
+      jsonMode: true, jsonSchema
     });
   } else if (prep.isVisual) {
     raw = await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
       funzione: 'estrai_tabelle_millesimali',
       maxTokens: 8000,
+      jsonMode: true, jsonSchema
     });
   } else {
     raw = await callGemini(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
       system: systemPrompt,
       funzione: 'estrai_tabelle_millesimali',
       maxTokens: 8000,
+      jsonMode: true, jsonSchema
     });
   }
 
-  const rawStr = String(raw || '');
-  const match = rawStr.match(/\{[\s\S]*\}/);
-  const clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
-  try {
-    const parsed = JSON.parse(clean);
-    return parsed?.tabelle && Array.isArray(parsed.tabelle) ? parsed.tabelle : [];
-  } catch (e) {
-    console.error('Errore parsing JSON tabelle millesimali:', e, clean);
-    throw new Error('L\'AI non ha restituito un formato JSON valido per le tabelle millesimali.');
-  }
+  const parsed = pulisciEdEstraiJson(raw, false);
+  return parsed?.tabelle && Array.isArray(parsed.tabelle) ? parsed.tabelle : [];
 }
 
 // ─── MIGRAZIONE GESTIONALE: Classifica e struttura i dati da un file esportato ──
@@ -580,7 +688,7 @@ export async function classificaEStraiFileGestionale(file) {
   const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
 
   const systemPrompt = `Sei un esperto di migrazione dati per gestionali condominiali italiani.
-Il tuo compito è analizzare un file esportato da un gestionale (es. Danea Domustudio, Gecosei, Metodo o altri) e classificare i dati che contiene, poi estrarli in un formato JSON strutturato.
+Il tuo compito è analizzare un file esportato da un gestionale (es. Danea Domustudio, Gecosei, Metodo o altri) e classificare i dati che contiene, poi estrarli.
 
 IDENTIFICAZIONE DEL GESTIONALE:
 - Danea Domustudio: tipiche colonne "Nominativo", "Scala", "Interno", "Millesimi proprietà", "Versato", "Da versare", "Quote spettanti"
@@ -606,44 +714,41 @@ REGOLE CRITICHE PER L'ESTRAZIONE:
 5. Estrai TUTTI i blocchi di dati presenti nel file (un file può contenere sia persone che unità)
 6. Per le unità: usa il campo "numero" come identificativo breve dell'unità (scala+interno o subalterno)
 7. Per i millesimi: ogni colonna millesimale distinta è una tabella separata
-8. Per le rate: "stato" si determina da importo_pagato vs importo (pagata = uguali, parziale = parziale, non_pagata = 0 pagato)
+8. Per le rate: "stato" si determina da importo_pagato vs importo (pagata = uguali, parziale = parziale, non_pagata = 0 pagato)`;
 
-Restituisci SOLO un oggetto JSON valido, senza testo aggiuntivo, senza markdown, senza backtick.
-
-Schema esatto da rispettare:
-{
-  "tipo": "anagrafica" | "unita" | "millesimi" | "spese" | "rate" | "saldo_cassa" | "misto" | "sconosciuto",
-  "gestionale": "Danea Domustudio" | "Gecosei" | "Metodo" | "generico",
-  "condominio": { "nome": string | null, "indirizzo": string | null, "cf_condominio": string | null } | null,
-  "persone": [
-    { "nome": string, "cognome": string, "codice_fiscale": string | null, "email": string | null, "telefono": string | null, "ruolo": "proprietario" | "inquilino" | "", "unita_rif": string | null }
-  ] | null,
-  "unita": [
-    { "numero": string, "tipo": string | null, "scala": string | null, "piano": string | null, "mq": number | null, "proprietario_nome": string | null, "proprietario_cognome": string | null }
-  ] | null,
-  "millesimi": [
-    { "tabella": string, "righe": [ { "unita_rif": string, "valore": number, "proprietario_nome": string | null } ] }
-  ] | null,
-  "saldi_iniziali": [
-    { "anno": number, "unita_rif": string, "proprietario_nome": string | null, "saldo": number }
-  ] | null,
-  "spese": [
-    { "anno": number, "data": string | null, "descrizione": string, "categoria": string, "importo": number, "fornitore": string | null }
-  ] | null,
-  "rate": [
-    { "anno": number, "numero_rata": number | null, "scadenza": string | null, "unita_rif": string, "importo": number, "importo_pagato": number, "stato": "pagata" | "parziale" | "non_pagata" }
-  ] | null
-}`;
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      is_valido: { type: "BOOLEAN", description: "True se il file sembra provenire da un gestionale o contiene dati importabili. False se è inutile o vuoto." },
+      motivo_errore: { type: "STRING" },
+      dati: {
+        type: "OBJECT",
+        properties: {
+          tipo: { type: "STRING", description: "anagrafica, unita, millesimi, spese, rate, saldo_cassa, misto, sconosciuto" },
+          gestionale: { type: "STRING", description: "Danea Domustudio, Gecosei, Metodo, generico" },
+          condominio: { type: "OBJECT", nullable: true, properties: { nome: { type: "STRING", nullable: true }, indirizzo: { type: "STRING", nullable: true }, cf_condominio: { type: "STRING", nullable: true } } },
+          persone: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { nome: { type: "STRING" }, cognome: { type: "STRING" }, codice_fiscale: { type: "STRING", nullable: true }, email: { type: "STRING", nullable: true }, telefono: { type: "STRING", nullable: true }, ruolo: { type: "STRING", nullable: true }, unita_rif: { type: "STRING", nullable: true } }, required: ["nome", "cognome"] } },
+          unita: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { numero: { type: "STRING" }, tipo: { type: "STRING", nullable: true }, scala: { type: "STRING", nullable: true }, piano: { type: "STRING", nullable: true }, mq: { type: "NUMBER", nullable: true }, proprietario_nome: { type: "STRING", nullable: true }, proprietario_cognome: { type: "STRING", nullable: true } }, required: ["numero"] } },
+          millesimi: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { tabella: { type: "STRING" }, righe: { type: "ARRAY", items: { type: "OBJECT", properties: { unita_rif: { type: "STRING" }, valore: { type: "NUMBER" }, proprietario_nome: { type: "STRING", nullable: true } }, required: ["unita_rif", "valore"] } } }, required: ["tabella", "righe"] } },
+          saldi_iniziali: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { anno: { type: "NUMBER" }, unita_rif: { type: "STRING" }, proprietario_nome: { type: "STRING", nullable: true }, saldo: { type: "NUMBER" } }, required: ["anno", "unita_rif", "saldo"] } },
+          spese: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { anno: { type: "NUMBER" }, data: { type: "STRING", nullable: true }, descrizione: { type: "STRING" }, categoria: { type: "STRING" }, importo: { type: "NUMBER" }, fornitore: { type: "STRING", nullable: true } }, required: ["anno", "descrizione", "categoria", "importo"] } },
+          rate: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { anno: { type: "NUMBER" }, numero_rata: { type: "NUMBER", nullable: true }, scadenza: { type: "STRING", nullable: true }, unita_rif: { type: "STRING" }, importo: { type: "NUMBER" }, importo_pagato: { type: "NUMBER" }, stato: { type: "STRING", description: "pagata, parziale, non_pagata" } }, required: ["anno", "unita_rif", "importo", "importo_pagato", "stato"] } }
+        },
+        required: ["tipo", "gestionale"]
+      }
+    },
+    required: ["is_valido"]
+  };
 
   const userPrompt = (isVisual || isPdf)
-    ? 'Analizza questo file esportato da un gestionale condominiale, classifica i dati che contiene ed estraili nel formato JSON richiesto.'
-    : `Analizza questo file esportato da un gestionale condominiale, classifica i dati che contiene ed estraili nel formato JSON richiesto.\n\nContenuto del file:\n${String(contenuto).substring(0, 30000)}`;
+    ? 'Analizza questo file esportato da un gestionale condominiale.'
+    : `Analizza questo file esportato da un gestionale condominiale.\n\nContenuto del file:\n${String(contenuto).substring(0, 30000)}`;
 
   const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'classifica_gestionale', maxTokens: 6000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'classifica_gestionale', maxTokens: 6000, jsonMode: true, jsonSchema })
     : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000 })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000, jsonMode: true, jsonSchema })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000, jsonMode: true, jsonSchema });
 
   return pulisciEdEstraiJson(risposta, false);
 }
@@ -769,41 +874,57 @@ export async function estraiDatiAnagrafeDaModulo(file, condominioId) {
   const systemPrompt = `Sei un assistente AI specializzato nella gestione e lettura di moduli fiscali e schede di anagrafe condominiale per il mercato italiano.
 Il tuo compito è analizzare la scansione, foto o testo del modulo di autocertificazione compilato dal condomino ed estrarre i dati anagrafici, i dati catastali dell'unità immobiliare e le informazioni di residenza.
 
-Restituisci ESCLUSIVAMENTE un oggetto JSON valido con la seguente struttura, non aggiungere commenti o altri testi:
-{
-  "unita": {
-    "catasto_foglio": string o null (il foglio catastale, es. "12"),
-    "catasto_particella": string o null (la particella o mappale, es. "345"),
-    "catasto_subalterno": string o null (il subalterno, es. "3"),
-    "catasto_categoria": string o null (la categoria catastale, es. "A/3" o "C/6"),
-    "catasto_rendita": numero o null (la rendita catastale come numero, es. 450.50)
-  },
-  "persona": {
-    "nome": string o null (il nome dell'occupante/proprietario),
-    "cognome": string o null (il cognome),
-    "codice_fiscale": string o null (il codice fiscale normalizzato a 16 caratteri maiuscoli),
-    "email": string o null (l'indirizzo email compilato),
-    "telefono": string o null (il numero di telefono compilato),
-    "residenza_indirizzo": string o null (via/piazza, civico della residenza del soggetto, es. "Via Garibaldi 12"),
-    "residenza_comune": string o null (il comune di residenza),
-    "residenza_cap": string o null (il CAP di residenza, es. "00100"),
-    "residenza_provincia": string o null (la sigla della provincia di residenza a 2 caratteri, es. "RM")
-  },
-  "ruolo": string o null (deve essere rigorosamente uno tra: "proprietario", "inquilino", "comproprietario", "usufruttuario" se deducibile dal modulo)
-}
-
 Regole importanti:
 1. Pulisci i dati catastali: rimuovi spazi superflui e normalizzali.
 2. Codice Fiscale: controlla che sia valido a 16 cifre, convertilo in MAIUSCOLO.
 3. Se un campo non è presente o non è leggibile, impostalo a null. Non inventare dati.`;
 
-  const userPrompt = `Analizza questo modulo compilato dal condomino ed estrai i dati nel formato JSON specificato.`;
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      is_valido: { type: "BOOLEAN", description: "True se il file è un modulo di anagrafe condominiale. False altrimenti." },
+      motivo_errore: { type: "STRING" },
+      dati: {
+        type: "OBJECT",
+        properties: {
+          unita: {
+            type: "OBJECT",
+            properties: {
+              catasto_foglio: { type: "STRING", nullable: true },
+              catasto_particella: { type: "STRING", nullable: true },
+              catasto_subalterno: { type: "STRING", nullable: true },
+              catasto_categoria: { type: "STRING", nullable: true },
+              catasto_rendita: { type: "NUMBER", nullable: true }
+            }
+          },
+          persona: {
+            type: "OBJECT",
+            properties: {
+              nome: { type: "STRING", nullable: true },
+              cognome: { type: "STRING", nullable: true },
+              codice_fiscale: { type: "STRING", nullable: true, description: "Normalizzato a 16 caratteri maiuscoli" },
+              email: { type: "STRING", nullable: true },
+              telefono: { type: "STRING", nullable: true },
+              residenza_indirizzo: { type: "STRING", nullable: true, description: "Via/piazza, civico" },
+              residenza_comune: { type: "STRING", nullable: true },
+              residenza_cap: { type: "STRING", nullable: true },
+              residenza_provincia: { type: "STRING", nullable: true, description: "Sigla a 2 caratteri" }
+            }
+          },
+          ruolo: { type: "STRING", nullable: true, description: "proprietario, inquilino, comproprietario, usufruttuario" }
+        }
+      }
+    },
+    required: ["is_valido"]
+  };
+
+  const userPrompt = `Analizza questo modulo compilato dal condomino ed estrai i dati.`;
 
   const risposta = isImage
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000, jsonMode: true, jsonSchema })
     : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 })
-    : await callGemini(userPrompt + `\n\nContenuto del modulo:\n${contenuto}`, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000 });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000, jsonMode: true, jsonSchema })
+    : await callGemini(userPrompt + `\n\nContenuto del modulo:\n${contenuto}`, { system: systemPrompt, funzione: 'estrazione_anagrafe', condominio_id: condominioId, maxTokens: 4000, jsonMode: true, jsonSchema });
 
   return pulisciEdEstraiJson(risposta, false);
 }

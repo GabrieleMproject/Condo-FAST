@@ -493,14 +493,53 @@ a:hover { text-decoration: underline; }
   animation: spin 0.7s linear infinite;
 }
 
+.mobile-menu-btn { display: none !important; }
+
 /* ─── Responsive ───────────────────────────────────────── */
 @media (max-width: 768px) {
   .auth-layout { grid-template-columns: 1fr; }
   .auth-brand { display: none; }
   .dashboard-grid { grid-template-columns: 1fr 1fr; }
   .app-layout { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
-  .field-row { grid-template-columns: 1fr; }
+  
+  /* Form ad 1 colonna in mobile per facilitare la compilazione */
+  .field-row, .form-row { grid-template-columns: 1fr; }
+  
+  /* SIDEBAR: Diventa un Drawer off-canvas */
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -280px;
+    bottom: 0;
+    z-index: 1001 !important;
+    width: 260px !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+  .sidebar.mobile-open {
+    left: 0;
+  }
+  
+  /* MENU BTN */
+  .mobile-menu-btn { display: flex !important; }
+  
+  /* TABELLE RESPONSIVE MOBILE: Scorrimento orizzontale inerziale col dito */
+  table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Compattiamo i layout base per lasciare respiro ai contenuti */
+  .topbar { padding: 1.2rem 1rem 0.8rem; }
+  .main-content { padding: 1rem !important; }
+  
+  /* Modali massimizzate su smartphone */
+  .modal-overlay { padding: 0.5rem; }
+  .modal-box { max-height: 96vh; border-radius: var(--radius); }
+  .modal-header, .form-body, .modal-footer { padding: 1rem !important; }
+  .form-tabs { padding: 0 1rem; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
 }
 /* ─── Modal overlay ─────────────────────────────────────── */
 .modal-overlay {

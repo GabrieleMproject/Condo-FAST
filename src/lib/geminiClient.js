@@ -86,7 +86,7 @@ async function callEdge(body) {
  * @throws {RateLimitError} se il rate limit è raggiunto
  */
 export async function callGemini(prompt, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 1000, system, jsonMode } = opts;
+  const { funzione, condominio_id, maxTokens = 1000, system, jsonMode, jsonSchema } = opts;
 
   const data = await callEdge({
     type:      'text',
@@ -95,6 +95,7 @@ export async function callGemini(prompt, opts = {}) {
     system:    system ? sanitizeInput(system, 4000) : undefined,
     funzione,
     jsonMode,
+    jsonSchema,
   });
 
   logAiCall({
@@ -117,7 +118,7 @@ export async function callGemini(prompt, opts = {}) {
  * @param {object} [opts]
  */
 export async function callGeminiWithHistory(messages, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 1000, system, jsonMode } = opts;
+  const { funzione, condominio_id, maxTokens = 1000, system, jsonMode, jsonSchema } = opts;
 
   const data = await callEdge({
     type:     'history',
@@ -126,6 +127,7 @@ export async function callGeminiWithHistory(messages, opts = {}) {
     system:   system ? sanitizeInput(system, 4000) : undefined,
     funzione,
     jsonMode,
+    jsonSchema,
   });
 
   logAiCall({
@@ -148,7 +150,7 @@ export async function callGeminiWithHistory(messages, opts = {}) {
  * NB: il path vision NON inoltra `system` → il chiamante accorpa system+user nel prompt.
  */
 export async function callGeminiVision(prompt, base64Image, mediaType, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 1000, jsonMode } = opts;
+  const { funzione, condominio_id, maxTokens = 1000, jsonMode, jsonSchema } = opts;
 
   const data = await callEdge({
     type:      'vision',
@@ -158,6 +160,7 @@ export async function callGeminiVision(prompt, base64Image, mediaType, opts = {}
     maxTokens,
     funzione,
     jsonMode,
+    jsonSchema,
   });
 
   logAiCall({
@@ -190,7 +193,7 @@ export async function callGeminiVision(prompt, base64Image, mediaType, opts = {}
 export async function callGeminiDocument(prompt, base64Document, opts = {}) {
   const {
     funzione, condominio_id, maxTokens = 1000, system,
-    mediaType = 'application/pdf', jsonMode,
+    mediaType = 'application/pdf', jsonMode, jsonSchema
   } = opts;
 
   const data = await callEdge({
@@ -202,6 +205,7 @@ export async function callGeminiDocument(prompt, base64Document, opts = {}) {
     system:    system ? sanitizeInput(system, 4000) : undefined,
     funzione,
     jsonMode,
+    jsonSchema,
   });
 
   logAiCall({

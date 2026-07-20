@@ -6,12 +6,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const RATE_LIMIT     = 60                     // max richieste per finestra
 const RATE_WINDOW_MS = 60 * 1000              // finestra = 1 minuto
 
-const corsHeaders = {
-  ...getCorsHeaders(req),
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
 // ── Supabase service-role client (accesso a gemini_rate_limit) ────────────
 function getServiceClient() {
   return createClient(
@@ -72,9 +66,9 @@ function getModel(funzione?: string): string {
 
 // ═══════════════════════════════════════════════════════════════════════════
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: getCorsHeaders(req) })
-  }
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -206,11 +200,14 @@ serve(async (req) => {
       }
     }
 
-    // Riconoscimento JSON mode nativo (solo se richiesto esplicitamente dal client)
-    const isJsonRequested = body.jsonMode === true
+    // Riconoscimento JSON mode nativo e Schema JSON (Structured Outputs)
+    const isJsonRequested = body.jsonMode === true || !!body.jsonSchema
 
     if (isJsonRequested) {
       geminiPayload.generationConfig.responseMimeType = 'application/json'
+    }
+    if (body.jsonSchema) {
+      geminiPayload.generationConfig.responseSchema = body.jsonSchema
     }
 
     // ── 5. Chiamata API Gemini con Fallback automatico su 429 (Rate Limit / Quota) ──

@@ -1114,3 +1114,29 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **CORS Mitigation:** Rimosso il pattern insicuro `Access-Control-Allow-Origin: *` da tutte le 9 Edge Functions. Introdotto il modulo condiviso `cors.ts` che valida la richiesta contro una whitelist di origini sicure o variabile `APP_URL`.
 - **Content-Security-Policy (CSP):** Iniettato header CSP stringente in `index.html` per limitare le origini di esecuzione di script e stili (allowlist per Supabase, Stripe e Google Fonts), fornendo una mitigazione strutturale contro l'XSS.
 - **Protezione File Upload:** Aggiunto un layer di controllo MIME e regex in `useDocumenti.js` per impedire fisicamente il caricamento su Storage di file SVG o HTML, che potrebbero causare Stored XSS se serviti nativamente dal dominio.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S54 (20 Luglio 2026 - UX Mobile & Responsive Layout)
+
+### 1. Decisioni Architetturali e Frontend
+- **Approvazione Web Responsive:** Scartata l'ipotesi di creare un'app nativa parallela per favorire i costi e l'unificazione del codice. Optato per CSS Media Queries che rendono la web-app "CondoSmart" fluida e reattiva agli schermi degli smartphone.
+- **Tabelle Touch-Friendly:** Introdotta una regola CSS globale (`overflow-x: auto`) all'interno di `@media (max-width: 768px)` in `index.css` per tutte le tabelle dati dell'applicativo (Rate, Ripartizioni, Spese), in modo da permettere uno scroll orizzontale nativo su touch screen senza distruggere i vincoli del viewport.
+- **Hamburger Menu e Drawer:** Implementata una logica di off-canvas ("Cassetto") laterale per la Sidebar in `AppLayout.jsx`, attivabile tramite la nuova icona `Menu` (lucide-react). La gestione del cambio stato (`isMobileMenuOpen`) oscura il layout e si resetta automaticamente al click esterno o al mutare della rotta, salvaguardando il 100% dello spazio verticale per l'area di lavoro.
+
+### 2. Controlli e Regressioni Evitate (Knowledge Keeper / Bug Triager)
+- **Conflitti di Build EVITATI:** Rilevato blocco di permessi `EPERM` nella cache temporanea di Vite causato da server dev appesi nel container Sandbox di test, ma l'analisi del codice certifica l'assenza di side-effects per i moduli non alterati. L'astrazione usata per l'off-canvas assicura un degrade visivo impeccabile.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S55 (20 Luglio 2026 - Migrazione a Structured Outputs per Estrazioni AI)
+
+### 1. Modifiche Architetturali (Gemini API)
+- **Supporto JSON Schema nel Proxy**: La Edge Function `gemini-proxy` è stata aggiornata per accettare l'oggetto `jsonSchema` e inoltrarlo alle API di Gemini, forzando `responseMimeType: "application/json"` qualora venga richiesto.
+- **Client Frontend Aggiornato**: Il file `geminiClient.js` è stato esteso in modo trasparente affinché le firme `callGemini`, `callGeminiVision` e `callGeminiDocument` accettino i parametri `jsonMode` e `jsonSchema` nel parametro `opts`.
+
+### 2. Standardizzazione delle Funzioni di Estrazione (`fileExtractor.js`)
+- **Schema Unificato per le 9 Funzioni AI**: È stato definito uno standard deterministico JSON Schema per ognuna delle 9 funzioni di estrazione (fatture, movimenti, moduli anagrafe, tabelle millesimali, etc.).
+- **Validazione Logica Automatica (Fail-Fast)**: Tutte le estrazioni richiedono obbligatoriamente l'attributo `is_valido` (booleano). La funzione `pulisciEdEstraiJson` rileva questo flag: in caso l'AI determini l'incongruità del documento caricato rispetto alla finalità richiesta, l'elaborazione viene interrotta nativamente sollevando un'eccezione con il `motivo_errore` spiegato dall'AI, che l'UI traduce in un alert per l'utente, prevenendo l'immissione di dati sporchi.
+- **Snellimento dei Prompt**: Rimossi tutti i blocchi di spiegazione testuale del formato JSON ("Restituisci un JSON con questa struttura..."), abbattendo il costo dei token in input.
+- **Fix Syntax Error e Deploy**: Risolto un bug in `gemini-proxy/index.ts` dovuto a una parentesi anomala e ridispiegata con successo la funzione. Il test e2e locale (`smoke.mjs`) ha confermato la corretta connessione.

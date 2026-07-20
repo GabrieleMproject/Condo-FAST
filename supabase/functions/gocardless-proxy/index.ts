@@ -2,18 +2,14 @@ import { getCorsHeaders } from '../_shared/cors.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
-const corsHeaders = {
-  ...getCorsHeaders(req),
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
 const GOCARDLESS_API_URL = 'https://bankaccountdata.gocardless.com/api/v2'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: getCorsHeaders(req) })
   }
-  }
+
+  const corsHeaders = getCorsHeaders(req)
 
   try {
     const authHeader = req.headers.get('Authorization')
@@ -30,6 +26,20 @@ serve(async (req) => {
         const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
         if (authError || !user) throw new Error('Non autorizzato')
         userId = user.id
+
+        // H1 fix: verifica piano server-side (Open Banking solo per Professional)
+        const { data: userProfile } = await supabaseClient
+          .from('profiles')
+          .select('piano, is_superadmin')
+          .eq('id', userId)
+          .single()
+
+        if (!userProfile?.is_superadmin && userProfile?.piano !== 'professional') {
+          return new Response(
+            JSON.stringify({ error: 'Funzionalità Open Banking disponibile solo per il piano Professional.' }),
+            { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+          )
+        }
     } else {
         supabaseClient = createClient(
           Deno.env.get('SUPABASE_URL') ?? '',
@@ -37,9 +47,7 @@ serve(async (req) => {
         )
     }
 
-    // Controlla se l'utente ha il piano professional o è superadmin
-    // (Per brevità omettiamo il controllo granulare qui, il frontend blocca tramite PlanGate
-    // ma in produzione andrebbe verificato anche qui)
+
 
     const secretId = Deno.env.get('GOCARDLESS_SECRET_ID')
     const secretKey = Deno.env.get('GOCARDLESS_SECRET_KEY')
@@ -85,6 +93,21 @@ serve(async (req) => {
             break;
             
         case 'create_requisition':
+            // H2 fix: verifica ownership del condominio (anti-IDOR)
+            if (userId) {
+              const { data: condoCheck, error: condoErr } = await supabaseClient
+                .from('condomini')
+                .select('id')
+                .eq('id', payload.condominioId)
+                .single()
+              if (condoErr || !condoCheck) {
+                return new Response(
+                  JSON.stringify({ error: 'Condominio non trovato o non autorizzato' }),
+                  { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+                )
+              }
+            }
+
             // Crea un link di autenticazione per l'utente
             const reqRes = await fetch(`${GOCARDLESS_API_URL}/requisitions/`, {
                 method: 'POST',

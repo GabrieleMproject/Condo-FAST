@@ -4,23 +4,19 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { encodeBase64 } from 'https://deno.land/std@0.203.0/encoding/base64.ts'
 
-const corsHeaders = {
-  ...getCorsHeaders(req),
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
 serve(async (req) => {
   // CORS Preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: getCorsHeaders(req) })
   }
-  }
+
+  const corsHeaders = getCorsHeaders(req)
 
   try {
     // 1. Validazione Token di Sicurezza
+    // H4 fix: accetta token sia da header (più sicuro) che da query string (retrocompatibilità)
     const url = new URL(req.url)
-    const token = url.searchParams.get('token')
+    const token = req.headers.get('X-Webhook-Token') || url.searchParams.get('token')
     const expectedToken = Deno.env.get('INBOUND_EMAIL_TOKEN')
 
     if (!expectedToken) {

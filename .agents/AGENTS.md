@@ -732,7 +732,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ## Storico Decisioni e Fatti Verificati della Sessione S39 (15 Luglio 2026 - Analisi di Mercato, Pricing e Scelte Strategiche)
 
 ### 1. Decisioni di Business e Pricing
-- **Strategia di Posizionamento Premium:** Definita una struttura di pricing premium per posizionare CondoAI come strumento ad alto valore aggiunto che riduce il carico di lavoro dello studio (ROI paragonabile a mezza risorsa part-time).
+- **Strategia di Posizionamento Premium:** Definita una struttura di pricing premium per posizionare CondoSmart come strumento ad alto valore aggiunto che riduce il carico di lavoro dello studio (ROI paragonabile a mezza risorsa part-time).
 - **Tariffazione SaaS basata su U.I.:** Mantenuta la metrica sulle unità immobiliari gestite (U.I.) con postazioni illimitate incluse (vantaggio rispetto a Danea Domustudio, allineato a Kipò). L'assistenza AI è inclusa nativamente (fair-use) per preservare la proposta di valore.
 - **Canoni di Listino:**
   - *Starter (Fino a 250 U.I.):* €69/mese fatturato annualmente (~€830/anno).
@@ -748,7 +748,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **No Provvigioni Opache Energia:** Escluso l'incasso di provvigioni non trasparenti per gli amministratori su contratti energetici per scongiurare il rischio di nullità della nomina ex art. 1129 comma 14 c.c. e Cassazione 14424/2025. Previste come alternative future: benchmark comparativi sui consumi delle parti comuni basati sulle fatture caricate, moduli di gara trasparenti e preparazione per CER (Comunità Energetiche Rinnovabili) sul lungo termine.
 
 ### 3. Roadmap di Sviluppo e Go-To-Market
-- **Fase 1 (Luglio-Agosto 2026 - Focus Sviluppo):** Sviluppo e validazione del motore di calcolo contabile tramite test di regressione con "file d'oro" reali (confronto al centesimo dei bilanci CondoAI vs Domustudio) e completamento dell'importatore dati.
+- **Fase 1 (Luglio-Agosto 2026 - Focus Sviluppo):** Sviluppo e validazione del motore di calcolo contabile tramite test di regressione con "file d'oro" reali (confronto al centesimo dei bilanci CondoSmart vs Domustudio) e completamento dell'importatore dati.
 - **Fase 2 (Settembre-Novembre 2026 - Finestra Commerciale):** Outbound marketing manuale mirato su 50 studi pilota (como-Milano) e allineamento con Amministrazione Gemelli (design partner).
 - **Fase 3 (Dicembre 2026-Gennaio 2027 - Migrazione):** Importazione e migrazione dati assistita in vista dell'apertura del nuovo esercizio contabile.
 - **Fase 4 (Febbraio-Aprile 2027 - Validazione Runtime):** Collaudo sul campo durante la redazione dei primi consuntivi reali e scadenze CU fiscali.

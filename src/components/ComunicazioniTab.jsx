@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabaseClient';
 import { useComunicazioni } from '../hooks/useComunicazioni';
 import { Mail, Calendar, Eye, Send, Plus, CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
@@ -457,7 +458,7 @@ L'Amministratore`;
                 <div style={styles.msgLabel}>Contenuto Email (HTML):</div>
                 <div 
                   style={styles.msgContent}
-                  dangerouslySetInnerHTML={{ __html: selectedMsg.messaggio }} 
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedMsg.messaggio) }} 
                 />
               </div>
             </div>

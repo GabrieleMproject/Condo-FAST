@@ -1,3 +1,4 @@
+import { getCorsHeaders } from '../_shared/cors.ts'
 // supabase/functions/stripe-checkout/index.ts
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -35,13 +36,8 @@ function prezziPerPiano(piano: string) {
 Deno.serve(async (req) => {
   // CORS
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    })
+    return new Response(null, { headers: getCorsHeaders(req) })
+  }
   }
 
   if (req.method !== 'POST') {
@@ -181,7 +177,7 @@ Deno.serve(async (req) => {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...getCorsHeaders(req),
         },
       }
     )
@@ -193,7 +189,7 @@ Deno.serve(async (req) => {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...getCorsHeaders(req),
         },
       }
     )

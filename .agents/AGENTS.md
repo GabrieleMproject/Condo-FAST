@@ -1108,3 +1108,9 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Audit di Sicurezza e Penetration Test (Read-Only):** Confermato lo stato "Molto Buono" dell'architettura SaaS. IDOR e RLS protetti, storage con signed URLs sicuri, JWT check solido in Edge Functions (nessun bypass logico), nessun log PII esposto.
 - **Prevenzione Stored XSS e CSS Injection:** Rilevata vulnerabilità (Media) legata all'uso di `dangerouslySetInnerHTML`. Implementata utility centralizzata `src/lib/sanitizeHtml.js` che utilizza `DOMPurify`.
 - **Risoluzione Bug Triager:** Configurato il wrapper DOMPurify per evitare crash `TypeError` in React su campi null/undefined, prevenire il "Global Style Bleeding" (CSS Injection) scartando i tag `<style>` e `<script>`, e mantenere la UX tramite l'hook `afterSanitizeAttributes` che forza in sicurezza il target a `_blank` per non perdere lo stato di navigazione React.
+
+### 2. Risoluzioni di Hardening Avanzato
+- **SCA (Software Composition Analysis):** Eseguito `npm audit fix` per aggiornare dipendenze critiche (es. `vite`, `tmp`, `react-router`), chiudendo vulnerabilità di Path Traversal e fs bypass.
+- **CORS Mitigation:** Rimosso il pattern insicuro `Access-Control-Allow-Origin: *` da tutte le 9 Edge Functions. Introdotto il modulo condiviso `cors.ts` che valida la richiesta contro una whitelist di origini sicure o variabile `APP_URL`.
+- **Content-Security-Policy (CSP):** Iniettato header CSP stringente in `index.html` per limitare le origini di esecuzione di script e stili (allowlist per Supabase, Stripe e Google Fonts), fornendo una mitigazione strutturale contro l'XSS.
+- **Protezione File Upload:** Aggiunto un layer di controllo MIME e regex in `useDocumenti.js` per impedire fisicamente il caricamento su Storage di file SVG o HTML, che potrebbero causare Stored XSS se serviti nativamente dal dominio.

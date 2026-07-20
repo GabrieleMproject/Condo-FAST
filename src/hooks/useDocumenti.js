@@ -37,6 +37,12 @@ export function useDocumenti(condominioId) {
         throw new Error('Il file supera il limite massimo consentito di 10MB.')
       }
 
+      // Prevenzione SVG/HTML Upload (Stored XSS)
+      const invalidTypes = ['image/svg+xml', 'text/html', 'application/xhtml+xml', 'text/xml']
+      if (invalidTypes.includes(file.type) || file.name.match(/\.(svg|html|htm|xml)$/i)) {
+        throw new Error('Formato file non consentito per motivi di sicurezza.')
+      }
+
       // Applica compressione se è un'immagine
       const compressedFile = await comprimiImmagine(file)
 

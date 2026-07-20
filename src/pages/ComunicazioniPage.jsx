@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import DOMPurify from 'dompurify';
+import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { supabase } from '../lib/supabaseClient';
 import { useCondomini } from '../hooks/useCondomini';
 import { useComunicazioni } from '../hooks/useComunicazioni';
@@ -224,7 +224,7 @@ export default function ComunicazioniPage() {
                 <div style={styles.msgLabel}>Contenuto Email (HTML):</div>
                 <div 
                   style={styles.msgContent}
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedMsg.messaggio) }} 
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedMsg?.messaggio) }} 
                 />
               </div>
             </div>

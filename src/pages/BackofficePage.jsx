@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import DOMPurify from 'dompurify'
+import { sanitizeHtml } from '../lib/sanitizeHtml'
 import { supabase } from '../lib/supabaseClient'
 import { Users, Ticket, Search, Save, MessageSquare, Send, Gift, Plus } from 'lucide-react'
 import { toast } from 'react-hot-toast'
@@ -1336,7 +1336,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                         </div>
                         <div 
                           style={{ fontSize: 14, lineHeight: 1.6, overflowY: 'auto', flex: 1, color: '#334155' }}
-                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marketingForm.messaggio || '<p style="color: #94a3b8; font-style: italic;">Il corpo del messaggio comparirà qui...</p>') }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(marketingForm.messaggio || '<p style="color: #94a3b8; font-style: italic;">Il corpo del messaggio comparirà qui...</p>') }}
                         />
                       </div>
                     </div>

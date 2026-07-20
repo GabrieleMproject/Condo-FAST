@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiMovimentiBancari, getTipoFile } from '../lib/fileExtractor';
 import { useDocumenti } from '../hooks/useDocumenti';
+import PlanGate from '../components/PlanGate';
 import { Trash2, Building2, User, Check, AlertTriangle } from 'lucide-react';
 
 const TIPI_ACCETTATI = '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png';
@@ -19,6 +20,8 @@ export default function EstrattoContoPage() {
   const [erroreUpload, setErroreUpload] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [bankingStatus, setBankingStatus] = useState(null);
+  const [syncingBank, setSyncingBank] = useState(false);
 
   const docEstratto = documenti.find(d => d.tipo === 'estratto_conto');
 
@@ -67,8 +70,19 @@ export default function EstrattoContoPage() {
     if (condominioId) {
       loadMovimenti();
       fetchDocumenti();
+      loadBankingStatus();
     }
   }, [condominioId, fetchDocumenti]);
+
+  async function loadBankingStatus() {
+    const { data } = await supabase
+      .from('bank_connections')
+      .select('*')
+      .eq('condominio_id', condominioId)
+      .limit(1)
+      .maybeSingle();
+    setBankingStatus(data);
+  }
 
   async function loadMovimenti() {
     setLoading(true);
@@ -242,6 +256,126 @@ export default function EstrattoContoPage() {
         ))}
       </div>
 
+      {/* Open Banking Section */}
+      <PlanGate feature="open_banking" fallback={
+        <div style={{...styles.dropZone, padding: 16, marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{fontWeight: 600, color: 'var(--text-primary)'}}>🏦 Open Banking (PSD2)</div>
+            <div style={{fontSize: 13, color: 'var(--text-muted)'}}>Collega il conto corrente per scaricare i movimenti in automatico ogni notte. Esclusivo per il piano Professional.</div>
+          </div>
+          <button style={{...styles.docOpenBtn, background: 'var(--border-color)', color: 'var(--text-muted)', cursor: 'not-allowed'}} disabled>Passa a Pro</button>
+        </div>
+      }>
+        <div style={{...styles.dropZone, padding: 16, marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: bankingStatus?.status === 'LINKED' ? '#16a34a' : 'var(--border-color)', background: bankingStatus?.status === 'LINKED' ? '#16a34a10' : '#1e293b10'}}>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{fontWeight: 600, color: 'var(--text-primary)'}}>
+              🏦 Sincronizzazione Bancaria (GoCardless)
+              {bankingStatus?.status === 'LINKED' && <span style={{marginLeft: 10, fontSize: 12, color: '#16a34a', background: '#16a34a20', padding: '2px 8px', borderRadius: 12}}>🟢 Attiva ({bankingStatus.institution_name})</span>}
+            </div>
+            <div style={{fontSize: 13, color: 'var(--text-muted)'}}>
+              {bankingStatus?.status === 'LINKED' ? `Sincronizzazione automatica attiva. Conto: ${bankingStatus.iban || bankingStatus.account_id || 'Autenticato'}` : 'Collega il conto bancario per scaricare i movimenti in tempo reale e azzerare i caricamenti PDF.'}
+            </div>
+          </div>
+          <div style={{display: 'flex', gap: 10}}>
+             {bankingStatus?.status === 'LINKED' && (
+                <button 
+                  style={{...styles.tBtn, background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
+                  onClick={async () => {
+                     setSyncingBank(true);
+                     try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gocardless-proxy`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                          },
+                          body: JSON.stringify({ action: 'sync_transactions', payload: { connectionId: bankingStatus.id } })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Errore di sincronizzazione');
+                        alert(`Sincronizzazione completata. ${data.newTransactions} nuovi movimenti importati.`);
+                        loadMovimenti();
+                     } catch(err) {
+                        alert(err.message);
+                     } finally {
+                        setSyncingBank(false);
+                     }
+                  }}
+                  disabled={syncingBank}
+                >
+                  {syncingBank ? '⏳ Sincronizzo...' : '🔄 Sincronizza Ora'}
+                </button>
+             )}
+             {!bankingStatus && (
+                <button 
+                  style={{...styles.docOpenBtn, background: '#2563eb'}} 
+                  onClick={async () => {
+                     try {
+                        // Demo sandbox
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gocardless-proxy`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                          },
+                          body: JSON.stringify({ action: 'create_requisition', payload: { 
+                              condominioId: condominioId,
+                              institutionId: 'SANDBOXFINANCE_SFIN0000',
+                              institutionName: 'Sandbox Finance',
+                              redirectUrl: window.location.href 
+                          }})
+                        });
+                        const data = await res.json();
+                        if (data.link) {
+                            window.location.href = data.link; // Redirect to bank
+                        } else {
+                            // Fallback se non c'è la key
+                            alert('Simulazione connessione bancaria avviata in dev.');
+                            loadBankingStatus();
+                        }
+                     } catch(err) {
+                        alert('Configura le API Key GoCardless nel backend prima di procedere.');
+                     }
+                  }}
+                >
+                  Collega Banca
+                </button>
+             )}
+             {bankingStatus?.status === 'CREATED' && (
+                <button 
+                  style={{...styles.docOpenBtn, background: '#f59e0b'}} 
+                  onClick={async () => {
+                     setSyncingBank(true);
+                     try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gocardless-proxy`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                          },
+                          body: JSON.stringify({ action: 'sync_transactions', payload: { connectionId: bankingStatus.id } })
+                        });
+                        if (!res.ok) throw new Error('Errore completamento');
+                        loadBankingStatus();
+                        loadMovimenti();
+                     } catch(err) {
+                        alert(err.message);
+                     } finally {
+                        setSyncingBank(false);
+                     }
+                  }}
+                  disabled={syncingBank}
+                >
+                  {syncingBank ? '⏳ Attendere...' : 'Completa Collegamento'}
+                </button>
+             )}
+          </div>
+        </div>
+      </PlanGate>
+
       {/* Drop zone upload */}
       <div
         style={{ ...styles.dropZone, ...(dragOver ? styles.dropZoneActive : {}) }}
@@ -324,6 +458,7 @@ export default function EstrattoContoPage() {
                   )}
                   <div style={styles.movMeta}>
                     {formattaData(m.data_movimento)}
+                    {m.metodo_importazione === 'open_banking' && <span style={{marginLeft: 6, color: '#2563eb', fontWeight: 600}}>🏦 PSD2</span>}
                     {m.riferimento_esterno && ` · Rif: ${m.riferimento_esterno}`}
                     {m.riconciliato && (
                       <span style={{ ...styles.ricBadge, display: 'inline-flex', alignItems: 'center', gap: 4 }}>

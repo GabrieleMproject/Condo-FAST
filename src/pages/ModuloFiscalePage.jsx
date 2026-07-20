@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { Landmark, Download, FileSpreadsheet, Building2, User, Calendar, CheckCircle2, AlertTriangle, FileText, Upload, Plus } from 'lucide-react'
+import { Landmark, Download, FileSpreadsheet, Building2, User, Calendar, CheckCircle2, AlertTriangle, FileText, Upload, ChevronRight, ExternalLink, Monitor, ShieldCheck, PlayCircle } from 'lucide-react'
 import { exportBozzaCU, exportQuietanzaFornitore } from '../lib/exportFiscale'
 import { generaCbiF24 } from '../lib/cbiGenerator'
 import { generaTelematicoCU, generaTelematico770 } from '../lib/fiscaleTelematico'
@@ -32,6 +32,7 @@ export default function ModuloFiscalePage() {
   // Selezione per CBI massivo
   const [selezionatiCbi, setSelezionatiCbi] = useState({}) // f24Id -> boolean
   const [f24UploadingId, setF24UploadingId] = useState(null)
+  const [wizardStepCU, setWizardStepCU] = useState(1)
 
   useEffect(() => {
     loadData()
@@ -355,92 +356,224 @@ export default function ModuloFiscalePage() {
         <div style={{ color: 'var(--text-secondary)' }}>Caricamento dati fiscali in corso...</div>
       ) : (
         <>
-          {/* TAB 1: CERTIFICAZIONE UNICA & 770 */}
+          {/* TAB 1: CERTIFICAZIONE UNICA & 770 (WIZARD INVIO DIRETTO) */}
           {tabAttivo === 'cu_770' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               
-              {/* Alert Informativo Desktop Telematico */}
-              <div style={styles.alertBanner}>
-                <AlertTriangle size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
-                <div style={{ fontSize: 13.5, color: 'var(--text-primary)', lineHeight: '1.4' }}>
-                  <b>Avviso di Conformità AdE:</b> I file telematici scaricati (.txt da 1900 caratteri) rispettano rigorosamente le specifiche tecniche ministeriali. Prima della trasmissione reale all'Agenzia delle Entrate, è <b>obbligatorio</b> validarli tramite il software <b>Desktop Telematico (moduli di controllo Sogei)</b> per verificare la presenza di anomalie anagrafiche dei percipienti.
-                </div>
-              </div>
-
-              {Object.keys(datiRaggruppatiCU).length === 0 ? (
-                <div style={styles.empty}>
-                  Nessun compenso erogato soggetto a ritenuta (fatture pagate) per l'anno e condominio selezionati.
-                </div>
-              ) : (
-                Object.entries(datiRaggruppatiCU).map(([cId, fornitoriMap]) => {
-                  const fornitoriList = Object.values(fornitoriMap)
-                  const condName = fornitoriList[0]?.condominio?.nome || 'Condominio'
-                  
-                  return (
-                    <div key={cId} style={styles.section}>
-                      <div style={styles.sectionHeader}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <Building2 size={20} color="#94a3b8" />
-                          <h2 style={styles.sectionTitle}>{condName}</h2>
-                        </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <button onClick={() => handleExportPdfCU(cId)} style={styles.btnAction}>
-                            <Download size={14} /> PDF Bozza CU
-                          </button>
-                          <button onClick={() => handleExportTxtCU(cId)} style={styles.btnActionPrimary}>
-                            <FileText size={14} /> Telematico CU (.txt)
-                          </button>
-                          <button onClick={() => handleExportTxt770(cId)} style={styles.btnActionPrimary}>
-                            <FileText size={14} /> Telematico 770 (.txt)
-                          </button>
-                        </div>
+              {/* Wizard Progress Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: '16px 24px', gap: 16 }}>
+                {[
+                  { step: 1, title: '1. Estrazione & Controlli', desc: 'Genera file telematici' },
+                  { step: 2, title: '2. Validazione AdE', desc: 'Desktop Telematico (Sogei)' },
+                  { step: 3, title: '3. Trasmissione', desc: 'Invio con SPID su Fisconline' }
+                ].map((s, idx) => (
+                  <React.Fragment key={s.step}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: wizardStepCU >= s.step ? 1 : 0.4, flex: 1, cursor: 'pointer' }} onClick={() => setWizardStepCU(s.step)}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: wizardStepCU === s.step ? '#2563eb' : (wizardStepCU > s.step ? '#10b981' : 'var(--app-bg)'), color: wizardStepCU >= s.step ? '#fff' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, border: wizardStepCU < s.step ? '1px solid var(--border-color)' : 'none' }}>
+                        {wizardStepCU > s.step ? <CheckCircle2 size={20} /> : s.step}
                       </div>
-                      
-                      <div style={styles.tableContainer}>
-                        <table style={styles.table}>
-                          <thead>
-                            <tr>
-                              <th style={styles.th}>Fornitore</th>
-                              <th style={styles.th}>P.IVA / CF</th>
-                              <th style={styles.th}>Regime</th>
-                              <th style={styles.th}>N° Fatt.</th>
-                              <th style={{ ...styles.th, textAlign: 'right' }}>Imponibile Lordo</th>
-                              <th style={{ ...styles.th, textAlign: 'right' }}>Ritenuta Trattenuta</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {fornitoriList.map((fData, i) => (
-                              <tr key={i} style={styles.tr}>
-                                <td style={styles.td}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <User size={14} color="#64748b" />
-                                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fData.fornitore.ragione_sociale}</span>
-                                  </div>
-                                </td>
-                                <td style={styles.td}>
-                                  <span style={styles.badge}>{fData.fornitore.codice_fiscale || fData.fornitore.partita_iva || 'MANCANTE'}</span>
-                                </td>
-                                <td style={styles.td}>
-                                  {fData.fornitore.regime_forfettario ? (
-                                    <span style={{ ...styles.badge, background: '#10b98120', color: '#10b981' }}>Forfettario (Esente)</span>
-                                  ) : (
-                                    <span style={{ ...styles.badge, background: '#2563eb20', color: '#60a5fa' }}>Ordinario (Soggetto)</span>
-                                  )}
-                                </td>
-                                <td style={styles.td}>{fData.fatture.length} doc.</td>
-                                <td style={{ ...styles.td, textAlign: 'right' }}>€ {fData.totaleImponibile.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
-                                <td style={{ ...styles.td, textAlign: 'right', color: fData.totaleRitenute > 0 ? '#f59e0b' : '#64748b', fontWeight: 600 }}>
-                                  € {fData.totaleRitenute.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: wizardStepCU >= s.step ? 'var(--text-primary)' : 'var(--text-muted)' }}>{s.title}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{s.desc}</div>
                       </div>
                     </div>
-                  )
-                })
+                    {idx < 2 && <ChevronRight size={24} color="var(--border-color-2)" />}
+                  </React.Fragment>
+                ))}
+              </div>
+
+              {wizardStepCU === 1 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  {Object.keys(datiRaggruppatiCU).length === 0 ? (
+                    <div style={styles.empty}>
+                      Nessun compenso erogato soggetto a ritenuta (fatture pagate) per l'anno e condominio selezionati.
+                    </div>
+                  ) : (
+                    Object.entries(datiRaggruppatiCU).map(([cId, fornitoriMap]) => {
+                      const fornitoriList = Object.values(fornitoriMap)
+                      const condName = fornitoriList[0]?.condominio?.nome || 'Condominio'
+                      const fornitoriIncompleti = fornitoriList.filter(f => !f.fornitore.partita_iva && !f.fornitore.codice_fiscale)
+                      const canExport = fornitoriIncompleti.length === 0
+                      
+                      return (
+                        <div key={cId} style={styles.section}>
+                          <div style={styles.sectionHeader}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <Building2 size={20} color="#94a3b8" />
+                              <h2 style={styles.sectionTitle}>{condName}</h2>
+                            </div>
+                            <div style={{ display: 'flex', gap: 10 }}>
+                              <button onClick={() => handleExportPdfCU(cId)} style={styles.btnAction}>
+                                <Download size={14} /> PDF Bozza CU
+                              </button>
+                              <button onClick={() => handleExportTxtCU(cId)} disabled={!canExport} style={{...styles.btnActionPrimary, opacity: canExport ? 1 : 0.5, cursor: canExport ? 'pointer' : 'not-allowed'}}>
+                                <FileText size={14} /> Telematico CU (.txt)
+                              </button>
+                              <button onClick={() => handleExportTxt770(cId)} disabled={!canExport} style={{...styles.btnActionPrimary, opacity: canExport ? 1 : 0.5, cursor: canExport ? 'pointer' : 'not-allowed'}}>
+                                <FileText size={14} /> Telematico 770 (.txt)
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Alert Bloccante Anagrafiche Incomplete */}
+                          {!canExport && (
+                            <div style={{ background: '#ef444415', borderBottom: '1px solid #ef444430', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <AlertTriangle size={24} color="#ef4444" style={{ flexShrink: 0 }} />
+                              <div>
+                                <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 14 }}>Generazione telematica bloccata: Anagrafiche incomplete</div>
+                                <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>Ci sono {fornitoriIncompleti.length} fornitore/i senza Partita IVA o Codice Fiscale. L'Agenzia delle Entrate scarterebbe il file. Completa le anagrafiche nella sezione Fornitori prima di generare l'export.</div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div style={styles.tableContainer}>
+                            <table style={styles.table}>
+                              <thead>
+                                <tr>
+                                  <th style={styles.th}>Fornitore</th>
+                                  <th style={styles.th}>P.IVA / CF</th>
+                                  <th style={styles.th}>Regime</th>
+                                  <th style={styles.th}>N° Fatt.</th>
+                                  <th style={{ ...styles.th, textAlign: 'right' }}>Imponibile Lordo</th>
+                                  <th style={{ ...styles.th, textAlign: 'right' }}>Ritenuta Trattenuta</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {fornitoriList.map((fData, i) => {
+                                  const missingIva = !fData.fornitore.partita_iva && !fData.fornitore.codice_fiscale;
+                                  return (
+                                  <tr key={i} style={{...styles.tr, background: missingIva ? '#ef444408' : 'transparent'}}>
+                                    <td style={styles.td}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <User size={14} color="#64748b" />
+                                        <span style={{ fontWeight: 600, color: missingIva ? '#ef4444' : 'var(--text-primary)' }}>{fData.fornitore.ragione_sociale}</span>
+                                      </div>
+                                    </td>
+                                    <td style={styles.td}>
+                                      {missingIva ? (
+                                        <span style={{ ...styles.badge, background: '#ef444420', color: '#ef4444' }}>MANCANTE!</span>
+                                      ) : (
+                                        <span style={styles.badge}>{fData.fornitore.codice_fiscale || fData.fornitore.partita_iva}</span>
+                                      )}
+                                    </td>
+                                    <td style={styles.td}>
+                                      {fData.fornitore.regime_forfettario ? (
+                                        <span style={{ ...styles.badge, background: '#10b98120', color: '#10b981' }}>Forfettario (Esente)</span>
+                                      ) : (
+                                        <span style={{ ...styles.badge, background: '#2563eb20', color: '#60a5fa' }}>Ordinario (Soggetto)</span>
+                                      )}
+                                    </td>
+                                    <td style={styles.td}>{fData.fatture.length} doc.</td>
+                                    <td style={{ ...styles.td, textAlign: 'right' }}>€ {fData.totaleImponibile.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
+                                    <td style={{ ...styles.td, textAlign: 'right', color: fData.totaleRitenute > 0 ? '#f59e0b' : '#64748b', fontWeight: 600 }}>
+                                      € {fData.totaleRitenute.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                                    </td>
+                                  </tr>
+                                )})}
+                              </tbody>
+                            </table>
+                          </div>
+                          
+                          <div style={{ padding: '16px 20px', background: 'var(--app-bg)', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button 
+                              onClick={() => setWizardStepCU(2)} 
+                              disabled={!canExport}
+                              style={{...styles.btnActionPrimary, background: canExport ? '#10b981' : '#64748b', fontSize: 14, padding: '10px 20px', opacity: canExport ? 1 : 0.5}}
+                            >
+                              File Generato? Vai al controllo AdE <ChevronRight size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
               )}
+
+              {wizardStepCU === 2 && (
+                <div style={styles.wizardPanel}>
+                  <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                    <div style={{ display: 'inline-flex', padding: 16, borderRadius: '50%', background: '#3b82f615', marginBottom: 16 }}>
+                      <Monitor size={48} color="#3b82f6" />
+                    </div>
+                    <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Validazione Ufficiale Sogei</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 15, maxWidth: 600, margin: '8px auto' }}>
+                      Prima di inviare i file telematici all'Agenzia delle Entrate, è obbligatorio verificarne la correttezza formale utilizzando il software ufficiale gratuito.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 24, marginBottom: 32 }}>
+                    <div style={{ flex: 1, background: 'var(--app-bg)', borderRadius: 12, padding: 24, border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>1</span> 
+                        Scarica "Desktop Telematico"
+                      </h3>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 16, lineHeight: '1.5' }}>
+                        Accedi al portale dell'Agenzia delle Entrate e scarica l'applicazione Desktop Telematico sul tuo computer. Installa i moduli di controllo per le Certificazioni Uniche e per il modello 770.
+                      </p>
+                      <button onClick={() => window.open('https://telematici.agenziaentrate.gov.it/', '_blank')} style={styles.btnAction}>
+                        <ExternalLink size={16} /> Vai al portale Download AdE
+                      </button>
+                    </div>
+                    
+                    <div style={{ flex: 1, background: 'var(--app-bg)', borderRadius: 12, padding: 24, border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>2</span> 
+                        Esegui il controllo
+                      </h3>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 16, lineHeight: '1.5' }}>
+                        Apri il Desktop Telematico, vai in <b>Applicazioni {'>'} Controlla file</b>. Seleziona i file `.txt` generati da CondoSmart al passaggio precedente. Assicurati che non ci siano errori bloccanti.
+                      </p>
+                      <div style={{ background: '#10b98115', border: '1px dashed #10b98150', padding: 12, borderRadius: 8, color: '#10b981', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <ShieldCheck size={18} /> L'esito deve essere "Elaborato senza errori".
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: 24 }}>
+                    <button onClick={() => setWizardStepCU(1)} style={styles.btnAction}>
+                      Indietro
+                    </button>
+                    <button onClick={() => setWizardStepCU(3)} style={{...styles.btnActionPrimary, fontSize: 15, padding: '12px 24px'}}>
+                      Ho validato i file, procediamo all'invio <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {wizardStepCU === 3 && (
+                <div style={styles.wizardPanel}>
+                  <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                    <div style={{ display: 'inline-flex', padding: 16, borderRadius: '50%', background: '#10b98115', marginBottom: 16 }}>
+                      <PlayCircle size={48} color="#10b981" />
+                    </div>
+                    <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Trasmissione Diretta su Fisconline</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 15, maxWidth: 600, margin: '8px auto' }}>
+                      Salta il commercialista caricando il file direttamente con il tuo SPID nel tuo cassetto fiscale. L'operazione è gratuita e legalmente inattaccabile se il file è stato validato al passo 2.
+                    </p>
+                  </div>
+
+                  <div style={{ background: 'var(--app-bg)', borderRadius: 12, padding: 32, border: '1px solid var(--border-color)', maxWidth: 700, margin: '0 auto 32px' }}>
+                    <ol style={{ paddingLeft: 20, margin: 0, color: 'var(--text-primary)', fontSize: 15, lineHeight: '1.8' }}>
+                      <li style={{ marginBottom: 12 }}>Clicca sul pulsante qui sotto per accedere a <b>Fisconline / Entratel</b>.</li>
+                      <li style={{ marginBottom: 12 }}>Autenticati con il tuo <b>SPID</b> o <b>CIE</b>.</li>
+                      <li style={{ marginBottom: 12 }}>Dal menu di sinistra, seleziona <b>Servizi per {'>'} Inviare</b>.</li>
+                      <li style={{ marginBottom: 12 }}>Seleziona i file `.txt` controllati e autenticali inserendo il tuo codice PIN dispositivo.</li>
+                      <li style={{ marginBottom: 12 }}>Conferma l'invio. Troverai la ricevuta di accettazione AdE dopo 24/48 ore nella sezione "Ricevute".</li>
+                    </ol>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 16, borderTop: '1px solid var(--border-color)', paddingTop: 24 }}>
+                    <button onClick={() => setWizardStepCU(2)} style={styles.btnAction}>
+                      Indietro
+                    </button>
+                    <button onClick={() => window.open('https://ivaservizi.agenziaentrate.gov.it/portale/', '_blank')} style={{...styles.btnActionPrimary, background: '#10b981', fontSize: 16, padding: '14px 28px'}}>
+                      <ExternalLink size={20} /> Accedi all'Agenzia delle Entrate (SPID)
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 
@@ -560,7 +693,7 @@ export default function ModuloFiscalePage() {
           )}
 
           {/* TAB 3: QUIETANZA AI FORNITORI */}
-          {tabAttivo === 'quieta' || tabAttivo === 'quietanze' && (
+          {(tabAttivo === 'quieta' || tabAttivo === 'quietanze') && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {ritenutePagateList.length === 0 ? (
                 <div style={styles.empty}>
@@ -646,6 +779,7 @@ const styles = {
   tr: { transition: 'background 0.2s', borderBottom: '1px solid var(--border-color-2)' },
   badge: { background: 'var(--border-color)', color: 'var(--text-primary)', padding: '4px 8px', borderRadius: 4, fontSize: 11.5, fontFamily: 'monospace' },
   massivePanel: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--border-color)', padding: '14px 20px', borderRadius: 10 },
+  wizardPanel: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 40 },
   cardF24: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 18, transition: 'all 0.2s' },
   cardF24Header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   dateLabel: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: 'var(--text-secondary)' },

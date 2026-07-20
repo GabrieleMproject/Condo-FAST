@@ -75,6 +75,7 @@ const FEATURE_GATES = {
   postbox_studio:      ['studio', 'professional'],
   multi_utente:        ['studio', 'professional'],   // Studio+ supporta ora collaboratori limitati
   api_access:          ['professional'],             // futuro
+  open_banking:        ['professional'],             // S51
 }
 
 const PlanContext = createContext(null)

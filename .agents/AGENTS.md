@@ -1076,3 +1076,35 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 
 
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S51 (20 Luglio 2026 - Open Banking PSD2)
+
+### 1. Integrazione GoCardless / Nordigen
+- **Sincronizzazione Automatica Bancaria**: Implementata l'infrastruttura per collegare nativamente in sola lettura i conti correnti del condominio tramite le API di GoCardless, azzerando i costi AI.
+- **Limitazione di Piano (Professional)**: L'accesso è bloccato dietro `PlanGate` in `EstrattoContoPage.jsx`.
+- **Database ed Edge Functions**: Creata la tabella `bank_connections` e le Edge Functions `gocardless-proxy` e `sync-bank-transactions` per la sincronizzazione notturna.
+- **Coesistenza con PDF/AI**: I movimenti inseriti automaticamente vengono marcati con `metodo_importazione = open_banking` e convivono con i classici upload manuali PDF.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S52 (20 Luglio 2026 - Assistente Invio Diretto AdE)
+
+### 1. Decisioni Architetturali e di Prodotto (Modulo Fiscale)
+- **Assistente Invio Diretto AdE:** Sostituito il "Pacchetto Commercialista" con un assistente per l'invio diretto all'Agenzia delle Entrate nel modulo fiscale.
+- **Wizard a 3 Step:** Implementato un wizard guidato:
+  1. **Generazione:** Creazione dei file con controlli bloccanti preventivi sulle P.IVA mancanti.
+  2. **Validazione:** Validazione dei file tramite il Desktop Telematico Sogei.
+  3. **Invio:** Trasmissione diretta tramite Fisconline/Entratel via SPID.
+- **Autonomia dell'Amministratore (Fai-da-te assistito):** Questo approccio azzera la necessità di un commercialista, rendendo l'amministratore autonomo per CU e 770.
+- **Limitazione di Responsabilità (MVP):** La scelta evita che CondoSmart debba assumersi responsabilità legali dirette o doversi accreditare come intermediario abilitato in questa fase dell'MVP.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S53 (20 Luglio 2026)
+
+### 1. Decisioni sulla Sicurezza
+- **Audit di Sicurezza e Penetration Test (Read-Only):** Confermato lo stato "Molto Buono" dell'architettura SaaS. IDOR e RLS protetti, storage con signed URLs sicuri, JWT check solido in Edge Functions (nessun bypass logico), nessun log PII esposto.
+- **Prevenzione Stored XSS e CSS Injection:** Rilevata vulnerabilità (Media) legata all'uso di `dangerouslySetInnerHTML`. Implementata utility centralizzata `src/lib/sanitizeHtml.js` che utilizza `DOMPurify`.
+- **Risoluzione Bug Triager:** Configurato il wrapper DOMPurify per evitare crash `TypeError` in React su campi null/undefined, prevenire il "Global Style Bleeding" (CSS Injection) scartando i tag `<style>` e `<script>`, e mantenere la UX tramite l'hook `afterSanitizeAttributes` che forza in sicurezza il target a `_blank` per non perdere lo stato di navigazione React.

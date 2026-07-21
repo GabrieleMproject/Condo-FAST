@@ -1190,3 +1190,45 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 6. Edge Functions Ridispiegate
 - Tutte e 8 ridispiegate con successo: `stripe-checkout`, `delete-account`, `invia-comunicazione`, `invia-email-marketing`, `gocardless-proxy`, `sync-bank-transactions`, `inbound-email`, `gemini-proxy`.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S58 (21 Luglio 2026)
+
+### 1. Decisioni su Accesso e Sicurezza (Closed Beta)
+- **Implementazione Waitlist / Closed Beta:** Per limitare temporaneamente l'accesso all'app solo ad utenti selezionati (beta tester) prima del go-live pubblico.
+- **Blocco a livello di Rotta:** Aggiornato `ProtectedRoute.jsx` in modo che reindirizzi a `/waitlist` se l'utente autenticato non ha `is_beta_tester = true` e non è un `is_superadmin = true`. 
+- **WaitlistPage:** Creata pagina dal design coerente con il brand per bloccare l'utente e consentire il logout rapido, bloccando di fatto la fruizione del gestionale.
+
+### 2. Modifiche al Database e Profilo
+- **Tabella profiles:** Aggiunta la colonna booleana `is_beta_tester` (default `false`) tramite `sql/s58_beta_tester.sql`.
+- **RPC `get_utenti_statistiche`:** Aggiornato per esporre la colonna alla UI del Backoffice.
+- **Contesto Globale (usePlan):** Esposta la variabile `isBetaTester` per il frontend.
+- **Gestione da Backoffice:** Aggiunto in `BackofficePage.jsx` (tab Utenti & Piani) un badge grafico e il bottone "Toggle Beta" per permettere ai SuperAdmin di sbloccare manualmente singoli utenti attivando la colonna sul DB.
+
+### 3. Deploy su Vercel
+- Discusso il deploy dell'infrastruttura Frontend su Vercel e le differenze con Google Cloud per SPA Vite/React.
+- **Troubleshooting Build:** Vercel in crash a causa di import mancante di `framer-motion` in `WaitlistPage.jsx`. Bug corretto rimuovendo l'animazione lato codice e mantenendo un layout CSS pulito.
+- **Troubleshooting Deploy (Git Email):** Risolto blocco di sicurezza di Vercel ("Deployment Blocked") causato da un'email dummy nel `git config`. È stata impostata la mail corretta ed effettuato un commit vuoto (`--allow-empty`) per sbloccare la build.
+
+### 4. Transizione Nuovo Account Supabase (In sospeso)
+- Dopo la migrazione a un nuovo progetto Supabase e Vercel, l'utente è stato guidato a impostare il proprio account come SuperAdmin modificando manualmente la colonna `is_superadmin` a `true` dal pannello o via SQL.
+- **Anomalia Backoffice:** Il Backoffice carica correttamente ma mostra `Lista Utenti (0)`. È probabile che la RPC `get_utenti_statistiche` vada in eccezione restituendo un array vuoto, potenzialmente a causa della mancanza delle altre tabelle necessarie al JOIN (`condomini`, `ai_call_log`, `collaboratori_studio`) nel nuovo database vuoto. Da approfondire nella prossima chat.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S59 (21 Luglio 2026)
+
+### 1. Risoluzione Crash Backoffice e Dati Mancanti
+- **Diagnosi "Lista Utenti (0)":** Inserita una UI di fallback in `BackofficePage.jsx` per esporre eventuali errori non gestiti della RPC.
+- **Root Cause Identificata:** Nel nuovo database mancavano i campi fiscali della tabella `profiles` (`ragione_sociale`, `partita_iva`, `codice_fiscale`), causando un fallimento dell'esecuzione della funzione `get_utenti_statistiche` che l'applicazione silenziava.
+- **Risoluzione:** Eseguito lo script SQL `s11_profile_fields.sql` che ha normalizzato lo schema del DB, sbloccando con successo il caricamento completo degli utenti sulla dashboard del Backoffice.
+
+### 2. Risoluzione Problemi RLS con Beta Tester
+- **Sblocco del Tasto "Accetta in Beta":** Il tentativo da parte del SuperAdmin di aggiornare il campo `is_beta_tester` degli utenti falliva silenziosamente a causa delle policy RLS (`Row Level Security`) di Supabase, che impediscono agli utenti di modificare i profili altrui.
+- **Creazione RPC Sicura:** Per superare il problema senza esporre vulnerabilità rimuovendo le policy, è stata creata un'apposita RPC PostgreSQL `toggle_beta_tester` in modalità `SECURITY DEFINER` (script `s59_toggle_beta_rpc.sql`).
+- **Funzionamento dell'RPC:** L'RPC accetta l'UUID dell'utente e il nuovo stato booleano. Esegue una validazione d'identità interna controllando `public.is_superadmin(auth.uid())` prima di procedere all'aggiornamento, garantendo un bypass RLS sicuro e limitato unicamente a questo contesto.
+
+### 3. Debug Race Condition su ProtectedRoute
+- **Bug "Rimbalzo alla Waitlist":** Il tester pur essendo correttamente registrato a DB come `is_beta_tester: true` veniva rimbalzato sulla `WaitlistPage`.
+- **Diagnosi (React Race Condition):** Sviluppata un'overlay diagnostica a schermo che ha confermato un classico disallineamento temporale di React: l'evento login scattava, poplando l'oggetto `user` ma non ancora il `profile` asincrono. Il sistema valutava `(!isBetaTester && !isSuperAdmin)` e trovandolo inizialmente falso (a causa del profile null) reindirizzava preventivamente e ingiustamente alla waitlist.
+- **Fix architetturale in usePlan:** Corretta l'esportazione dello stato `loading` nell'hook globale `usePlan.js`. Implementata la formula `loading: loading || (!!user && !profile)`. Questa impone logicamente all'applicazione di attendere sulla schermata "Caricamento..." (bloccando l'esecuzione della `ProtectedRoute`) finché i dati integrali del profilo non sono stati completati in rete e sincronizzati nel browser.

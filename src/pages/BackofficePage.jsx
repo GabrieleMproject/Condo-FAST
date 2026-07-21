@@ -45,12 +45,16 @@ export default function BackofficePage() {
 
   const fetchData = async () => {
     setLoading(true)
+    setCriticalError(null)
     try {
       // ✅ Caricamento tramite RPC aggregata
       const { data: prof, error: profErr } = await supabase
         .rpc('get_utenti_statistiche')
       
-      if (profErr) throw profErr
+      if (profErr) {
+        console.error("ERRORE RPC GET_UTENTI_STATISTICHE:", profErr);
+        throw profErr;
+      }
       setUtenti(prof || [])
 
       const { data: tick, error: tickErr } = await supabase

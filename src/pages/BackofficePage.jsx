@@ -31,6 +31,7 @@ export default function BackofficePage() {
   // Stati ricerca e filtri utenti
   const [userSearch, setUserSearch] = useState('')
   const [filterPiano, setFilterPiano] = useState('tutti')
+  const [filterStato, setFilterStato] = useState('tutti') // 'tutti', 'beta', 'waiting'
   const [filterInattivi, setFilterInattivi] = useState(false)
 
   // Stati form marketing
@@ -487,11 +488,15 @@ Rispondi esplicitamente in formato JSON valido.`
         (u.ragione_sociale && u.ragione_sociale.toLowerCase().includes(search))
       
       const matchesPiano = filterPiano === 'tutti' || u.piano === filterPiano
+      const matchesStato = 
+        filterStato === 'tutti' ? true :
+        filterStato === 'beta' ? (u.is_beta_tester === true || u.is_superadmin === true) :
+        filterStato === 'waiting' ? (u.is_beta_tester !== true && u.is_superadmin !== true) : true
       const matchesInattivi = !filterInattivi || Number(u.condomini_count) === 0
       
-      return matchesSearch && matchesPiano && matchesInattivi
+      return matchesSearch && matchesPiano && matchesStato && matchesInattivi
     })
-  }, [utenti, userSearch, filterPiano, filterInattivi])
+  }, [utenti, userSearch, filterPiano, filterStato, filterInattivi])
 
   const destinatariFiltrati = React.useMemo(() => {
     return utenti.filter(u => {
@@ -684,6 +689,15 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                     />
                   </div>
                   <select
+                    value={filterStato}
+                    onChange={e => setFilterStato(e.target.value)}
+                    style={{ ...styles.input, width: 'auto', minWidth: 150 }}
+                  >
+                    <option value="tutti">Tutti gli stati</option>
+                    <option value="beta">Solo Beta Tester / Attivi</option>
+                    <option value="waiting">Solo In Attesa (Waitlist)</option>
+                  </select>
+                  <select
                     value={filterPiano}
                     onChange={e => setFilterPiano(e.target.value)}
                     style={{ ...styles.input, width: 'auto', minWidth: 150 }}
@@ -778,8 +792,10 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                                 ) : (
                                   <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Admin</span>
                                 )}
-                                {u.is_beta_tester && (
+                                {u.is_superadmin ? null : u.is_beta_tester ? (
                                   <span style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>Beta Tester</span>
+                                ) : (
+                                  <span style={{ color: '#ef4444', fontWeight: 600, fontSize: 12 }}>In Attesa (Waitlist)</span>
                                 )}
                               </div>
                             </td>
@@ -793,9 +809,18 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                                 </button>
                                 <button 
                                   onClick={() => handleToggleBeta(u.id, u.is_beta_tester)}
-                                  style={{ background: 'transparent', border: '1px solid #f59e0b', color: '#f59e0b', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 11 }}
+                                  style={{ 
+                                    background: u.is_beta_tester ? 'transparent' : '#f59e0b', 
+                                    border: '1px solid #f59e0b', 
+                                    color: u.is_beta_tester ? '#f59e0b' : '#fff', 
+                                    padding: '4px 10px', 
+                                    borderRadius: 6, 
+                                    cursor: 'pointer', 
+                                    fontSize: 11,
+                                    fontWeight: u.is_beta_tester ? 400 : 600
+                                  }}
                                 >
-                                  Toggle Beta
+                                  {u.is_beta_tester ? 'Revoca Beta' : 'Accetta in Beta'}
                                 </button>
                               </div>
                             </td>

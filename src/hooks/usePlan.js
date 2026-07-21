@@ -123,11 +123,17 @@ export function PlanProvider({ children }) {
       }
 
       // 2. Carica il profilo del titolare del piano (o il proprio se amministratore)
-      const { data: prof } = await supabase
+      const { data: prof, error: profErr } = await supabase
         .from('profiles')
         .select()
         .eq('id', targetUserId)
         .single()
+
+      if (profErr) {
+        console.error('DEBUG usePlan - Errore fetch profile:', profErr)
+      } else {
+        console.log('DEBUG usePlan - Profilo caricato:', prof)
+      }
 
       setProfile(prof)
 

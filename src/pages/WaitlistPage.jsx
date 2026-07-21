@@ -2,9 +2,13 @@ import React from 'react'
 import { LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { usePlan } from '../hooks/usePlan'
 
 export default function WaitlistPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { isBetaTester, isSuperAdmin } = usePlan()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -52,10 +56,22 @@ export default function WaitlistPage() {
         </h1>
         
         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '32px' }}>
-          Attualmente CondoSmart è in fase di testing limitata ai Beta Tester. 
-          Il tuo account è stato registrato ed inserito nella lista d'attesa. 
-          Ti contatteremo non appena l'accesso sarà abilitato per il tuo profilo!
+          Attualmente CondoSmart è in fase di testing
+          limitata ai Beta Tester. Il tuo account è stato
+          registrato ed inserito nella lista d'attesa. Ti
+          contatteremo non appena l'accesso sarà abilitato
+          per il tuo profilo!
         </p>
+
+        {/* --- BLOCCO DEBUG --- */}
+        <div style={{ marginBottom: 32, padding: 15, background: '#f8f9fa', borderRadius: 8, fontSize: 12, textAlign: 'left', border: '1px solid #e5e7eb', color: '#4b5563' }}>
+          <strong style={{ display: 'block', marginBottom: 8, color: '#111827' }}>Diagnostic Info (Screen me):</strong>
+          <div>User ID: {user?.id || 'N/A'}</div>
+          <div>Email: {user?.email || 'N/A'}</div>
+          <div>isBetaTester: {String(isBetaTester)}</div>
+          <div>isSuperAdmin: {String(isSuperAdmin)}</div>
+        </div>
+        {/* -------------------- */}
 
         <button 
           onClick={handleLogout}

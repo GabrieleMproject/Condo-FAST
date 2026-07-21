@@ -405,10 +405,10 @@ Rispondi esplicitamente in formato JSON valido.`
 
   const handleToggleBeta = async (id, currentVal) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_beta_tester: !currentVal })
-        .eq('id', id)
+      const { error } = await supabase.rpc('toggle_beta_tester', {
+        target_user_id: id,
+        target_status: !currentVal
+      })
       if (error) throw error
       toast.success('Stato Beta Tester aggiornato')
       fetchData()

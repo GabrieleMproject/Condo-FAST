@@ -1,10 +1,12 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { usePlan } from '../hooks/usePlan'
 
 export default function ProtectedRoute() {
-  const { user, loading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const { isBetaTester, isSuperAdmin, loading: planLoading } = usePlan()
 
-  if (loading) {
+  if (authLoading || (user && planLoading)) {
     return (
       <div style={{
         display: 'flex',
@@ -32,6 +34,11 @@ export default function ProtectedRoute() {
 
   if (!user) {
     return <Navigate to="/login" replace />
+  }
+
+  // Blocco beta tester (solo se non sei superadmin e non sei beta tester)
+  if (!isBetaTester && !isSuperAdmin) {
+    return <Navigate to="/waitlist" replace />
   }
 
   return <Outlet />

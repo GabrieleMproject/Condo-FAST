@@ -32,6 +32,8 @@ import SuperAdminGuard from './components/SuperAdminGuard'
 import MigrazionePage from './pages/MigrazionePage'
 import { ThemeProvider } from './contexts/ThemeContext'
 
+import WaitlistPage from './pages/WaitlistPage'
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -44,6 +46,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/waitlist" element={<WaitlistPage />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />

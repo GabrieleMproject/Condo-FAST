@@ -255,6 +255,7 @@ export function PlanProvider({ children }) {
     limiti,
     profile,
     isSuperAdmin: profile?.is_superadmin === true,
+    isBetaTester: profile?.is_beta_tester === true,
     isCollaboratore,
     titolareId,
 

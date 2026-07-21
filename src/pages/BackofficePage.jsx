@@ -397,6 +397,20 @@ Rispondi esplicitamente in formato JSON valido.`
     }
   }
 
+  const handleToggleBeta = async (id, currentVal) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_beta_tester: !currentVal })
+        .eq('id', id)
+      if (error) throw error
+      toast.success('Stato Beta Tester aggiornato')
+      fetchData()
+    } catch (err) {
+      toast.error('Errore aggiornamento stato beta: ' + err.message)
+    }
+  }
+
   // ── Helper Limiti e Progress Bar ──────────────────────────────────────────
   const getAiLimit = (piano) => {
     switch (piano) {
@@ -758,19 +772,32 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                               </select>
                             </td>
                             <td style={styles.td}>
-                              {u.is_superadmin ? (
-                                <span style={{ color: '#10b981', fontWeight: 600, fontSize: 12 }}>SuperAdmin</span>
-                              ) : (
-                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Admin</span>
-                              )}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {u.is_superadmin ? (
+                                  <span style={{ color: '#10b981', fontWeight: 600, fontSize: 12 }}>SuperAdmin</span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Admin</span>
+                                )}
+                                {u.is_beta_tester && (
+                                  <span style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>Beta Tester</span>
+                                )}
+                              </div>
                             </td>
                             <td style={styles.td}>
-                              <button 
-                                onClick={() => handlePromuovi(u.id, u.is_superadmin)}
-                                style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 11 }}
-                              >
-                                Toggle Admin
-                              </button>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <button 
+                                  onClick={() => handlePromuovi(u.id, u.is_superadmin)}
+                                  style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 11 }}
+                                >
+                                  Toggle Admin
+                                </button>
+                                <button 
+                                  onClick={() => handleToggleBeta(u.id, u.is_beta_tester)}
+                                  style={{ background: 'transparent', border: '1px solid #f59e0b', color: '#f59e0b', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 11 }}
+                                >
+                                  Toggle Beta
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}

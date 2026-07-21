@@ -130,9 +130,7 @@ export function PlanProvider({ children }) {
         .single()
 
       if (profErr) {
-        console.error('DEBUG usePlan - Errore fetch profile:', profErr)
-      } else {
-        console.log('DEBUG usePlan - Profilo caricato:', prof)
+        console.error('Errore fetch profile:', profErr)
       }
 
       setProfile(prof)

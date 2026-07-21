@@ -254,7 +254,7 @@ export function PlanProvider({ children }) {
   }, [])
 
   const value = {
-    loading,
+    loading: loading || (!!user && !profile),
     piano,
     limiti,
     profile,

@@ -38,6 +38,7 @@ export default function BackofficePage() {
   const [marketingForm, setMarketingForm] = useState({ target: 'tutti', oggetto: '', messaggio: '' })
   const [generandoTestoAI, setGenerandoTestoAI] = useState(false)
   const [inviandoEmail, setInviandoEmail] = useState(false)
+  const [criticalError, setCriticalError] = useState(null)
 
   useEffect(() => {
     fetchData()

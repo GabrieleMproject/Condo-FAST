@@ -2,7 +2,6 @@ import React from 'react'
 import { LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 
 export default function WaitlistPage() {
   const navigate = useNavigate()
@@ -23,9 +22,7 @@ export default function WaitlistPage() {
       padding: '24px',
       fontFamily: 'Sora, sans-serif'
     }}>
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div 
         style={{
           background: 'var(--bg-secondary)',
           border: '1px solid var(--border-color)',
@@ -82,7 +79,7 @@ export default function WaitlistPage() {
           <LogOut size={16} />
           Disconnettiti
         </button>
-      </motion.div>
+      </div>
     </div>
   )
 }

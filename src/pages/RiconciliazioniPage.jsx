@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus } from 'lucide-react';
+import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callGemini } from '../lib/geminiClient';
+import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
 
 const formattaData = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—');
 
@@ -18,6 +19,7 @@ export default function RiconciliazioniPage() {
   const [progressoAI, setProgressoAI] = useState('');
   const [filtroStato, setFiltroStato] = useState('suggerita');
   const [showOrfaniModal, setShowOrfaniModal] = useState(false);
+  const [showWizardModal, setShowWizardModal] = useState(false);
 
   useEffect(() => {
     if (condominioId) loadAll();
@@ -181,21 +183,31 @@ Abbina i movimenti alle fatture.`;
           <h1 style={styles.title}>Riconciliazione Movimenti</h1>
           <p style={styles.subtitle}>Abbina i movimenti bancari alle fatture dei fornitori</p>
         </div>
-        <button
-          style={{ ...styles.btnAI, opacity: analizzando ? 0.6 : 1 }}
-          onClick={avviaAnalisiAI}
-          disabled={analizzando}
-        >
-          {analizzando ? (
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            style={{ ...styles.btnAI, background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+            onClick={() => setShowWizardModal(true)}
+          >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analisi...
+              <Settings size={14} style={{ color: '#3b82f6' }} /> Configurazione Guidata
             </span>
-          ) : (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Bot size={14} /> Avvia Analisi AI
-            </span>
-          )}
-        </button>
+          </button>
+          <button
+            style={{ ...styles.btnAI, opacity: analizzando ? 0.6 : 1 }}
+            onClick={avviaAnalisiAI}
+            disabled={analizzando}
+          >
+            {analizzando ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analisi...
+              </span>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Bot size={14} /> Avvia Analisi AI
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {progressoAI && (
@@ -329,6 +341,12 @@ Abbina i movimenti alle fatture.`;
           </div>
         </div>
       )}
+      {/* Modale Wizard Configurazione Guidata Riconciliazione */}
+      <WizardRiconciliazioneModal 
+        isOpen={showWizardModal}
+        onClose={() => setShowWizardModal(false)}
+        onSaveSuccess={() => loadAll()}
+      />
     </div>
   );
 }

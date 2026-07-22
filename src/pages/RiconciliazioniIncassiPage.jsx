@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Bot, Check, X, AlertTriangle, Lightbulb, CheckCircle2, XCircle, Calendar, User, RefreshCw, UserPlus } from 'lucide-react';
+import { Bot, Check, X, AlertTriangle, Lightbulb, CheckCircle2, XCircle, Calendar, User, RefreshCw, UserPlus, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callGemini } from '../lib/geminiClient';
+import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
 import toast from 'react-hot-toast';
 
 // ─── Helper deterministici (nessuna AI) ────────────────────────────────────
@@ -54,6 +55,7 @@ export default function RiconciliazioniIncassiPage() {
   const [filtroStato, setFiltroStato] = useState('suggerita');
   const [showOrfaniModal, setShowOrfaniModal] = useState(false);
   const [nuovoPagantePrompt, setNuovoPagantePrompt] = useState(null);
+  const [showWizardModal, setShowWizardModal] = useState(false);
 
   useEffect(() => {
     if (condominioId) loadAll();
@@ -359,21 +361,31 @@ Abbina i bonifici alle celle.`;
           <h1 style={styles.title}>Riconciliazione Incassi</h1>
           <p style={styles.subtitle}>Abbina i bonifici in entrata alle rate dei condòmini</p>
         </div>
-        <button
-          style={{ ...styles.btnAI, opacity: analizzando ? 0.6 : 1 }}
-          onClick={avviaAnalisiAI}
-          disabled={analizzando}
-        >
-          {analizzando ? (
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            style={{ ...styles.btnAI, background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+            onClick={() => setShowWizardModal(true)}
+          >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analisi...
+              <Settings size={14} style={{ color: '#3b82f6' }} /> Configurazione Guidata
             </span>
-          ) : (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Bot size={14} /> Avvia Analisi AI
-            </span>
-          )}
-        </button>
+          </button>
+          <button
+            style={{ ...styles.btnAI, opacity: analizzando ? 0.6 : 1 }}
+            onClick={avviaAnalisiAI}
+            disabled={analizzando}
+          >
+            {analizzando ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analisi...
+              </span>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Bot size={14} /> Avvia Analisi AI
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {progressoAI && (
@@ -512,12 +524,15 @@ Abbina i bonifici alle celle.`;
                 </div>
               ))}
             </div>
-            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', background: 'var(--app-bg)', borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
-              <button style={{ background: 'var(--border-color)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 }} onClick={() => setShowOrfaniModal(false)}>Ho capito, chiudi</button>
-            </div>
           </div>
         </div>
       )}
+      {/* Modale Wizard Configurazione Guidata Riconciliazione */}
+      <WizardRiconciliazioneModal 
+        isOpen={showWizardModal}
+        onClose={() => setShowWizardModal(false)}
+        onSaveSuccess={() => loadAll()}
+      />
     </div>
   );
 }

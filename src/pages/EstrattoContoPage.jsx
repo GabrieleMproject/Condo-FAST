@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabaseClient';
 import { estraiMovimentiBancari, getTipoFile } from '../lib/fileExtractor';
 import { useDocumenti } from '../hooks/useDocumenti';
 import PlanGate from '../components/PlanGate';
-import { Trash2, Building2, User, Check, AlertTriangle } from 'lucide-react';
+import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
+import { Trash2, Building2, User, Check, AlertTriangle, Settings, Sliders, Bot } from 'lucide-react';
 
 const TIPI_ACCETTATI = '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png';
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—');
@@ -22,6 +23,7 @@ export default function EstrattoContoPage() {
   const [dragOver, setDragOver] = useState(false);
   const [bankingStatus, setBankingStatus] = useState(null);
   const [syncingBank, setSyncingBank] = useState(false);
+  const [showWizardModal, setShowWizardModal] = useState(false);
 
   const docEstratto = documenti.find(d => d.tipo === 'estratto_conto');
 
@@ -238,7 +240,20 @@ export default function EstrattoContoPage() {
               </div>
             )}
           </div>
-          <p style={styles.subtitle}>Importa movimenti bancari da PDF, Excel o immagine</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 4 }}>
+            <p style={styles.subtitle}>Importa movimenti bancari da PDF, Excel o immagine</p>
+            <button
+              onClick={() => setShowWizardModal(true)}
+              style={{
+                padding: '8px 16px', background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer',
+                fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8,
+                boxShadow: '0 2px 8px rgba(37,99,235,0.25)'
+              }}
+            >
+              <Bot size={16} /> 🧙‍♂️ Configurazione Guidata Riconciliazione
+            </button>
+          </div>
         </div>
       </div>
 
@@ -465,6 +480,16 @@ export default function EstrattoContoPage() {
           ))}
         </div>
       )}
+
+      {/* Modale Wizard Configurazione Guidata Riconciliazione */}
+      <WizardRiconciliazioneModal 
+        isOpen={showWizardModal}
+        onClose={() => setShowWizardModal(false)}
+        onSaveSuccess={() => {
+          loadMovimenti();
+          loadBankingStatus();
+        }}
+      />
     </div>
   );
 }

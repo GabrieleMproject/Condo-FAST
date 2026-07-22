@@ -10,7 +10,8 @@ import PlanGate from '../components/PlanGate'
 import {
   UploadCloud, FileText, CheckCircle2, AlertTriangle, Loader2,
   Building2, ArrowRight, Clock, RefreshCw, X, Receipt, Eye,
-  Inbox, User, Mail, MessageSquare, Trash2, Check, ExternalLink, Zap, Wrench, Shield
+  Inbox, User, Mail, MessageSquare, Trash2, Check, ExternalLink, Zap, Wrench, Shield,
+  Copy, HelpCircle, Settings, Edit3, Info
 } from 'lucide-react'
 
 // Helper per formattare la dimensione del file
@@ -292,6 +293,305 @@ function PostboxPaywall() {
   )
 }
 
+// Modale Guida e Istruzioni Postbox
+function GuidaPostboxModal({ isOpen, onClose, postboxEmail }) {
+  const [activeGuideTab, setActiveGuideTab] = useState('uso') // 'uso' | 'provider'
+
+  if (!isOpen) return null
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+    }}>
+      <div style={{
+        background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
+        maxWidth: 720, width: '100%', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.3)', fontFamily: 'Sora, sans-serif'
+      }}>
+        {/* Header Modale */}
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <Inbox size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Guida all'Uso della Postbox Studio</h2>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Come automatizzare la posta e l'estrazione AI dei documenti</span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}>
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Banner Indirizzo Attivo */}
+        <div style={{ padding: '16px 24px', background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(59, 130, 246, 0.08) 100%)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a78bfa' }}>Il tuo indirizzo email dedicato</div>
+            <code style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'monospace' }}>{postboxEmail}</code>
+          </div>
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(postboxEmail)
+              toast.success('Indirizzo email copiato negli appunti!')
+            }} 
+            style={{ padding: '8px 14px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <Copy size={14} /> Copia Indirizzo
+          </button>
+        </div>
+
+        {/* Tab di Navigazione Guida */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--app-bg)', padding: '0 24px' }}>
+          <button 
+            onClick={() => setActiveGuideTab('uso')}
+            style={{ padding: '12px 16px', background: 'transparent', border: 'none', borderBottom: activeGuideTab === 'uso' ? '3px solid #7c3aed' : '3px solid transparent', color: activeGuideTab === 'uso' ? '#a78bfa' : 'var(--text-secondary)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+          >
+            💡 Le 4 Modalità d'Uso
+          </button>
+          <button 
+            onClick={() => setActiveGuideTab('provider')}
+            style={{ padding: '12px 16px', background: 'transparent', border: 'none', borderBottom: activeGuideTab === 'provider' ? '3px solid #7c3aed' : '3px solid transparent', color: activeGuideTab === 'provider' ? '#a78bfa' : 'var(--text-secondary)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+          >
+            ⚙️ Regole di Inoltro (Aruba, Outlook, Gmail)
+          </button>
+        </div>
+
+        {/* Contenuto Guida */}
+        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {activeGuideTab === 'uso' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Modalità 1 */}
+              <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 16, display: 'flex', gap: 14 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(59,130,246,0.15)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>1</div>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Inoltro Automatico (Regola sulla Casella dello Studio o PEC)</h4>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    Imposta una regola sul tuo provider mail/PEC (es. Aruba, Outlook, Gmail) per inoltrare automaticamente una copia delle email in arrivo con allegati PDF o contenenti parole come <em>"fattura"</em>, <em>"spesa"</em> o <em>"subentro"</em> verso <strong>{postboxEmail}</strong>. Tutto verrà elaborato in background dall'AI.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modalità 2 */}
+              <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 16, display: 'flex', gap: 14 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(16,185,129,0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>2</div>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Inoltro Manuale con 1 Clic</h4>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    Quando ricevi una fattura, un preventivo o un'autocertificazione anagrafica nella tua casella di posta abituale, fai semplicemente <strong>Inoltra</strong> verso <strong>{postboxEmail}</strong>. Entro pochi secondi la troverai pronta nella tua coda Postbox.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modalità 3 */}
+              <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 16, display: 'flex', gap: 14 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(168,85,247,0.15)', color: '#c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>3</div>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Messa in Copia Nascosta (CCN / BCC) nelle tue Risposte</h4>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    Quando rispondi a un condomino o scrivi a un fornitore dal tuo client email abituale, metti in copia nascosta (CCN) l'indirizzo <strong>{postboxEmail}</strong>. La tua risposta verrà salvata nel registro messaggi e collegata alla scheda del condominio.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modalità 4 */}
+              <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 16, display: 'flex', gap: 14 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(245,158,11,0.15)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>4</div>
+                <div>
+                  <h4 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Comunicazione Diretta ai Fornitori</h4>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    Fornisci l'indirizzo <strong>{postboxEmail}</strong> ai tuoi fornitori abituali (manutentori, elettricisti, idraulici) chiedendo di inviare lì le fatture di cortesia o i verbali d'intervento in formato PDF.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Aruba PEC / Webmail */}
+              <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 16 }}>
+                <h4 style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Mail size={16} style={{ color: '#ef4444' }} /> Aruba PEC / Webmail Aruba
+                </h4>
+                <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  <li>Accedi alla tua Webmail / Aruba PEC e vai in <strong>Opzioni / Impostazioni → Regole</strong>.</li>
+                  <li>Crea una nuova regola selezionando <em>"Inoltra una copia a..."</em>.</li>
+                  <li>Inserisci come destinatario l'indirizzo: <code style={{ color: '#a78bfa' }}>{postboxEmail}</code>.</li>
+                  <li>(Opzionale) Aggiungi una condizione per filtrare solo i messaggi con allegati o con parole chiave nel testo (es: <em>fattura, nota, subentro</em>).</li>
+                </ol>
+              </div>
+
+              {/* Microsoft Outlook / 365 */}
+              <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 16 }}>
+                <h4 style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Mail size={16} style={{ color: '#3b82f6' }} /> Microsoft Outlook / Office 365
+                </h4>
+                <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  <li>Apri Outlook web o l'app desktop e vai in <strong>Impostazioni ⚙️ → Posta → Regole</strong>.</li>
+                  <li>Aggiungi una nuova regola nominata ad es. <em>"Inoltro CondoSmart Postbox"</em>.</li>
+                  <li>Aggiungi la condizione: <em>"Ha un allegato"</em> oppure <em>"Oggetto o corpo include: fattura"</em>.</li>
+                  <li>Imposta l'azione: <em>"Inoltra a"</em> e specifica <code style={{ color: '#a78bfa' }}>{postboxEmail}</code>.</li>
+                </ol>
+              </div>
+
+              {/* Gmail / Google Workspace */}
+              <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 16 }}>
+                <h4 style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Mail size={16} style={{ color: '#34d399' }} /> Gmail / Google Workspace
+                </h4>
+                <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  <li>In Gmail vai in <strong>Impostazioni ⚙️ → Mostra tutte le impostazioni → Inoltro e POP/IMAP</strong>.</li>
+                  <li>Clicca su <strong>Aggiungi un indirizzo di inoltro</strong> e inserisci <code style={{ color: '#a78bfa' }}>{postboxEmail}</code>.</li>
+                  <li>Crea poi un filtro (es. messaggi con allegati o per mittente fornitore) scegliendo di applicare l'inoltro a quell'indirizzo.</li>
+                </ol>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Modale */}
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', background: 'var(--card-bg)' }}>
+          <button 
+            onClick={onClose} 
+            style={{ padding: '8px 20px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+          >
+            Ho capito, grazie
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Modale Personalizzazione Prefisso Email Postbox
+function EditPrefixModal({ isOpen, onClose, currentPrefix, onSave }) {
+  const [prefixInput, setPrefixInput] = useState(currentPrefix || '')
+  const [saving, setSaving] = useState(false)
+  const [errorMsg, setErrorMsg] = useState(null)
+
+  useEffect(() => {
+    setPrefixInput(currentPrefix || '')
+    setErrorMsg(null)
+  }, [currentPrefix, isOpen])
+
+  if (!isOpen) return null
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setErrorMsg(null)
+
+    const clean = prefixInput.trim().toLowerCase()
+    if (!clean) {
+      setErrorMsg('Inserisci un prefisso valido.')
+      return
+    }
+    if (clean.length < 3) {
+      setErrorMsg('Il prefisso deve contenere almeno 3 caratteri.')
+      return
+    }
+    if (!/^[a-z0-9-]+$/.test(clean)) {
+      setErrorMsg('Usa solo lettere minuscole, numeri e trattini (-). Nessuno spazio o carattere speciale.')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await onSave(clean)
+      onClose()
+    } catch (err) {
+      console.error(err)
+      if (err.message?.includes('unique') || err.code === '23505') {
+        setErrorMsg('Questo prefisso è già stato utilizzato da un altro studio. Scegli un prefisso unico.')
+      } else {
+        setErrorMsg(err.message || 'Errore durante l\'aggiornamento del prefisso.')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+    }}>
+      <div style={{
+        background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
+        maxWidth: 480, width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', fontFamily: 'Sora, sans-serif'
+      }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Settings size={18} style={{ color: '#a78bfa' }} /> Personalizza Prefisso Email Studio
+          </h3>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            Personalizza l'indirizzo email della tua Postbox per renderlo facilmente riconoscibile dai tuoi condòmini e fornitori.
+          </p>
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+              Prefisso Email dello Studio
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 8, background: 'var(--app-bg)', overflow: 'hidden' }}>
+              <input 
+                type="text" 
+                value={prefixInput}
+                onChange={e => setPrefixInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                placeholder="es: studio-rossi"
+                style={{
+                  flex: 1, padding: '10px 12px', background: 'transparent', border: 'none',
+                  color: 'var(--text-primary)', fontSize: 14, fontFamily: 'monospace', outline: 'none'
+                }}
+                required
+              />
+              <span style={{ padding: '10px 12px', background: 'var(--border-color)', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, borderLeft: '1px solid var(--border-color)' }}>
+                @inbox.condosmart.it
+              </span>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(124, 58, 237, 0.08)', border: '1px solid rgba(124, 58, 237, 0.2)', borderRadius: 8, padding: 12 }}>
+            <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, marginBottom: 2 }}>ANTEPRIMA INDIRIZZO COMPLETO:</div>
+            <code style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 700 }}>
+              {prefixInput.trim() ? prefixInput.trim().toLowerCase() : 'tuoprefisso'}@inbox.condosmart.it
+            </code>
+          </div>
+
+          {errorMsg && (
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: 10, borderRadius: 8, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <AlertTriangle size={14} /> {errorMsg}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+            <button 
+              type="button" 
+              onClick={onClose}
+              style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Annulla
+            </button>
+            <button 
+              type="submit"
+              disabled={saving}
+              style={{ padding: '8px 20px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: saving ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              {saving ? <Loader2 className="animate-spin" size={14} /> : <Check size={14} />} Salva Prefisso
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // Helper per formattare la data
 const formattaData = (d) => {
   if (!d) return ''
@@ -300,7 +600,7 @@ const formattaData = (d) => {
 
 export default function PostboxPage() {
   const { user } = useAuth()
-  const { profile, canUse, loading: loadingPlan } = usePlan()
+  const { profile, canUse, loading: loadingPlan, refresh } = usePlan()
   
   const [condomini, setCondomini] = useState([])
   const [loadingCondomini, setLoadingCondomini] = useState(true)
@@ -328,6 +628,32 @@ export default function PostboxPage() {
   const [segnalazioneDescrizione, setSegnalazioneDescrizione] = useState('')
   const [segnalazioneUnitaId, setSegnalazioneUnitaId] = useState('')
   const [segnalazionePersonaId, setSegnalazionePersonaId] = useState('')
+
+  // Stati Configurazione Email Postbox
+  const [copiedEmail, setCopiedEmail] = useState(false)
+  const [showGuidaModal, setShowGuidaModal] = useState(false)
+  const [showEditPrefixModal, setShowEditPrefixModal] = useState(false)
+
+  const postboxPrefix = profile?.inbound_email_prefix || (user?.id ? user.id.substring(0, 8) : 'studio')
+  const postboxEmail = `${postboxPrefix}@inbox.condosmart.it`
+
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText(postboxEmail)
+    setCopiedEmail(true)
+    toast.success('Indirizzo Postbox copiato negli appunti!')
+    setTimeout(() => setCopiedEmail(false), 2500)
+  }
+
+  const handleSavePrefix = async (newPrefix) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ inbound_email_prefix: newPrefix })
+      .eq('id', user.id)
+
+    if (error) throw error
+    toast.success('Prefisso Postbox aggiornato con successo!')
+    if (refresh) refresh()
+  }
 
   if (loadingPlan) {
     return (
@@ -717,6 +1043,52 @@ export default function PostboxPage() {
     <PlanGate feature="postbox_studio">
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', background: 'var(--app-bg)' }}>
       
+      {/* Header Bar con Indirizzo Email Postbox dello Studio */}
+      <div style={{
+        padding: '12px 24px',
+        background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(59, 130, 246, 0.06) 100%)',
+        borderBottom: '1px solid var(--border-color)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+            <Inbox size={20} />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a78bfa' }}>
+              Indirizzo Email Postbox Studio
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+              <code style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', background: 'var(--card-bg)', padding: '2px 8px', borderRadius: 6, border: '1px solid var(--border-color)', fontFamily: 'monospace' }}>
+                {postboxEmail}
+              </code>
+              <button
+                onClick={handleCopyEmail}
+                style={{ padding: '4px 10px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                {copiedEmail ? <Check size={13} style={{ color: '#10b981' }} /> : <Copy size={13} />}
+                {copiedEmail ? 'Copiato!' : 'Copia'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setShowGuidaModal(true)}
+            style={{ padding: '7px 14px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <HelpCircle size={14} style={{ color: '#3b82f6' }} /> Come funziona & Istruzioni Inoltro
+          </button>
+          <button
+            onClick={() => setShowEditPrefixModal(true)}
+            style={{ padding: '7px 14px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <Settings size={14} style={{ color: '#a78bfa' }} /> Personalizza Prefisso
+          </button>
+        </div>
+      </div>
+
       {/* Tab in testa */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--card-bg)', padding: '0 24px' }}>
         <button 
@@ -1126,6 +1498,21 @@ export default function PostboxPage() {
           </form>
         </div>
       )}
+
+      {/* Modale Guida all'Uso Postbox */}
+      <GuidaPostboxModal 
+        isOpen={showGuidaModal}
+        onClose={() => setShowGuidaModal(false)}
+        postboxEmail={postboxEmail}
+      />
+
+      {/* Modale Personalizzazione Prefisso */}
+      <EditPrefixModal 
+        isOpen={showEditPrefixModal}
+        onClose={() => setShowEditPrefixModal(false)}
+        currentPrefix={postboxPrefix}
+        onSave={handleSavePrefix}
+      />
 
     </div>
     </PlanGate>

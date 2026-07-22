@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
 import { useComunicazioni } from '../hooks/useComunicazioni'
 import { exportSingolaUnitaRatePdfBytes, exportSollecitiMassiviPdf } from '../lib/exportPdf'
-import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone } from 'lucide-react'
+import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone, Building2, Calendar } from 'lucide-react'
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -64,6 +64,68 @@ export default function RateGridTab({ condominioId }) {
 
   const { unita, getProprietario, getInquilino, fetchUnita } = useUnita(condominioId)
   const [configPagante, setConfigPagante] = useState({})
+  const [ultimaRiconciliazioneInfo, setUltimaRiconciliazioneInfo] = useState(null)
+  const [dismissedBannerProposte, setDismissedBannerProposte] = useState(false)
+
+  useEffect(() => {
+    if (!condominioId) return
+    const fetchUltimaRiconciliazione = async () => {
+      try {
+        // 1. Prova da estratto_conto riconciliato
+        const { data: movData } = await supabase
+          .from('estratto_conto')
+          .select('data_movimento, updated_at')
+          .eq('condominio_id', condominioId)
+          .eq('riconciliato', true)
+          .order('data_movimento', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (movData) {
+          setUltimaRiconciliazioneInfo(movData)
+          return
+        }
+
+        // 2. Prova da riconciliazioni_incassi confermate
+        const { data: ricData } = await supabase
+          .from('riconciliazioni_incassi')
+          .select('confermata_at, created_at')
+          .eq('condominio_id', condominioId)
+          .eq('stato', 'confermata')
+          .order('confermata_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (ricData) {
+          setUltimaRiconciliazioneInfo({
+            data_movimento: ricData.confermata_at || ricData.created_at,
+            updated_at: ricData.confermata_at || ricData.created_at
+          })
+          return
+        }
+
+        // 3. Prova da documenti estratto conto
+        const { data: docData } = await supabase
+          .from('documenti_condominio')
+          .select('data_documento, created_at')
+          .eq('condominio_id', condominioId)
+          .in('tipo', ['estratto_conto', 'estratto_conto_archivio'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (docData) {
+          setUltimaRiconciliazioneInfo({
+            data_movimento: docData.data_documento || docData.created_at,
+            updated_at: docData.created_at
+          })
+        }
+      } catch (e) {
+        console.error('[RateGridTab] Errore fetch ultima riconciliazione:', e)
+      }
+    }
+    fetchUltimaRiconciliazione()
+  }, [condominioId])
 
   // Funzione per formattare e mostrare la transizione proprietari con date nella cella Unità
   function renderProprietariTransizione(u) {
@@ -542,15 +604,43 @@ L'Amministratore`;
       <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessun esercizio contabile</p></div>
   )
 
+  const formattaDataEstesa = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—')
+
   return (
     <div>
-      {/* Azione: riconciliazione incassi */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+      {/* Badge Data Ultimo Aggiornamento da Estratto Conto / Riconciliazione */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+        background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%)',
+        border: '1px solid var(--border-color)', borderRadius: 10, padding: '10px 16px', marginBottom: 16
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(37, 99, 235, 0.15)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Building2 size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#60a5fa' }}>
+              Stato Riconciliazione Bancaria Rate
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginTop: 1 }}>
+              {ultimaRiconciliazioneInfo ? (
+                <>
+                  Situazione rate aggiornata all'estratto conto del <strong>{formattaDataEstesa(ultimaRiconciliazioneInfo.data_movimento)}</strong> (riconciliata il {formattaDataEstesa(ultimaRiconciliazioneInfo.updated_at)})
+                </>
+              ) : (
+                <span style={{ color: 'var(--text-muted)' }}>
+                  Nessuna riconciliazione bancaria recente registrata per le rate di questo condominio
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
         <button
           onClick={() => navigate(`/condomini/${condominioId}/riconciliazioni-incassi`)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg, #16a34a, #2563eb)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg, #16a34a, #2563eb)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif' }}
         >
-          <Coins size={15} /> Riconcilia incassi
+          <Coins size={14} /> Riconcilia incassi
         </button>
       </div>
 
@@ -599,9 +689,9 @@ L'Amministratore`;
         ))}
       </div>
 
-      {rateScaduteDa10Giorni.length > 0 && (
+      {rateScaduteDa10Giorni.length > 0 && !dismissedBannerProposte && (
         <div style={st.bannerProposte}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
             <Megaphone size={20} style={{ color: '#fbbf24', flexShrink: 0 }} />
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 14 }}>Solleciti Consigliati</div>
@@ -610,9 +700,21 @@ L'Amministratore`;
               </div>
             </div>
           </div>
-          <button onClick={() => setShowProposteModal(true)} style={st.btnProposte}>
-            Visualizza Proposte ({rateScaduteDa10Giorni.length})
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button onClick={() => setShowProposteModal(true)} style={st.btnProposte}>
+              Visualizza Proposte ({rateScaduteDa10Giorni.length})
+            </button>
+            <button 
+              onClick={() => setDismissedBannerProposte(true)}
+              title="Chiudi avviso solleciti"
+              style={{
+                background: 'transparent', border: 'none', color: 'var(--text-muted)',
+                cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
       )}
 

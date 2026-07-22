@@ -39,8 +39,12 @@
 8. Verificare la checklist pre-commit (vedi skill condoai).
 9. Se toccata una Edge Function → `supabase functions deploy <nome>` (il push NON rideploya).
 
-### Chiusura sessione
-10. Committare e pushare PRIMA di generare qualsiasi riepilogo.
+### Chiusura sessione / Deploy Unificato
+10. **Comando Unico di Aggiornamento Unificato**: Usare `npm run deploy:all` (oppure `node scripts/deploy_all.mjs "S{N}: messaggio"`). Questo comando aggiorna in sequenza automatica tutte le piattaforme senza perdere pezzi:
+    - Verificazione build locale (`npm run build`)
+    - Commit e Push su GitHub (`git push origin main`) → **scatena il deploy automatico del frontend su Vercel**
+    - Deploy di tutte le Edge Functions Supabase (`gemini-proxy`, `inbound-email`, `gocardless-proxy`, `sync-bank-transactions`, `stripe-checkout`, `invia-comunicazione`, `invia-email-marketing`)
+    - Esecuzione dello smoke test (`npm run smoke`)
 11. Archiviare gli script SQL nel repo (`sql/`).
 12. Aggiornare la sezione "Stato corrente" nello skill `condoai` se ci sono cambiamenti significativi.
 13. **Lanciare il Bug Triager** (sub-agent read-only) per scansione automatica dei file toccati nella sessione → report bug/regressioni potenziali.

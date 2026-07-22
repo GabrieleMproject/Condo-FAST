@@ -16,7 +16,8 @@ import {
   ShieldAlert,
   ChevronRight,
   MessageSquare,
-  User
+  User,
+  Inbox
 } from 'lucide-react'
 
 // Funzione helper per formattare gli importi in Euro
@@ -373,7 +374,7 @@ export default function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
               <h4 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                📬 Postbox Studio 
+                <Inbox size={18} color="#7c3aed" /> Postbox Studio 
                 <span style={{ 
                   fontSize: 11, 
                   background: stats.inboxCount > 0 ? '#7c3aed' : 'var(--border-color)', 

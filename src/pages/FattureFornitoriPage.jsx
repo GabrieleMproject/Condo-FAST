@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiFattura, getTipoFile, comprimiImmagine } from '../lib/fileExtractor';
 import { useFornitori } from '../hooks/useFornitori';
-import { Edit3, Trash2, AlertTriangle, Upload, Paperclip } from 'lucide-react';
+import { Edit3, Trash2, AlertTriangle, Upload, Paperclip, Loader2, Receipt, Calendar, Clock, Link2, FileText } from 'lucide-react';
 
 const STATI = {
   attesa:     { label: 'In attesa',  color: '#f59e0b', bg: '#f59e0b20' },
@@ -176,7 +176,7 @@ export default function FattureFornitoriPage() {
 
       if (error) throw error;
 
-      setUploadProgress('✅ Fattura importata con successo');
+      setUploadProgress('Fattura importata con successo');
       await loadFatture();
       
       // Controllo Fornitore per Modulo Fiscale
@@ -395,7 +395,9 @@ export default function FattureFornitoriPage() {
           disabled={uploading}
         />
         <label htmlFor="fattura-upload" style={{ cursor: uploading ? 'wait' : 'pointer' }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>{uploading ? '⏳' : '🧾'}</div>
+          <div style={{ fontSize: 36, marginBottom: 8, display: 'flex', justifyContent: 'center' }}>
+            {uploading ? <Loader2 size={36} className="spin" color="var(--primary)" /> : <Receipt size={36} color="var(--text-muted)" />}
+          </div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
             {uploading ? uploadProgress : 'Trascina una fattura qui'}
           </div>
@@ -434,7 +436,12 @@ export default function FattureFornitoriPage() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>Caricamento...</div>
       ) : fattureFiltrate.length === 0 ? (
-        <div style={styles.empty}><div style={{ fontSize: 40, marginBottom: 12 }}>🧾</div><p>Nessuna fattura.</p></div>
+        <div style={styles.empty}>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+            <Receipt size={40} color="var(--text-muted)" strokeWidth={1.5} />
+          </div>
+          <p>Nessuna fattura.</p>
+        </div>
       ) : (
         <div style={styles.lista}>
           {fattureFiltrate.map(f => {
@@ -464,16 +471,16 @@ export default function FattureFornitoriPage() {
                       </div>
                       <div style={styles.cardDesc}>{f.descrizione}</div>
                       <div style={styles.cardMeta}>
-                        <span>📅 {formattaData(f.data_fattura)}</span>
-                        {f.data_scadenza && <span>⏰ Scad: {formattaData(f.data_scadenza)}</span>}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={13} /> {formattaData(f.data_fattura)}</span>
+                        {f.data_scadenza && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Clock size={13} /> Scad: {formattaData(f.data_scadenza)}</span>}
                         <span style={styles.catBadge}>{f.categoria}</span>
-                        {f.spesa_id && <span style={styles.spesaColleg}>🔗 Collegata a spesa</span>}
+                        {f.spesa_id && <span style={{ ...styles.spesaColleg, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Link2 size={13} /> Collegata a spesa</span>}
                         {f.pdf_url && (
                           <button
                             onClick={() => visualizzaFile(f.pdf_url, 'fatture')}
-                            style={{ ...styles.pdfLink, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+                            style={{ ...styles.pdfLink, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           >
-                            📄 File
+                            <FileText size={13} /> File
                           </button>
                         )}
                         {f.ritenuta_acconto != null && (

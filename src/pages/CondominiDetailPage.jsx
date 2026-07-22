@@ -23,6 +23,8 @@ import {
   Mail, FileSignature, ShieldAlert,
 } from 'lucide-react'
 import VerbaliAssembleaTab from '../components/VerbaliAssembleaTab'
+import { useEsercizioCorrente } from '../hooks/useEsercizioCorrente'
+import EsercizioSelectorHeader from '../components/EsercizioSelectorHeader'
 
 // ── Helper date sicure ──────────────────────────────────────
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
@@ -66,22 +68,25 @@ const TABS = [
 ]
 
 // ── Tab Finanze: scorciatoie verso le pagine finanziarie (route già esistenti) ──
-const FIN_LINKS = (id) => [
-  { label: 'Estratto conto',         desc: 'Importa e gestisci i movimenti bancari', icon: Wallet,     to: `/condomini/${id}/estratto-conto` },
-  { label: 'Fatture fornitori',      desc: 'Carica e gestisci le fatture',            icon: Receipt,    to: `/condomini/${id}/fatture` },
-  { label: 'Riconciliazione uscite', desc: 'Abbina uscite ↔ fatture fornitori',       icon: ArrowUpDown, to: `/condomini/${id}/riconciliazioni` },
-  { label: 'Riconciliazione incassi',desc: 'Abbina entrate ↔ rate dei condòmini',     icon: CreditCard, to: `/condomini/${id}/riconciliazioni-incassi` },
-  { label: 'Ripartizione',           desc: 'Ripartizione spese per millesimi',        icon: LayoutGrid, to: `/condomini/${id}/ripartizione` },
-  { label: 'Config. pagante',        desc: 'Chi paga per ogni unità',                 icon: UserCheck,  to: `/condomini/${id}/config-pagante` },
-  { label: 'Millesimi',              desc: 'Tabelle e valori millesimali',            icon: Layers,     to: `/condomini/${id}/millesimi` },
-  { label: 'Dashboard finanziaria',  desc: 'Quadro economico generale',               icon: Building2,  to: `/condomini/${id}/dashboard-fin` },
-]
+const FIN_LINKS = (id, esercizioId) => {
+  const query = esercizioId ? `?esercizio=${esercizioId}` : ''
+  return [
+    { label: 'Estratto conto',         desc: 'Importa e gestisci i movimenti bancari', icon: Wallet,     to: `/condomini/${id}/estratto-conto${query}` },
+    { label: 'Fatture fornitori',      desc: 'Carica e gestisci le fatture',            icon: Receipt,    to: `/condomini/${id}/fatture${query}` },
+    { label: 'Riconciliazione uscite', desc: 'Abbina uscite ↔ fatture fornitori',       icon: ArrowUpDown, to: `/condomini/${id}/riconciliazioni${query}` },
+    { label: 'Riconciliazione incassi',desc: 'Abbina entrate ↔ rate dei condòmini',     icon: CreditCard, to: `/condomini/${id}/riconciliazioni-incassi${query}` },
+    { label: 'Ripartizione',           desc: 'Ripartizione spese per millesimi',        icon: LayoutGrid, to: `/condomini/${id}/ripartizione${query}` },
+    { label: 'Config. pagante',        desc: 'Chi paga per ogni unità',                 icon: UserCheck,  to: `/condomini/${id}/config-pagante${query}` },
+    { label: 'Millesimi',              desc: 'Tabelle e valori millesimali',            icon: Layers,     to: `/condomini/${id}/millesimi${query}` },
+    { label: 'Dashboard finanziaria',  desc: 'Quadro economico generale',               icon: Building2,  to: `/condomini/${id}/dashboard-fin${query}` },
+  ]
+}
 
-function FinanzeTab({ condominioId }) {
+function FinanzeTab({ condominioId, esercizioId }) {
   const navigate = useNavigate()
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 14 }}>
-      {FIN_LINKS(condominioId).map(({ label, desc, icon: Icon, to }) => (
+      {FIN_LINKS(condominioId, esercizioId).map(({ label, desc, icon: Icon, to }) => (
         <button key={to} onClick={() => navigate(to)} style={S.finCard}>
           <div style={S.finIconWrap}>
             <Icon size={20} color="#60a5fa" strokeWidth={1.8} />
@@ -152,6 +157,15 @@ export default function CondominiDetailPage() {
   const c = useMemo(() => condomini.find(x => x.id === id), [condomini, id])
   const [activeTab, setActiveTab] = useState('panoramica')
   const [saldoConto, setSaldoConto] = useState(null)
+
+  // Hook centralizzato esercizio con sincronizzazione URL
+  const {
+    esercizi,
+    esercizioAttivo,
+    esercizioId,
+    setEsercizioId,
+    loading: loadingEsercizi
+  } = useEsercizioCorrente(id)
 
   useEffect(() => {
     if (!id) return
@@ -224,6 +238,14 @@ export default function CondominiDetailPage() {
         </div>
       </div>
 
+      {/* Barra Esercizio Amministrativo Unificata */}
+      <EsercizioSelectorHeader
+        esercizi={esercizi}
+        esercizioAttivo={esercizioAttivo}
+        onSelectEsercizio={setEsercizioId}
+        loading={loadingEsercizi}
+      />
+
       {/* KPI */}
       <div style={S.kpiRow}>
         {KPI_ITEMS(c, saldoConto).map(({ icon: Icon, label, value }) => (
@@ -269,7 +291,7 @@ export default function CondominiDetailPage() {
             <div style={S.section}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <p style={{ ...S.sectionTitle, margin: 0 }}>Fondo Cassa & Conto Corrente</p>
-                <Link to={`/condomini/${c.id}/estratto-conto`} style={{ color: '#60a5fa', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}>
+                <Link to={`/condomini/${c.id}/estratto-conto${esercizioId ? `?esercizio=${esercizioId}` : ''}`} style={{ color: '#60a5fa', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}>
                   Vai all'estratto conto →
                 </Link>
               </div>
@@ -345,9 +367,9 @@ export default function CondominiDetailPage() {
         )}
 
         {activeTab === 'anagrafica' && <AnagraficaCondominioTab condominioId={c.id} condominio={c} />}
-        {activeTab === 'preventivo' && <PreventivoSection condominioId={c.id} />}
+        {activeTab === 'preventivo' && <PreventivoSection condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
 
-        {activeTab === 'rate' && <RateGridTab condominioId={c.id} />}
+        {activeTab === 'rate' && <RateGridTab condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
 
         {activeTab === 'comunicazioni' && <ComunicazioniTab condominioId={c.id} />}
 
@@ -355,12 +377,12 @@ export default function CondominiDetailPage() {
 
         {activeTab === 'sinistri' && <SinistriTab condominioId={c.id} />}
 
-        {activeTab === 'finanze' && <FinanzeTab condominioId={c.id} />}
+        {activeTab === 'finanze' && <FinanzeTab condominioId={c.id} esercizioId={esercizioId} />}
 
         {activeTab === 'documenti' && <DocumentiCondominio condominioId={c.id} />}
 
         {activeTab === 'storico' && <StoricoTab condominioId={c.id} />}
-{activeTab === 'consuntivo' && <ConsuntivoTab condominioId={c.id} />}
+        {activeTab === 'consuntivo' && <ConsuntivoTab condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
       </div>
     </div>
   )

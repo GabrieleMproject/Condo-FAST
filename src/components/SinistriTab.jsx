@@ -4,7 +4,7 @@ import { useUnita } from '../hooks/useUnita'
 import { useDocumenti } from '../hooks/useDocumenti'
 import {
   ShieldAlert, Calendar, Plus, ChevronLeft, Trash2, Link2, Link2Off,
-  Paperclip, FileText, CheckCircle2, AlertTriangle, AlertCircle, X, Download
+  Paperclip, FileText, CheckCircle2, AlertTriangle, AlertCircle, X, Download, Loader2
 } from 'lucide-react'
 
 const STATI_SINISTRO = [
@@ -686,8 +686,8 @@ export default function SinistriTab({ condominioId }) {
               </div>
 
               {uploadProgress && (
-                <div style={{ background: 'var(--app-bg)', color: '#60a5fa', border: '1px solid #2563eb', padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
-                  ⏳ {uploadProgress}
+                <div style={{ background: 'var(--app-bg)', color: '#60a5fa', border: '1px solid #2563eb', padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Loader2 size={13} className="spin" /> {uploadProgress}
                 </div>
               )}
 

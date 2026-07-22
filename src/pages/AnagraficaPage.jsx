@@ -7,7 +7,7 @@ import AnagraficaImport from '../components/AnagraficaImport'
 import UnitaForm from '../components/UnitaForm'
 import PersonaForm from '../components/PersonaForm'
 import { supabase } from '../lib/supabaseClient'
-import { Search, Edit, X, Building2, ChevronDown, ChevronUp, Mail, Phone, Home, UserCog, Clock, Plus, Key, Trash2 } from 'lucide-react'
+import { Search, Edit, X, Building2, ChevronDown, ChevronUp, Mail, Phone, Home, UserCog, Clock, Plus, Key, Trash2, Upload, FileText } from 'lucide-react'
 import StoricoOccupantiModal from '../components/StoricoOccupantiModal'
 
 // ── Badge tipo unità (per visualizzazione condominio singolo) ──────────────
@@ -488,7 +488,7 @@ export default function AnagraficaPage() {
           </div>
           <div style={styles.headerActions}>
             <button style={styles.btnSecondary} onClick={() => setShowImport(true)}>
-              📂 Importa file
+              <Upload size={14} style={{ marginRight: 6 }} /> Importa file
             </button>
             <button style={styles.btnPrimary} onClick={() => { setEditUnita(null); setShowUnitaForm(true) }}>
               + Nuova unità
@@ -515,7 +515,9 @@ export default function AnagraficaPage() {
           <div style={styles.loading}>Caricamento…</div>
         ) : filtered.length === 0 ? (
           <div style={styles.empty}>
-            <p style={{ fontSize: 48, marginBottom: 8 }}>🏢</p>
+            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+              <Building2 size={48} strokeWidth={1.5} color="var(--text-muted)" />
+            </div>
             <p style={{ color: 'var(--text-secondary)' }}>Nessuna unità trovata</p>
             <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Aggiungi unità manualmente o importa un file</p>
           </div>
@@ -611,7 +613,9 @@ export default function AnagraficaPage() {
                             ))}
                             {u.note && (
                               <div style={{ ...styles.expandedCard, gridColumn: '1/-1' }}>
-                                <div style={styles.expandedTitle}>📝 Note</div>
+                                <div style={{ ...styles.expandedTitle, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <FileText size={14} /> Note
+                                </div>
                                 <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'left' }}>{u.note}</div>
                               </div>
                             )}

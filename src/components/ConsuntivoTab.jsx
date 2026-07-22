@@ -7,16 +7,16 @@ import { useMillesimi } from '../hooks/useMillesimi'
 import { estraiStrutturaConsuntivo } from '../lib/fileExtractor'
 import { exportConsuntivoPdf } from '../lib/exportConsuntivo'
 import { useWatermark } from '../hooks/useWatermark'
-import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react'
+import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame } from 'lucide-react'
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const sgn = (n) => (Number(n) < 0 ? '-' : '') + '€ ' + Math.abs(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
 
-export default function ConsuntivoTab({ condominioId }) {
+export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdProp, esercizioAttivo, onSelectEsercizio }) {
   const [condominio, setCondominio] = useState(null)
   const [esercizi, setEsercizi] = useState([])
-  const [esercizioId, setEsercizioId] = useState(null)
+  const [esercizioId, setEsercizioId] = useState(esercizioIdProp || null)
   const [tabellaMillId, setTabellaMillId] = useState(null)
   const [uploadingTpl, setUploadingTpl] = useState(false)
   const [tplMsg, setTplMsg] = useState('')
@@ -26,17 +26,26 @@ export default function ConsuntivoTab({ condominioId }) {
   const { WatermarkModal, checkWatermark } = useWatermark()
 
   useEffect(() => {
+    if (esercizioIdProp && esercizioIdProp !== esercizioId) {
+      setEsercizioId(esercizioIdProp)
+    }
+  }, [esercizioIdProp])
+
+  useEffect(() => {
     if (condominioId) {
       supabase.from('condomini').select('*').eq('id', condominioId).single().then(({ data }) => setCondominio(data))
       supabase.from('esercizi').select('*').eq('condominio_id', condominioId).order('anno', { ascending: false }).then(({ data }) => {
-        setEsercizi(data || [])
-        if (data?.length) {
-          const active = data.find(e => e.stato === 'aperto') || data[0]
+        const lista = data || []
+        setEsercizi(lista)
+        if (esercizioIdProp) {
+          setEsercizioId(esercizioIdProp)
+        } else if (lista.length) {
+          const active = lista.find(e => e.stato === 'aperto') || lista[0]
           setEsercizioId(active.id)
         }
       })
     }
-  }, [condominioId])
+  }, [condominioId, esercizioIdProp])
 
   useEffect(() => {
     if (esercizioId) {
@@ -96,7 +105,14 @@ export default function ConsuntivoTab({ condominioId }) {
       <div style={st.toolbar}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {esercizi.map(es => (
-            <button key={es.id} onClick={() => setEsercizioId(es.id)} style={st.esBtn(esercizioId === es.id)}>
+            <button
+              key={es.id}
+              onClick={() => {
+                setEsercizioId(es.id)
+                if (onSelectEsercizio) onSelectEsercizio(es.id)
+              }}
+              style={st.esBtn(esercizioId === es.id)}
+            >
               {es.anno}<span style={st.esTag(es.stato === 'aperto')}>{es.stato}</span>
             </button>
           ))}
@@ -212,7 +228,9 @@ export default function ConsuntivoTab({ condominioId }) {
             <Card title="Analisi Storica & Consumi Energetici">
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 4 }}>
                 <div style={st.statBox}>
-                  <div style={st.statLabel}>🔋 ENERGIA ELETTRICA</div>
+                  <div style={{ ...st.statLabel, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Zap size={14} color="var(--primary)" /> ENERGIA ELETTRICA
+                  </div>
                   <div style={st.statValue}>{eur(data.storico.energia.corrente)}</div>
                   {data.storico.haPrecedente ? (
                     <div style={st.statSub}>
@@ -227,7 +245,9 @@ export default function ConsuntivoTab({ condominioId }) {
                 </div>
 
                 <div style={st.statBox}>
-                  <div style={st.statLabel}>🔥 RISCALDAMENTO & GAS</div>
+                  <div style={{ ...st.statLabel, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Flame size={14} color="#f59e0b" /> RISCALDAMENTO & GAS
+                  </div>
                   <div style={st.statValue}>{eur(data.storico.riscaldamento.corrente)}</div>
                   {data.storico.haPrecedente ? (
                     <div style={st.statSub}>

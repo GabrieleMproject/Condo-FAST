@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { generaExportGDPR } from '../lib/exportDatiGdpr'
-import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon, Building2 } from 'lucide-react'
+import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon, Building2, Download, X } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
@@ -867,7 +867,7 @@ export default function ImpostazioniPage() {
                   <label style={styles.brandingLabel}>Nome studio / amministratore</label>
                   <input
                     style={styles.brandingInput}
-                    placeholder="Es. Amministrazione Gemelli di Rag. Andrea Gemelli"
+                    placeholder="Es. Studio Amministrazione Rossi di Rag. Mario Rossi"
                     value={branding.studio_nome}
                     onChange={e => setBranding(b => ({ ...b, studio_nome: e.target.value }))}
                   />
@@ -876,7 +876,7 @@ export default function ImpostazioniPage() {
                   <label style={styles.brandingLabel}>Ragione Sociale Azienda</label>
                   <input
                     style={styles.brandingInput}
-                    placeholder="Ragione Sociale dell'azienda di gestione"
+                    placeholder="Es. Studio Rossi S.r.l."
                     value={branding.ragione_sociale}
                     onChange={e => setBranding(b => ({ ...b, ragione_sociale: e.target.value }))}
                   />
@@ -886,7 +886,7 @@ export default function ImpostazioniPage() {
                     <label style={styles.brandingLabel}>Partita IVA</label>
                     <input
                       style={styles.brandingInput}
-                      placeholder="Numero P.IVA"
+                      placeholder="Es. 12345678901"
                       value={branding.partita_iva}
                       onChange={e => setBranding(b => ({ ...b, partita_iva: e.target.value }))}
                     />
@@ -895,7 +895,7 @@ export default function ImpostazioniPage() {
                     <label style={styles.brandingLabel}>Codice Fiscale</label>
                     <input
                       style={styles.brandingInput}
-                      placeholder="Codice Fiscale"
+                      placeholder="Es. RSSMRA80A01H501Z"
                       value={branding.codice_fiscale}
                       onChange={e => setBranding(b => ({ ...b, codice_fiscale: e.target.value }))}
                     />
@@ -905,7 +905,7 @@ export default function ImpostazioniPage() {
                   <label style={styles.brandingLabel}>Indirizzo</label>
                   <input
                     style={styles.brandingInput}
-                    placeholder="Es. Via Canturina n° 88 – 22100 Como (CO)"
+                    placeholder="Es. Via Roma n° 10 – 20100 Milano (MI)"
                     value={branding.studio_indirizzo}
                     onChange={e => setBranding(b => ({ ...b, studio_indirizzo: e.target.value }))}
                   />
@@ -914,7 +914,7 @@ export default function ImpostazioniPage() {
                   <label style={styles.brandingLabel}>Contatti (tel / email / PEC / P.IVA)</label>
                   <textarea
                     style={{ ...styles.brandingInput, minHeight: 80, resize: 'vertical' }}
-                    placeholder={'Mobile: +39 333 1861413\ne-mail: info@...\nPEC: ...\nP.IVA: ...'}
+                    placeholder={'Mobile: +39 333 1234567\ne-mail: info@studiorossi.it\nPEC: studiorossi@pec.it\nP.IVA: 12345678901'}
                     value={branding.studio_contatti}
                     onChange={e => setBranding(b => ({ ...b, studio_contatti: e.target.value }))}
                   />
@@ -1120,7 +1120,7 @@ export default function ImpostazioniPage() {
         <section id="notifiche" style={styles.section}>
           <h2 style={styles.sectionTitle}>Notifiche &amp; Promemoria</h2>
           <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
-            Configura i promemoria automatici che appaiono nella campanella 🔔 del gestionale.
+            Configura i promemoria automatici che appaiono nella campanella delle notifiche del gestionale.
           </p>
 
           <div style={styles.brandingCard}>
@@ -1478,9 +1478,13 @@ export default function ImpostazioniPage() {
                 <button 
                   onClick={handleExportGDPR} 
                   disabled={isExporting}
-                  style={{ background: 'var(--border-color)', color: 'var(--text-primary)', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+                  style={{ background: 'var(--border-color)', color: 'var(--text-primary)', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  {isExporting ? 'Generazione in corso...' : '📥 Esporta Dati'}
+                  {isExporting ? 'Generazione in corso...' : (
+                    <>
+                      <Download size={14} /> Esporta Dati
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -1565,7 +1569,7 @@ function FeatureRow({ ok, label }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
       <span style={{ color: ok ? '#22c55e' : '#475569', fontSize: 13, display: 'flex', alignItems: 'center' }}>
-        {ok ? <Check size={14} /> : <span style={{ fontFamily: 'monospace', width: 14, textAlign: 'center' }}>✗</span>}
+        {ok ? <Check size={14} /> : <X size={14} />}
       </span>
       <span style={{ color: ok ? '#94a3b8' : '#475569', fontSize: 13 }}>{label}</span>
     </div>

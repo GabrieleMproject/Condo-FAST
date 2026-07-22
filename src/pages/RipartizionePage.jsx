@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { exportRipartizioneXlsx } from '../lib/exportXlsx';
 import { exportRipartizionePdf } from '../lib/exportPdf';
-import { FileSpreadsheet, FileText, AlertTriangle } from 'lucide-react';
+import { FileSpreadsheet, FileText, AlertTriangle, PieChart } from 'lucide-react';
 
 export default function RipartizionePage() {
   const { condominioId } = useParams();
@@ -412,7 +412,9 @@ function TabellaPerUnita({ unita, spese, ripMap, totalePerUnita, getProprietario
 function EmptyState({ msg }) {
   return (
     <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+        <PieChart size={40} color="var(--text-muted)" strokeWidth={1.5} />
+      </div>
       {msg}
     </div>
   );

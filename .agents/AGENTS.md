@@ -329,6 +329,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S58 (22 Luglio 2026 - Centralizzazione Esercizio Amministrativo)
+
+### 1. Decisioni di Architettura e UI
+- **Selettore Esercizio Unificato in Header (`EsercizioSelectorHeader.jsx`):** Integrata la barra di selezione dell'esercizio direttamente nella testata di `CondominiDetailPage.jsx`. Mostra l'anno dell'esercizio attivo, il range delle date di periodo (`data_inizio` - `data_fine`) ed un badge di stato (🟢 *In Corso* / 🔴 *Chiuso (Sola Lettura)* con icona lucchetto).
+- **Sincronizzazione URL Anti-Refresh (`useEsercizioCorrente.js`):** Creato l'hook custom che mantiene lo stato dell'esercizio sincronizzato con la query string dell'URL (`?esercizio=ID_ESERCIZIO`). Se l'utente ricarica la pagina o condivide il link, il contesto d'anno selezionato viene mantenuto fedelmente.
+- **Propagazione e Sincronizzazione a Tutte le Schede:** Sincronizzati i tab **Preventivo & Saldi** (`PreventivoSection`), **Rate** (`RateGridTab`), **Consuntivo** (`ConsuntivoTab`), **Finanze** (`FinanzeTab`) e **Spese** (`SpesePage`), ereditando l'esercizio selezionato in Header.
+
+### 2. Normativa e Prevenzione Errori Contabili
+- **Gestione Esercizi Chiusi (Art. 1130-bis c.c.):** Se l'esercizio attivo in Header ha `stato === 'chiuso'`, l'interfaccia entra in modalità sola lettura protetta.
+- **Gestione Spese Tardive:** Le spese inserite in esercizi passati aperti ricadono di competenza nell'anno corretto; per esercizi già chiusi l'applicazione avvisa l'amministratore proponendo l'imputazione come spesa tardiva o la riapertura dell'esercizio prima di alterare un bilancio storico.
+- **Precompilazione Date nei Form:** Creando nuove spese mentre si è posizionati su un esercizio specifico, il form propone di default la data entro l'intervallo `[data_inizio, data_fine]` dell'esercizio attivo per evitare l'errato inserimento in anni futuri.
+
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S24 (2 Luglio 2026 - Riprogettazione Editor Millesimi in Modalità Singola Tabella, Storico Proprietari e Subentri)
 
 ### 1. Decisioni sul Workflow e Riconciliazioni Parziali

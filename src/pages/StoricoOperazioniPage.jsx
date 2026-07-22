@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuditLog } from '../hooks/useAuditLog'
 import { supabase } from '../lib/supabaseClient'
-import { User, DollarSign, BarChart2, FileText, Calendar, Calculator, Folder } from 'lucide-react'
+import { User, DollarSign, BarChart2, FileText, Calendar, Calculator, Folder, Archive } from 'lucide-react'
 
 const CATEGORIE = ['anagrafica', 'spese', 'ripartizioni', 'documenti', 'esercizi', 'millesimi', 'altro']
 const AZIONI = ['INSERT', 'UPDATE', 'DELETE']
@@ -180,7 +180,9 @@ export default function StoricoOperazioniPage() {
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Caricamento storico...</div>
       ) : log.length === 0 ? (
         <div style={{ background: 'var(--card-bg)', border: '2px dashed var(--border-color)', borderRadius: 12, padding: 48, textAlign: 'center' }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>📭</div>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+            <Archive size={40} color="var(--text-muted)" strokeWidth={1.5} />
+          </div>
           <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessun evento corrisponde ai filtri selezionati</p>
         </div>
       ) : (

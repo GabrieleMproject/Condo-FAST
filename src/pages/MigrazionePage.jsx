@@ -71,7 +71,7 @@ function StepIndicator({ step, total }) {
                 transition: 'all 0.3s',
                 boxShadow: isActive ? `0 0 0 4px rgba(99,102,241,0.2)` : 'none',
               }}>
-                {isDone ? '✓' : num}
+                {isDone ? <Check size={14} /> : num}
               </div>
               <span style={{ fontSize: 11, color: isActive ? C.text : C.muted, whiteSpace: 'nowrap', fontWeight: isActive ? 600 : 400 }}>
                 {label}
@@ -1101,7 +1101,11 @@ export default function MigrazionePage() {
                 disabled={!files.length || analizzando}
                 onClick={analizzaFiles}
               >
-                {analizzando ? '⏳ Analisi AI in corso...' : 'Analizza file →'}
+                {analizzando ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Loader2 size={14} className="spin" /> Analisi AI in corso...
+                  </span>
+                ) : 'Analizza file →'}
               </button>
             </div>
           </div>
@@ -1116,8 +1120,8 @@ export default function MigrazionePage() {
             </p>
 
             {caricandoConflitti && (
-              <div style={{ color: C.muted, fontSize: 13, marginBottom: 16 }}>
-                ⏳ Rilevamento conflitti con dati esistenti...
+              <div style={{ color: C.muted, fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Loader2 size={13} className="spin" /> Rilevamento conflitti con dati esistenti...
               </div>
             )}
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus, Settings } from 'lucide-react';
+import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus, Settings, Link2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callGemini } from '../lib/geminiClient';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
@@ -124,7 +124,7 @@ Abbina i movimenti alle fatture.`;
           .upsert(inserts, { onConflict: 'movimento_id,fattura_id', ignoreDuplicates: true });
       }
 
-      setProgressoAI(`✅ ${suggerimenti.length} abbinamenti suggeriti`);
+      setProgressoAI(`${suggerimenti.length} abbinamenti suggeriti`);
       await loadAll();
       setShowOrfaniModal(true);
       setTimeout(() => setProgressoAI(''), 4000);
@@ -276,7 +276,9 @@ Abbina i movimenti alle fatture.`;
         )
       ) : ricFiltrate.length === 0 ? (
         <div style={styles.empty}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🔗</div>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+            <Link2 size={40} color="var(--text-muted)" strokeWidth={1.5} />
+          </div>
           <p>
             {filtroStato === 'suggerita'
               ? 'Nessun abbinamento da confermare. Clicca "Avvia Analisi AI" per generarne.'
@@ -300,43 +302,46 @@ Abbina i movimenti alle fatture.`;
       {showOrfaniModal && movOrfani.length > 0 && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalBox}>
-            <div style={styles.modalHeader}>
-              <h3 style={{ ...styles.modalTitle, display: 'flex', alignItems: 'center', gap: 8 }}><AlertTriangle size={18} style={{ color: '#fbbf24' }} /> Rilevati Movimenti senza Fattura ({movOrfani.length})</h3>
-              <button style={styles.modalCloseBtn} onClick={() => setShowOrfaniModal(false)} type="button"><X size={20} /></button>
-            </div>
-            <p style={styles.modalText}>
-              L'AI ha terminato l'analisi ma ha rilevato <b>{movOrfani.length} movimenti bancari in uscita</b> che non hanno alcuna fattura associata in archivio. Puoi inserire le spese mancanti ora (con precompilazione automatica dai dati del bonifico) oppure consultare la scheda <b>"Senza Fattura"</b> in qualsiasi momento.
+            <h3 style={{ margin: '0 0 12px', padding: '18px 24px 0', fontSize: 18, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={20} style={{ color: '#fbbf24' }} /> Movimenti Uscita non Riconciliati ({movOrfani.length})
+            </h3>
+            <p style={{ padding: '0 24px', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 16 }}>
+              L'AI ha identificato {movOrfani.length} uscite sul conto corrente per cui non è stata trovata alcuna fattura registrata.
             </p>
-            <div style={styles.modalList}>
+
+            <div style={{ maxHeight: 300, overflowY: 'auto', margin: '0 24px 20px', border: '1px solid var(--border-color)', borderRadius: 8, padding: 8 }}>
               {movOrfani.map(m => (
-                <div key={m.id} style={styles.modalItem}>
+                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--border-color)' }}>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{m.causale || '—'}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Calendar size={12} /> {formattaData(m.data_movimento)} · {m.fornitore_rilevato ? <><Building2 size={12} /> {m.fornitore_rilevato}</> : 'Fornitore non rilevato'}
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{m.causale || 'Movimento senza causale'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Calendar size={10} /> {formattaData(m.data_movimento)} {m.fornitore_rilevato ? <>• <Building2 size={10} /> {m.fornitore_rilevato}</> : ''}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                    <span style={{ color: '#ef4444', fontWeight: 700, fontSize: 14 }}>
-                      -€ {Math.abs(m.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ color: '#ef4444', fontWeight: 700, fontSize: 13 }}>
+                      -€ {Math.abs(m.importo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                     </span>
                     <button
-                      style={styles.btnAction}
                       onClick={() => {
                         setShowOrfaniModal(false);
-                        navigate(`/condomini/${condominioId}/spese`, { state: { prefillSpesa: { importo: Math.abs(m.importo), data_spesa: m.data_movimento, descrizione: m.causale || '', fornitore: m.fornitore_rilevato || '' } } });
+                        navigate(`/condomini/${condominioId}/spese`, {
+                          state: { prefillSpesa: { importo: Math.abs(m.importo), data_spesa: m.data_movimento, descrizione: m.causale || '', fornitore: m.fornitore_rilevato || '' } }
+                        });
                       }}
+                      style={{ ...styles.btnAction, padding: '4px 10px', fontSize: 11 }}
                     >
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <Plus size={12} /> Inserisci Spesa
-                      </span>
+                      + Crea Spesa
                     </button>
                   </div>
                 </div>
               ))}
             </div>
-            <div style={styles.modalFooter}>
-              <button style={styles.btnChiudiModal} onClick={() => setShowOrfaniModal(false)}>Ho capito, chiudi</button>
+
+            <div style={{ padding: '0 24px 20px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowOrfaniModal(false)} style={styles.btnChiudiModal}>
+                Chiudi
+              </button>
             </div>
           </div>
         </div>
@@ -377,9 +382,9 @@ function RiconciliazioneCard({ ric, onConferma, onRifiuta }) {
         <div style={styles.matchBox}>
           <div style={styles.matchLabel}>MOVIMENTO BANCARIO</div>
           <div style={styles.matchTitolo}>{mov?.causale || '—'}</div>
-          {mov?.fornitore_rilevato && <div style={styles.matchSub}>🏢 {mov.fornitore_rilevato}</div>}
+          {mov?.fornitore_rilevato && <div style={styles.matchSub}><Building2 size={12} /> {mov.fornitore_rilevato}</div>}
           <div style={styles.matchMeta}>
-            <span>📅 {mov?.data_movimento ? new Date(mov.data_movimento).toLocaleDateString('it-IT') : '—'}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {mov?.data_movimento ? new Date(mov.data_movimento).toLocaleDateString('it-IT') : '—'}</span>
             <span style={{ color: '#ef4444', fontWeight: 700 }}>
               -€ {Math.abs(mov?.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
             </span>
@@ -394,7 +399,7 @@ function RiconciliazioneCard({ ric, onConferma, onRifiuta }) {
           <div style={styles.matchTitolo}>{fat?.fornitore || '—'}</div>
           {fat?.numero_fattura && <div style={styles.matchSub}>N. {fat.numero_fattura}</div>}
           <div style={styles.matchMeta}>
-            <span>📅 {fat?.data_fattura ? new Date(fat.data_fattura).toLocaleDateString('it-IT') : '—'}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {fat?.data_fattura ? new Date(fat.data_fattura).toLocaleDateString('it-IT') : '—'}</span>
             <span style={{ color: '#f59e0b', fontWeight: 700 }}>
               € {(fat?.importo_totale || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
             </span>

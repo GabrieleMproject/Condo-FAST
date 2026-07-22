@@ -11,7 +11,7 @@ import {
   UploadCloud, FileText, CheckCircle2, AlertTriangle, Loader2,
   Building2, ArrowRight, Clock, RefreshCw, X, Receipt, Eye,
   Inbox, User, Mail, MessageSquare, Trash2, Check, ExternalLink, Zap, Wrench, Shield,
-  Copy, HelpCircle, Settings, Edit3, Info
+  Copy, HelpCircle, Settings, Edit3, Info, Lightbulb
 } from 'lucide-react'
 
 // Helper per formattare la dimensione del file
@@ -349,13 +349,17 @@ function GuidaPostboxModal({ isOpen, onClose, postboxEmail }) {
             onClick={() => setActiveGuideTab('uso')}
             style={{ padding: '12px 16px', background: 'transparent', border: 'none', borderBottom: activeGuideTab === 'uso' ? '3px solid #7c3aed' : '3px solid transparent', color: activeGuideTab === 'uso' ? '#a78bfa' : 'var(--text-secondary)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
           >
-            💡 Le 4 Modalità d'Uso
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Lightbulb size={14} /> Le 4 Modalità d'Uso
+            </span>
           </button>
           <button 
             onClick={() => setActiveGuideTab('provider')}
             style={{ padding: '12px 16px', background: 'transparent', border: 'none', borderBottom: activeGuideTab === 'provider' ? '3px solid #7c3aed' : '3px solid transparent', color: activeGuideTab === 'provider' ? '#a78bfa' : 'var(--text-secondary)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
           >
-            ⚙️ Regole di Inoltro (Aruba, Outlook, Gmail)
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Settings size={14} /> Regole di Inoltro (Aruba, Outlook, Gmail)
+            </span>
           </button>
         </div>
 
@@ -428,7 +432,7 @@ function GuidaPostboxModal({ isOpen, onClose, postboxEmail }) {
                   <Mail size={16} style={{ color: '#3b82f6' }} /> Microsoft Outlook / Office 365
                 </h4>
                 <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  <li>Apri Outlook web o l'app desktop e vai in <strong>Impostazioni ⚙️ → Posta → Regole</strong>.</li>
+                  <li>Apri Outlook web o l'app desktop e vai in <strong>Impostazioni → Posta → Regole</strong>.</li>
                   <li>Aggiungi una nuova regola nominata ad es. <em>"Inoltro CondoSmart Postbox"</em>.</li>
                   <li>Aggiungi la condizione: <em>"Ha un allegato"</em> oppure <em>"Oggetto o corpo include: fattura"</em>.</li>
                   <li>Imposta l'azione: <em>"Inoltra a"</em> e specifica <code style={{ color: '#a78bfa' }}>{postboxEmail}</code>.</li>
@@ -441,7 +445,7 @@ function GuidaPostboxModal({ isOpen, onClose, postboxEmail }) {
                   <Mail size={16} style={{ color: '#34d399' }} /> Gmail / Google Workspace
                 </h4>
                 <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  <li>In Gmail vai in <strong>Impostazioni ⚙️ → Mostra tutte le impostazioni → Inoltro e POP/IMAP</strong>.</li>
+                  <li>In Gmail vai in <strong>Impostazioni → Mostra tutte le impostazioni → Inoltro e POP/IMAP</strong>.</li>
                   <li>Clicca su <strong>Aggiungi un indirizzo di inoltro</strong> e inserisci <code style={{ color: '#a78bfa' }}>{postboxEmail}</code>.</li>
                   <li>Crea poi un filtro (es. messaggi con allegati o per mittente fornitore) scegliendo di applicare l'inoltro a quell'indirizzo.</li>
                 </ol>
@@ -1188,8 +1192,8 @@ export default function PostboxPage() {
                             ? Math.floor((new Date() - new Date(doc.data_ricezione)) / (1000 * 60 * 60 * 24))
                             : 0
                           return giacenzaGiorni >= 5 ? (
-                            <span style={{ fontSize: 9, background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 5px', borderRadius: 4, marginLeft: 6, fontWeight: 700 }}>
-                              ⚠️ Giacenza: {giacenzaGiorni}gg
+                            <span style={{ fontSize: 9, background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 5px', borderRadius: 4, marginLeft: 6, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                              <AlertTriangle size={10} /> Giacenza: {giacenzaGiorni}gg
                             </span>
                           ) : null
                         })()}

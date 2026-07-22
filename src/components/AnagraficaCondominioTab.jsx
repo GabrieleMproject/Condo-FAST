@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { 
   Search, UserCog, Edit, X, Mail, Phone, Home, Download, 
-  FileText, Upload, Plus, RefreshCw, Building2, Check, AlertTriangle 
+  FileText, Upload, Plus, RefreshCw, Building2, Check, AlertTriangle, Pencil, UserPlus 
 } from 'lucide-react'
 import { exportAnagraficaXlsx } from '../lib/exportXlsx'
 import { exportAnagraficaPdf } from '../lib/exportPdf'
@@ -839,10 +839,12 @@ Lo Studio Amministrativo`
                                 textAlign: 'left'
                               }}
                             >
-                              ➕ Aggiungi Soggetto
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <UserPlus size={13} /> Aggiungi Soggetto
+                              </span>
                             </button>
                           ) : (
-                            occupanti.map(occ => (
+                              occupanti.map(occ => (
                               <div key={occ.id} style={{ marginBottom: 4 }}>
                                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                                   {occ.persona?.cognome} {occ.persona?.nome}
@@ -879,7 +881,7 @@ Lo Studio Amministrativo`
                                 title="Modifica dati unità e dati catastali"
                                 style={{ ...styles.btnEdit, border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
                               >
-                                📝 Modifica
+                                <Pencil size={12} style={{ marginRight: 4 }} /> Modifica
                               </button>
 
                               {occupanti.length === 0 ? (
@@ -913,7 +915,7 @@ Lo Studio Amministrativo`
                                     title="Scarica modulo autocertificazione precompilato per il condomino"
                                     style={{ ...styles.btnEdit, marginRight: 6, color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
                                   >
-                                    📄 Modulo PDF
+                                    <FileText size={12} style={{ marginRight: 4 }} /> Modulo PDF
                                   </button>
                                   <button 
                                     onClick={() => fileInputRefs.current[u.id]?.click()}

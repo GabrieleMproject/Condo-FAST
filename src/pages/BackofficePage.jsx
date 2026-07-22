@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { sanitizeHtml } from '../lib/sanitizeHtml'
 import { supabase } from '../lib/supabaseClient'
-import { Users, Ticket, Search, Save, MessageSquare, Send, Gift, Plus } from 'lucide-react'
+import { Users, Ticket, Search, Save, MessageSquare, Send, Gift, Plus, Building2, Sparkles } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { callGemini } from '../lib/geminiClient'
 
@@ -749,7 +749,9 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                               <div style={{ fontWeight: 600 }}>{u.nome || u.cognome ? `${u.nome || ''} ${u.cognome || ''}`.trim() : '—'}</div>
                               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
                               {u.studio_nome && (
-                                <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2 }}>🏢 {u.studio_nome}</div>
+                                <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <Building2 size={12} /> {u.studio_nome}
+                                </div>
                               )}
                             </td>
                             <td style={{ ...styles.td, fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -1351,7 +1353,11 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                               cursor: 'pointer'
                             }}
                           >
-                            {generandoTestoAI ? 'Generazione...' : '✨ Scrivi con AI'}
+                            {generandoTestoAI ? 'Generazione...' : (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <Sparkles size={12} /> Scrivi con AI
+                              </span>
+                            )}
                           </button>
                         </div>
                         <textarea

@@ -5,7 +5,7 @@ import { estraiMovimentiBancari, getTipoFile } from '../lib/fileExtractor';
 import { useDocumenti } from '../hooks/useDocumenti';
 import PlanGate from '../components/PlanGate';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
-import { Trash2, Building2, User, Check, AlertTriangle, Settings, Sliders, Bot } from 'lucide-react';
+import { Trash2, Building2, User, Check, AlertTriangle, Settings, Sliders, Bot, Calendar, Download, RefreshCw, Loader2, UploadCloud, CheckCircle2 } from 'lucide-react';
 
 const TIPI_ACCETTATI = '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png';
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—');
@@ -185,7 +185,7 @@ export default function EstrattoContoPage() {
       const noteJson = JSON.stringify({ dal: nuovoDal, al: nuovoAl });
       await uploadDoc(file, 'estratto_conto', file.name.replace(/\.[^.]+$/, ''), noteJson);
 
-      setUploadProgress(`✅ ${records.length} movimenti importati${msgSupplementare}`);
+      setUploadProgress(`${records.length} movimenti importati${msgSupplementare}`);
       await loadMovimenti();
       await fetchDocumenti();
       setTimeout(() => setUploadProgress(''), 5000);
@@ -225,17 +225,17 @@ export default function EstrattoContoPage() {
             <h1 style={styles.title}>Estratto Conto</h1>
             {docEstratto && (
               <div style={styles.docBadgeContainer}>
-                <span style={styles.docDateBadge}>
-                  📅 ESTRATTO CONTO {parseDateEstratto(docEstratto).dal && parseDateEstratto(docEstratto).al
+                <span style={{ ...styles.docDateBadge, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Calendar size={13} /> ESTRATTO CONTO {parseDateEstratto(docEstratto).dal && parseDateEstratto(docEstratto).al
                     ? `(${formattaData(parseDateEstratto(docEstratto).dal)} – ${formattaData(parseDateEstratto(docEstratto).al)})`
                     : ''}
                 </span>
                 <button
-                  style={styles.docOpenBtn}
+                  style={{ ...styles.docOpenBtn, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   onClick={() => visualizzaDocumento(docEstratto.url_storage)}
                   title="Visualizza o scarica il file originale dell'estratto conto"
                 >
-                  📄 Scarica File
+                  <Download size={13} /> Scarica File
                 </button>
               </div>
             )}
@@ -315,7 +315,15 @@ export default function EstrattoContoPage() {
                   }}
                   disabled={syncingBank}
                 >
-                  {syncingBank ? '⏳ Sincronizzo...' : '🔄 Sincronizza Ora'}
+                  {syncingBank ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Loader2 size={13} className="spin" /> Sincronizzo...
+                    </span>
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <RefreshCw size={13} /> Sincronizza Ora
+                    </span>
+                  )}
                 </button>
              )}
              {!bankingStatus && (
@@ -367,7 +375,11 @@ export default function EstrattoContoPage() {
                   }}
                   disabled={syncingBank}
                 >
-                  {syncingBank ? '⏳ Attendere...' : 'Completa Collegamento'}
+                  {syncingBank ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Loader2 size={13} className="spin" /> Attendere...
+                    </span>
+                  ) : 'Completa Collegamento'}
                 </button>
              )}
           </div>
@@ -390,7 +402,13 @@ export default function EstrattoContoPage() {
           disabled={uploading}
         />
         <label htmlFor="estratto-upload" style={{ cursor: uploading ? 'wait' : 'pointer' }}>
-          <div style={styles.dropIcon}>{uploading ? '⏳' : '📂'}</div>
+          <div style={styles.dropIcon}>
+            {uploading ? (
+              <Loader2 size={36} className="spin" color="var(--primary)" />
+            ) : (
+              <UploadCloud size={36} color="var(--text-muted)" />
+            )}
+          </div>
           <div style={styles.dropTitle}>
             {uploading ? uploadProgress : 'Trascina qui l\'estratto conto'}
           </div>

@@ -27,7 +27,9 @@ import {
   ArrowLeftRight,
   Bot,
   Inbox,
-  Menu
+  Menu,
+  X,
+  Clock
 } from 'lucide-react';
 
 
@@ -102,7 +104,7 @@ function AiBanner() {
         onClick={() => setDismissed(true)}
         style={{ marginLeft: 16, background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', fontSize: 16, lineHeight: 1, flexShrink: 0, padding: '0 4px' }}
         aria-label="Chiudi banner"
-      >✕</button>
+      ><X size={16} /></button>
     </div>
   );
 }
@@ -576,7 +578,7 @@ export default function AppLayout() {
             onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -717,7 +719,7 @@ export default function AppLayout() {
                     fontFamily: 'Sora, sans-serif',
                     boxSizing: 'border-box'
                   }}
-                  placeholder="Nome dello studio"
+                  placeholder="Es. Studio Amministrazione Rossi"
                 />
               </div>
 
@@ -738,7 +740,7 @@ export default function AppLayout() {
                     fontFamily: 'Sora, sans-serif',
                     boxSizing: 'border-box'
                   }}
-                  placeholder="Ragione Sociale dell'azienda di gestione"
+                  placeholder="Es. Studio Rossi S.r.l."
                 />
               </div>
 
@@ -760,7 +762,7 @@ export default function AppLayout() {
                       fontFamily: 'Sora, sans-serif',
                       boxSizing: 'border-box'
                     }}
-                    placeholder="Numero P.IVA"
+                    placeholder="Es. 12345678901"
                   />
                 </div>
                 <div style={{ flex: 1 }}>
@@ -780,7 +782,7 @@ export default function AppLayout() {
                       fontFamily: 'Sora, sans-serif',
                       boxSizing: 'border-box'
                     }}
-                    placeholder="Codice Fiscale"
+                    placeholder="Es. RSSMRA80A01H501Z"
                   />
                 </div>
               </div>
@@ -802,7 +804,7 @@ export default function AppLayout() {
                     fontFamily: 'Sora, sans-serif',
                     boxSizing: 'border-box'
                   }}
-                  placeholder="Via, civico, CAP, città"
+                  placeholder="Es. Via Roma 10, 20100 Milano (MI)"
                 />
               </div>
 
@@ -824,7 +826,7 @@ export default function AppLayout() {
                     fontFamily: 'Sora, sans-serif',
                     boxSizing: 'border-box'
                   }}
-                  placeholder="Telefono, email, PEC, P.IVA"
+                  placeholder="Es. Tel: 02 12345678 - info@studiorossi.it - PEC: studiorossi@pec.it"
                 />
               </div>
 
@@ -979,8 +981,8 @@ export default function AppLayout() {
 
                   {/* Trial expiration info if trial */}
                   {isTrialActive && trialEndsAt && (
-                    <div style={{ background: 'rgba(37, 99, 235, 0.1)', border: '1px solid #2563eb', padding: 12, borderRadius: 8, color: '#60a5fa', fontSize: 12, textAlign: 'center' }}>
-                      ⏳ Mancano <strong>{Math.max(0, Math.ceil((new Date(trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)))} giorni</strong> alla scadenza del trial.
+                    <div style={{ background: 'rgba(37, 99, 235, 0.1)', border: '1px solid #2563eb', padding: 12, borderRadius: 8, color: '#60a5fa', fontSize: 12, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <Clock size={14} /> <span>Mancano <strong>{Math.max(0, Math.ceil((new Date(trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)))} giorni</strong> alla scadenza del trial.</span>
                     </div>
                   )}
                 </div>

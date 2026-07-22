@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { LogOut, RefreshCw } from 'lucide-react'
+import { LogOut, RefreshCw, Construction } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -73,7 +73,7 @@ export default function WaitlistPage() {
           justifyContent: 'center',
           margin: '0 auto 24px'
         }}>
-          <span style={{ fontSize: '32px' }}>🚧</span>
+          <Construction size={32} color="var(--primary)" />
         </div>
         
         <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '16px' }}>

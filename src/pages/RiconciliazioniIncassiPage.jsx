@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Bot, Check, X, AlertTriangle, Lightbulb, CheckCircle2, XCircle, Calendar, User, RefreshCw, UserPlus, Settings } from 'lucide-react';
+import { Bot, Check, X, AlertTriangle, Lightbulb, CheckCircle2, XCircle, Calendar, User, RefreshCw, UserPlus, Settings, Banknote, Link2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callGemini } from '../lib/geminiClient';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
@@ -214,7 +214,7 @@ Abbina i bonifici alle celle.`;
           .upsert(inserts, { onConflict: 'movimento_id,rata_unita_id', ignoreDuplicates: true });
       }
 
-      setProgressoAI(`✅ ${suggerimenti.length} abbinamenti suggeriti`);
+      setProgressoAI(`${suggerimenti.length} abbinamenti suggeriti`);
       await loadAll();
       setShowOrfaniModal(true);
       setTimeout(() => setProgressoAI(''), 4000);
@@ -435,7 +435,7 @@ Abbina i bonifici alle celle.`;
       {filtroStato === 'orfani' ? (
         entrateOrfane.length === 0 ? (
           <div style={styles.empty}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}><CheckCircle2 size={40} color="#10b981" /></div>
             <p>Nessun bonifico in entrata senza rata o incasso sconosciuto.</p>
           </div>
         ) : (
@@ -452,7 +452,7 @@ Abbina i bonifici alle celle.`;
         )
       ) : abbFiltrati.length === 0 ? (
         <div style={styles.empty}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>💶</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}><Banknote size={40} color="var(--primary)" /></div>
           <p>
             {filtroStato === 'suggerita'
               ? 'Nessun abbinamento da confermare. Clicca "Avvia Analisi AI" per generarne.'
@@ -503,8 +503,8 @@ Abbina i bonifici alle celle.`;
                 <div key={m.id} style={{ background: 'var(--app-bg)', padding: '14px 18px', borderRadius: 12, border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{m.causale || '—'}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
-                      📅 {dataIt(m.data_movimento)} · {m.pagante_rilevato ? `👤 ${m.pagante_rilevato}` : 'Pagante non rilevato'}
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {dataIt(m.data_movimento)}</span> · {m.pagante_rilevato ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><User size={12} /> {m.pagante_rilevato}</span> : 'Pagante non rilevato'}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -512,13 +512,13 @@ Abbina i bonifici alle celle.`;
                       +€ {Math.abs(m.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                     </span>
                     <button
-                      style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13 }}
+                      style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                       onClick={() => {
                         setShowOrfaniModal(false);
                         setFiltroStato('orfani');
                       }}
                     >
-                      🔗 Vai ad Abbinamento
+                      <Link2 size={13} /> Vai ad Abbinamento
                     </button>
                   </div>
                 </div>
@@ -567,9 +567,13 @@ function AbbinamentoIncassoCard({ ab, onConferma, onRifiuta }) {
         <div style={styles.matchBox}>
           <div style={styles.matchLabel}>BONIFICO IN ENTRATA</div>
           <div style={styles.matchTitolo}>{mov?.causale || '—'}</div>
-          {mov?.pagante_rilevato && <div style={styles.matchSub}>👤 {mov.pagante_rilevato}</div>}
+          {mov?.pagante_rilevato && (
+            <div style={{ ...styles.matchSub, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <User size={12} /> {mov.pagante_rilevato}
+            </div>
+          )}
           <div style={styles.matchMeta}>
-            <span>📅 {dataIt(mov?.data_movimento)}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {dataIt(mov?.data_movimento)}</span>
             <span style={{ color: '#16a34a', fontWeight: 700 }}>+{euro(Math.abs(mov?.importo || 0))}</span>
           </div>
         </div>
@@ -582,7 +586,11 @@ function AbbinamentoIncassoCard({ ab, onConferma, onRifiuta }) {
           <div style={styles.matchTitolo}>
             {cella?.rata ? `Rata ${cella.rata.numero_rata} · scad. ${dataIt(cella.rata.data_scadenza)}` : '—'}
           </div>
-          {paganti && <div style={styles.matchSub}>👤 {paganti}</div>}
+          {paganti && (
+            <div style={{ ...styles.matchSub, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <User size={12} /> {paganti}
+            </div>
+          )}
           <div style={styles.matchMeta}>
             <span>Residuo {euro(residuo)}</span>
             <span style={{ color: '#2563eb', fontWeight: 700 }}>assegna {euro(ab.importo_assegnato)}</span>
@@ -693,17 +701,19 @@ function EntrataOrfanaCard({ mov, celleAperte, onAbbina }) {
           })}
         </select>
         <button
-          style={{ ...styles.btnAction, opacity: selectedCellaId ? 1 : 0.5, cursor: selectedCellaId ? 'pointer' : 'not-allowed' }}
+          style={styles.btnAbbinaManuale}
           disabled={!selectedCellaId}
           onClick={() => {
-            const cella = celleAperte.find(x => x.id === selectedCellaId);
+            const cella = celleAperte.find(c => c.id === selectedCellaId);
             if (cella) {
               onAbbina(cella);
               setSelectedCellaId('');
             }
           }}
         >
-          🔗 Abbina e Salda
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <CheckCircle2 size={13} /> Abbina e Salda
+          </span>
         </button>
       </div>
     </div>

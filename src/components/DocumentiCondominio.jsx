@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDocumenti } from '../hooks/useDocumenti'
-import { FileText, FileSpreadsheet, FileSignature, Award, Landmark, Folder, FolderOpen, Paperclip, CheckCircle2, AlertTriangle, Trash2, Download, Plus, X, File, ShieldAlert } from 'lucide-react'
+import { FileText, FileSpreadsheet, FileSignature, Award, Landmark, Folder, FolderOpen, Paperclip, CheckCircle2, AlertTriangle, Trash2, Download, Plus, X, File, ShieldAlert, Loader2 } from 'lucide-react'
 
 function renderTipoIcon(tipo, size = 20) {
   switch (tipo) {
@@ -357,9 +357,10 @@ export default function DocumentiCondominio({ condominioId }) {
               {uploadProgress && (
                 <div style={{
                   background: 'var(--app-bg)', border: '1px solid #2563eb', borderRadius: 8,
-                  padding: '10px 14px', marginBottom: 16, color: '#60a5fa', fontSize: 13
+                  padding: '10px 14px', marginBottom: 16, color: '#60a5fa', fontSize: 13,
+                  display: 'flex', alignItems: 'center', gap: 6
                 }}>
-                  ⏳ {uploadProgress}
+                  <Loader2 size={13} className="spin" /> {uploadProgress}
                 </div>
               )}
 

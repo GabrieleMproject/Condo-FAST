@@ -726,8 +726,8 @@ Formato JSON atteso:
               </div>
 
               {uploadProgress && (
-                <div style={S.uploadProgressBox}>
-                  ⏳ {uploadProgress}
+                <div style={{ ...S.uploadProgressBox, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Loader2 size={13} className="spin" /> {uploadProgress}
                 </div>
               )}
 

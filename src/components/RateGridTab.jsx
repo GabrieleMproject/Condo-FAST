@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
 import { useComunicazioni } from '../hooks/useComunicazioni'
 import { exportSingolaUnitaRatePdfBytes, exportSollecitiMassiviPdf } from '../lib/exportPdf'
-import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone, Building2, Calendar } from 'lucide-react'
+import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone, Building2, Calendar, ChevronRight, ChevronDown } from 'lucide-react'
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -47,7 +47,7 @@ function cellInfo(cell, rata) {
   return { color, bg: color + '22', importo, pagato, credito, label, overdue, missing: false }
 }
 
-export default function RateGridTab({ condominioId }) {
+export default function RateGridTab({ condominioId, esercizioId: esercizioIdProp, esercizioAttivo: esercizioAttivoProp, onSelectEsercizio }) {
   const navigate = useNavigate()
   const { inviaComunicazione, fetchComunicazioni } = useComunicazioni()
   const [inviandoSollecito, setInviandoSollecito] = useState(false)
@@ -56,7 +56,7 @@ export default function RateGridTab({ condominioId }) {
   const [invioMassivoStato, setInvioMassivoStato] = useState({ inCorso: false, totale: 0, corrente: 0, falliti: 0 })
 
   const [esercizi, setEsercizi] = useState([])
-  const [esercizio, setEsercizio] = useState(null)
+  const [esercizio, setEsercizio] = useState(esercizioAttivoProp || null)
   const [rate, setRate] = useState([])           // colonne
   const [cells, setCells] = useState([])          // rate_unita
   const [loading, setLoading] = useState(true)
@@ -176,7 +176,7 @@ export default function RateGridTab({ condominioId }) {
                 gap: 4
               }}
             >
-              {idx > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 9 }}>➔</span>}
+              {idx > 0 && <ChevronRight size={10} style={{ color: 'var(--text-muted)' }} />}
               <span>{p.cognome} {p.nome} <span style={{ color: 'var(--text-muted)', fontSize: 9, fontStyle: 'italic' }}>{labelDate}</span></span>
             </div>
           );
@@ -329,8 +329,13 @@ L'Amministratore`;
           console.error("[RateGridTab] Errore caricamento esercizi:", error.message)
           return
         }
-        setEsercizi(data || [])
-        setEsercizio(data?.find((e) => e.stato === 'aperto') || data?.[0] || null)
+        const lista = data || []
+        setEsercizi(lista)
+        if (esercizioIdProp) {
+          const match = lista.find(e => e.id === esercizioIdProp)
+          if (match) { setEsercizio(match); return }
+        }
+        setEsercizio(lista.find((e) => e.stato === 'aperto') || lista[0] || null)
       })
       .catch(err => console.error("[RateGridTab] Errore di rete esercizi:", err))
 
@@ -343,7 +348,16 @@ L'Amministratore`;
         }
         setCondominio(data)
       })
-  }, [condominioId])
+  }, [condominioId, esercizioIdProp])
+
+  useEffect(() => {
+    if (esercizioIdProp && esercizi.length > 0) {
+      const match = esercizi.find(e => e.id === esercizioIdProp)
+      if (match && match.id !== esercizio?.id) {
+        setEsercizio(match)
+      }
+    }
+  }, [esercizioIdProp, esercizi])
 
   async function loadGriglia() {
     if (!esercizio) { setLoading(false); return }
@@ -654,7 +668,10 @@ L'Amministratore`;
             return (
               <button
                 key={es.id}
-                onClick={() => setEsercizio(es)}
+                onClick={() => {
+                  setEsercizio(es)
+                  if (onSelectEsercizio) onSelectEsercizio(es.id)
+                }}
                 style={{
                   padding: '6px 14px',
                   borderRadius: 8,
@@ -935,7 +952,15 @@ function CellEditor({ cell, rata, unita, getProprietario, getInquilino, configPa
             onClick={() => setShowAnagrafica(!showAnagrafica)} 
             style={{ ...st.btnGhost, color: '#60a5fa', borderColor: 'transparent', padding: '4px 0', fontSize: 12, justifyContent: 'flex-start', width: '100%', display: 'flex', alignItems: 'center' }}
           >
-            {showAnagrafica ? '▼ Nascondi Anagrafica' : `▶ Modifica Anagrafica ${paganteTipo === 'inquilino' ? 'Inquilino' : 'Proprietario'}`}
+            {showAnagrafica ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <ChevronDown size={14} /> Nascondi Anagrafica
+              </span>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <ChevronRight size={14} /> Modifica Anagrafica {paganteTipo === 'inquilino' ? 'Inquilino' : 'Proprietario'}
+              </span>
+            )}
           </button>
 
           {showAnagrafica && activePayer && (

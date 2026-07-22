@@ -406,13 +406,13 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
     const xGas = 112
     
     disegnaRiquadroConsumo(
-      doc, xEnergia, y, '🔋 CONSUMI ENERGIA ELETTRICA', 
+      doc, xEnergia, y, 'CONSUMI ENERGIA ELETTRICA', 
       storico?.energia?.corrente || 0, storico?.energia?.precedente || 0, storico?.energia?.variazione || 0, 
       c.esercizio?.anno, storico.annoPrecedente, storico.haPrecedente
     )
     
     disegnaRiquadroConsumo(
-      doc, xGas, y, '🔥 CONSUMI RISCALDAMENTO & GAS', 
+      doc, xGas, y, 'CONSUMI RISCALDAMENTO & GAS', 
       storico?.riscaldamento?.corrente || 0, storico?.riscaldamento?.precedente || 0, storico?.riscaldamento?.variazione || 0, 
       c.esercizio?.anno, storico.annoPrecedente, storico.haPrecedente
     )

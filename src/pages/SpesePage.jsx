@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, useLocation } from 'react-router-dom'
+import { useParams, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { AlertTriangle, Bot, Edit3, Trash2, Info, FileSpreadsheet, Scale, Split, Plus } from 'lucide-react'
+import { AlertTriangle, Bot, Edit3, Trash2, Info, FileSpreadsheet, Scale, Split, Plus, Pencil, Receipt, Calendar, CreditCard } from 'lucide-react'
 import { useSpese } from '../hooks/useSpese'
 import { useEsercizi } from '../hooks/useEsercizi'
 import { useMillesimi } from '../hooks/useMillesimi'
@@ -21,6 +21,9 @@ const esercizioVuoto = () => {
 
 export default function SpesePage() {
   const { condominioId } = useParams()
+  const [searchParams] = useSearchParams()
+  const urlEsercizioId = searchParams.get('esercizio')
+
   const [esercizioAttivo, setEsercizioAttivo] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [fromFattura, setFromFattura] = useState(false)
@@ -50,11 +53,20 @@ export default function SpesePage() {
   }, [condominioId])
 
   useEffect(() => {
-    if (esercizi.length && !esercizioAttivo) {
-      const aperto = esercizi.find(e => e.stato === 'aperto') || esercizi[0]
-      setEsercizioAttivo(aperto)
+    if (esercizi.length) {
+      if (urlEsercizioId) {
+        const match = esercizi.find(e => e.id === urlEsercizioId)
+        if (match) {
+          setEsercizioAttivo(match)
+          return
+        }
+      }
+      if (!esercizioAttivo || !esercizi.some(e => e.id === esercizioAttivo?.id)) {
+        const aperto = esercizi.find(e => e.stato === 'aperto') || esercizi[0]
+        setEsercizioAttivo(aperto)
+      }
     }
-  }, [esercizi])
+  }, [esercizi, urlEsercizioId])
 
   useEffect(() => {
     if (esercizioAttivo) fetchSpese()
@@ -333,7 +345,7 @@ export default function SpesePage() {
                   cursor: 'pointer', fontSize: 13, padding: '0 2px', lineHeight: 1
                 }}
               >
-                ✎
+                <Pencil size={12} />
               </button>
             </div>
           ))}
@@ -389,7 +401,7 @@ export default function SpesePage() {
               fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center', gap: 8
             }}
           >
-            🧾 Da fattura
+            <Receipt size={14} /> Da fattura
           </button>
           <button
             onClick={apriFormManuale}
@@ -429,7 +441,9 @@ export default function SpesePage() {
           background: 'var(--card-bg)', border: '2px dashed var(--border-color)', borderRadius: 12,
           padding: 48, textAlign: 'center'
         }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>📅</div>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+            <Calendar size={36} color="var(--text-muted)" strokeWidth={1.5} />
+          </div>
           <p style={{ color: 'var(--text-muted)', margin: 0 }}>Crea un esercizio contabile per iniziare</p>
         </div>
       ) : loadSpese ? (
@@ -439,7 +453,9 @@ export default function SpesePage() {
           background: 'var(--card-bg)', border: '2px dashed var(--border-color)', borderRadius: 12,
           padding: 48, textAlign: 'center'
         }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>💸</div>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+            <CreditCard size={36} color="var(--text-muted)" strokeWidth={1.5} />
+          </div>
           <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessuna spesa per questo esercizio</p>
         </div>
       ) : (

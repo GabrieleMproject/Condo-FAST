@@ -8,7 +8,7 @@ import { useSaldiIniziali } from '../hooks/useSaldiIniziali'
 import { estraiSaldiConsuntivo } from '../lib/fileExtractor'
 import { 
   Plus, Trash2, Wand2, Equal, AlertCircle, CheckCircle2, 
-  Wallet, FileText, Check, Loader2, ClipboardList, RefreshCw 
+  Wallet, FileText, Check, Loader2, ClipboardList, RefreshCw, AlertTriangle 
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
@@ -26,13 +26,13 @@ function defaultScadenze(anno, totale) {
   }))
 }
 
-export default function PreventivoSection({ condominioId }) {
+export default function PreventivoSection({ condominioId, esercizioId: esercizioIdProp, esercizioAttivo: esercizioAttivoProp, onSelectEsercizio }) {
   // Tab Interno: 'preventivo' | 'saldi'
   const [vistaAttiva, setVistaAttiva] = useState('preventivo')
 
   // --- STATI E HOOKS PREVENTIVO ---
   const [esercizi, setEsercizi] = useState([])
-  const [esercizio, setEsercizio] = useState(null)
+  const [esercizio, setEsercizio] = useState(esercizioAttivoProp || null)
   const [scadenze, setScadenze] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
@@ -67,10 +67,24 @@ export default function PreventivoSection({ condominioId }) {
     supabase.from('esercizi').select('*').eq('condominio_id', condominioId)
       .order('anno', { ascending: false })
       .then(({ data }) => {
-        setEsercizi(data || [])
-        setEsercizio(data?.find((e) => e.stato === 'aperto') || data?.[0] || null)
+        const lista = data || []
+        setEsercizi(lista)
+        if (esercizioIdProp) {
+          const match = lista.find(e => e.id === esercizioIdProp)
+          if (match) { setEsercizio(match); return }
+        }
+        setEsercizio(lista.find((e) => e.stato === 'aperto') || lista[0] || null)
       })
-  }, [condominioId])
+  }, [condominioId, esercizioIdProp])
+
+  useEffect(() => {
+    if (esercizioIdProp && esercizi.length > 0) {
+      const match = esercizi.find(e => e.id === esercizioIdProp)
+      if (match && match.id !== esercizio?.id) {
+        setEsercizio(match)
+      }
+    }
+  }, [esercizioIdProp, esercizi])
 
   useEffect(() => { mill.fetch() }, [mill.fetch])
   useEffect(() => { prev.fetch() }, [prev.fetch])
@@ -294,7 +308,14 @@ export default function PreventivoSection({ condominioId }) {
       {esercizi.length > 1 && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
           {esercizi.map((es) => (
-            <button key={es.id} onClick={() => setEsercizio(es)} style={st.esBtn(esercizio?.id === es.id)}>
+            <button
+              key={es.id}
+              onClick={() => {
+                setEsercizio(es)
+                if (onSelectEsercizio) onSelectEsercizio(es.id)
+              }}
+              style={st.esBtn(esercizio?.id === es.id)}
+            >
               {es.anno}
               <span style={st.esTag(es.stato === 'aperto')}>{es.stato}</span>
             </button>
@@ -430,7 +451,7 @@ export default function PreventivoSection({ condominioId }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 12 }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Ripartizione millesimi:</span>
                     <strong style={{ color: ripartizioneTorna ? '#10b981' : '#ef4444' }}>
-                      {ripartizioneTorna ? 'Bilanciata' : 'Sbilanciata ⚠️'}
+                      {ripartizioneTorna ? 'Bilanciata' : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>Sbilanciata <AlertTriangle size={13} /></span>}
                     </strong>
                   </div>
 

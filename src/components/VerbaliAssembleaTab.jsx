@@ -138,7 +138,6 @@ export default function VerbaliAssembleaTab({ condominioId }) {
   const [searchResult, setSearchResult] = useState(null);
   const [selectedVerbaliIds, setSelectedVerbaliIds] = useState(new Set());
   const [optimizationLog, setOptimizationLog] = useState(null);
-  const [noMatchWarning, setNoMatchWarning] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
 
   useEffect(() => {
@@ -281,7 +280,6 @@ export default function VerbaliAssembleaTab({ condominioId }) {
     setSearching(true);
     setSearchResult(null);
     setOptimizationLog(null);
-    setNoMatchWarning(false);
 
     try {
       // 1. Filtra i verbali selezionati dall'utente

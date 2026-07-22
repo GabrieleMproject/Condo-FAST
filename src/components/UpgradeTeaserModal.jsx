@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, Zap, Sparkles, CheckCircle2, ShieldCheck, ArrowRight, Lock } from 'lucide-react'
+import { X, Sparkles, CheckCircle2, ArrowRight, Lock } from 'lucide-react'
 
 export default function UpgradeTeaserModal({
   isOpen,

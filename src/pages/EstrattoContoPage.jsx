@@ -251,7 +251,7 @@ export default function EstrattoContoPage() {
                 boxShadow: '0 2px 8px rgba(37,99,235,0.25)'
               }}
             >
-              <Bot size={16} /> 🧙‍♂️ Configurazione Guidata Riconciliazione
+              <Bot size={16} /> Configurazione Guidata Riconciliazione
             </button>
           </div>
         </div>
@@ -276,7 +276,9 @@ export default function EstrattoContoPage() {
       <PlanGate feature="open_banking" fallback={
         <div style={{...styles.dropZone, padding: 16, marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <div style={{ textAlign: 'left' }}>
-            <div style={{fontWeight: 600, color: 'var(--text-primary)'}}>🏦 Open Banking (PSD2)</div>
+            <div style={{fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6}}>
+              <Building2 size={16} style={{ color: '#60a5fa' }} /> Open Banking (PSD2)
+            </div>
             <div style={{fontSize: 13, color: 'var(--text-muted)'}}>Collega il conto corrente per scaricare i movimenti in automatico ogni notte. Esclusivo per il piano Professional.</div>
           </div>
           <button style={{...styles.docOpenBtn, background: 'var(--border-color)', color: 'var(--text-muted)', cursor: 'not-allowed'}} disabled>Passa a Pro</button>
@@ -284,9 +286,9 @@ export default function EstrattoContoPage() {
       }>
         <div style={{...styles.dropZone, padding: 16, marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: bankingStatus?.status === 'LINKED' ? '#16a34a' : 'var(--border-color)', background: bankingStatus?.status === 'LINKED' ? '#16a34a10' : '#1e293b10'}}>
           <div style={{ textAlign: 'left' }}>
-            <div style={{fontWeight: 600, color: 'var(--text-primary)'}}>
-              🏦 Sincronizzazione Bancaria (GoCardless)
-              {bankingStatus?.status === 'LINKED' && <span style={{marginLeft: 10, fontSize: 12, color: '#16a34a', background: '#16a34a20', padding: '2px 8px', borderRadius: 12}}>🟢 Attiva ({bankingStatus.institution_name})</span>}
+            <div style={{fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6}}>
+              <Building2 size={16} style={{ color: '#60a5fa' }} /> Sincronizzazione Bancaria (GoCardless)
+              {bankingStatus?.status === 'LINKED' && <span style={{marginLeft: 10, fontSize: 12, color: '#16a34a', background: '#16a34a20', padding: '2px 8px', borderRadius: 12}}>Attiva ({bankingStatus.institution_name})</span>}
             </div>
             <div style={{fontSize: 13, color: 'var(--text-muted)'}}>
               {bankingStatus?.status === 'LINKED' ? `Sincronizzazione automatica attiva. Conto: ${bankingStatus.iban || bankingStatus.account_id || 'Autenticato'}` : 'Collega il conto bancario per scaricare i movimenti in tempo reale e azzerare i caricamenti PDF.'}
@@ -425,7 +427,7 @@ export default function EstrattoContoPage() {
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>Caricamento...</div>
       ) : movFiltrati.length === 0 ? (
         <div style={styles.emptyState}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🏦</div>
+          <div style={{ color: 'var(--text-muted)', marginBottom: 12 }}><Building2 size={40} /></div>
           <p>Nessun movimento. Importa un estratto conto.</p>
         </div>
       ) : (
@@ -454,7 +456,7 @@ export default function EstrattoContoPage() {
                   )}
                   <div style={styles.movMeta}>
                     {formattaData(m.data_movimento)}
-                    {m.metodo_importazione === 'open_banking' && <span style={{marginLeft: 6, color: '#2563eb', fontWeight: 600}}>🏦 PSD2</span>}
+                    {m.metodo_importazione === 'open_banking' && <span style={{marginLeft: 6, color: '#2563eb', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4}}><Building2 size={12} /> PSD2</span>}
                     {m.riferimento_esterno && ` · Rif: ${m.riferimento_esterno}`}
                     {m.riconciliato && (
                       <span style={{ ...styles.ricBadge, display: 'inline-flex', alignItems: 'center', gap: 4 }}>

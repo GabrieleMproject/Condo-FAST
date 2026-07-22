@@ -5,7 +5,8 @@ import UpgradeTeaserModal from './UpgradeTeaserModal'
 import { callGemini } from '../lib/geminiClient'
 import { 
   FileSignature, Search, Sparkles, Paperclip, CheckCircle2, 
-  AlertTriangle, Trash2, Calendar, FileText, Loader2, X, Plus 
+  AlertTriangle, Trash2, Calendar, FileText, Loader2, X, Plus,
+  Lock, Clock, ShieldCheck, ArrowRight
 } from 'lucide-react'
 
 // Elenco di stop words italiane comuni per l'estrazione delle parole chiave
@@ -477,64 +478,116 @@ Formato JSON atteso:
 
         {/* Colonna di destra: Ricerca AI */}
         <div style={S.rightColumn}>
-          <div style={S.aiSearchCard}>
-            <div style={S.aiCardHeader}>
-              <Sparkles size={18} color="#10b981" />
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Ricerca AI nei Verbali</span>
-              {!canUse('ricerca_verbali_ai') && (
-                <span 
-                  onClick={() => setShowStudioPaywall(true)}
-                  style={{
-                    fontSize: 10, background: 'rgba(124, 58, 237, 0.2)', color: '#a78bfa',
-                    border: '1px solid rgba(124, 58, 237, 0.4)', padding: '2px 8px', borderRadius: 12,
-                    fontWeight: 700, marginLeft: 'auto', cursor: 'pointer'
-                  }}
-                >
-                  🔒 ESCLUSIVO PIANO STUDIO
+          {!canUse('ricerca_verbali_ai') ? (
+            /* Banner Teaser In-page per Utenti Piano Base */
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(37, 99, 235, 0.08) 100%)',
+              border: '1px solid rgba(124, 58, 237, 0.3)', borderRadius: 16, padding: 24,
+              display: 'flex', flexDirection: 'column', gap: 16
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(124, 58, 237, 0.15)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a78bfa' }}>
+                      Assistente AI Verbali
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginTop: 1 }}>
+                      Ricerca & Analisi Delibere AI
+                    </div>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: 10, background: 'rgba(124, 58, 237, 0.2)', color: '#a78bfa',
+                  border: '1px solid rgba(124, 58, 237, 0.4)', padding: '3px 10px', borderRadius: 12,
+                  fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4
+                }}>
+                  <Lock size={10} /> PIANO STUDIO
                 </span>
-              )}
-            </div>
-
-            <p style={S.aiHelpText}>
-              Fai una domanda sulle decisioni prese nelle assemblee precedenti. L'AI cercherà nei testi dei verbali selezionati a sinistra.
-            </p>
-
-            <div style={S.searchBoxContainer}>
-              <textarea
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Es: Cosa è stato deliberato riguardo al cambio del cancello e alla ripartizione della spesa?"
-                rows={3}
-                style={S.searchTextArea}
-                disabled={searching}
-              />
-              <div style={S.searchActions}>
-                <span style={S.selectedCount}>
-                  Cerca in: <strong>{selectedVerbaliIds.size}</strong> verbali
-                </span>
-                <button 
-                  onClick={() => handleAiSearch(false)} 
-                  disabled={searching || !query.trim() || selectedVerbaliIds.size === 0}
-                  style={{
-                    ...S.btnSearch,
-                    opacity: (searching || !query.trim() || selectedVerbaliIds.size === 0) ? 0.6 : 1,
-                    cursor: (searching || !query.trim() || selectedVerbaliIds.size === 0) ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {searching ? (
-                    <>
-                      <Loader2 size={15} className="spinner" style={{ marginRight: 6 }} />
-                      Ricerca...
-                    </>
-                  ) : (
-                    <>
-                      <Search size={15} style={{ marginRight: 6 }} />
-                      Chiedi all'AI
-                    </>
-                  )}
-                </button>
               </div>
+
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                Risparmia fino al <strong>90% del tempo di consultazione</strong> per individuare delibere, quote di spesa e accordi passati nei verbali delle assemblee.
+              </div>
+
+              <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ fontSize: 12.5, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Clock size={16} style={{ color: '#34d399', flexShrink: 0 }} />
+                  <span><strong>Azzeramento ricerche manuali:</strong> l'AI legge centinaia di pagine PDF e DOCX in pochi secondi.</span>
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <CheckCircle2 size={16} style={{ color: '#34d399', flexShrink: 0 }} />
+                  <span><strong>Prova esatta delibera:</strong> citazione del paragrafo, verbale e data di riferimento.</span>
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <ShieldCheck size={16} style={{ color: '#34d399', flexShrink: 0 }} />
+                  <span><strong>Risposte chiare per il contenzioso:</strong> riscontri immediati per condòmini ed avvocati.</span>
+                </div>
+              </div>
+
+              <a
+                href="/impostazioni#piani-abbonamento"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: '#fff',
+                  textDecoration: 'none', borderRadius: 10, padding: '12px 20px',
+                  fontSize: 13.5, fontWeight: 700, marginTop: 4,
+                  boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
+                }}
+              >
+                <span>Passa al Piano Studio (249€/m)</span>
+                <ArrowRight size={16} />
+              </a>
             </div>
+          ) : (
+            <div style={S.aiSearchCard}>
+              <div style={S.aiCardHeader}>
+                <Sparkles size={18} color="#10b981" />
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Ricerca AI nei Verbali</span>
+              </div>
+
+              <p style={S.aiHelpText}>
+                Fai una domanda sulle decisioni prese nelle assemblee precedenti. L'AI cercherà nei testi dei verbali selezionati a sinistra.
+              </p>
+
+              <div style={S.searchBoxContainer}>
+                <textarea
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Es: Cosa è stato deliberato riguardo al cambio del cancello e alla ripartizione della spesa?"
+                  rows={3}
+                  style={S.searchTextArea}
+                  disabled={searching}
+                />
+                <div style={S.searchActions}>
+                  <span style={S.selectedCount}>
+                    Cerca in: <strong>{selectedVerbaliIds.size}</strong> verbali
+                  </span>
+                  <button 
+                    onClick={() => handleAiSearch(false)} 
+                    disabled={searching || !query.trim() || selectedVerbaliIds.size === 0}
+                    style={{
+                      ...S.btnSearch,
+                      opacity: (searching || !query.trim() || selectedVerbaliIds.size === 0) ? 0.6 : 1,
+                      cursor: (searching || !query.trim() || selectedVerbaliIds.size === 0) ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {searching ? (
+                      <>
+                        <Loader2 size={15} className="spinner" style={{ marginRight: 6 }} />
+                        Ricerca...
+                      </>
+                    ) : (
+                      <>
+                        <Search size={15} style={{ marginRight: 6 }} />
+                        Chiedi all'AI
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
 
             {/* Informazioni Ottimizzazione Costi */}
             {optimizationLog && (
@@ -545,18 +598,18 @@ Formato JSON atteso:
               }}>
                 {optimizationLog.metodo === 'keyword_chunks' ? (
                   <>
-                    ⚡ <strong>Ottimizzazione attiva:</strong> analizzati solo i paragrafi pertinenti ({optimizationLog.numVerbaliInviati}/{optimizationLog.numVerbaliTotali} verbali).
+                    <Zap size={14} style={{ color: '#10b981', display: 'inline', marginRight: 4 }} /> <strong>Ottimizzazione attiva:</strong> analizzati solo i paragrafi pertinenti ({optimizationLog.numVerbaliInviati}/{optimizationLog.numVerbaliTotali} verbali).
                     {optimizationLog.risparmioPercentuale > 0 && (
                       <span style={{ color: '#10b981', fontWeight: 600 }}> Risparmio token: ~{optimizationLog.risparmioPercentuale}%</span>
                     )}
                   </>
                 ) : optimizationLog.metodo === 'full_text_fallback_automatico' ? (
                   <>
-                    🔍 <strong>Ricerca estesa automatica:</strong> nessuna corrispondenza esatta per le parole chiave, analizzato il testo completo dei verbali per sicurezza.
+                    <Search size={14} style={{ color: '#60a5fa', display: 'inline', marginRight: 4 }} /> <strong>Ricerca estesa automatica:</strong> nessuna corrispondenza esatta per le parole chiave, analizzato il testo completo dei verbali per sicurezza.
                   </>
                 ) : (
                   <>
-                    🔍 <strong>Ricerca completa:</strong> analizzato il testo completo di tutti i verbali selezionati.
+                    <Search size={14} style={{ color: '#60a5fa', display: 'inline', marginRight: 4 }} /> <strong>Ricerca completa:</strong> analizzato il testo completo di tutti i verbali selezionati.
                   </>
                 )}
               </div>
@@ -594,10 +647,9 @@ Formato JSON atteso:
                 )}
               </div>
             )}
-
           </div>
+        )}
         </div>
-
       </div>
 
       {/* Modal Upload */}
@@ -732,13 +784,13 @@ Formato JSON atteso:
         title="Ricerca & Analisi AI nei Verbali"
         description="Trova istantaneamente delibere, votazioni ed accordi passati interrogando l'AI sui verbali delle assemblee."
         pianoRichiesto="studio"
-        badgeText="🔒 ESCLUSIVO PIANO STUDIO"
+        badgeText="ESCLUSIVO PIANO STUDIO"
         features={[
           "Interrogazione in linguaggio naturale di tutti i verbali d'assemblea",
           "Estrazione automatica delle citazioni testuali e delle delibere",
           "Riduzione azzerata dei tempi di ricerca contabile e legale"
         ]}
-        ctaText="Passa a Piano Studio (249€/m) 🚀"
+        ctaText="Passa a Piano Studio (249€/m)"
       />
     </div>
   );

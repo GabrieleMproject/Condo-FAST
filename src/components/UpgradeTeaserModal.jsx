@@ -1,6 +1,5 @@
-// src/components/UpgradeTeaserModal.jsx
 import React from 'react'
-import { X, Zap, Sparkles, CheckCircle2, ShieldCheck, ArrowRight } from 'lucide-react'
+import { X, Zap, Sparkles, CheckCircle2, ShieldCheck, ArrowRight, Lock } from 'lucide-react'
 
 export default function UpgradeTeaserModal({
   isOpen,
@@ -19,8 +18,8 @@ export default function UpgradeTeaserModal({
   if (!isOpen) return null
 
   const isPro = pianoRichiesto === 'professional'
-  const computedBadge = badgeText || (isPro ? '🔒 ESCLUSIVO PROFESSIONAL' : '🔒 ESCLUSIVO PIANO STUDIO')
-  const defaultCta = isPro ? 'Passa a Professional (399€/m) 🚀' : 'Passa al Piano Studio (249€/m) 🚀'
+  const computedBadge = badgeText || (isPro ? 'ESCLUSIVO PROFESSIONAL' : 'ESCLUSIVO PIANO STUDIO')
+  const defaultCtaText = isPro ? 'Passa a Professional (399€/m)' : 'Passa al Piano Studio (249€/m)'
 
   return (
     <div style={{
@@ -67,9 +66,10 @@ export default function UpgradeTeaserModal({
             color: isPro ? '#fbbf24' : '#a78bfa',
             border: `1px solid ${isPro ? 'rgba(245, 158, 11, 0.4)' : 'rgba(124, 58, 237, 0.4)'}`,
             padding: '4px 12px', borderRadius: 16, fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.05em'
+            textTransform: 'uppercase', letterSpacing: '0.05em',
+            display: 'inline-flex', alignItems: 'center', gap: 5
           }}>
-            {computedBadge}
+            <Lock size={11} /> {computedBadge}
           </span>
           <h3 style={{ fontSize: 20, fontWeight: 800, margin: '12px 0 8px', color: 'var(--text-primary)' }}>
             {title}
@@ -113,11 +113,12 @@ export default function UpgradeTeaserModal({
                 ? 'linear-gradient(135deg, #d97706, #f59e0b)'
                 : 'linear-gradient(135deg, #7c3aed, #2563eb)',
               color: '#fff', textDecoration: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               boxShadow: isPro ? '0 4px 14px rgba(245, 158, 11, 0.35)' : '0 4px 14px rgba(124, 58, 237, 0.35)'
             }}
           >
-            {ctaText || defaultCta}
+            <span>{ctaText || defaultCtaText}</span>
+            <ArrowRight size={15} />
           </a>
         </div>
       </div>

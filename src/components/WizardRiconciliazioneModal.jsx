@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { 
   Building2, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, 
   Settings, Bot, HelpCircle, ShieldCheck, DollarSign, FileText, 
-  Check, X, Zap, Sliders, AlertCircle
+  Check, X, Zap, Sliders, AlertCircle, Lock
 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
@@ -181,8 +181,8 @@ export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSucc
                     {canUse('open_banking') ? (
                       <span style={{ fontSize: 10, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>RACCOMANDATO (PRO)</span>
                     ) : (
-                      <span style={{ fontSize: 10, background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '2px 8px', borderRadius: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        🔒 ESCLUSIVO PROFESSIONAL
+                      <span style={{ fontSize: 10, background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '2px 8px', borderRadius: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Lock size={10} /> ESCLUSIVO PROFESSIONAL
                       </span>
                     )}
                   </div>
@@ -437,13 +437,13 @@ export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSucc
         title="Sincronizzazione Automatica Open Banking (PSD2)"
         description="Con la sincronizzazione automatica, CondoSmart si collega in sola lettura e in totale sicurezza alla banca del condominio (via GoCardless), scaricando ogni notte i movimenti. Zero file PDF da scaricare o caricare!"
         pianoRichiesto="professional"
-        badgeText="🔒 ESCLUSIVO PROFESSIONAL"
+        badgeText="ESCLUSIVO PROFESSIONAL"
         features={[
           "Sincronizzazione notturna automatica dei conti correnti",
           "Connessione diretta certificata da standard bancari PSD2",
           "Condomini ed estratti conto illimitati inclusi nel piano"
         ]}
-        ctaText="Passa a Professional (399€/m) 🚀"
+        ctaText="Passa a Professional (399€/m)"
       />
     </div>
   )

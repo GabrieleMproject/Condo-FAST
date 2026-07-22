@@ -21,9 +21,9 @@ export const PIANI = {
   base: {
     label: 'Base',
     canone: 129,
-    condomini_inclusi: 10,       // ✅ concordato
+    condomini_inclusi: 50,       // ✅ 50 condomini per Base
     extra_per_cond: 7,
-    ai_calls_mese: 100,          // ✅ concordato
+    ai_calls_mese: 100,          // 100 chiamate AI
     portale_condomino: false,
     rendiconto_pdf: false,
     assemblee: false,
@@ -34,9 +34,9 @@ export const PIANI = {
   studio: {
     label: 'Studio',
     canone: 249,
-    condomini_inclusi: 50,       // ✅ concordato
+    condomini_inclusi: 100,      // ✅ fino a 100 condomini per Studio
     extra_per_cond: 6,
-    ai_calls_mese: 500,          // ✅ concordato
+    ai_calls_mese: 500,          // 500 chiamate AI
     portale_condomino: true,
     rendiconto_pdf: true,
     assemblee: true,
@@ -49,7 +49,7 @@ export const PIANI = {
     canone: 399,
     condomini_inclusi: null,     // ✅ illimitati
     extra_per_cond: 0,
-    ai_calls_mese: null,         // illimitato
+    ai_calls_mese: 1000,         // ✅ 1000 chiamate AI/mese
     portale_condomino: true,
     rendiconto_pdf: true,
     assemblee: true,
@@ -73,6 +73,7 @@ const FEATURE_GATES = {
   notifiche_auto:      ['studio', 'professional'],  // S11
   storico_3anni:       ['studio', 'professional'],
   postbox_studio:      ['studio', 'professional'],
+  ricerca_verbali_ai:  ['studio', 'professional'],  // S61: Ricerca AI nei verbali riservata a Studio+
   multi_utente:        ['studio', 'professional'],   // Studio+ supporta ora collaboratori limitati
   api_access:          ['professional'],             // futuro
   open_banking:        ['professional'],             // S51

@@ -8,6 +8,7 @@ import {
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlan } from '../hooks/usePlan'
+import UpgradeTeaserModal from './UpgradeTeaserModal'
 import { toast } from 'react-hot-toast'
 
 export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSuccess }) {
@@ -430,68 +431,20 @@ export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSucc
       </div>
 
       {/* Pop-up Informativo Paywall Open Banking */}
-      {showProPaywall && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 10000,
-          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
-        }}>
-          <div style={{
-            background: 'var(--card-bg)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: 16,
-            maxWidth: 480, width: '100%', padding: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-            display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'center'
-          }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
-              <Building2 size={24} />
-            </div>
-            
-            <div>
-              <span style={{ fontSize: 11, background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', padding: '3px 10px', borderRadius: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Esclusivo Piano Professional
-              </span>
-              <h3 style={{ fontSize: 18, fontWeight: 800, margin: '10px 0 6px', color: 'var(--text-primary)' }}>
-                Sincronizzazione Automatica Open Banking (PSD2)
-              </h3>
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                Con la sincronizzazione bancaria automatica, CondoSmart si collega in sola lettura e in totale sicurezza alla banca del condominio (via GoCardless), scaricando ogni notte le transazioni in automatico. Zero PDF o file da caricare!
-              </p>
-            </div>
-
-            <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 12, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Zap size={14} style={{ color: '#34d399' }} /> Sincronizzazione notturna di tutti i conti correnti
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Zap size={14} style={{ color: '#34d399' }} /> Connessione diretta protetta da standard bancari PSD2
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Zap size={14} style={{ color: '#34d399' }} /> Condomini ed estratti conto illimitati
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => setShowProPaywall(false)}
-                style={{ flex: 1, padding: '10px 16px', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
-                Continua con Upload PDF
-              </button>
-              <a
-                href="/impostazioni#piani-abbonamento"
-                style={{
-                  flex: 1, padding: '10px 16px', background: 'linear-gradient(135deg, #7c3aed, #6366f1)',
-                  color: '#fff', textDecoration: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
-                }}
-              >
-                Passa a Pro <Zap size={14} />
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+      <UpgradeTeaserModal 
+        isOpen={showProPaywall}
+        onClose={() => setShowProPaywall(false)}
+        title="Sincronizzazione Automatica Open Banking (PSD2)"
+        description="Con la sincronizzazione automatica, CondoSmart si collega in sola lettura e in totale sicurezza alla banca del condominio (via GoCardless), scaricando ogni notte i movimenti. Zero file PDF da scaricare o caricare!"
+        pianoRichiesto="professional"
+        badgeText="🔒 ESCLUSIVO PROFESSIONAL"
+        features={[
+          "Sincronizzazione notturna automatica dei conti correnti",
+          "Connessione diretta certificata da standard bancari PSD2",
+          "Condomini ed estratti conto illimitati inclusi nel piano"
+        ]}
+        ctaText="Passa a Professional (399€/m) 🚀"
+      />
     </div>
   )
 }

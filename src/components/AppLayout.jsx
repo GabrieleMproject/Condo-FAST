@@ -68,7 +68,7 @@ const NAV_ITEMS = [
   { path: '/dashboard',    label: 'Dashboard',            icon: LayoutDashboard },
   { path: '/condomini',    label: 'Condomini',             icon: Building2 },
   { path: '/anagrafica',   label: 'Anagrafica',            icon: Users },
-  { path: '/postbox',      label: 'Postbox Studio',        icon: Inbox },
+  { path: '/postbox',      label: 'Postbox Studio',        icon: Inbox, badge: 'STUDIO' },
   { path: '/comunicazioni', label: 'Comunicazioni',        icon: Send },
   { path: '/fiscale',      label: 'Certificazioni',        icon: Landmark },
   { path: '/archivio',     label: 'Storico operazioni',    icon: Archive }, // ✅ rinominato

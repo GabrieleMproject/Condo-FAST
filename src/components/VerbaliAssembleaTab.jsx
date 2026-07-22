@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { useDocumenti } from '../hooks/useDocumenti'
+import { usePlan } from '../hooks/usePlan'
+import UpgradeTeaserModal from './UpgradeTeaserModal'
 import { callGemini } from '../lib/geminiClient'
 import { 
   FileSignature, Search, Sparkles, Paperclip, CheckCircle2, 
@@ -116,6 +118,8 @@ const formattaDataAi = (d) => {
 };
 
 export default function VerbaliAssembleaTab({ condominioId }) {
+  const { canUse } = usePlan();
+  const [showStudioPaywall, setShowStudioPaywall] = useState(false);
   const { documenti, loading, error, fetch, upload, remove, getSignedUrl } = useDocumenti(condominioId);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -268,6 +272,10 @@ export default function VerbaliAssembleaTab({ condominioId }) {
 
   // Esegue la ricerca AI
   const handleAiSearch = async (forceAll = false) => {
+    if (!canUse('ricerca_verbali_ai')) {
+      setShowStudioPaywall(true);
+      return;
+    }
     if (!query.trim()) return;
     setSearching(true);
     setSearchResult(null);
@@ -473,6 +481,18 @@ Formato JSON atteso:
             <div style={S.aiCardHeader}>
               <Sparkles size={18} color="#10b981" />
               <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Ricerca AI nei Verbali</span>
+              {!canUse('ricerca_verbali_ai') && (
+                <span 
+                  onClick={() => setShowStudioPaywall(true)}
+                  style={{
+                    fontSize: 10, background: 'rgba(124, 58, 237, 0.2)', color: '#a78bfa',
+                    border: '1px solid rgba(124, 58, 237, 0.4)', padding: '2px 8px', borderRadius: 12,
+                    fontWeight: 700, marginLeft: 'auto', cursor: 'pointer'
+                  }}
+                >
+                  🔒 ESCLUSIVO PIANO STUDIO
+                </span>
+              )}
             </div>
 
             <p style={S.aiHelpText}>
@@ -705,6 +725,21 @@ Formato JSON atteso:
         </div>
       )}
 
+      {/* Teaser Modal Upgrade a Piano Studio per Ricerca AI Verbali */}
+      <UpgradeTeaserModal 
+        isOpen={showStudioPaywall}
+        onClose={() => setShowStudioPaywall(false)}
+        title="Ricerca & Analisi AI nei Verbali"
+        description="Trova istantaneamente delibere, votazioni ed accordi passati interrogando l'AI sui verbali delle assemblee."
+        pianoRichiesto="studio"
+        badgeText="🔒 ESCLUSIVO PIANO STUDIO"
+        features={[
+          "Interrogazione in linguaggio naturale di tutti i verbali d'assemblea",
+          "Estrazione automatica delle citazioni testuali e delle delibere",
+          "Riduzione azzerata dei tempi di ricerca contabile e legale"
+        ]}
+        ctaText="Passa a Piano Studio (249€/m) 🚀"
+      />
     </div>
   );
 }

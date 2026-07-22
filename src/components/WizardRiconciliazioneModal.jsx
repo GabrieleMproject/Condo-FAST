@@ -23,8 +23,8 @@ export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSucc
   const [tolleranzaImporto, setTolleranzaImporto] = useState(5) // in euro
   const [tolleranzaGiorni, setTolleranzaGiorni] = useState(45) // in giorni
   const [confidenceMinima, setConfidenceMinima] = useState(70) // in %
-  const [autoCreazioneSpesaOrfana, setAutoCreazioneSpesaOrfana] = useState(true)
-  const [notificaIncassoAutomatico, setNotificaIncassoAutomatico] = useState(true)
+  const [autoCreazioneSpesaOrfana, setAutoCreazioneSpesaOrfana] = useState(false)
+  const [notificaIncassoAutomatico, setNotificaIncassoAutomatico] = useState(false)
 
   useEffect(() => {
     if (profile?.reconciliation_settings) {

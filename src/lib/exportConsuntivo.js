@@ -214,7 +214,17 @@ function intestazione(doc, condominio, esercizio, branding) {
   const W = doc.internal.pageSize.getWidth()
   let y = 14
   if (branding?.logo_base64) {
-    try { doc.addImage(branding.logo_base64, 'PNG', 14, 10, 28, 28) } catch { /* ignore */ }
+    try {
+      let format = 'PNG'
+      if (branding.logo_base64.includes('image/jpeg') || branding.logo_base64.includes('image/jpg')) {
+        format = 'JPEG'
+      } else if (branding.logo_base64.includes('image/webp')) {
+        format = 'WEBP'
+      }
+      doc.addImage(branding.logo_base64, format, 14, 10, 28, 28)
+    } catch (e) {
+      console.warn('Errore rendering logo nel PDF:', e)
+    }
   }
   const x = branding?.logo_base64 ? 48 : 14
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(15, 23, 42)
@@ -260,12 +270,12 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
   let y = intestazione(doc, condominio, c.esercizio, c.branding)
   const sez = template?.sezioni || {}
   const etich = template?.etichette_categorie || {}
-  const ordine = template?.ordine_categorie || Object.keys(c.competenza.catMap)
+  const ordine = template?.ordine_categorie || Object.keys(c?.competenza?.catMap || {})
   const catLabel = (k) => etich[k] || k.toUpperCase()
 
   if (sez.competenza?.attiva !== false) {
-    y = sezioneTitolo(doc, y, sez.competenza?.titolo || 'A — Rendiconto di competenza')
-    const cats = [...ordine, ...Object.keys(c.competenza.catMap).filter(k => !ordine.includes(k))]
+    y = sezioneTitolo(doc, y, sez.competenza?.titolo || 'B — Rendiconto di competenza')
+    const cats = [...ordine, ...Object.keys(c?.competenza?.catMap || {}).filter(k => !ordine.includes(k))]
     const body = []
     cats.forEach(k => {
       const v = c.competenza.catMap[k]
@@ -361,7 +371,7 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
   }
 
   // SEZIONE F — Grafici & Analisi Storica dei Consumi
-  const storico = c.storico
+  const storico = c?.storico
   if (storico) {
     doc.addPage()
     y = 20
@@ -369,17 +379,17 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
     y += 10
 
     // Disegno grafico Categorie principali (le prime 5 categorie)
-    const cats = [...ordine, ...Object.keys(c.competenza.catMap).filter(k => !ordine.includes(k))]
+    const cats = [...ordine, ...Object.keys(c?.competenza?.catMap || {}).filter(k => !ordine.includes(k))]
     const activeCats = cats.filter(k => {
-      const v = c.competenza.catMap[k]
+      const v = c?.competenza?.catMap?.[k]
       return v && (v.ordinaria + v.straordinaria) > 0
     }).slice(0, 5)
     
     const valoriCorr = activeCats.map(k => {
-      const v = c.competenza.catMap[k]
+      const v = c?.competenza?.catMap?.[k]
       return v ? (v.ordinaria + v.straordinaria) : 0
     })
-    const valoriPrec = activeCats.map(k => (storico.speseCategoriePrec[k]) || 0)
+    const valoriPrec = activeCats.map(k => (storico?.speseCategoriePrec?.[k]) || 0)
 
     const labelCorr = `Consuntivo ${c.esercizio?.anno || ''}`
     const labelPrec = storico.haPrecedente ? `Consuntivo ${storico.annoPrecedente}` : 'Preventivo (N.D.)'
@@ -397,13 +407,13 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
     
     disegnaRiquadroConsumo(
       doc, xEnergia, y, '🔋 CONSUMI ENERGIA ELETTRICA', 
-      storico.energia.corrente, storico.energia.precedente, storico.energia.variazione, 
+      storico?.energia?.corrente || 0, storico?.energia?.precedente || 0, storico?.energia?.variazione || 0, 
       c.esercizio?.anno, storico.annoPrecedente, storico.haPrecedente
     )
     
     disegnaRiquadroConsumo(
       doc, xGas, y, '🔥 CONSUMI RISCALDAMENTO & GAS', 
-      storico.riscaldamento.corrente, storico.riscaldamento.precedente, storico.riscaldamento.variazione, 
+      storico?.riscaldamento?.corrente || 0, storico?.riscaldamento?.precedente || 0, storico?.riscaldamento?.variazione || 0, 
       c.esercizio?.anno, storico.annoPrecedente, storico.haPrecedente
     )
     

@@ -3,6 +3,7 @@
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_beta_tester BOOLEAN DEFAULT false;
 
 -- Update get_utenti_statistiche to include is_beta_tester
+DROP FUNCTION IF EXISTS public.get_utenti_statistiche();
 CREATE OR REPLACE FUNCTION public.get_utenti_statistiche()
 RETURNS TABLE (
     id uuid,

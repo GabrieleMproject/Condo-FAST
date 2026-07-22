@@ -88,6 +88,7 @@ export function PlanProvider({ children }) {
   const [loading, setLoading]               = useState(true)
   const [isCollaboratore, setIsCollaboratore] = useState(false)
   const [titolareId, setTitolareId]         = useState(null)
+  const [loadedUserId, setLoadedUserId]     = useState(null)
 
   // ── Carica profilo + conteggi ─────────────────────────────────────────
   const loadPlan = useCallback(async () => {
@@ -97,6 +98,7 @@ export function PlanProvider({ children }) {
       setAiCallsCount(0)
       setIsCollaboratore(false)
       setTitolareId(null)
+      setLoadedUserId(null)
       setLoading(false)
       return
     }
@@ -105,7 +107,7 @@ export function PlanProvider({ children }) {
       // 1. Verifica se l'utente è un collaboratore registrato e attivo
       const { data: collab } = await supabase
         .from('collaboratori_studio')
-        .select('amministratore_id')
+        .select('amministratore_id, utente_id')
         .or(`utente_id.eq.${user.id},email_collaboratore.eq.${user.email}`)
         .eq('attivo', true)
         .maybeSingle()
@@ -154,8 +156,10 @@ export function PlanProvider({ children }) {
         .gte('timestamp', inizioMese.toISOString())
 
       setAiCallsCount(aiCount || 0)
+      setLoadedUserId(user.id)
     } catch (err) {
       console.error('Errore durante caricamento piano:', err)
+      setLoadedUserId(user.id) // Evita blocco infinito in caso di errore DB
     } finally {
       setLoading(false)
     }
@@ -191,10 +195,11 @@ export function PlanProvider({ children }) {
         fieldsToUpdate.mail_invio_tipo = 'sistema'
       }
 
+      const targetId = titolareId || user.id
       const { error } = await supabase
         .from('profiles')
         .update(fieldsToUpdate)
-        .eq('id', user.id)
+        .eq('id', targetId)
 
       if (error) throw error
       await loadPlan()
@@ -254,7 +259,7 @@ export function PlanProvider({ children }) {
   }, [])
 
   const value = {
-    loading: loading || (!!user && !profile),
+    loading: loading || (!!user && loadedUserId !== user.id),
     piano,
     limiti,
     profile,

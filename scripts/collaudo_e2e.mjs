@@ -115,6 +115,55 @@ async function callGeminiDocument(prompt, base64Document, opts = {}) {
 
 function pulisciEdEstraiJson(risposta, isArray = false) {
   const rawStr = String(risposta || '').trim();
+  
+  try {
+    return JSON.parse(rawStr);
+  } catch (e) {
+    // Ignora e prova a estrarre con bilanciamento parentesi
+  }
+
+  const startChar = isArray ? '[' : '{';
+  const endChar = isArray ? ']' : '}';
+  const startIdx = rawStr.indexOf(startChar);
+  
+  if (startIdx !== -1) {
+    let count = 0;
+    let inString = false;
+    let escape = false;
+    
+    for (let i = startIdx; i < rawStr.length; i++) {
+      const char = rawStr[i];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (char === '\\') {
+        escape = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (!inString) {
+        if (char === startChar) {
+          count++;
+        } else if (char === endChar) {
+          count--;
+          if (count === 0) {
+            const candidate = rawStr.substring(startIdx, i + 1);
+            try {
+              return JSON.parse(candidate);
+            } catch (pe) {
+              // Continua la scansione in caso di falso positivo
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Fallback a regex
   const regex = isArray ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
   const match = rawStr.match(regex);
   const clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
@@ -805,7 +854,8 @@ Restituisci SOLO un JSON valido con questa struttura:
     const pdfBase64 = readFileSync(fPath).toString('base64');
 
     const systemPromptFattura = `Sei un esperto contabile. Estrai i dati dalla fattura del fornitore.
-Restituisci SOLO un JSON valido, senza testo aggiuntivo:
+Assicurati di fare l'escape di eventuali virgolette doppie all'interno delle stringhe (usa \\\" o usa virgolette singole ').
+Restituisci SOLO un JSON valido con questa struttura, senza alcun testo aggiuntivo prima o dopo:
 {
   "fornitore": "ragione sociale fornitore",
   "partita_iva_fornitore": "P.IVA / CF fornitore",
@@ -815,7 +865,7 @@ Restituisci SOLO un JSON valido, senza testo aggiuntivo:
   "importo_iva": number,
   "importo_netto": number,
   "descrizione": "descrizione lavori/servizi",
-  "categoria": "manutenzione" | "pulizie" | "utenze" | "assicurazione" | "amministrazione" | "altro",
+  "categoria": "manutenzione" | "utenze" | "assicurazione" | "ordinaria" | "straordinaria" | "altro",
   "imponibile_ritenuta": number,
   "aliquota_ritenuta_percentuale": number,
   "importo_ritenuta": number,
@@ -833,6 +883,9 @@ Restituisci SOLO un JSON valido, senza testo aggiuntivo:
       const fDati = pulisciEdEstraiJson(rawResponse, false);
 
       // A. Creazione della Spesa
+      const catAmmesse = ['manutenzione', 'utenze', 'assicurazione', 'ordinaria', 'straordinaria', 'altro'];
+      const catSelezionata = catAmmesse.includes(fDati.categoria) ? fDati.categoria : 'altro';
+
       const { data: newSpesa, error: spErr } = await client
         .from('spese')
         .insert({
@@ -841,8 +894,8 @@ Restituisci SOLO un JSON valido, senza testo aggiuntivo:
           descrizione: `${fDati.fornitore} - Ft. N. ${fDati.numero_fattura || 'N/D'} - ${fDati.descrizione || ''}`,
           importo: parseFloat(fDati.importo_totale) || 0,
           data_spesa: fDati.data_fattura || '2025-06-15',
-          categoria: fDati.categoria || 'altro',
-          tipo_lavoro: fDati.categoria === 'straordinaria' ? 'straordinario' : 'ordinario',
+          categoria: catSelezionata,
+          tipo_lavoro: catSelezionata === 'straordinaria' ? 'straordinario' : 'ordinario',
           criterio: 'millesimi',
           tabella_millesimale_id: tabellaProprietaId,
           fornitore: fDati.fornitore,
@@ -868,7 +921,6 @@ Restituisci SOLO un JSON valido, senza testo aggiuntivo:
         return {
           spesa_id: newSpesa.id,
           unita_id: u.id,
-          condominio_id: condominioId,
           importo: quota,
           millesimi_usati: milVal,
           override_manuale: false,
@@ -885,6 +937,7 @@ Restituisci SOLO un JSON valido, senza testo aggiuntivo:
         .from('fatture_fornitori')
         .insert({
           condominio_id: condominioId,
+          user_id: adminId,
           spesa_id: newSpesa.id,
           fornitore: fDati.fornitore,
           numero_fattura: fDati.numero_fattura || 'N/D',
@@ -935,7 +988,8 @@ Restituisci SOLO un JSON valido, senza testo aggiuntivo:
 
       const pdfBase64 = readFileSync(ecPath).toString('base64');
       const systemPromptEC = `Sei un esperto contabile. Estrai l'elenco dei movimenti bancari.
-Restituisci SOLO un JSON valido, senza testo aggiuntivo:
+Assicurati di fare l'escape di eventuali virgolette doppie all'interno delle causali/stringhe (usa \\\" o usa virgolette singole ').
+Restituisci SOLO un JSON valido con questa struttura, senza alcun testo aggiuntivo prima o dopo:
 {
   "movimenti": [
     {
@@ -961,6 +1015,7 @@ Restituisci SOLO un JSON valido, senza testo aggiuntivo:
 
         const ecRows = movimenti.map(m => ({
           condominio_id: condominioId,
+          user_id: adminId,
           data_movimento: m.data,
           causale: m.causale,
           importo: parseFloat(m.importo) || 0,

@@ -1,20 +1,54 @@
 {
-  "condominioId": "dc73952f-d4d9-4f84-8521-52f2d9242eb3",
-  "esercizioId": "00ce5ae0-e4bb-49c2-81ac-1b9bdb95fcd5",
+  "condominioId": "75991494-f933-4687-8b35-6c35667681c2",
+  "esercizioId": "cdbebcec-8474-4d6c-9a64-50fdd5d1ecfc",
   "personeMap": {
-    "Micieli Domenico Loris": "32c91e1c-db08-4ee5-8c95-cdfb8e6e2f6d",
-    "Chiodarelli Elena": "40950c78-0e3f-4a69-ad0a-eb29c66e1883",
-    "Stranieri Antonio": "25601eeb-97c3-4453-a8a5-d46e764d0e7e",
-    "Cattaneo Angela": "f36e0ca7-f70e-42ae-b982-c9f63dd0278d",
-    "Galeazzi Elena": "f5a721f1-37f4-4d5c-af8a-aa021b9af4a8",
-    "Millo S.": "d20c068b-837d-4ff7-8c74-5274900176f9"
+    "Micieli Domenico Loris": "c3048ac5-a34c-4e62-a357-6ce1aabf7867",
+    "Chiodarelli Elena": "d7b56407-1c4a-4311-bef0-052d4b63e493",
+    "Stranieri Antonio": "ea8b52a2-d43d-4404-8e18-625228d3b1f9",
+    "Cattaneo Angela": "899d648d-04d9-4e81-b0a2-c9b45ee44d90",
+    "Galeazzi Elena": "81ba442e-e7ff-47b3-8535-3b555f6145b2",
+    "Millo S.": "f99a5e78-09dd-4bd4-be6c-a5e14d020fcf",
+    "ESPOSITO N/D": "effd85fe-d316-4131-aee1-a4e6ec136d17"
   },
   "unitaMap": {
-    "Via Canzighina, n° 290": "75a0b7b6-ebfc-4f18-8a1b-40a60ec54d4e"
+    "Sub. 7": "2a065cb5-9548-4902-9cfb-9883eb531512",
+    "Sub. 2": "2d664725-460c-47f4-b49c-f6f9a60c5346",
+    "Sub. 8": "a551ef5b-9ab0-4696-8b40-a867251ac2f3",
+    "Sub. 4": "c553b413-a234-406d-861f-033150b2b1ea",
+    "Sub. 9": "a669fc60-c02e-4fc6-b313-863e92e98568",
+    "Sub. 3": "8e0ae3b3-3d43-4c01-b1c0-32ea2d26d0c3",
+    "Sub. 10": "ecf05a7c-22e6-488d-8481-0b122e44f760",
+    "Sub. 6": "e25304db-d13c-4fe2-a60d-3120f31f387b",
+    "Sub. 701": "9fb732cd-5fe8-4314-9b0d-655caa9585d4",
+    "Sub. 5": "ca2fbd7b-050d-46a4-9f8e-5160b98bce80",
+    "Sub. 702": "873b370c-eb65-4fa0-8434-45b6368fda3b"
   },
-  "tabelleMillesimali": {},
-  "preventivoId": null,
+  "tabelleMillesimali": {
+    "Proprietà generale": "bbb2552a-be7b-46b2-b56d-728ba41a2fd7",
+    "Scale e Ascensore": "af5da23d-a907-4670-ab15-147c06194941"
+  },
+  "preventivoId": "b6a3a571-5c01-4274-94da-644c34fc1758",
   "speseMappa": {},
-  "fattureMappa": {},
-  "movimentiCaricati": false
+  "fattureMappa": {
+    "Untitled_01072026_151512.pdf": "f1f829ab-e7d0-491e-8353-c82f7052a26f",
+    "Untitled_01072026_151529.pdf": "f314a8a3-22aa-45d8-b6a9-d4967f7adbca",
+    "Untitled_01072026_151733.pdf": "baa3a6f8-5e00-414e-aac6-8c9bd7acff0a",
+    "Untitled_01072026_151802.pdf": "15db4b47-c5e8-423c-b28a-00baf07c7d94",
+    "Untitled_01072026_151824.pdf": "f7152e18-f145-473d-af3c-625860b5f7f6",
+    "Untitled_01072026_151854.pdf": "757a02dc-ac14-4444-992e-501d7be91512",
+    "Untitled_01072026_151935.pdf": "776166ee-b566-4e73-ab6b-42bd1da90d6d",
+    "Untitled_01072026_152005.pdf": "b54d6684-5ca7-44de-866d-88caef2de241",
+    "Untitled_01072026_152032.pdf": "06a45575-9d0c-402e-9440-91811df5030b",
+    "Untitled_01072026_152100.pdf": "796d716d-de68-4575-8fb8-10b2a0d026d0",
+    "Untitled_01072026_152128.pdf": "1e06e751-ff18-406b-807c-21e3487efa39",
+    "Untitled_01072026_152151.pdf": "5874a95b-1029-45b0-a54e-65acd8a5a9db",
+    "Untitled_01072026_152220.pdf": "c4560d34-4009-4e5a-8809-7456070c936c",
+    "Untitled_01072026_152242.pdf": "9845a160-a92d-4ab6-957f-24fc9d97288b",
+    "Untitled_01072026_152444.pdf": "44d79606-308a-4fc6-a652-08a257fc9445",
+    "Untitled_01072026_152459.pdf": "8e477e2d-5683-4939-852e-b4f8a8d72c49",
+    "Untitled_01072026_152539.pdf": "78acf539-a945-4f16-8644-a5f2935a799a",
+    "Untitled_01072026_152606.pdf": "439dfc7b-3cf1-4d2a-a5c1-5c19eac1bae5",
+    "Untitled_01072026_152741.pdf": "5263172c-453a-49c7-b1e4-f55c2e0a06a7"
+  },
+  "movimentiCaricati": true
 }

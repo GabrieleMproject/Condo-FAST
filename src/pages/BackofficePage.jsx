@@ -542,7 +542,7 @@ Struttura la risposta in formato JSON con le seguenti chiavi:
 
 Rispondi ESPLICITAMENTE in formato JSON valido.`
 
-      const resAI = await callGemini(prompt, { funzione: 'scrittura_marketing' })
+      const resAI = await callGemini(prompt, { funzione: 'scrittura_marketing', jsonMode: true })
       let data
       try {
         data = JSON.parse(resAI)
@@ -893,7 +893,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                     </div>
 
                     <div style={{ marginBottom: 20, padding: 16, background: 'var(--app-bg)', borderRadius: 8, border: '1px solid var(--border-color-2)' }}>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Messaggio Utente ({selectedTicket.utente_id.substring(0,8)})</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Messaggio Utente ({selectedTicket.utente_id?.substring(0,8) || 'N/D'})</div>
                       <div style={{ color: 'var(--text-secondary)', fontSize: 14, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedTicket.messaggio}</div>
                     </div>
 
@@ -1044,7 +1044,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                           <div key={item.id} style={{ ...styles.ticketCard, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 8, cursor: 'default' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <div>
-                                <span style={{ padding: '2px 6px', borderRadius: 4, background: '#1e3a8a', color: '#93c5fd', fontSize: 11, fontWeight: 600, marginRight: 8 }}>
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 11, fontWeight: 600, marginRight: 8 }}>
                                   {item.argomento.toUpperCase()}
                                 </span>
                                 {item.tags && item.tags.map(t => (
@@ -1162,7 +1162,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                           {campagne.map(c => (
                             <tr key={c.id} style={styles.tr}>
                               <td style={{ ...styles.td, fontWeight: 600 }}>{c.nome}</td>
-                              <td style={styles.td}><span style={{ fontFamily: 'monospace', color: '#3b82f6', background: '#1e3a8a', padding: '2px 6px', borderRadius: 4 }}>{c.codice_campagna}</span></td>
+                              <td style={styles.td}><span style={{ fontFamily: 'monospace', color: 'var(--accent)', background: 'var(--accent-glow)', padding: '2px 6px', borderRadius: 4 }}>{c.codice_campagna}</span></td>
                               <td style={styles.td}>{c.sconto_importo}€</td>
                               <td style={styles.td}>
                                 {c.attiva ? (
@@ -1215,7 +1215,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                           <tr key={r.id} style={styles.tr}>
                             <td style={styles.td}>
                               <div style={{ fontWeight: 600 }}>{r.referrer?.nome} {r.referrer?.cognome}</div>
-                              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.referrer?.email || r.referrer_id.substring(0,8)}</div>
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.referrer?.email || r.referrer_id?.substring(0,8) || 'N/D'}</div>
                             </td>
                             <td style={styles.td}>
                               <div style={{ fontWeight: 600 }}>{r.referred ? `${r.referred.nome} ${r.referred.cognome}` : '—'}</div>
@@ -1228,13 +1228,13 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                             <td style={{ ...styles.td, color: '#10b981', fontWeight: 600 }}>{r.sconto_valore}€</td>
                             <td style={styles.td}>
                               {r.stato === 'registrato' && (
-                                <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--card-bg)', color: 'var(--text-secondary)', fontSize: 12 }}>Registrato</span>
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--border-color)', color: 'var(--text-secondary)', fontSize: 12 }}>Registrato</span>
                               )}
                               {r.stato === 'convalidato' && (
-                                <span style={{ padding: '2px 6px', borderRadius: 4, background: '#1e3a8a', color: '#93c5fd', fontSize: 12 }}>Convalidato</span>
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 12 }}>Convalidato</span>
                               )}
                               {r.stato === 'applicato' && (
-                                <span style={{ padding: '2px 6px', borderRadius: 4, background: '#064e3b', color: '#6ee7b7', fontSize: 12 }}>Applicato</span>
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success)', fontSize: 12 }}>Applicato</span>
                               )}
                             </td>
                             <td style={{ ...styles.td, fontSize: 12, color: 'var(--text-secondary)' }}>

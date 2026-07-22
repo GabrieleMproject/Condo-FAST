@@ -117,6 +117,7 @@ export default function EstrattoContoPage() {
 
       if (!risultato.movimenti?.length) {
         setErroreUpload('Nessun movimento trovato nel file. Verifica che sia un estratto conto valido.');
+        setUploadProgress('');
         return;
       }
 
@@ -202,7 +203,7 @@ export default function EstrattoContoPage() {
 
   // ─── KPI ────────────────────────────────────────────────────
   const movFiltrati = filtroTipo ? movimenti.filter(m => m.tipo === filtroTipo) : movimenti;
-  const totaleEntrate = movimenti.filter(m => m.tipo === 'entrata').reduce((a, m) => a + m.importo, 0);
+  const totaleEntrate = movimenti.filter(m => m.tipo === 'entrata').reduce((a, m) => a + Math.abs(m.importo), 0);
   const totaleUscite = movimenti.filter(m => m.tipo === 'uscita').reduce((a, m) => a + Math.abs(m.importo), 0);
   const nonRiconciliati = movimenti.filter(m => !m.riconciliato).length;
 
@@ -283,18 +284,11 @@ export default function EstrattoContoPage() {
                   onClick={async () => {
                      setSyncingBank(true);
                      try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gocardless-proxy`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                          },
-                          body: JSON.stringify({ action: 'sync_transactions', payload: { connectionId: bankingStatus.id } })
+                        const { data, error } = await supabase.functions.invoke('gocardless-proxy', {
+                          body: { action: 'sync_transactions', payload: { connectionId: bankingStatus.id } }
                         });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || 'Errore di sincronizzazione');
-                        alert(`Sincronizzazione completata. ${data.newTransactions} nuovi movimenti importati.`);
+                        if (error) throw error;
+                        alert(`Sincronizzazione completata. ${data?.newTransactions || 0} nuovi movimenti importati.`);
                         loadMovimenti();
                      } catch(err) {
                         alert(err.message);
@@ -312,23 +306,16 @@ export default function EstrattoContoPage() {
                   style={{...styles.docOpenBtn, background: '#2563eb'}} 
                   onClick={async () => {
                      try {
-                        // Demo sandbox
-                        const { data: { session } } = await supabase.auth.getSession();
-                        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gocardless-proxy`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                          },
-                          body: JSON.stringify({ action: 'create_requisition', payload: { 
+                        const { data, error } = await supabase.functions.invoke('gocardless-proxy', {
+                          body: { action: 'create_requisition', payload: { 
                               condominioId: condominioId,
                               institutionId: 'SANDBOXFINANCE_SFIN0000',
                               institutionName: 'Sandbox Finance',
                               redirectUrl: window.location.href 
-                          }})
+                          }}
                         });
-                        const data = await res.json();
-                        if (data.link) {
+                        if (error) throw error;
+                        if (data?.link) {
                             window.location.href = data.link; // Redirect to bank
                         } else {
                             // Fallback se non c'è la key
@@ -349,16 +336,10 @@ export default function EstrattoContoPage() {
                   onClick={async () => {
                      setSyncingBank(true);
                      try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gocardless-proxy`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                          },
-                          body: JSON.stringify({ action: 'sync_transactions', payload: { connectionId: bankingStatus.id } })
+                        const { error } = await supabase.functions.invoke('gocardless-proxy', {
+                          body: { action: 'sync_transactions', payload: { connectionId: bankingStatus.id } }
                         });
-                        if (!res.ok) throw new Error('Errore completamento');
+                        if (error) throw error;
                         loadBankingStatus();
                         loadMovimenti();
                      } catch(err) {

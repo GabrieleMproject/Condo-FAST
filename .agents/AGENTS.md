@@ -1232,3 +1232,22 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Bug "Rimbalzo alla Waitlist":** Il tester pur essendo correttamente registrato a DB come `is_beta_tester: true` veniva rimbalzato sulla `WaitlistPage`.
 - **Diagnosi (React Race Condition):** Sviluppata un'overlay diagnostica a schermo che ha confermato un classico disallineamento temporale di React: l'evento login scattava, poplando l'oggetto `user` ma non ancora il `profile` asincrono. Il sistema valutava `(!isBetaTester && !isSuperAdmin)` e trovandolo inizialmente falso (a causa del profile null) reindirizzava preventivamente e ingiustamente alla waitlist.
 - **Fix architetturale in usePlan:** Corretta l'esportazione dello stato `loading` nell'hook globale `usePlan.js`. Implementata la formula `loading: loading || (!!user && !profile)`. Questa impone logicamente all'applicazione di attendere sulla schermata "Caricamento..." (bloccando l'esecuzione della `ProtectedRoute`) finché i dati integrali del profilo non sono stati completati in rete e sincronizzati nel browser.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S60 (21-22 Luglio 2026)
+
+### 1. Audit Approfondito e Fix UX Beta Tester
+- **Waitlist Re-routing Automatico:** Aggiunto un `useEffect` in `WaitlistPage.jsx` che reindirizza in tempo reale alla `/dashboard` non appena l'utente viene promosso a beta tester dal Backoffice. Aggiunto anche il pulsante **"Verifica Abilitazione"** con il relativo trigger di `refresh()`.
+- **GDPR & Minimizzazione Dati:** Condizionata la visualizzazione del blocco diagnostico dell'utente (email e ID) in `WaitlistPage.jsx` al solo ambiente di sviluppo (`import.meta.env.DEV`), eliminando il leak di dati personali nelle UI di produzione.
+- **Race Condition & Profilo in usePlan.js:** Sostituita la condizione di loading bloccante con `loadedUserId` per tracciare in modo atomico il completamento dell'utente caricato. Risolti i bug di tracciamento dei collaboratori (aggiunto `utente_id` alla SELECT) ed ereditarietà multi-tenancy del branding per lo studio.
+- **Robustezza Backoffice & Dashboard:** Inserito l'optional chaining su `selectedTicket.utente_id?.substring()` e `r.referrer_id?.substring()` per impedire crash di runtime con TypeError. Abilitato `jsonMode: true` per la generazione AI di testi di marketing e standardizzati i colori dei badge per la piena compatibilità con il tema chiaro/scuro.
+- **Allineamento Consuntivo PDF (exportConsuntivo.js):** Allineate le sezioni del PDF (da A a B per il Rendiconto di competenza per coerenza con l'art. 1130-bis c.c.), aggiunto il rilevamento automatico del formato del logo (`JPEG`, `WEBP`, `PNG`) ed inserito optional chaining difensivo sullo storico consumi.
+- **Sicurezza Estratto Conto (EstrattoContoPage.jsx):** Sostituite le chiamate direct `fetch` verso `gocardless-proxy` con `supabase.functions.invoke()` per l'iniezione automatica del JWT e la protezione da IDOR. Corretto il calcolo entrate con `Math.abs` e la gestione dello stato `uploadProgress` su fallimento.
+
+### 2. Collaudo Contabile E2E e Hardening Parser AI
+- **Risoluzione Errori RLS su DB:** Aggiornato `collaudo_e2e.mjs` inserendo il campo obbligatorio `user_id` negli inserimenti di `fatture_fornitori` ed `estratto_conto`.
+- **Risoluzione Errore Schema Ripartizioni:** Rimosso il campo inesistente `condominio_id` dal payload di `ripartizioni`.
+- **Normalizzazione Categorie Spese:** Aggiunta la sanitizzazione delle categorie estratte dall'AI contro la lista consentita dal DB constraint (`manutenzione`, `utenze`, `assicurazione`, `ordinaria`, `straordinaria`, `altro`) con fallback sicuro ad `'altro'`.
+- **Parser JSON a Bilanciamento Parentesi:** Sostituita la regex golosa in `pulisciEdEstraiJson` con un algoritmo di bilanciamento delle parentesi graffe/quadre con gestione dell'escape stringhe per estrarre in modo sicuro il primo oggetto JSON valido generato da Gemini.
+

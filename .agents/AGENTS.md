@@ -1278,10 +1278,13 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Badge Data Ultimo Aggiornamento Bancario:** Inserito in testa alla griglia delle rate il badge `Stato Riconciliazione Bancaria Rate` che interroga in cascata `estratto_conto`, `riconciliazioni_incassi` e `documenti_condominio` per esporre con chiarezza la data dell'ultimo movimento riconciliato (es: `Situazione rate aggiornata all'estratto conto del DD/MM/YYYY`).
 - **Pulsante X su Solleciti Consigliati:** Aggiunta l'icona ed il pulsante `X` per permettere all'amministratore di chiudere e nascondere il banner dorato dei solleciti consigliati con 1-click.
 
-### 4. Deploy Unificato ed Automazione Multi-Piattaforma (`deploy_all.mjs`)
-- **Script di Deploy Unificato (`scripts/deploy_all.mjs`):** Creato lo script ed il comando npm `npm run deploy:all` per sincronizzare in una singola esecuzione l'intero sistema:
-  1. Build check locale (`npm run build`)
-  2. Commit & Push GitHub (`git push origin main`) → trigger del deploy automatico su Vercel per il frontend SPA
-  3. Deploy automatico di tutte le Edge Functions Supabase (`supabase functions deploy`)
-  4. Esecuzione dello smoke test (`npm run smoke`)
+### 5. Piani, Feature Gating & Banner In-Page Verbali AI
+- **Limiti Piani Aggiornati (`usePlan.js`):**
+  - Base: 50 condomini inclusi, 100 chiamate AI/mese.
+  - Studio: fino a 100 condomini inclusi, 500 chiamate AI/mese.
+  - Professional: condomini illimitati, 1000 chiamate AI/mese.
+- **Teaser In-Page Verbali AI (`VerbaliAssembleaTab.jsx`):** Per gli utenti del piano Base, la casella di ricerca AI nei verbali è sostituita direttamente in-page da una Card Teaser che evidenzia il **90% di risparmio tempo**, l'azzeramento delle ricerche manuali e le risposte pronte per i contenziosi con il pulsante `Passa al Piano Studio (249€/m)`.
+- **Badge `STUDIO` in Sidebar (`AppLayout.jsx`):** Aggiunto il badge viola `STUDIO` accanto a "Postbox Studio" nel menu laterale, commutato sul conteggio email pendenti quando superiore a zero.
+- **Iconografia Professionale & Rimozione Emoji:** Tutte le emoji (🔒, 🚀, 🧙‍♂️, 🏦) sono state rimosse e sostituite con icone SVG di Lucide React (`Lock`, `Clock`, `Sparkles`, `ShieldCheck`, `CheckCircle2`, `ArrowRight`, `Building2`, `Bot`).
+- **Scansione Bug Triager & Hardening:** Scansione statica superata con 0 errori di sintassi. Ripuliti gli import ed azzerato lo stato `noMatchWarning`.
 

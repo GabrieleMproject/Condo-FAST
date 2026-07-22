@@ -1255,3 +1255,33 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Normalizzazione Categorie Spese:** Aggiunta la sanitizzazione delle categorie estratte dall'AI contro la lista consentita dal DB constraint (`manutenzione`, `utenze`, `assicurazione`, `ordinaria`, `straordinaria`, `altro`) con fallback sicuro ad `'altro'`.
 - **Parser JSON a Bilanciamento Parentesi:** Sostituita la regex golosa in `pulisciEdEstraiJson` con un algoritmo di bilanciamento delle parentesi graffe/quadre con gestione dell'escape stringhe per estrarre in modo sicuro il primo oggetto JSON valido generato da Gemini.
 
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S61 (22 Luglio 2026)
+
+### 1. Postbox Studio & Personalizzazione Prefisso Inbox
+- **Banner Header & Copia Rapida (`PostboxPage.jsx`):** Aggiunto banner in evidenza in cima alla pagina Postbox che mostra l'indirizzo email unico dello studio (`{prefisso}@inbox.condosmart.it`), integrato con pulsante di copia in 1-click e feedback toast.
+- **Guida Operativa Interattiva (`GuidaPostboxModal`):** Creata modale a 4 schede che spiega nel dettaglio le 4 modalità d'uso (Regola di Inoltro Automatico, Inoltro Manuale ad 1-click, Inoltro in CCN/BCC per le mail in uscita, Consegna diretta ai fornitori) con istruzioni passo-passo per Aruba PEC, Outlook 365 e Gmail.
+- **Personalizzazione Prefisso Studio (`EditPrefixModal`):** Permesso agli amministratori di personalizzare il prefisso dell'email di ricezione (es: `studio-rossi` al posto degli 8 caratteri casuali dell'UUID), con validazione formato e verifica di unicità su Supabase (`profiles.inbound_email_prefix`).
+
+### 2. Configurazione Guidata Riconciliazione Bancaria (`WizardRiconciliazioneModal.jsx`)
+- **Wizard Interattivo in 4 Step:** Creato nuovo componente per la configurazione guidata della riconciliazione bancaria integrato in `EstrattoContoPage.jsx`, `RiconciliazioniPage.jsx` (Uscite), e `RiconciliazioniIncassiPage.jsx` (Entrate):
+  1. *Ingestione Dati*: Scelta tra Open Banking PSD2 (GoCardless) ed upload Estratto Conto PDF/CSV.
+  2. *Regole & Tolleranze*: Definizione tolleranza scarto importo (±€), finestra temporale (giorni) e soglia minima di confidenza AI (%).
+  3. *Incassi Rate*: Gestione automatica quietanze condòmini e fuzzy matching nomi.
+  4. *Spese & Movimenti Orfani*: Abilitazione pulsanterie ad 1-click per creazione spese da bonifici orfani.
+- **Freemium Teaser & Paywall Informativo Open Banking:** L'opzione Open Banking rimane sempre visibile al Passo 1 per tutti gli utenti col badge `🔒 ESCLUSIVO PROFESSIONAL`. Cliccandoci sopra, agli utenti dei piani non-PRO si apre un pop-up promozionale ed informativo che illustra i benefici della sincronizzazione notturna e fornisce il link d'upgrade a Professional (`/impostazioni#piani-abbonamento`).
+- **Definizioni di Default Conservative:** I due toggle finali (invio quietanza automatica e creazione spesa orfana) sono impostati di default su OFF (`false`) per garantire che qualsiasi automatismo debba essere attivato esplicitamente dall'amministratore.
+
+### 3. Trasparenza Contabile e UX Sezione RATE (`RateGridTab.jsx`)
+- **Badge Data Ultimo Aggiornamento Bancario:** Inserito in testa alla griglia delle rate il badge `Stato Riconciliazione Bancaria Rate` che interroga in cascata `estratto_conto`, `riconciliazioni_incassi` e `documenti_condominio` per esporre con chiarezza la data dell'ultimo movimento riconciliato (es: `Situazione rate aggiornata all'estratto conto del DD/MM/YYYY`).
+- **Pulsante X su Solleciti Consigliati:** Aggiunta l'icona ed il pulsante `X` per permettere all'amministratore di chiudere e nascondere il banner dorato dei solleciti consigliati con 1-click.
+
+### 4. Deploy Unificato ed Automazione Multi-Piattaforma (`deploy_all.mjs`)
+- **Script di Deploy Unificato (`scripts/deploy_all.mjs`):** Creato lo script ed il comando npm `npm run deploy:all` per sincronizzare in una singola esecuzione l'intero sistema:
+  1. Build check locale (`npm run build`)
+  2. Commit & Push GitHub (`git push origin main`) → trigger del deploy automatico su Vercel per il frontend SPA
+  3. Deploy automatico di tutte le Edge Functions Supabase (`supabase functions deploy`)
+  4. Esecuzione dello smoke test (`npm run smoke`)
+

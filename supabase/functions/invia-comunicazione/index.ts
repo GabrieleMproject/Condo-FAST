@@ -216,15 +216,13 @@ serve(async (req) => {
           throw lastErr || new Error('Invio fallito dopo 3 tentativi')
         }
 
-        if (tipoInvio === 'email') {
-          // Pausa preventiva di batching ogni 15 invii per rispettare i rate-limits dei mailer
-          if (invii.length > 0 && invii.length % 15 === 0) {
-            await new Promise((r) => setTimeout(r, 100))
-          }
-
-          const sendResult = await sendWithRetry()
-          invii.push({ email: dest.email, ...sendResult })
+        // Pausa preventiva di batching ogni 15 invii per rispettare i rate-limits dei mailer
+        if (invii.length > 0 && invii.length % 15 === 0) {
+          await new Promise((r) => setTimeout(r, 100))
         }
+
+        const sendResult = await sendWithRetry()
+        invii.push({ email: dest.email, ...sendResult })
       }
       } catch (err: any) {
         console.error(`Errore invio comunicazione al destinatario:`, err.message)

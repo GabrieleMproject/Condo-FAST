@@ -324,22 +324,6 @@ serve(async (req) => {
       )
     }
 
-    if (!response.ok) {
-      const errText = await response.text()
-      const isQuotaOrUnavailable = response.status === 429 || 
-                                   response.status === 503 ||
-                                   errText.includes('Quota exceeded') || 
-                                   errText.includes('RESOURCE_EXHAUSTED') || 
-                                   errText.includes('rate-limits') ||
-                                   errText.includes('UNAVAILABLE') ||
-                                   errText.includes('high demand')
-                      
-      if (isQuotaOrUnavailable) {
-        throw new Error(`Servizio AI temporaneamente non disponibile (Quota/Rate Limit Google superato o API Key non abilitata). Dettagli: ${errText}`)
-      }
-      throw new Error(`Errore API Gemini (${response.status}): ${errText}`)
-    }
-
     const geminiData = await response.json()
 
     // ── 6. Traduzione risposta nel formato Anthropic (per retrocompatibilità) ──

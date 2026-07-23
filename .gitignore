@@ -8,3 +8,4 @@ dist
 .env.save
 .env.*
 smoke2.mjs
+sql/backups/

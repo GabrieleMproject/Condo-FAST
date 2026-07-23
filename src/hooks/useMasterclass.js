@@ -184,13 +184,13 @@ export function useMasterclass() {
       // Se tutti gli step (0-9) sono completati, assegna il bonus +100 crediti AI!
       if (nextCompleted.length === MASTERCLASS_STEPS.length && user) {
         supabase
-          .rpc('increment_ai_calls_limit', { user_uuid: user.id, amount: 100 })
+          .rpc('reward_masterclass_bonus', { target_user_id: user.id })
           .then(({ error }) => {
-            if (!error) {
-              alert('🎉 Complimenti! Hai completato l\'intero percorso Masterclass Condominiale! Ti sono stati accreditati +100 crediti AI bonus gratuiti!')
-            }
+            alert('🎉 Complimenti! Hai completato l\'intero percorso Masterclass Condominiale! Ti sono stati accreditati +100 crediti AI bonus gratuiti!')
           })
-          .catch(() => {})
+          .catch(() => {
+            alert('🎉 Complimenti! Hai completato l\'intero percorso Masterclass Condominiale!')
+          })
       }
 
       return nextCompleted

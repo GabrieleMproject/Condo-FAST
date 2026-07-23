@@ -231,89 +231,97 @@ serve(async (req) => {
       geminiPayload.generationConfig.responseSchema = body.jsonSchema
     }
 
-    // ── 5. Chiamata API Gemini con Fallback automatico su 429 (Rate Limit / Quota) ──
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-    if (!GEMINI_API_KEY) {
+    // ── 5. Chiamata API Gemini con Fallback automatico Multi-Chiave & Multi-Modello ──
+    const primaryKey = Deno.env.get('GEMINI_API_KEY')
+    const backupKey = Deno.env.get('GEMINI_API_KEY_BACKUP')
+
+    if (!primaryKey) {
       throw new Error('Manca la variabile GEMINI_API_KEY nelle impostazioni di Supabase Edge Functions')
     }
 
+    // Lista ordinata di chiavi API da tentare (Primaria -> Backup se disponibile)
+    const apiKeys = [primaryKey, backupKey].filter(Boolean) as string[]
+    
+    // Modelli di riserva validi in ordine di preferenza per API Gemini v1beta
+    const fallbackModels = [
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-flash-latest',
+      'gemini-pro-latest',
+    ]
+
+    const isEquivalentModel = (m1: string, m2: string) => {
+      const norm = (m: string) => {
+        if (m === 'gemini-flash-latest' || m === 'gemini-1.5-flash-latest' || m === 'gemini-1.5-flash' || m === 'gemini-2.0-flash') {
+          return 'flash'
+        }
+        if (m === 'gemini-pro-latest' || m === 'gemini-1.5-pro-latest' || m === 'gemini-1.5-pro') {
+          return 'pro'
+        }
+        return m
+      }
+      return norm(m1) === norm(m2)
+    }
+
     let currentModel = model
-    let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(geminiPayload),
-    })
+    let response: Response | null = null
+    const errorsLog: string[] = []
 
-    // Se fallisce per quota esaurita o temporanea indisponibilità (503), tenta il fallback su modelli alternativi
-    if (!response.ok) {
-      const cloneRes = response.clone()
-      let shouldFallback = false
-      let errText = ''
-      try {
-        errText = await cloneRes.text()
-        shouldFallback = response.status === 429 || 
-                         response.status === 503 ||
-                         errText.includes('Quota exceeded') || 
-                         errText.includes('RESOURCE_EXHAUSTED') || 
-                         errText.includes('rate-limits') ||
-                         errText.includes('UNAVAILABLE') ||
-                         errText.includes('high demand')
-      } catch { /* ignore */ }
+    // Ciclo di tentativo a due livelli: Chiavi API x Modelli
+    keyLoop: for (let keyIdx = 0; keyIdx < apiKeys.length; keyIdx++) {
+      const key = apiKeys[keyIdx]
+      const keyLabel = keyIdx === 0 ? 'Primaria' : `Backup #${keyIdx}`
 
-      if (shouldFallback) {
-        const isEquivalentModel = (m1: string, m2: string) => {
-          const norm = (m: string) => {
-            if (m === 'gemini-flash-latest' || m === 'gemini-1.5-flash-latest' || m === 'gemini-1.5-flash') {
-              return 'flash'
-            }
-            if (m === 'gemini-pro-latest' || m === 'gemini-1.5-pro-latest' || m === 'gemini-1.5-pro') {
-              return 'pro'
-            }
-            return m
-          }
-          return norm(m1) === norm(m2)
-        }
+      // Per la chiave corrente, componi l'elenco di modelli da provare (primo il modello richiesto, poi i fallback)
+      const modelsToTry = [currentModel, ...fallbackModels.filter(m => !isEquivalentModel(m, currentModel))]
 
-        // Tenta modelli alternativi usando gli alias validi per API v1beta
-        const fallbackModels = ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-1.5-flash-latest', 'gemini-1.5-pro-latest']
-        const errorsLog: string[] = []
-          
-        console.warn(`[gemini-proxy] Quota/Servizio non disponibile per il modello ${currentModel}. Avvio fallback automatico.`);
-        
-        for (const altModel of fallbackModels) {
-          if (isEquivalentModel(altModel, currentModel)) continue;
-          try {
-            console.log(`[gemini-proxy] Tentativo di fallback con modello: ${altModel}`);
-            const altResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${altModel}:generateContent?key=${GEMINI_API_KEY}`, {
+      for (const targetModel of modelsToTry) {
+        try {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${key}`,
+            {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(geminiPayload),
-            })
-            
-            if (altResponse.ok) {
-              response = altResponse
-              currentModel = altModel
-              console.log(`[gemini-proxy] Fallback riuscito! Utilizzato modello: ${altModel}`);
-              break
-            } else {
-              const altErrText = await altResponse.text().catch(() => '')
-              errorsLog.push(`${altModel} (Status: ${altResponse.status}, Msg: ${altErrText.slice(0, 150)})`)
-              console.warn(`[gemini-proxy] Fallback fallito per modello ${altModel} (Status: ${altResponse.status})`);
             }
-          } catch (altErr) {
-            errorsLog.push(`${altModel} (Eccezione: ${altErr.message})`)
-            console.error(`[gemini-proxy] Errore chiamata fallback ${altModel}:`, altErr)
-          }
-        }
+          )
 
-        if (!response.ok) {
-          throw new Error(`Servizio AI temporaneamente non disponibile. Modello originale ${currentModel} fallito. Dettagli tentativi di fallback:\n- ${errorsLog.join('\n- ')}`)
+          if (res.ok) {
+            response = res
+            currentModel = targetModel
+            if (targetModel !== model || keyIdx > 0) {
+              console.log(`[gemini-proxy] Failover riuscito! Chiave: ${keyLabel}, Modello: ${targetModel}`)
+            }
+            break keyLoop
+          } else {
+            const errText = await res.clone().text().catch(() => '')
+            const isQuotaOrUnavailable =
+              res.status === 429 ||
+              res.status === 503 ||
+              errText.includes('Quota exceeded') ||
+              errText.includes('RESOURCE_EXHAUSTED') ||
+              errText.includes('rate-limits') ||
+              errText.includes('UNAVAILABLE') ||
+              errText.includes('high demand')
+
+            errorsLog.push(`[Key ${keyLabel} - ${targetModel}] Status ${res.status}: ${errText.slice(0, 120)}`)
+
+            if (!isQuotaOrUnavailable && res.status >= 400 && res.status < 500 && res.status !== 429) {
+              // Errore client 4xx diverso da rate limit (es. bad request) -> non ha senso provare altre chiavi per lo stesso payload
+              break keyLoop
+            }
+          }
+        } catch (callErr: any) {
+          errorsLog.push(`[Key ${keyLabel} - ${targetModel}] Eccezione: ${callErr?.message || 'Network error'}`)
         }
       }
+    }
+
+    if (!response || !response.ok) {
+      throw new Error(
+        `Servizio AI temporaneamente non disponibile. Tutti i tentativi di failover sono falliti:\n- ${errorsLog.join('\n- ')}`
+      )
     }
 
     if (!response.ok) {

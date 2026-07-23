@@ -147,61 +147,86 @@ serve(async (req) => {
             invii.push({ success: true, partner: 'multidialogo' })
           }
         } else {
-          // Invio email ordinario
-          if (mailInvioTipo === 'smtp' && transporter) {
-            // 1. Invio via SMTP
-            await transporter.sendMail({
-              from: `"${profile.mail_mittente_nome || 'CondoSmart Amministratore'}" <${profile.mail_mittente_email || user.email}>`,
-              to: dest.email,
-              subject: oggetto,
-              html: messaggio,
-              attachments: (allegati || []).map((a: any) => ({
-                filename: a.filename,
-                content: a.content,
-                encoding: 'base64'
-              }))
-            })
-            invii.push({ email: dest.email, success: true })
-          } else {
-            // 2. Invio via Resend (di sistema o personalizzato)
-            const apiKey = (mailInvioTipo === 'resend_custom' && profile?.resend_api_key) ? profile.resend_api_key : resendApiKey
-            const fromEmail = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_email) ? profile.mail_mittente_email : 'onboarding@resend.dev'
-            const fromName = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_nome) ? profile.mail_mittente_nome : 'CondoSmart Amministratore'
+        // Funzione helper per invio resiliente con retry ed exponential backoff (fino a 3 tentativi)
+        const sendWithRetry = async () => {
+          let attempt = 0
+          const maxAttempts = 3
+          let lastErr: any = null
 
-            if (!apiKey) {
-              throw new Error('Chiave API Resend non configurata')
+          while (attempt < maxAttempts) {
+            attempt++
+            try {
+              if (mailInvioTipo === 'smtp' && transporter) {
+                await transporter.sendMail({
+                  from: `"${profile.mail_mittente_nome || 'CondoSmart Amministratore'}" <${profile.mail_mittente_email || user.email}>`,
+                  to: dest.email,
+                  subject: oggetto,
+                  html: messaggio,
+                  attachments: (allegati || []).map((a: any) => ({
+                    filename: a.filename,
+                    content: a.content,
+                    encoding: 'base64'
+                  }))
+                })
+                return { success: true }
+              } else {
+                const apiKey = (mailInvioTipo === 'resend_custom' && profile?.resend_api_key) ? profile.resend_api_key : resendApiKey
+                const fromEmail = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_email) ? profile.mail_mittente_email : 'onboarding@resend.dev'
+                const fromName = (mailInvioTipo === 'resend_custom' && profile?.mail_mittente_nome) ? profile.mail_mittente_nome : 'CondoSmart Amministratore'
+
+                if (!apiKey) {
+                  throw new Error('Chiave API Resend non configurata')
+                }
+
+                const res = await fetch('https://api.resend.com/emails', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                  },
+                  body: JSON.stringify({
+                    from: `${fromName} <${fromEmail}>`,
+                    to: [dest.email],
+                    subject: oggetto,
+                    html: messaggio,
+                    reply_to: user.email,
+                    attachments: (allegati || []).map((a: any) => ({
+                      content: a.content,
+                      filename: a.filename,
+                    }))
+                  }),
+                })
+
+                if (!res.ok) {
+                  const resError = await res.json().catch(() => ({}))
+                  throw new Error(resError.message || `Errore HTTP ${res.status}`)
+                }
+
+                const resData = await res.json()
+                return { success: true, id: resData.id }
+              }
+            } catch (err: any) {
+              lastErr = err
+              if (attempt < maxAttempts) {
+                const delayMs = Math.pow(2, attempt) * 200 // 400ms, 800ms
+                await new Promise((r) => setTimeout(r, delayMs))
+              }
             }
-
-            const res = await fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-              },
-              body: JSON.stringify({
-                from: `${fromName} <${fromEmail}>`,
-                to: [dest.email],
-                subject: oggetto,
-                html: messaggio,
-                reply_to: user.email,
-                attachments: (allegati || []).map((a: any) => ({
-                  content: a.content,
-                  filename: a.filename,
-                }))
-              }),
-            })
-
-            if (!res.ok) {
-              const resError = await res.json()
-              throw new Error(resError.message || `Errore HTTP ${res.status}`)
-            }
-
-            const resData = await res.json()
-            invii.push({ email: dest.email, id: resData.id })
           }
+          throw lastErr || new Error('Invio fallito dopo 3 tentativi')
         }
-      } catch (err) {
-        console.error(`Errore invio sollecito al destinatario:`, err.message)
+
+        if (tipoInvio === 'email') {
+          // Pausa preventiva di batching ogni 15 invii per rispettare i rate-limits dei mailer
+          if (invii.length > 0 && invii.length % 15 === 0) {
+            await new Promise((r) => setTimeout(r, 100))
+          }
+
+          const sendResult = await sendWithRetry()
+          invii.push({ email: dest.email, ...sendResult })
+        }
+      } catch (err: any) {
+        console.error(`Errore invio comunicazione al destinatario:`, err.message)
         statoInvio = 'fallita'
         errorMsg = err.message
       }

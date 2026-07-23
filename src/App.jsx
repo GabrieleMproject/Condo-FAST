@@ -30,19 +30,19 @@ import ModuloFiscalePage from './pages/ModuloFiscalePage'
 import BackofficePage from './pages/BackofficePage'
 import SuperAdminGuard from './components/SuperAdminGuard'
 import MigrazionePage from './pages/MigrazionePage'
-import { ThemeProvider } from './contexts/ThemeContext'
-
+import { ErrorBoundary } from './components/ErrorBoundary'
 import WaitlistPage from './pages/WaitlistPage'
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <PlanProvider>
-            <SpeseQueueProvider>
-              <Toaster position="top-right" />
-              <Routes>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <PlanProvider>
+              <SpeseQueueProvider>
+                <Toaster position="top-right" />
+                <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -83,5 +83,6 @@ export default function App() {
         </AuthProvider>
     </BrowserRouter>
     </ThemeProvider>
+    </ErrorBoundary>
   )
 }

@@ -27,9 +27,9 @@ async function checkRateLimit(userId: string): Promise<{ allowed: boolean; retry
     .gte('created_at', windowStart)
 
   if (error) {
-    // In caso di errore DB lascia passare (fail-open) per non bloccare l'utente
-    console.error('Rate limit check error:', error.message)
-    return { allowed: true }
+    // Fix M1: Fail-closed — se il DB non risponde, blocca per sicurezza
+    console.error('Rate limit check error (fail-closed):', error.message)
+    return { allowed: false, retryAfter: 30 }
   }
 
   if ((count ?? 0) >= RATE_LIMIT) {
@@ -196,17 +196,19 @@ serve(async (req) => {
       safetySettings: [
         {
           category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_NONE"
+          threshold: "BLOCK_LOW_AND_ABOVE"
         },
         {
           category: "HARM_CATEGORY_HATE_SPEECH",
-          threshold: "BLOCK_NONE"
+          threshold: "BLOCK_LOW_AND_ABOVE"
         },
         {
+          // BLOCK_NONE per contenuti sessualmente espliciti — necessario per analisi documenti legali (atti notarili, etc.)
           category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
           threshold: "BLOCK_NONE"
         },
         {
+          // BLOCK_NONE per contenuti pericolosi — necessario per analisi documenti che menzionano sostanze chimiche, manutenzione, etc.
           category: "HARM_CATEGORY_DANGEROUS_CONTENT",
           threshold: "BLOCK_NONE"
         }

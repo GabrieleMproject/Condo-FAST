@@ -1347,4 +1347,66 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
   - **Telemetria Backoffice (`BackofficePage.jsx`):** Integrazione della colonna *Onboarding Masterclass* con la percentuale di avanzamento per ciascun utente in prova.
 - **Verifica e Build:** Build Vite completata con successo (`✓ built in 526ms`).
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S18 (24 Luglio 2026 - Alta Affidabilità, Ridondanza AI & 5 Pilastri Enterprise)
+
+### 1. Ridondanza AI Multi-Chiave & Multi-Modello (`supabase/functions/gemini-proxy/index.ts`)
+- **Gestione Failover Gemini a 2 Livelli**:
+  - **Multi-Modello**: In caso di quota esaurita (`429`) o indisponibilità temporanea (`503`), il proxy tenta automaticamente la sequenza di modelli di riserva: `gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-flash-latest`, `gemini-pro-latest`.
+  - **Multi-Chiave**: Aggiunto il supporto alla seconda chiave API `GEMINI_API_KEY_BACKUP` nelle env vars di Supabase per la commutazione trasparente in caso di blocco o rate-limit sulla chiave primaria.
+- **Verificato in Produzione**: Deprecato ufficialmente l'uso di Claude nel client (`claudeClient.js`). L'infrastruttura AI di CondoSmart risiede al 100% su Google Gemini.
+
+### 2. Backup Database & Disaster Recovery (`scripts/backup_db.mjs`, `sql/backup_instructions.md`)
+- **Script Snapshot DB Strutturato**: Creazione dello script Node.js `scripts/backup_db.mjs` che effettua il backup e il controllo di integrità delle tabelle fondamentali in `sql/backups/`.
+- **Protezione GDPR su Snapshot**: La cartella `sql/backups/` è stata inserita nel file `.gitignore` per evitare la tracciabilità e la pubblicazione involontaria dei file di backup nei commit git.
+- **Guida Disaster Recovery**: Documentazione dettagliata in `sql/backup_instructions.md` per l'export completo via Supabase CLI (`supabase db dump`) e per la configurazione di GitHub Actions con backup notturni automatici su storage esterno.
+
+### 3. Implementazione dei 5 Pilastri di Hardening Enterprise
+- **Pilastro 1 (Audit Log & Soft Delete ex art. 1130-bis c.c.)**: Script SQL `sql/s61_audit_logs_and_soft_delete.sql` per la registrazione immutabile delle modifiche/cancellazioni contabili e l'aggiunta di `deleted_at` su spese, rate, movimenti e documenti.
+- **Pilastro 2 (Health Check & Uptime Monitoring)**: Nuova Edge Function `supabase/functions/health-check/index.ts` per misurare latenza DB e disponibilità runtime per servizi quali Better Stack / UptimeRobot.
+- **Pilastro 3 (ErrorBoundary UI & Client Logger)**: Componenti `src/components/ErrorBoundary.jsx` e `src/lib/logger.js` per intercettare i crash JS ed evitare schermate bianche, integrando la sanificazione GDPR dei dati nei log (IBAN e Codice Fiscale).
+- **Pilastro 4 (WAF & Security Headers)**: File `vercel.json` con header di protezione attivi (`nosniff`, `DENY` frame-options, `1; mode=block` XSS, HSTS `max-age=31536000`, e Permissions-Policy).
+- **Pilastro 5 (Coda Resiliente Invio Email)**: Edge Function `supabase/functions/invia-comunicazione/index.ts` potenziata con invio a lotti (batching di 15 email con pause di 100ms) e 3 tentativi di retry con backoff esponenziale in caso di errori di rete.
+
+### 4. Deploy Unificato e Verification
+- **Build Vite**: Verificata e superata con successo (`✓ built in 525ms`).
+- **Deploy GitHub & Vercel**: Push del commit su branch `main` con deploy automatico del frontend.
+- **Deploy Supabase Edge Functions**: Tutte le 8 Edge Functions (`gemini-proxy`, `inbound-email`, `gocardless-proxy`, `sync-bank-transactions`, `stripe-checkout`, `invia-comunicazione`, `invia-email-marketing`, `delete-account`) deployate con successo.
+- **Smoke Test**: Superato (`Proxy OK in 3062ms`).
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S19 (24 Luglio 2026 - Potenziamento Backoffice SuperAdmin Fase 1 & 2)
+
+### 1. Scheda Utente 360° & Note Admin (Fase 1)
+- **Vista Dettagliata Cliente:** Aggiunta la modale "Scheda Utente 360°" in `BackofficePage.jsx`, attivabile con 1 clic per ciascun utente.
+- **Note Amministrative:** Implementato l'editor per il salvataggio di `note_admin` ad uso interno del team di supporto/commerciale.
+- **Bonus Chiamate AI:** Sistema di accreditamento o revoca rapida (+50, +100, +500) di chiamate AI extra trasmesse nel campo `ai_bonus_calls` della tabella `profiles`.
+- **Feature Flags per Utente:** Toggle dinamico per l'abilitazione di moduli in anteprima o sperimentali (`open_banking`, `f24_v2`, `recon_ai_v2`, `invoice_batch_v2`) salvati in `profiles.feature_flags`.
+
+### 2. Telemetria System Health & Monitoraggio Errori (Fase 1)
+- **Stato Edge Functions:** Tabella di monitoraggio per la verifica dell'integrità operativa delle 8 Edge Functions Supabase e delle integrazioni esterne (Stripe, Resend, GoCardless).
+- **Security Audit Viewer:** Visualizzazione dinamica del registro degli ultimi eventi registrati in `audit_logs`.
+
+### 3. MRR, ARPU & Calcolo Costi API LLM (Fase 2)
+- **Metriche SaaS:** Calcolo in tempo reale di MRR (Monthly Recurring Revenue), ARPU (Ricavo medio per utente pagante) e conteggio utenti paganti vs trial.
+- **Calcolatore Costi LLM (Claude & Gemini):** Integrazione del conteggio token da `ai_call_log` per determinare i costi stimati sostenuti in Euro e Dollari, sia aggregati che ripartiti per singola funzione AI (`estrazione_fattura`, `analizza_estratto_conto`, `assistenza_sintesi`, `scrittura_marketing`, `assistenza_chatbot`).
+
+### 4. Supervisione Chatbot AI & Quality Assurance RLHF (Fase 2)
+- **Supervisione Registro Chat:** Sotto-tab in Knowledge Base per esaminare le trascrizioni delle conversazioni tra utenti e assistente virtuale (`chat_assistenza_logs`).
+- **1-Click Generazione KB da Chat:** Integrazione con Gemini per estrarre domande sintetiche e soluzioni dalle chat ed inserire automaticamente un nuovo articolo nella tabella `assistenza_knowledge`.
+
+### 5. Bug e Rilievi Risolti (Bug Triager Scansione Automatica)
+- **Filtro Ricerca Utenti (`userSearch`)**: Risolto un bug per cui se un utente aveva l'email o campi nulli nel DB, la ricerca con input vuoto lo escludeva dalla griglia. Aggiunto `!search || ...` per garantire la presenza di tutti i profili a ricerca vuota.
+- **Merge Feature Flags**: Modificata `handleToggleFeatureFlag` per conservare le chiavi JSONB preesistenti in `selectedUser360.feature_flags` senza sovrascriverle.
+- **Conteggi Target Marketing nel Menu a Tendina**: Creato l'oggetto `targetCounts` in `useMemo` per calcolare ed esporre dinamicamente per ciascuna opzione `<option>` il numero esatto di utenti target associati.
+
+### 6. Schema DB e Verification
+- **Script SQL:** Creato `sql/s62_backoffice_v2.sql` con l'aggiunta delle colonne `note_admin`, `ai_bonus_calls` e `feature_flags` a `profiles`, ed aggiornata la RPC `get_utenti_statistiche()`.
+- **Build Verification:** Eseguito `npm run build` con successo (`✓ built in 465ms`, 2113 moduli compilati senza errori).
+
+
+
+
 

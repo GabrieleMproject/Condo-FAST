@@ -283,7 +283,10 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     console.error('Errore gestione evento:', err)
-    return new Response(`Errore interno: ${err}`, { status: 500 })
+    return new Response(JSON.stringify({ error: 'Errore interno del server' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   return new Response(JSON.stringify({ received: true }), {

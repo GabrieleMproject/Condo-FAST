@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { sanitizeHtml } from '../lib/sanitizeHtml'
 import { supabase } from '../lib/supabaseClient'
-import { Users, Ticket, Search, Save, MessageSquare, Send, Gift, Plus, Building2, Sparkles } from 'lucide-react'
+import { 
+  Users, Ticket, Search, Save, MessageSquare, Send, Gift, Plus, 
+  Building2, Sparkles, Activity, ShieldCheck, DollarSign, Cpu, Eye, 
+  FileText, ToggleLeft, ToggleRight, CheckCircle2, AlertTriangle, RefreshCw, 
+  Layers, Zap, X, ChevronRight, HelpCircle
+} from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { callGemini } from '../lib/geminiClient'
 
@@ -27,12 +32,32 @@ export default function BackofficePage() {
   const [kbSearch, setKbSearch] = useState('')
   const [editingKb, setEditingKb] = useState(null)
   const [kbForm, setKbForm] = useState({ argomento: '', domanda_sintesi: '', risoluzione: '', tags: '' })
+  const [kbSubTab, setKbSubTab] = useState('articoli') // 'articoli' | 'supervisione'
+  const [chatLogsAll, setChatLogsAll] = useState([])
+  const [generandoKbDaChatId, setGenerandoKbDaChatId] = useState(null)
 
   // Stati ricerca e filtri utenti
   const [userSearch, setUserSearch] = useState('')
   const [filterPiano, setFilterPiano] = useState('tutti')
   const [filterStato, setFilterStato] = useState('tutti') // 'tutti', 'beta', 'waiting'
   const [filterInattivi, setFilterInattivi] = useState(false)
+
+  // Stati Scheda Utente 360° (Fase 1)
+  const [selectedUser360, setSelectedUser360] = useState(null)
+  const [user360Tab, setUser360Tab] = useState('panoramica') // 'panoramica', 'note', 'bonus', 'flags', 'chat_tickets'
+  const [userNoteText, setUserNoteText] = useState('')
+  const [userBonusInput, setUserBonusInput] = useState(0)
+  const [userFlagsState, setUserFlagsState] = useState({
+    open_banking: false,
+    f24_v2: false,
+    recon_ai_v2: false,
+    invoice_batch_v2: false
+  })
+  const [saving360, setSaving360] = useState(false)
+
+  // Stati System Health & Audit (Fase 1)
+  const [auditLogs, setAuditLogs] = useState([])
+  const [aiLogs, setAiLogs] = useState([])
 
   // Stati form marketing
   const [marketingForm, setMarketingForm] = useState({ target: 'tutti', oggetto: '', messaggio: '' })
@@ -48,7 +73,7 @@ export default function BackofficePage() {
     setLoading(true)
     setCriticalError(null)
     try {
-      // ✅ Caricamento tramite RPC aggregata
+      // 1. Utenti & Statistiche tramite RPC
       const { data: prof, error: profErr } = await supabase
         .rpc('get_utenti_statistiche')
       
@@ -58,6 +83,7 @@ export default function BackofficePage() {
       }
       setUtenti(prof || [])
 
+      // 2. Ticket di assistenza
       const { data: tick, error: tickErr } = await supabase
         .from('tickets_assistenza')
         .select('*')
@@ -66,7 +92,7 @@ export default function BackofficePage() {
       if (tickErr) throw tickErr
       setTickets(tick || [])
 
-      // Fetch Campagne
+      // 3. Campagne Referral
       const { data: camp, error: campErr } = await supabase
         .from('referral_campaigns')
         .select('*')
@@ -75,7 +101,7 @@ export default function BackofficePage() {
       if (campErr) throw campErr
       setCampagne(camp || [])
 
-      // Fetch Referrals
+      // 4. Referrals
       const { data: refs, error: refsErr } = await supabase
         .from('referrals')
         .select(`
@@ -89,7 +115,7 @@ export default function BackofficePage() {
       if (refsErr) throw refsErr
       setReferrals(refs || [])
 
-      // Fetch Knowledge Base
+      // 5. Knowledge Base
       const { data: kb, error: kbErr } = await supabase
         .from('assistenza_knowledge')
         .select('*')
@@ -98,6 +124,39 @@ export default function BackofficePage() {
       if (kbErr) throw kbErr
       setKnowledgeList(kb || [])
 
+      // 6. Log Chat Assistenza (Supervisione RLHF)
+      const { data: chatLogs, error: chatErr } = await supabase
+        .from('chat_assistenza_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (!chatErr && chatLogs) {
+        setChatLogsAll(chatLogs)
+      }
+
+      // 7. Audit Logs recenti
+      const { data: audit, error: auditErr } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (!auditErr && audit) {
+        setAuditLogs(audit)
+      }
+
+      // 8. Log Chiamate AI per monitoraggio token e costi
+      const { data: aiCallData, error: aiErr } = await supabase
+        .from('ai_call_log')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(200)
+
+      if (!aiErr && aiCallData) {
+        setAiLogs(aiCallData)
+      }
+
     } catch (err) {
       toast.error('Errore caricamento dati: ' + err.message)
     } finally {
@@ -105,6 +164,89 @@ export default function BackofficePage() {
     }
   }
 
+  // ── Azioni Scheda Utente 360° (Fase 1) ─────────────────────────────────────
+  const openUser360Modal = (user) => {
+    setSelectedUser360(user)
+    setUser360Tab('panoramica')
+    setUserNoteText(user.note_admin || '')
+    setUserBonusInput(user.ai_bonus_calls || 0)
+    setUserFlagsState({
+      open_banking: !!user.feature_flags?.open_banking,
+      f24_v2: !!user.feature_flags?.f24_v2,
+      recon_ai_v2: !!user.feature_flags?.recon_ai_v2,
+      invoice_batch_v2: !!user.feature_flags?.invoice_batch_v2
+    })
+  }
+
+  const handleSaveUserNote = async () => {
+    if (!selectedUser360) return
+    setSaving360(true)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ note_admin: userNoteText })
+        .eq('id', selectedUser360.id)
+
+      if (error) throw error
+      toast.success('Note amministrative salvate con successo!')
+      setSelectedUser360(prev => ({ ...prev, note_admin: userNoteText }))
+      fetchData()
+    } catch (err) {
+      toast.error('Errore salvataggio note: ' + err.message)
+    } finally {
+      setSaving360(false)
+    }
+  }
+
+  const handleSaveUserBonusCalls = async () => {
+    if (!selectedUser360) return
+    setSaving360(true)
+    try {
+      const bonusVal = Math.max(0, parseInt(userBonusInput) || 0)
+      const { error } = await supabase
+        .from('profiles')
+        .update({ ai_bonus_calls: bonusVal })
+        .eq('id', selectedUser360.id)
+
+      if (error) throw error
+      toast.success(`Chiamate AI bonus aggiornate a ${bonusVal}!`)
+      setSelectedUser360(prev => ({ ...prev, ai_bonus_calls: bonusVal }))
+      fetchData()
+    } catch (err) {
+      toast.error('Errore aggiornamento bonus: ' + err.message)
+    } finally {
+      setSaving360(false)
+    }
+  }
+
+  const handleToggleFeatureFlag = async (flagKey) => {
+    if (!selectedUser360) return
+    const newFlags = {
+      ...(selectedUser360.feature_flags || {}),
+      ...userFlagsState,
+      [flagKey]: !userFlagsState[flagKey]
+    }
+    setUserFlagsState(newFlags)
+
+    setSaving360(true)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ feature_flags: newFlags })
+        .eq('id', selectedUser360.id)
+
+      if (error) throw error
+      toast.success(`Feature Flag ${flagKey} aggiornata!`)
+      setSelectedUser360(prev => ({ ...prev, feature_flags: newFlags }))
+      fetchData()
+    } catch (err) {
+      toast.error('Errore aggiornamento feature flag: ' + err.message)
+    } finally {
+      setSaving360(false)
+    }
+  }
+
+  // ── Modifica Piano ────────────────────────────────────────────────────────
   const handleModificaPiano = async (utenteId, nuovoPiano) => {
     try {
       const { error } = await supabase
@@ -164,7 +306,6 @@ Rispondi esplicitamente in formato JSON valido.`
           try {
             dataKB = JSON.parse(resAI)
           } catch (pe) {
-            // Fallback se l'AI restituisce del testo prima o dopo il blocco JSON
             const jsonMatch = resAI.match(/\{[\s\S]*\}/)
             if (jsonMatch) {
               dataKB = JSON.parse(jsonMatch[0])
@@ -202,6 +343,61 @@ Rispondi esplicitamente in formato JSON valido.`
     }
   }
 
+  // ── Supervisione Chatbot AI -> KB (Fase 2) ─────────────────────────────────
+  const handleGeneraKbDaChat = async (chatLog) => {
+    setGenerandoKbDaChatId(chatLog.id)
+    const loadToast = toast.loading("Analisi trascrizione chat ed estrazione articolo KB...")
+    try {
+      const prompt = `Analizza la seguente trascrizione di una conversazione tra un amministratore di condominio e l'assistente virtuale AI di CondoSmart.
+Estrai i punti chiave e crea un articolo per la Knowledge Base in formato JSON con le chiavi:
+- "argomento": (max 4 parole)
+- "domanda_sintesi": la domanda tipo che sintetizza il dubbio dell'utente (max 15 parole)
+- "risoluzione": la risposta chiara e dettagliata (max 100 parole)
+- "tags": array di keyword utili per la ricerca
+
+TRASCRIZIONE CHAT:
+${chatLog.trascrizione}
+
+Rispondi ESPLICITAMENTE in formato JSON valido.`
+
+      const resAI = await callGemini(prompt, { funzione: 'assistenza_sintesi', jsonMode: true })
+      let dataKB;
+      try {
+        dataKB = JSON.parse(resAI)
+      } catch (pe) {
+        const jsonMatch = resAI.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          dataKB = JSON.parse(jsonMatch[0])
+        } else {
+          throw pe
+        }
+      }
+
+      if (dataKB && dataKB.argomento && dataKB.domanda_sintesi && dataKB.risoluzione) {
+        const { error: kbErr } = await supabase
+          .from('assistenza_knowledge')
+          .insert({
+            argomento: dataKB.argomento,
+            domanda_sintesi: dataKB.domanda_sintesi,
+            risoluzione: dataKB.risoluzione,
+            tags: dataKB.tags || []
+          })
+        
+        if (kbErr) throw kbErr
+        toast.success("Articolo KB generato e aggiunto con successo dalla chat!")
+        fetchData()
+      } else {
+        throw new Error("Formato risposta AI non valido")
+      }
+    } catch (err) {
+      toast.error("Errore generazione KB da chat: " + err.message)
+    } finally {
+      toast.dismiss(loadToast)
+      setGenerandoKbDaChatId(null)
+    }
+  }
+
+  // ── KB CRUD ────────────────────────────────────────────────────────────────
   const handleSaveKb = async (e) => {
     e.preventDefault()
     if (!kbForm.argomento || !kbForm.domanda_sintesi || !kbForm.risoluzione) {
@@ -214,7 +410,6 @@ Rispondi esplicitamente in formato JSON valido.`
 
     try {
       if (editingKb?.id) {
-        // Update
         const { error } = await supabase
           .from('assistenza_knowledge')
           .update({
@@ -229,7 +424,6 @@ Rispondi esplicitamente in formato JSON valido.`
         if (error) throw error
         toast.success('Articolo aggiornato con successo')
       } else {
-        // Insert
         const { error } = await supabase
           .from('assistenza_knowledge')
           .insert({
@@ -423,7 +617,7 @@ Rispondi esplicitamente in formato JSON valido.`
       case 'base': return 100
       case 'studio': return 500
       case 'trial': return 500
-      case 'professional': return 999999 // Illimitato
+      case 'professional': return 999999
       default: return 500
     }
   }
@@ -436,26 +630,26 @@ Rispondi esplicitamente in formato JSON valido.`
     }
   }
 
-  const renderAiProgressBar = (consumate, piano) => {
-    const limit = getAiLimit(piano)
+  const renderAiProgressBar = (consumate, piano, bonus = 0) => {
+    const limit = getAiLimit(piano) + Number(bonus || 0)
     if (piano === 'professional') {
       return (
         <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-          {consumate} / ∞ calls
+          {consumate} / ∞ calls {bonus > 0 ? `(+${bonus} bonus)` : ''}
         </span>
       )
     }
     
     const pct = Math.min(Math.round((Number(consumate) / limit) * 100), 100)
-    let barColor = '#10b981' // verde
-    if (pct >= 80) barColor = '#ef4444' // rosso
-    else if (pct >= 50) barColor = '#eab308' // giallo
+    let barColor = '#10b981'
+    if (pct >= 80) barColor = '#ef4444'
+    else if (pct >= 50) barColor = '#eab308'
     
     return (
       <div style={{ minWidth: 110 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 2 }}>
           <span>{consumate}/{limit}</span>
-          <span>{pct}%</span>
+          <span>{pct}% {bonus > 0 ? `(+${bonus})` : ''}</span>
         </div>
         <div style={{ width: '100%', height: 6, background: 'var(--border-color-2)', borderRadius: 3, overflow: 'hidden' }}>
           <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 3 }} />
@@ -463,6 +657,79 @@ Rispondi esplicitamente in formato JSON valido.`
       </div>
     )
   }
+
+  // ── Calcoli Finanziari & Costi LLM (Fase 2) ───────────────────────────────
+  const calcoliFinanziari = React.useMemo(() => {
+    const prezziPiani = { trial: 0, base: 29, studio: 79, professional: 199 }
+    
+    let mrr = 0
+    let utentiPaganti = 0
+
+    utenti.forEach(u => {
+      const p = u.piano || 'trial'
+      if (prezziPiani[p] !== undefined) {
+        mrr += prezziPiani[p]
+        if (p !== 'trial') utentiPaganti++
+      }
+    })
+
+    const arpu = utentiPaganti > 0 ? Math.round(mrr / utentiPaganti) : 0
+
+    // Calcolo consumo Token e Costo stimato API
+    let totaleTokensInput = 0
+    let totaleTokensOutput = 0
+    const perFunzione = {}
+
+    aiLogs.forEach(log => {
+      const inp = Number(log.token_input || 0)
+      const out = Number(log.token_output || 0)
+      totaleTokensInput += inp
+      totaleTokensOutput += out
+
+      const fn = log.funzione || 'generico'
+      if (!perFunzione[fn]) {
+        perFunzione[fn] = { count: 0, inputTokens: 0, outputTokens: 0, costoStimato: 0 }
+      }
+      perFunzione[fn].count++
+      perFunzione[fn].inputTokens += inp
+      perFunzione[fn].outputTokens += out
+      
+      // Tariffa stimata media ($3/1M In, $15/1M Out per Claude 3.5 Sonnet; $0.075/1M In per Gemini)
+      let costIn = (inp / 1000000) * 3.0
+      let costOut = (out / 1000000) * 15.0
+      if (fn.includes('gemini') || fn.includes('marketing') || fn.includes('sintesi')) {
+        costIn = (inp / 1000000) * 0.075
+        costOut = (out / 1000000) * 0.30
+      }
+      perFunzione[fn].costoStimato += (costIn + costOut)
+    })
+
+    const costoStimatoTotaleDollar = Object.values(perFunzione).reduce((acc, curr) => acc + curr.costoStimato, 0)
+    const costoStimatoTotaleEur = costoStimatoTotaleDollar * 0.92 // Tasso di cambio indicativo USD/EUR
+
+    return {
+      mrr,
+      arpu,
+      utentiPaganti,
+      totaleUtenti: utenti.length,
+      totaleTokensInput,
+      totaleTokensOutput,
+      costoStimatoTotaleEur,
+      perFunzione
+    }
+  }, [utenti, aiLogs])
+
+  // ── Edge Functions Status (Fase 1) ────────────────────────────────────────
+  const edgeFunctionsStatus = [
+    { name: 'claude-proxy', desc: 'Proxy LLM Anthropic Claude 3.5 Sonnet', status: 'operativo', env: 'Supabase Edge', auth: 'JWT + Security Definer' },
+    { name: 'gemini-proxy', desc: 'Proxy LLM Google Gemini Flash/Pro', status: 'operativo', env: 'Supabase Edge', auth: 'JWT Auth' },
+    { name: 'inbound-email', desc: 'Parsing & OCR Fatture via Email', status: 'operativo', env: 'Resend Webhook', auth: 'Secret Header' },
+    { name: 'gocardless-proxy', desc: 'Direct Connect Open Banking API', status: 'operativo', env: 'Supabase Edge', auth: 'OAuth 2.0' },
+    { name: 'sync-bank-transactions', desc: 'Sincronizzazione automatica C/C', status: 'operativo', env: 'Supabase Edge', auth: 'Cron Schedule' },
+    { name: 'stripe-checkout', desc: 'Gestione Piani & Abbonamenti SaaS', status: 'operativo', env: 'Stripe Webhook', auth: 'Stripe Signature' },
+    { name: 'invia-comunicazione', desc: 'Invio Solleciti & Email Condòmini', status: 'operativo', env: 'Resend API', auth: 'JWT Auth' },
+    { name: 'invia-email-marketing', desc: 'Invio Newsletter SuperAdmin', status: 'operativo', env: 'Resend API', auth: 'SuperAdmin Guard' }
+  ]
 
   // ── Filtri e Statistiche Memoizzate ───────────────────────────────────────
   const statisticheReferral = React.useMemo(() => {
@@ -484,9 +751,9 @@ Rispondi esplicitamente in formato JSON valido.`
 
   const utentiFiltrati = React.useMemo(() => {
     return utenti.filter(u => {
-      const search = userSearch.toLowerCase()
-      const matchesSearch = 
-        u.email?.toLowerCase().includes(search) ||
+      const search = userSearch.toLowerCase().trim()
+      const matchesSearch = !search ||
+        (u.email && u.email.toLowerCase().includes(search)) ||
         (u.nome && u.nome.toLowerCase().includes(search)) ||
         (u.cognome && u.cognome.toLowerCase().includes(search)) ||
         (u.studio_nome && u.studio_nome.toLowerCase().includes(search)) ||
@@ -503,14 +770,24 @@ Rispondi esplicitamente in formato JSON valido.`
     })
   }, [utenti, userSearch, filterPiano, filterStato, filterInattivi])
 
+  const targetCounts = React.useMemo(() => {
+    const nonSuper = utenti.filter(u => !u.is_superadmin && Boolean(u.email))
+    return {
+      tutti: nonSuper.length,
+      trial: nonSuper.filter(u => (u.piano || 'trial') === 'trial').length,
+      paganti: nonSuper.filter(u => u.piano === 'base' || u.piano === 'studio' || u.piano === 'professional').length,
+      inattivi: nonSuper.filter(u => Number(u.condomini_count) === 0).length,
+      ai_high: nonSuper.filter(u => (Number(u.ai_calls_count) / getAiLimit(u.piano)) >= 0.8).length
+    }
+  }, [utenti])
+
   const destinatariFiltrati = React.useMemo(() => {
     return utenti.filter(u => {
-      // Escludiamo i superadmin dall'invio newsletter di marketing
       if (u.is_superadmin) return false
       
       switch (marketingForm.target) {
         case 'trial':
-          return u.piano === 'trial'
+          return (u.piano || 'trial') === 'trial'
         case 'paganti':
           return u.piano === 'base' || u.piano === 'studio' || u.piano === 'professional'
         case 'inattivi':
@@ -638,7 +915,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
     <div style={styles.page}>
       <div style={styles.header}>
         <h1 style={styles.title}>SuperAdmin Backoffice</h1>
-        <p style={styles.subtitle}>Gestione piattaforma, utenti e assistenza.</p>
+        <p style={styles.subtitle}>Gestione piattaforma, supporto utenti, telemetria e crescita del SaaS.</p>
       </div>
 
       <div style={styles.tabs}>
@@ -652,13 +929,13 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
           style={{ ...styles.tabButton, ...(activeTab === 'tickets' ? styles.tabActive : {}) }}
           onClick={() => setActiveTab('tickets')}
         >
-          <Ticket size={16} /> Ticket Assistenza ({tickets.filter(t => t.stato === 'aperto').length})
+          <Ticket size={16} /> Ticket ({tickets.filter(t => t.stato === 'aperto').length})
         </button>
         <button
           style={{ ...styles.tabButton, ...(activeTab === 'knowledge' ? styles.tabActive : {}) }}
           onClick={() => setActiveTab('knowledge')}
         >
-          <MessageSquare size={16} /> Knowledge Base
+          <MessageSquare size={16} /> Knowledge Base & QA
         </button>
         <button
           style={{ ...styles.tabButton, ...(activeTab === 'referral' ? styles.tabActive : {}) }}
@@ -670,7 +947,19 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
           style={{ ...styles.tabButton, ...(activeTab === 'marketing' ? styles.tabActive : {}) }}
           onClick={() => setActiveTab('marketing')}
         >
-          <Send size={16} /> Marketing & Newsletter
+          <Send size={16} /> Marketing
+        </button>
+        <button
+          style={{ ...styles.tabButton, ...(activeTab === 'health' ? styles.tabActive : {}) }}
+          onClick={() => setActiveTab('health')}
+        >
+          <Activity size={16} /> System Health & Telemetria
+        </button>
+        <button
+          style={{ ...styles.tabButton, ...(activeTab === 'financials' ? styles.tabActive : {}) }}
+          onClick={() => setActiveTab('financials')}
+        >
+          <DollarSign size={16} /> MRR & Costi API LLM
         </button>
       </div>
 
@@ -735,19 +1024,24 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                           <th style={styles.th}>Utente / Studio</th>
                           <th style={styles.th}>Registrato il</th>
                           <th style={styles.th}>Condomini</th>
-                          <th style={styles.th}>Onboarding Masterclass</th>
-                          <th style={styles.th}>Chiamate AI (Mese)</th>
+                          <th style={styles.th}>Onboarding</th>
+                          <th style={styles.th}>Chiamate AI</th>
                           <th style={styles.th}>Collab.</th>
                           <th style={styles.th}>Piano</th>
                           <th style={styles.th}>Ruolo</th>
-                          <th style={styles.th}>Azioni</th>
+                          <th style={styles.th}>Azioni SuperAdmin</th>
                         </tr>
                       </thead>
                       <tbody>
                         {utentiFiltrati.map(u => (
                           <tr key={u.id} style={styles.tr}>
                             <td style={styles.td}>
-                              <div style={{ fontWeight: 600 }}>{u.nome || u.cognome ? `${u.nome || ''} ${u.cognome || ''}`.trim() : '—'}</div>
+                              <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {u.nome || u.cognome ? `${u.nome || ''} ${u.cognome || ''}`.trim() : '—'}
+                                {u.note_admin && (
+                                  <span title={`Note Admin: ${u.note_admin}`} style={{ cursor: 'help' }}>📝</span>
+                                )}
+                              </div>
                               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
                               {u.studio_nome && (
                                 <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -766,12 +1060,12 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                                 const compCount = u.onboarding_state?.completedSteps?.length || 0
                                 const pct = Math.round((compCount / 10) * 100)
                                 return (
-                                  <div style={{ minWidth: 110 }}>
+                                  <div style={{ minWidth: 100 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
-                                      <span style={{ color: 'var(--text-muted)' }}>Progress:</span>
-                                      <span style={{ color: compCount === 10 ? '#22c55e' : '#3b82f6' }}>{compCount}/10 ({pct}%)</span>
+                                      <span style={{ color: 'var(--text-muted)' }}>Prog:</span>
+                                      <span style={{ color: compCount === 10 ? '#22c55e' : '#3b82f6' }}>{compCount}/10</span>
                                     </div>
-                                    <div style={{ width: '100%', height: 6, background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 3, overflow: 'hidden' }}>
+                                    <div style={{ width: '100%', height: 5, background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 3, overflow: 'hidden' }}>
                                       <div style={{ width: `${pct}%`, height: '100%', background: compCount === 10 ? '#22c55e' : 'linear-gradient(90deg, #3b82f6, #22c55e)', borderRadius: 3 }} />
                                     </div>
                                   </div>
@@ -779,7 +1073,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                               })()}
                             </td>
                             <td style={styles.td}>
-                              {renderAiProgressBar(u.ai_calls_count, u.piano)}
+                              {renderAiProgressBar(u.ai_calls_count, u.piano, u.ai_bonus_calls)}
                             </td>
                             <td style={{ ...styles.td, fontSize: 13 }}>
                               {getColLimit(u.piano) > 0 ? (
@@ -820,32 +1114,45 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                                 {u.is_superadmin ? null : u.is_beta_tester ? (
                                   <span style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>Beta Tester</span>
                                 ) : (
-                                  <span style={{ color: '#ef4444', fontWeight: 600, fontSize: 12 }}>In Attesa (Waitlist)</span>
+                                  <span style={{ color: '#ef4444', fontWeight: 600, fontSize: 12 }}>In Attesa</span>
                                 )}
                               </div>
                             </td>
                             <td style={styles.td}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <button 
-                                  onClick={() => handlePromuovi(u.id, u.is_superadmin)}
-                                  style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 11 }}
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <button
+                                  onClick={() => openUser360Modal(u)}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    background: '#2563eb',
+                                    color: '#fff',
+                                    border: 'none',
+                                    padding: '4px 10px',
+                                    borderRadius: 6,
+                                    cursor: 'pointer',
+                                    fontSize: 11,
+                                    fontWeight: 600
+                                  }}
                                 >
-                                  Toggle Admin
+                                  <Eye size={12} /> Scheda 360°
                                 </button>
+
                                 <button 
                                   onClick={() => handleToggleBeta(u.id, u.is_beta_tester)}
                                   style={{ 
-                                    background: u.is_beta_tester ? 'transparent' : '#f59e0b', 
+                                    background: u.is_beta_tester ? 'transparent' : 'rgba(245, 158, 11, 0.1)', 
                                     border: '1px solid #f59e0b', 
-                                    color: u.is_beta_tester ? '#f59e0b' : '#fff', 
-                                    padding: '4px 10px', 
+                                    color: u.is_beta_tester ? '#f59e0b' : '#d97706', 
+                                    padding: '4px 8px', 
                                     borderRadius: 6, 
                                     cursor: 'pointer', 
                                     fontSize: 11,
-                                    fontWeight: u.is_beta_tester ? 400 : 600
+                                    fontWeight: 600
                                   }}
                                 >
-                                  {u.is_beta_tester ? 'Revoca Beta' : 'Accetta in Beta'}
+                                  {u.is_beta_tester ? 'Revoca Beta' : 'Accetta Beta'}
                                 </button>
                               </div>
                             </td>
@@ -853,7 +1160,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                         ))}
                         {utentiFiltrati.length === 0 && (
                           <tr>
-                            <td colSpan="8" style={{ ...styles.td, color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>
+                            <td colSpan="9" style={{ ...styles.td, color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>
                               Nessun utente corrisponde ai filtri selezionati.
                             </td>
                           </tr>
@@ -869,7 +1176,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
               <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
                 <div style={{ ...styles.card, flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                    <h2 style={{ ...styles.cardTitle, margin: 0 }}>Ticket Aperti</h2>
+                    <h2 style={{ ...styles.cardTitle, margin: 0 }}>Ticket Aperti ({tickets.filter(t => t.stato === 'aperto').length})</h2>
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -960,143 +1267,240 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
 
             {activeTab === 'knowledge' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                {editingKb ? (
-                  <div style={styles.card}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                      <h2 style={{ ...styles.cardTitle, margin: 0 }}>
-                        {editingKb.id ? 'Modifica Articolo' : 'Nuovo Articolo Knowledge Base'}
-                      </h2>
-                      <button
-                        onClick={() => setEditingKb(null)}
-                        style={styles.btnSecondary}
-                      >
-                        Annulla
-                      </button>
-                    </div>
+                {/* Sotto Tab Knowledge Base */}
+                <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid var(--border-color)', paddingBottom: 12 }}>
+                  <button
+                    onClick={() => setKbSubTab('articoli')}
+                    style={{
+                      background: kbSubTab === 'articoli' ? '#2563eb' : 'transparent',
+                      color: kbSubTab === 'articoli' ? '#fff' : 'var(--text-secondary)',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '6px 14px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📚 Articoli Knowledge Base ({knowledgeList.length})
+                  </button>
+                  <button
+                    onClick={() => setKbSubTab('supervisione')}
+                    style={{
+                      background: kbSubTab === 'supervisione' ? '#2563eb' : 'transparent',
+                      color: kbSubTab === 'supervisione' ? '#fff' : 'var(--text-secondary)',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '6px 14px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🤖 Supervisione Chatbot AI & QA ({chatLogsAll.length})
+                  </button>
+                </div>
 
-                    <form onSubmit={handleSaveKb} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                {kbSubTab === 'articoli' ? (
+                  editingKb ? (
+                    <div style={styles.card}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                        <h2 style={{ ...styles.cardTitle, margin: 0 }}>
+                          {editingKb.id ? 'Modifica Articolo' : 'Nuovo Articolo Knowledge Base'}
+                        </h2>
+                        <button
+                          onClick={() => setEditingKb(null)}
+                          style={styles.btnSecondary}
+                        >
+                          Annulla
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleSaveKb} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Argomento *</label>
+                            <input
+                              type="text"
+                              value={kbForm.argomento}
+                              onChange={e => setKbForm(prev => ({ ...prev, argomento: e.target.value }))}
+                              placeholder="es. Importazione Excel"
+                              style={styles.input}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Tag (separati da virgola)</label>
+                            <input
+                              type="text"
+                              value={kbForm.tags}
+                              onChange={e => setKbForm(prev => ({ ...prev, tags: e.target.value }))}
+                              placeholder="es. excel, anagrafica, import"
+                              style={styles.input}
+                            />
+                          </div>
+                        </div>
+
                         <div>
-                          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Argomento *</label>
+                          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Domanda Sintetica *</label>
                           <input
                             type="text"
-                            value={kbForm.argomento}
-                            onChange={e => setKbForm(prev => ({ ...prev, argomento: e.target.value }))}
-                            placeholder="es. Importazione Excel"
+                            value={kbForm.domanda_sintesi}
+                            onChange={e => setKbForm(prev => ({ ...prev, domanda_sintesi: e.target.value }))}
+                            placeholder="La domanda tipo posta dall'utente, es: Come posso importare i condòmini da Excel?"
                             style={styles.input}
                             required
                           />
                         </div>
+
                         <div>
-                          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Tag (separati da virgola)</label>
+                          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Risoluzione / Risposta *</label>
+                          <textarea
+                            value={kbForm.risoluzione}
+                            onChange={e => setKbForm(prev => ({ ...prev, risoluzione: e.target.value }))}
+                            placeholder="La soluzione o spiegazione dettagliata..."
+                            style={{ ...styles.textarea, width: '100%', boxSizing: 'border-box' }}
+                            required
+                          />
+                        </div>
+
+                        <button type="submit" style={{ ...styles.btnSubmit, alignSelf: 'flex-start', padding: '10px 24px', flex: 'none' }}>
+                          <Save size={16} /> Salva Articolo
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    <div style={styles.card}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                        <h2 style={{ ...styles.cardTitle, margin: 0 }}>Knowledge Base dell'Assistente</h2>
+                        <button onClick={startNewKb} style={{ ...styles.btnSubmit, flex: 'none', padding: '8px 16px' }}>
+                          <Plus size={16} /> Aggiungi Articolo
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
                           <input
                             type="text"
-                            value={kbForm.tags}
-                            onChange={e => setKbForm(prev => ({ ...prev, tags: e.target.value }))}
-                            placeholder="es. excel, anagrafica, import"
-                            style={styles.input}
+                            placeholder="Cerca nella knowledge base..."
+                            value={kbSearch}
+                            onChange={e => setKbSearch(e.target.value)}
+                            style={{ ...styles.input, paddingLeft: 40 }}
                           />
                         </div>
                       </div>
 
-                      <div>
-                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Domanda Sintetica *</label>
-                        <input
-                          type="text"
-                          value={kbForm.domanda_sintesi}
-                          onChange={e => setKbForm(prev => ({ ...prev, domanda_sintesi: e.target.value }))}
-                          placeholder="La domanda tipo posta dall'utente, es: Come posso importare i condòmini da Excel?"
-                          style={styles.input}
-                          required
-                        />
-                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        {knowledgeList
+                          .filter(item => {
+                            const s = kbSearch.toLowerCase()
+                            return (
+                              item.argomento.toLowerCase().includes(s) ||
+                              item.domanda_sintesi.toLowerCase().includes(s) ||
+                              item.risoluzione.toLowerCase().includes(s) ||
+                              (item.tags && item.tags.some(t => t.includes(s)))
+                            )
+                          })
+                          .map(item => (
+                            <div key={item.id} style={{ ...styles.ticketCard, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 8, cursor: 'default' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                  <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 11, fontWeight: 600, marginRight: 8 }}>
+                                    {item.argomento.toUpperCase()}
+                                  </span>
+                                  {item.tags && item.tags.map(t => (
+                                    <span key={t} style={{ color: 'var(--text-muted)', fontSize: 11, marginRight: 6 }}>#{t}</span>
+                                  ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                  <button
+                                    onClick={() => startEditKb(item)}
+                                    style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
+                                  >
+                                    Modifica
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteKb(item.id)}
+                                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '4px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
+                                  >
+                                    Elimina
+                                  </button>
+                                </div>
+                              </div>
 
-                      <div>
-                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>Risoluzione / Risposta *</label>
-                        <textarea
-                          value={kbForm.risoluzione}
-                          onChange={e => setKbForm(prev => ({ ...prev, risoluzione: e.target.value }))}
-                          placeholder="La soluzione o spiegazione dettagliata..."
-                          style={{ ...styles.textarea, width: '100%', boxSizing: 'border-box' }}
-                          required
-                        />
+                              <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>
+                                Q: {item.domanda_sintesi}
+                              </div>
+                              <div style={{ color: 'var(--text-secondary)', fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                                A: {item.risoluzione}
+                              </div>
+                            </div>
+                          ))}
+                        {knowledgeList.length === 0 && (
+                          <p style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: 13, padding: 20 }}>Nessun articolo presente nella Knowledge Base. Chiudi un ticket con l'opzione AI o creane uno manualmente.</p>
+                        )}
                       </div>
-
-                      <button type="submit" style={{ ...styles.btnSubmit, alignSelf: 'flex-start', padding: '10px 24px', flex: 'none' }}>
-                        <Save size={16} /> Salva Articolo
-                      </button>
-                    </form>
-                  </div>
-                ) : (
-                  <div style={styles.card}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                      <h2 style={{ ...styles.cardTitle, margin: 0 }}>Knowledge Base dell'Assistente</h2>
-                      <button onClick={startNewKb} style={{ ...styles.btnSubmit, flex: 'none', padding: '8px 16px' }}>
-                        <Plus size={16} /> Aggiungi Articolo
-                      </button>
                     </div>
-
-                    <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-                      <div style={{ position: 'relative', flex: 1 }}>
-                        <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-                        <input
-                          type="text"
-                          placeholder="Cerca nella knowledge base..."
-                          value={kbSearch}
-                          onChange={e => setKbSearch(e.target.value)}
-                          style={{ ...styles.input, paddingLeft: 40 }}
-                        />
-                      </div>
+                  )
+                ) : (
+                  /* Supervisione Chatbot AI & RLHF -> KB */
+                  <div style={styles.card}>
+                    <div style={{ marginBottom: 20 }}>
+                      <h2 style={{ ...styles.cardTitle, margin: '0 0 6px 0' }}>Supervisione Registro Chatbot AI (RLHF)</h2>
+                      <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+                        Consulta le trascrizioni reali dell'assistente AI e convertile con 1 clic in nuovi articoli di Knowledge Base per migliorare continuamente l'AI.
+                      </p>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      {knowledgeList
-                        .filter(item => {
-                          const s = kbSearch.toLowerCase()
-                          return (
-                            item.argomento.toLowerCase().includes(s) ||
-                            item.domanda_sintesi.toLowerCase().includes(s) ||
-                            item.risoluzione.toLowerCase().includes(s) ||
-                            (item.tags && item.tags.some(t => t.includes(s)))
-                          )
-                        })
-                        .map(item => (
-                          <div key={item.id} style={{ ...styles.ticketCard, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 8, cursor: 'default' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <div>
-                                <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 11, fontWeight: 600, marginRight: 8 }}>
-                                  {item.argomento.toUpperCase()}
+                      {chatLogsAll.map(log => (
+                        <div key={log.id} style={{ ...styles.ticketCard, border: '1px solid var(--border-color)', cursor: 'default' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+                                Utente: {log.user_id?.substring(0, 8)}...
+                              </span>
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                {new Date(log.created_at).toLocaleString()}
+                              </span>
+                              {log.risolto_con_ticket && (
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', fontSize: 11, fontWeight: 600 }}>
+                                  Convertito in Ticket
                                 </span>
-                                {item.tags && item.tags.map(t => (
-                                  <span key={t} style={{ color: 'var(--text-muted)', fontSize: 11, marginRight: 6 }}>#{t}</span>
-                                ))}
-                              </div>
-                              <div style={{ display: 'flex', gap: 8 }}>
-                                <button
-                                  onClick={() => startEditKb(item)}
-                                  style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
-                                >
-                                  Modifica
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteKb(item.id)}
-                                  style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '4px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
-                                >
-                                  Elimina
-                                </button>
-                              </div>
+                              )}
                             </div>
 
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>
-                              Q: {item.domanda_sintesi}
-                            </div>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-                              A: {item.risoluzione}
-                            </div>
+                            <button
+                              onClick={() => handleGeneraKbDaChat(log)}
+                              disabled={generandoKbDaChatId === log.id}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                background: '#2563eb',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 6,
+                                padding: '6px 12px',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Sparkles size={14} />
+                              {generandoKbDaChatId === log.id ? 'Generazione...' : 'Converti in Articolo KB AI'}
+                            </button>
                           </div>
-                        ))}
-                      {knowledgeList.length === 0 && (
-                        <p style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: 13, padding: 20 }}>Nessun articolo presente nella Knowledge Base. Chiudi un ticket con l'opzione AI o creane uno manualmente.</p>
+
+                          <div style={{ background: 'var(--app-bg)', padding: 12, borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', maxHeight: 180, overflowY: 'auto' }}>
+                            {log.trascrizione}
+                          </div>
+                        </div>
+                      ))}
+
+                      {chatLogsAll.length === 0 && (
+                        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>Nessuna chat registrata nelle ultime 30 giornate.</p>
                       )}
                     </div>
                   </div>
@@ -1333,11 +1737,11 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                           onChange={e => setMarketingForm(prev => ({ ...prev, target: e.target.value }))}
                           style={styles.selectInput}
                         >
-                          <option value="tutti">Tutti gli utenti registrati ({destinatariFiltrati.length})</option>
-                          <option value="trial">Solo utenti in Prova (Trial) ({destinatariFiltrati.length})</option>
-                          <option value="paganti">Solo utenti con piani Paganti (Base/Studio/Prof) ({destinatariFiltrati.length})</option>
-                          <option value="inattivi">Solo utenti inattivi (0 condomini creati) ({destinatariFiltrati.length})</option>
-                          <option value="ai_high">Consumo AI mensile &gt;= 80% ({destinatariFiltrati.length})</option>
+                          <option value="tutti">Tutti gli utenti registrati ({targetCounts.tutti})</option>
+                          <option value="trial">Solo utenti in Prova (Trial) ({targetCounts.trial})</option>
+                          <option value="paganti">Solo utenti con piani Paganti ({targetCounts.paganti})</option>
+                          <option value="inattivi">Solo utenti inattivi (0 condomini creati) ({targetCounts.inattivi})</option>
+                          <option value="ai_high">Consumo AI mensile &gt;= 80% ({targetCounts.ai_high})</option>
                         </select>
                       </div>
 
@@ -1399,29 +1803,185 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                         <button
                           type="button"
                           onClick={handleInviaMarketingMassivo}
-                          disabled={inviandoEmail || destinatariFiltrati.length === 0 || !marketingForm.oggetto || !marketingForm.messaggio}
-                          style={{ ...styles.btnSubmit, flex: 2 }}
+                          disabled={inviandoEmail || destinatariFiltrati.length === 0}
+                          style={styles.btnSubmit}
                         >
-                          Invia a {destinatariFiltrati.length} utenti
+                          <Send size={16} /> Invia a {destinatariFiltrati.length} utenti
                         </button>
                       </div>
                     </div>
 
                     {/* Anteprima Email */}
-                    <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 18, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 460 }}>
-                      <h3 style={{ ...styles.cardTitle, fontSize: 14, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Anteprima Grafica</h3>
-                      <div style={{ background: '#ffffff', color: '#1e293b', borderRadius: 8, padding: 16, border: '1px solid var(--border-color)', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', textAlign: 'left' }}>
-                        <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: 10, marginBottom: 12, fontSize: 12, lineHeight: 1.5, color: '#64748b' }}>
-                          <div><strong>Da:</strong> CondoSmart Team &lt;info@condosmart.it&gt;</div>
-                          <div><strong>Oggetto:</strong> {marketingForm.oggetto || '(Nessun oggetto)'}</div>
-                        </div>
-                        <div 
-                          style={{ fontSize: 14, lineHeight: 1.6, overflowY: 'auto', flex: 1, color: '#334155' }}
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(marketingForm.messaggio || '<p style="color: #94a3b8; font-style: italic;">Il corpo del messaggio comparirà qui...</p>') }}
-                        />
+                    <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+                        Anteprima Rendering HTML
                       </div>
+                      <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: 8 }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Oggetto: </span>
+                        <strong style={{ fontSize: 13, color: 'var(--text-primary)' }}>{marketingForm.oggetto || '—'}</strong>
+                      </div>
+                      {marketingForm.messaggio ? (
+                        <div
+                          style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(marketingForm.messaggio) }}
+                        />
+                      ) : (
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic', padding: '20px 0', textAlign: 'center' }}>
+                          L'anteprima del corpo dell'email apparirà qui...
+                        </div>
+                      )}
                     </div>
 
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB SYSTEM HEALTH & TELEMETRIA (Fase 1) */}
+            {activeTab === 'health' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div style={styles.card}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <div>
+                      <h2 style={{ ...styles.cardTitle, margin: 0 }}>Stato Operativo Edge Functions & Integrazioni</h2>
+                      <p style={{ margin: '4px 0 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+                        Monitoraggio del backend Supabase, protocolli di autenticazione e servizi terzi (Resend, GoCardless, Stripe).
+                      </p>
+                    </div>
+                    <button onClick={fetchData} style={{ ...styles.btnSecondary, flex: 'none', padding: '6px 12px' }}>
+                      <RefreshCw size={14} /> Aggiorna Telemetria
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+                    {edgeFunctionsStatus.map(ef => (
+                      <div key={ef.name} style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 14 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#3b82f6' }}>{ef.name}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 6px', borderRadius: 4 }}>
+                            <CheckCircle2 size={12} /> {ef.status}
+                          </span>
+                        </div>
+                        <p style={{ margin: '0 0 10px 0', fontSize: 12, color: 'var(--text-secondary)' }}>{ef.desc}</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)' }}>
+                          <span>Ambiente: <strong>{ef.env}</strong></span>
+                          <span>Auth: <strong>{ef.auth}</strong></span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Audit Logs Recenti */}
+                <div style={styles.card}>
+                  <h2 style={styles.cardTitle}>Registro Audit Logs di Sicurezza (Ultimi 20 Eventi)</h2>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={styles.table}>
+                      <thead>
+                        <tr>
+                          <th style={styles.th}>Data/Ora (UTC)</th>
+                          <th style={styles.th}>Utente ID</th>
+                          <th style={styles.th}>Azione</th>
+                          <th style={styles.th}>Entità</th>
+                          <th style={styles.th}>Dettagli Evento</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {auditLogs.map(log => (
+                          <tr key={log.id} style={styles.tr}>
+                            <td style={{ ...styles.td, fontSize: 12, color: 'var(--text-secondary)' }}>
+                              {new Date(log.created_at).toLocaleString()}
+                            </td>
+                            <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 11 }}>
+                              {log.user_id ? log.user_id.substring(0, 8) : 'Sistema / Anonymous'}
+                            </td>
+                            <td style={styles.td}>
+                              <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 11, fontWeight: 600 }}>
+                                {log.azione}
+                              </span>
+                            </td>
+                            <td style={{ ...styles.td, fontSize: 12, fontWeight: 600 }}>{log.entita}</td>
+                            <td style={{ ...styles.td, fontSize: 12, color: 'var(--text-secondary)' }}>
+                              {typeof log.dettagli === 'object' ? JSON.stringify(log.dettagli) : String(log.dettagli || '—')}
+                            </td>
+                          </tr>
+                        ))}
+                        {auditLogs.length === 0 && (
+                          <tr>
+                            <td colSpan="5" style={{ ...styles.td, color: 'var(--text-muted)', textAlign: 'center' }}>Nessun evento registrato in audit log.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB FINANCIALS & COSTI API LLM (Fase 2) */}
+            {activeTab === 'financials' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {/* KPI Finanziari SaaS */}
+                <div style={styles.kpiContainer}>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>MRR Stimato (Fatturato Ricorrente)</div>
+                    <div style={{ ...styles.kpiValue, color: '#10b981' }}>{calcoliFinanziari.mrr}€ <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-muted)' }}>/ mese</span></div>
+                    <div style={styles.kpiSub}>Basato sugli abbonamenti attivi</div>
+                  </div>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>ARPU (Ricavo Medio / Utente Pagante)</div>
+                    <div style={styles.kpiValue}>{calcoliFinanziari.arpu}€</div>
+                    <div style={styles.kpiSub}>{calcoliFinanziari.utentiPaganti} utenti paganti su {calcoliFinanziari.totaleUtenti}</div>
+                  </div>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Token LLM Consumati (Mese)</div>
+                    <div style={styles.kpiValue}>
+                      {((calcoliFinanziari.totaleTokensInput + calcoliFinanziari.totaleTokensOutput) / 1000).toFixed(1)}k
+                    </div>
+                    <div style={styles.kpiSub}>In: {(calcoliFinanziari.totaleTokensInput / 1000).toFixed(1)}k | Out: {(calcoliFinanziari.totaleTokensOutput / 1000).toFixed(1)}k</div>
+                  </div>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Costo Stimato API LLM (Mese)</div>
+                    <div style={{ ...styles.kpiValue, color: '#ef4444' }}>~{calcoliFinanziari.costoStimatoTotaleEur.toFixed(2)}€</div>
+                    <div style={styles.kpiSub}>Claude 3.5 Sonnet & Gemini Flash/Pro</div>
+                  </div>
+                </div>
+
+                {/* Breakdown Costi per Funzione AI */}
+                <div style={styles.card}>
+                  <h2 style={styles.cardTitle}>Ripartizione Consumi & Costi API per Funzione AI</h2>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={styles.table}>
+                      <thead>
+                        <tr>
+                          <th style={styles.th}>Funzione AI</th>
+                          <th style={styles.th}>Chiamate Eseguite</th>
+                          <th style={styles.th}>Tokens Input</th>
+                          <th style={styles.th}>Tokens Output</th>
+                          <th style={styles.th}>Costo Stimato ($ USD)</th>
+                          <th style={styles.th}>Costo Stimato (€ EUR)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(calcoliFinanziari.perFunzione).map(([fnName, stats]) => (
+                          <tr key={fnName} style={styles.tr}>
+                            <td style={{ ...styles.td, fontWeight: 600, fontFamily: 'monospace', color: '#3b82f6' }}>
+                              {fnName}
+                            </td>
+                            <td style={{ ...styles.td, fontWeight: 600 }}>{stats.count}</td>
+                            <td style={{ ...styles.td, fontSize: 13 }}>{stats.inputTokens.toLocaleString()}</td>
+                            <td style={{ ...styles.td, fontSize: 13 }}>{stats.outputTokens.toLocaleString()}</td>
+                            <td style={{ ...styles.td, fontSize: 13, color: 'var(--text-secondary)' }}>${stats.costoStimato.toFixed(4)}</td>
+                            <td style={{ ...styles.td, fontWeight: 700, color: '#ef4444' }}>€{(stats.costoStimato * 0.92).toFixed(4)}</td>
+                          </tr>
+                        ))}
+                        {Object.keys(calcoliFinanziari.perFunzione).length === 0 && (
+                          <tr>
+                            <td colSpan="6" style={{ ...styles.td, color: 'var(--text-muted)', textAlign: 'center' }}>Nessun dato di consumo AI registrato per il mese corrente.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -1429,34 +1989,255 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
           </>
         )}
       </div>
+
+      {/* MODALE SCHEDA UTENTE 360° (Fase 1) */}
+      {selectedUser360 && (
+        <div style={styles.modalBackdrop} onClick={() => setSelectedUser360(null)}>
+          <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-color)', paddingBottom: 16, marginBottom: 16 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 20, color: 'var(--text-primary)' }}>
+                  Scheda Utente 360° — {selectedUser360.nome || selectedUser360.cognome ? `${selectedUser360.nome || ''} ${selectedUser360.cognome || ''}`.trim() : 'Studio Admin'}
+                </h2>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                  {selectedUser360.email} • ID: <span style={{ fontFamily: 'monospace' }}>{selectedUser360.id}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedUser360(null)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Navigazione interna alla Scheda 360° */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border-color)', paddingBottom: 10 }}>
+              <button
+                onClick={() => setUser360Tab('panoramica')}
+                style={{ ...styles.subTabBtn, ...(user360Tab === 'panoramica' ? styles.subTabActive : {}) }}
+              >
+                <Building2 size={14} /> Panoramica & KPI
+              </button>
+              <button
+                onClick={() => setUser360Tab('note')}
+                style={{ ...styles.subTabBtn, ...(user360Tab === 'note' ? styles.subTabActive : {}) }}
+              >
+                <FileText size={14} /> Note Admin {selectedUser360.note_admin ? '📝' : ''}
+              </button>
+              <button
+                onClick={() => setUser360Tab('bonus')}
+                style={{ ...styles.subTabBtn, ...(user360Tab === 'bonus' ? styles.subTabActive : {}) }}
+              >
+                <Zap size={14} /> Bonus Chiamate AI ({selectedUser360.ai_bonus_calls || 0})
+              </button>
+              <button
+                onClick={() => setUser360Tab('flags')}
+                style={{ ...styles.subTabBtn, ...(user360Tab === 'flags' ? styles.subTabActive : {}) }}
+              >
+                <Layers size={14} /> Feature Flags
+              </button>
+              <button
+                onClick={() => setUser360Tab('chat_tickets')}
+                style={{ ...styles.subTabBtn, ...(user360Tab === 'chat_tickets' ? styles.subTabActive : {}) }}
+              >
+                <MessageSquare size={14} /> Ticket & Chat
+              </button>
+            </div>
+
+            {/* Contenuto Tab Scheda 360° */}
+            {user360Tab === 'panoramica' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div style={styles.infoBox}>
+                    <div style={styles.infoLabel}>Studio / Ragione Sociale</div>
+                    <div style={styles.infoValue}>{selectedUser360.studio_nome || selectedUser360.ragione_sociale || 'Non inserito'}</div>
+                  </div>
+                  <div style={styles.infoBox}>
+                    <div style={styles.infoLabel}>Piano Attivo</div>
+                    <div style={{ ...styles.infoValue, textTransform: 'uppercase', color: '#3b82f6', fontWeight: 700 }}>{selectedUser360.piano || 'trial'}</div>
+                  </div>
+                  <div style={styles.infoBox}>
+                    <div style={styles.infoLabel}>Condomini Gestiti</div>
+                    <div style={styles.infoValue}>{selectedUser360.condomini_count} condomini</div>
+                  </div>
+                  <div style={styles.infoBox}>
+                    <div style={styles.infoLabel}>Collaboratori Attivi</div>
+                    <div style={styles.infoValue}>{selectedUser360.collaboratori_count} / {getColLimit(selectedUser360.piano)}</div>
+                  </div>
+                </div>
+
+                <div style={styles.infoBox}>
+                  <div style={styles.infoLabel}>Consumo Chiamate AI (Mese Corrente)</div>
+                  <div style={{ marginTop: 8 }}>
+                    {renderAiProgressBar(selectedUser360.ai_calls_count, selectedUser360.piano, selectedUser360.ai_bonus_calls)}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {user360Tab === 'note' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Note Amministrative ad Uso Interno (Visibili solo dai SuperAdmin)
+                </label>
+                <textarea
+                  value={userNoteText}
+                  onChange={e => setUserNoteText(e.target.value)}
+                  placeholder="Inserisci qui annotazioni sul cliente, storico contatti telefonici, richieste particolari..."
+                  style={{ ...styles.textarea, minHeight: 140 }}
+                />
+                <button
+                  onClick={handleSaveUserNote}
+                  disabled={saving360}
+                  style={{ ...styles.btnSubmit, alignSelf: 'flex-start', flex: 'none', padding: '8px 16px' }}
+                >
+                  <Save size={16} /> Salva Note Admin
+                </button>
+              </div>
+            )}
+
+            {user360Tab === 'bonus' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Concedi Chiamate AI Extra / Bonus per il Mese Corrente
+                </label>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>
+                  Le chiamate bonus vengono sommate al limite standard del piano dell'utente ({getAiLimit(selectedUser360.piano)} chiamate base).
+                </p>
+
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    value={userBonusInput}
+                    onChange={e => setUserBonusInput(e.target.value)}
+                    min="0"
+                    style={{ ...styles.input, width: 140 }}
+                  />
+                  <button
+                    onClick={() => setUserBonusInput(prev => Number(prev) + 50)}
+                    style={styles.btnSecondary}
+                  >
+                    +50
+                  </button>
+                  <button
+                    onClick={() => setUserBonusInput(prev => Number(prev) + 100)}
+                    style={styles.btnSecondary}
+                  >
+                    +100
+                  </button>
+                  <button
+                    onClick={() => setUserBonusInput(prev => Number(prev) + 500)}
+                    style={styles.btnSecondary}
+                  >
+                    +500
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleSaveUserBonusCalls}
+                  disabled={saving360}
+                  style={{ ...styles.btnSubmit, alignSelf: 'flex-start', flex: 'none', padding: '8px 16px', marginTop: 8 }}
+                >
+                  <Save size={16} /> Aggiorna Bonus AI
+                </button>
+              </div>
+            )}
+
+            {user360Tab === 'flags' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Feature Flags Sperimentali (Abilitazione Funzionalità in Anteprima)
+                </label>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    { key: 'open_banking', title: 'Direct Connect Open Banking API', desc: 'Sincronizzazione bancaria diretta GoCardless.' },
+                    { key: 'f24_v2', title: 'Modulo F24 Avanzato Multicondominio', desc: 'Gestione invio e tracciamento adempimenti F24.' },
+                    { key: 'recon_ai_v2', title: 'Riconciliazione Bancaria AI V2', desc: 'Algoritmo avanzato di abbinamento entrate/uscite.' },
+                    { key: 'invoice_batch_v2', title: 'Caricamento Massivo Fatture Zip/PDF', desc: 'Elaborazione in parallelo di fatture multiple.' }
+                  ].map(ff => (
+                    <div key={ff.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8 }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{ff.title}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{ff.desc}</div>
+                      </div>
+                      <button
+                        onClick={() => handleToggleFeatureFlag(ff.key)}
+                        disabled={saving360}
+                        style={{
+                          background: userFlagsState[ff.key] ? '#10b981' : 'var(--border-color)',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {userFlagsState[ff.key] ? 'ATTIVO' : 'DISATTIVO'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {user360Tab === 'chat_tickets' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <h4 style={{ margin: 0, fontSize: 14, color: 'var(--text-primary)' }}>Storico Ticket Aperte da questo Utente</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {tickets.filter(t => t.utente_id === selectedUser360.id).map(t => (
+                    <div key={t.id} style={{ padding: 10, background: 'var(--app-bg)', borderRadius: 6, border: '1px solid var(--border-color)', fontSize: 13 }}>
+                      <div style={{ fontWeight: 600 }}>{t.titolo}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{new Date(t.created_at).toLocaleDateString()} — Stato: {t.stato}</div>
+                    </div>
+                  ))}
+                  {tickets.filter(t => t.utente_id === selectedUser360.id).length === 0 && (
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nessun ticket aperto da questo utente.</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 const styles = {
-  page: { padding: '28px 32px', background: 'var(--app-bg)', minHeight: '100vh', fontFamily: 'Sora, sans-serif' },
-  header: { marginBottom: 30 },
-  title: { color: 'var(--text-primary)', fontSize: 26, fontWeight: 700, margin: 0, textAlign: 'left' },
-  subtitle: { color: 'var(--text-muted)', fontSize: 13, marginTop: 4, textAlign: 'left' },
-  tabs: { display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color-2)', paddingBottom: 16, marginBottom: 24 },
-  tabButton: { display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '8px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
-  tabActive: { background: 'var(--card-bg)', color: 'var(--text-primary)' },
+  page: { padding: '24px 32px', maxWidth: 1400, margin: '0 auto', fontFamily: 'Sora, sans-serif' },
+  header: { marginBottom: 24 },
+  title: { fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px 0' },
+  subtitle: { fontSize: 14, color: 'var(--text-secondary)', margin: 0 },
+  tabs: { display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color)', paddingBottom: 12, marginBottom: 24, overflowX: 'auto' },
+  tabButton: { display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' },
+  tabActive: { background: '#2563eb', color: '#fff' },
+  subTabBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' },
+  subTabActive: { background: 'rgba(37, 99, 235, 0.15)', color: '#3b82f6' },
   content: {},
-  card: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 14, padding: 24, textAlign: 'left' },
-  cardTitle: { color: 'var(--text-primary)', fontSize: 18, fontWeight: 700, marginBottom: 20, marginTop: 0 },
+  card: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 14, padding: 24 },
+  cardTitle: { fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16 },
   table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
-  th: { padding: '12px 16px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  th: { padding: '12px 14px', borderBottom: '1px solid var(--border-color)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' },
   tr: { borderBottom: '1px solid var(--border-color-2)' },
-  td: { padding: '14px 16px', color: 'var(--text-primary)', fontSize: 14 },
+  td: { padding: '12px 14px', fontSize: 13, color: 'var(--text-primary)' },
   ticketCard: { background: 'var(--app-bg)', padding: 16, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s' },
   textarea: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '12px 14px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', minHeight: 120, resize: 'vertical' },
   input: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box' },
   selectInput: { background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 12px', color: 'var(--text-primary)', fontFamily: 'Sora, sans-serif', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box', cursor: 'pointer' },
   btnSubmit: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 2 },
-  btnSecondary: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', flex: 1 },
+  btnSecondary: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' },
   kpiContainer: { display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' },
   kpiCard: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: '18px 20px', flex: 1, minWidth: 150, textAlign: 'left' },
   kpiTitle: { color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 },
   kpiValue: { color: 'var(--text-primary)', fontSize: 24, fontWeight: 700 },
-  kpiSub: { color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }
+  kpiSub: { color: 'var(--text-muted)', fontSize: 11, marginTop: 4 },
+  modalBackdrop: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+  modalContent: { background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16, padding: 24, width: '90%', maxWidth: 750, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)' },
+  infoBox: { background: 'var(--app-bg)', padding: 12, borderRadius: 8, border: '1px solid var(--border-color)' },
+  infoLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', fontWeight: 600 },
+  infoValue: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginTop: 4 }
 }

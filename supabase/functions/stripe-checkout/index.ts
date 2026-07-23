@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error('Errore stripe-checkout:', err)
     return new Response(
-      JSON.stringify({ error: String(err) }),
+      JSON.stringify({ error: 'Errore interno. Riprova o contatta il supporto.' }),
       {
         status: 500,
         headers: {

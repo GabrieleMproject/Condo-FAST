@@ -9,6 +9,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Fix L1: Autenticazione opzionale — chiamate non autenticate ricevono solo lo status
+  const url = new URL(req.url)
+  const token = req.headers.get('X-Health-Token') || url.searchParams.get('token')
+  const expectedToken = Deno.env.get('HEALTH_CHECK_TOKEN')
+  const isAuthenticated = expectedToken && token === expectedToken
+
   const startTime = Date.now()
   let dbStatus = 'OK'
   let dbLatencyMs = 0
@@ -30,9 +36,11 @@ serve(async (req) => {
   }
 
   const totalLatencyMs = Date.now() - startTime
+  const overallStatus = dbStatus.startsWith('ERROR') ? 'DEGRADED' : 'HEALTHY'
 
-  const healthPayload = {
-    status: dbStatus.startsWith('ERROR') ? 'DEGRADED' : 'HEALTHY',
+  // Risposta ridotta per chiamate non autenticate (solo status, niente latenze/dettagli interni)
+  const healthPayload = isAuthenticated ? {
+    status: overallStatus,
     timestamp: new Date().toISOString(),
     version: '1.0.0',
     checks: {
@@ -45,10 +53,13 @@ serve(async (req) => {
         uptimeMs: totalLatencyMs,
       }
     }
+  } : {
+    status: overallStatus,
+    timestamp: new Date().toISOString(),
   }
 
   return new Response(JSON.stringify(healthPayload, null, 2), {
-    status: healthPayload.status === 'HEALTHY' ? 200 : 503,
+    status: overallStatus === 'HEALTHY' ? 200 : 503,
     headers: {
       ...corsHeaders,
       'Content-Type': 'application/json',

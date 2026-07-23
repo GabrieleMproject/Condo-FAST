@@ -108,14 +108,43 @@ serve(async (req) => {
               }
             }
 
+            // Fix H3: Validazione redirectUrl contro whitelist domini autorizzati
+            const allowedRedirectDomains = [
+              'localhost',
+              'condosmart.it',
+              'www.condosmart.it'
+            ]
+            const appUrlDomain = Deno.env.get('APP_URL')
+            if (appUrlDomain) {
+              try {
+                allowedRedirectDomains.push(new URL(appUrlDomain).hostname)
+              } catch { /* ignora URL malformati */ }
+            }
+
+            let validatedRedirectUrl = payload.redirectUrl || ''
+            try {
+              const redirectParsed = new URL(validatedRedirectUrl)
+              if (!allowedRedirectDomains.includes(redirectParsed.hostname)) {
+                return new Response(
+                  JSON.stringify({ error: 'URL di redirect non autorizzato' }),
+                  { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+                )
+              }
+            } catch {
+              return new Response(
+                JSON.stringify({ error: 'URL di redirect non valido' }),
+                { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+              )
+            }
+
             // Crea un link di autenticazione per l'utente
             const reqRes = await fetch(`${GOCARDLESS_API_URL}/requisitions/`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    redirect: payload.redirectUrl, // es. localhost:5173/estratto-conto
+                    redirect: validatedRedirectUrl,
                     institution_id: payload.institutionId,
-                    reference: payload.condominioId, // salviamo il condominioId come reference
+                    reference: payload.condominioId,
                     user_language: 'IT'
                 })
             })
@@ -163,13 +192,15 @@ serve(async (req) => {
                     const accDetails = await accDetailsRes.json()
                     
                     // Aggiorna la connessione
-                    const supabaseAdmin = createClient(
-                        Deno.env.get('SUPABASE_URL') ?? '',
-                        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-                    )
+                    // Fix M4: Maschera l'IBAN per conformità GDPR (salva solo IT + ultime 4 cifre)
+                    const rawIban = accDetails.account?.iban || null
+                    const maskedIban = rawIban 
+                      ? rawIban.slice(0, 2) + '**' + '*'.repeat(Math.max(0, rawIban.length - 6)) + rawIban.slice(-4)
+                      : null
+
                     await supabaseAdmin.from('bank_connections').update({
                         account_id: accountId,
-                        iban: accDetails.account?.iban || null,
+                        iban: maskedIban,
                         status: 'LINKED'
                     }).eq('id', connection.id)
                 } else {

@@ -64,44 +64,40 @@ serve(async (req) => {
       }
     }
 
-    // 6. Pulisci lo Storage in fatture (tutti i file sotto la cartella user.id)
-    try {
-      const { data: subDirs, error: subDirsError } = await supabaseAdmin.storage
-        .from('fatture')
-        .list(user.id, { limit: 1000 })
+    // 6. Pulisci lo Storage in fatture (tutti i file sotto la cartella user.id) — Fix L2: pulizia ricorsiva
+    const removeFilesRecursive = async (bucket: string, basePath: string, depth = 0) => {
+      if (depth > 5) return // Sicurezza: evita ricorsione infinita
+      try {
+        const { data: items, error: listError } = await supabaseAdmin.storage
+          .from(bucket)
+          .list(basePath, { limit: 1000 })
+        
+        if (listError || !items || items.length === 0) return
 
-      if (!subDirsError && subDirs && subDirs.length > 0) {
-        for (const item of subDirs) {
-          try {
-            // Se item.id è nullo o non definito, è una directory (es. condominio_id o f24_quietanze)
-            if (!item.id) {
-              const { data: files, error: filesError } = await supabaseAdmin.storage
-                .from('fatture')
-                .list(`${user.id}/${item.name}`, { limit: 1000 })
-              
-              if (!filesError && files && files.length > 0) {
-                const pathsToRemove = files.map(f => `${user.id}/${item.name}/${f.name}`)
-                const { error: removeError } = await supabaseAdmin.storage
-                  .from('fatture')
-                  .remove(pathsToRemove)
-                if (removeError) {
-                  console.error(`Errore rimozione file in fatture/${user.id}/${item.name}:`, removeError.message)
-                }
-              }
-            } else {
-              // È un file posizionato direttamente nella root di user.id
-              const { error: removeError } = await supabaseAdmin.storage
-                .from('fatture')
-                .remove([`${user.id}/${item.name}`])
-              if (removeError) {
-                console.error(`Errore rimozione file singolo in fatture/${user.id}/${item.name}:`, removeError.message)
-              }
-            }
-          } catch (itemErr: any) {
-            console.error(`Eccezione durante la pulizia di fatture/${user.id}/${item.name}:`, itemErr.message)
+        // Separa file e directory
+        const files = items.filter(i => i.id) // Ha un id = è un file
+        const dirs = items.filter(i => !i.id)  // Senza id = è una directory
+
+        // Rimuovi i file nel livello corrente
+        if (files.length > 0) {
+          const paths = files.map(f => `${basePath}/${f.name}`)
+          const { error: removeError } = await supabaseAdmin.storage.from(bucket).remove(paths)
+          if (removeError) {
+            console.error(`Errore rimozione file in ${bucket}/${basePath}:`, removeError.message)
           }
         }
+
+        // Ricorsione nelle sotto-directory
+        for (const dir of dirs) {
+          await removeFilesRecursive(bucket, `${basePath}/${dir.name}`, depth + 1)
+        }
+      } catch (err: any) {
+        console.error(`Eccezione pulizia ricorsiva ${bucket}/${basePath}:`, err.message)
       }
+    }
+
+    try {
+      await removeFilesRecursive('fatture', user.id)
     } catch (storageErr: any) {
       console.error(`Eccezione generale pulizia storage fatture per utente ${user.id}:`, storageErr.message)
     }

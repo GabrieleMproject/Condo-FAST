@@ -89,9 +89,7 @@ serve(async (req) => {
           user: profile.smtp_user || '',
           pass: profile.smtp_password || '',
         },
-        tls: {
-          rejectUnauthorized: false
-        }
+        // Fix M6: TLS verifica i certificati per default (rimosso rejectUnauthorized: false)
       })
     }
 

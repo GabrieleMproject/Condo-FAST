@@ -8,15 +8,22 @@ const allowedOrigins = [
 
 export function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin');
-  // Se l'origine della richiesta è nella whitelist, permettila. Altrimenti restituiamo la stringa origin (o in alternativa una origin default) per evitare falle CSRF.
-  // In alternativa per sviluppo Deno deploy permette di forzare localhost o APP_URL
+  // Fix M5: APP_URL viene aggiunta alla whitelist solo se è un URL valido
   const appUrl = Deno.env.get('APP_URL');
-  let allowed = allowedOrigins[0];
-  
-  if (origin && allowedOrigins.includes(origin)) {
+  const effectiveAllowed = [...allowedOrigins];
+  if (appUrl && !effectiveAllowed.includes(appUrl)) {
+    // Valida che APP_URL sia un URL reale (non wildcard o stringa arbitraria)
+    try {
+      const parsed = new URL(appUrl);
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+        effectiveAllowed.push(appUrl);
+      }
+    } catch { /* ignora APP_URL malformate */ }
+  }
+
+  let allowed = effectiveAllowed[0];
+  if (origin && effectiveAllowed.includes(origin)) {
     allowed = origin;
-  } else if (appUrl) {
-    allowed = appUrl;
   }
 
   return {

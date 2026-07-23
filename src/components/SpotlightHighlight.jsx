@@ -14,8 +14,8 @@ export default function SpotlightHighlight({ targetId, title, desc, onClose, onN
       if (element) {
         const rect = element.getBoundingClientRect()
         setCoords({
-          top: rect.top + window.scrollY,
-          left: rect.left + window.scrollX,
+          top: rect.top,
+          left: rect.left,
           width: rect.width,
           height: rect.height
         })
@@ -39,7 +39,7 @@ export default function SpotlightHighlight({ targetId, title, desc, onClose, onN
 
   if (!targetId || !coords) return null
 
-  const popoverTop = coords.top + coords.height + 14
+  const popoverTop = Math.min(coords.top + coords.height + 14, window.innerHeight - 200)
   const popoverLeft = Math.max(16, Math.min(coords.left, window.innerWidth - 340))
 
   return (
@@ -47,7 +47,7 @@ export default function SpotlightHighlight({ targetId, title, desc, onClose, onN
       {/* Target Glowing Spotlight Box */}
       <div
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: coords.top - 6,
           left: coords.left - 6,
           width: coords.width + 12,
@@ -64,7 +64,7 @@ export default function SpotlightHighlight({ targetId, title, desc, onClose, onN
       {/* Popover Card */}
       <div
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: popoverTop,
           left: popoverLeft,
           width: '320px',

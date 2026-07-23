@@ -41,7 +41,7 @@ export async function generaCondominioDemo(userId) {
   const condoId = condo.id
 
   // 3. Tabella Millesimale Generale
-  const { data: tabMill } = await supabase
+  const { data: tabMill, error: tabMillErr } = await supabase
     .from('tabelle_millesimali')
     .insert([{
       condominio_id: condoId,
@@ -50,6 +50,7 @@ export async function generaCondominioDemo(userId) {
     .select()
     .single()
 
+  if (tabMillErr || !tabMill) throw tabMillErr || new Error('Errore durante la creazione della tabella millesimale demo')
   const tabMillId = tabMill.id
 
   // 4. Unità Immobiliari (4 appartamenti realistici)
@@ -60,11 +61,12 @@ export async function generaCondominioDemo(userId) {
     { condominio_id: condoId, numero: '4', scala: 'B', piano: 2, mq: 110, tipo: 'appartamento' }
   ]
 
-  const { data: unitaList } = await supabase
+  const { data: unitaList, error: unitaErr } = await supabase
     .from('unita')
     .insert(unitaPayload)
     .select()
 
+  if (unitaErr || !unitaList || unitaList.length < 4) throw unitaErr || new Error('Errore durante la creazione delle unità demo')
   const [u1, u2, u3, u4] = unitaList
 
   // 5. Millesimi per Unità (Somma = 1000)
@@ -83,11 +85,12 @@ export async function generaCondominioDemo(userId) {
     { nome: 'Chiara', cognome: 'Conti', email: 'chiara.conti.demo@condosmart.it', telefono: '3495566778', user_id: userId }
   ]
 
-  const { data: personeList } = await supabase
+  const { data: personeList, error: personeErr } = await supabase
     .from('persone')
     .insert(personePayload)
     .select()
 
+  if (personeErr || !personeList || personeList.length < 4) throw personeErr || new Error('Errore durante la creazione dei residenti demo')
   const [p1, p2, p3, p4] = personeList
 
   await supabase.from('occupanti_unita').insert([

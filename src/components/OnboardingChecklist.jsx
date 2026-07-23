@@ -105,7 +105,7 @@ export default function OnboardingChecklist({
             style={styles.btnIcon}
             title={collapsed ? 'Espandi Onboarding' : 'Riduci Onboarding'}
           >
-            {collapsed ? '+' : '−'}
+            {collapsed ? '+' : '-'}
           </button>
           <button 
             onClick={handleDismiss} 

@@ -53,20 +53,20 @@ export default function MasterclassBar({
         <div style={styles.leftGroup}>
           <div style={styles.badge}>
             <Sparkles size={14} style={{ marginRight: 4 }} />
-            MASTERCLASS OPERATIVA {activeStepData.id}/9
+            MASTERCLASS OPERATIVA {activeStepData?.id ?? 0}/9
           </div>
-          <h4 style={styles.stepTitle}>{activeStepData.title}</h4>
+          <h4 style={styles.stepTitle}>{activeStepData?.title}</h4>
         </div>
 
         <div style={styles.rightGroup}>
-          {activeStepData.id === 5 && (
+          {activeStepData?.id === 5 && (
             <button onClick={scaricaFatturaPdfDemo} style={styles.btnDownloadDemo} title="Scarica un PDF di fattura fittizio per provare l'OCR AI">
               <Download size={14} style={{ marginRight: 4 }} />
               Scarica Fattura PDF di Prova
             </button>
           )}
 
-          {activeStepData.id === 6 && (
+          {activeStepData?.id === 6 && (
             <button onClick={scaricaEstrattoContoCsvDemo} style={styles.btnDownloadDemo} title="Scarica un CSV bancario di prova per la riconciliazione">
               <Download size={14} style={{ marginRight: 4 }} />
               Scarica CSV Banca di Prova
@@ -79,7 +79,7 @@ export default function MasterclassBar({
           </button>
 
           {!isStepCompleted ? (
-            <button onClick={() => onCompleteStep(activeStepData.id)} style={styles.btnComplete}>
+            <button onClick={() => onCompleteStep(activeStepData?.id)} style={styles.btnComplete}>
               <CheckCircle2 size={15} style={{ marginRight: 6 }} />
               Spunta Completato
             </button>
@@ -96,7 +96,7 @@ export default function MasterclassBar({
         </div>
       </div>
 
-      <p style={styles.desc}>{activeStepData.desc}</p>
+      <p style={styles.desc}>{activeStepData?.desc}</p>
 
       {/* Progress Bar */}
       <div style={styles.progressTrack}>

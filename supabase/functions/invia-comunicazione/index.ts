@@ -225,6 +225,7 @@ serve(async (req) => {
           const sendResult = await sendWithRetry()
           invii.push({ email: dest.email, ...sendResult })
         }
+      }
       } catch (err: any) {
         console.error(`Errore invio comunicazione al destinatario:`, err.message)
         statoInvio = 'fallita'

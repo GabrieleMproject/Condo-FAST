@@ -25,6 +25,7 @@ import {
 import VerbaliAssembleaTab from '../components/VerbaliAssembleaTab'
 import { useEsercizioCorrente } from '../hooks/useEsercizioCorrente'
 import EsercizioSelectorHeader from '../components/EsercizioSelectorHeader'
+import DemoCondoBanner from '../components/DemoCondoBanner'
 
 // ── Helper date sicure ──────────────────────────────────────
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
@@ -238,6 +239,9 @@ export default function CondominiDetailPage() {
         </div>
       </div>
 
+      {/* Banner Ambiente Demo per Condomini Demo */}
+      <DemoCondoBanner condominio={c} onDeleteSuccess={refetch} />
+
       {/* Barra Esercizio Amministrativo Unificata */}
       <EsercizioSelectorHeader
         esercizi={esercizi}
@@ -265,9 +269,19 @@ export default function CondominiDetailPage() {
       <div style={S.tabBar}>
         {TABS.map(({ id: tid, label, icon: Icon }) => {
           const active = activeTab === tid
+          const tourTargetMap = {
+            anagrafica: 'tab-anagrafica-unita',
+            preventivo: 'tab-preventivo-rate',
+            consuntivo: 'tab-consuntivo-pdf',
+            rate: 'tab-preventivo-rate',
+            comunicazioni: 'btn-solleciti-massivi',
+            verbali: 'tab-verbali-assemblea',
+            finanze: 'tab-estratto-conto'
+          }
           return (
             <button
               key={tid}
+              data-tour-target={tourTargetMap[tid]}
               onClick={() => setActiveTab(tid)}
               style={{
                 ...S.tabBtn,

@@ -231,6 +231,81 @@ export default function SpesePage() {
     }
   }
 
+  const handleSaveBatchSpese = async (lottoSpese) => {
+    try {
+      for (let idx = 0; idx < lottoSpese.length; idx++) {
+        const spesaObj = lottoSpese[idx]
+        let spesaId = null
+        const nuovaSpesa = await creaSpesa({ ...spesaObj.payload, esercizio_id: esercizioAttivo.id }, spesaObj.ripartizioni)
+        spesaId = nuovaSpesa?.id
+
+        if (spesaObj.fileCaricato && spesaId) {
+          const { data: { user } } = await supabase.auth.getUser()
+          const path = `${user.id}/${condominioId}/${Date.now()}_${idx}_${spesaObj.fileCaricato.name}`
+          const { error: storageErr } = await supabase.storage
+            .from('fatture')
+            .upload(path, spesaObj.fileCaricato, { contentType: spesaObj.fileCaricato.type })
+          if (storageErr) console.error('Errore upload file storage:', storageErr)
+
+          let fornitoreId = null
+          try {
+            const { data: fornitoriList } = await supabase
+              .from('fornitori')
+              .select('id, ragione_sociale, partita_iva, codice_fiscale')
+            
+            if (fornitoriList && fornitoriList.length > 0) {
+              const pIvaClean = (spesaObj.aiDatiEstratti?.partita_iva_fornitore || '').replace(/\s+/g, '')
+              if (pIvaClean) {
+                const trovato = fornitoriList.find(f => f.partita_iva === pIvaClean || f.codice_fiscale === pIvaClean)
+                if (trovato) fornitoreId = trovato.id
+              } else {
+                const nomeClean = (spesaObj.payload.fornitore || '').trim().toLowerCase()
+                const trovato = fornitoriList.find(f => f.ragione_sociale.toLowerCase() === nomeClean)
+                if (trovato) fornitoreId = trovato.id
+              }
+            }
+          } catch (fornErr) {
+            console.error('Errore ricerca fornitore:', fornErr)
+          }
+
+          const datiFattura = {
+            condominio_id: condominioId,
+            user_id: user.id,
+            spesa_id: spesaId,
+            fornitore: spesaObj.payload.fornitore || 'Fornitore sconosciuto',
+            fornitore_id: fornitoreId,
+            numero_fattura: spesaObj.payload.numero_fattura || null,
+            data_fattura: spesaObj.payload.data_spesa,
+            data_scadenza: spesaObj.aiDatiEstratti?.data_scadenza || spesaObj.payload.data_spesa,
+            importo_totale: spesaObj.payload.importo,
+            importo_iva: spesaObj.aiDatiEstratti?.importo_iva || 0,
+            importo_netto: spesaObj.aiDatiEstratti?.importo_netto || (spesaObj.payload.importo - (spesaObj.aiDatiEstratti?.importo_iva || 0)),
+            descrizione: spesaObj.payload.descrizione || '',
+            categoria: spesaObj.payload.categoria || 'altro',
+            stato: 'attesa',
+            pdf_url: path,
+            ai_dati_estratti: spesaObj.aiDatiEstratti,
+            imponibile_ritenuta: spesaObj.aiDatiEstratti?.imponibile_ritenuta || 0.00,
+            aliquota_ritenuta_percentuale: spesaObj.aiDatiEstratti?.aliquota_ritenuta_percentuale || 0.00,
+            importo_ritenuta: spesaObj.aiDatiEstratti?.importo_ritenuta || 0.00,
+            ritenuta_acconto: spesaObj.aiDatiEstratti?.importo_ritenuta || 0.00,
+            codice_tributo_f24: spesaObj.aiDatiEstratti?.codice_tributo_f24 || null,
+            data_pagamento: null,
+          }
+
+          const { error: invoiceErr } = await supabase.from('fatture_fornitori').insert(datiFattura)
+          if (invoiceErr) console.error('Errore inserimento fattura fornitori batch:', invoiceErr)
+        }
+      }
+      await fetchSpese()
+      setShowForm(false)
+      setFromFattura(false)
+      setSpesaInEdit(null)
+    } catch (err) {
+      alert('Errore salvataggio lotto spese: ' + (err.message || err))
+    }
+  }
+
   const apriFormManuale = () => {
     setFromFattura(false)
     setShowForm(true)
@@ -429,6 +504,7 @@ export default function SpesePage() {
             fromFattura={fromFattura}
             prefillData={location.state?.prefillSpesa || null}
             onSave={handleSaveSpesa}
+            onSaveBatch={handleSaveBatchSpese}
             onCancel={chiudiForm}
             onRefreshTabelle={fetchTabelle}
           />

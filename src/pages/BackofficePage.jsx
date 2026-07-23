@@ -735,6 +735,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                           <th style={styles.th}>Utente / Studio</th>
                           <th style={styles.th}>Registrato il</th>
                           <th style={styles.th}>Condomini</th>
+                          <th style={styles.th}>Onboarding Masterclass</th>
                           <th style={styles.th}>Chiamate AI (Mese)</th>
                           <th style={styles.th}>Collab.</th>
                           <th style={styles.th}>Piano</th>
@@ -759,6 +760,23 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                             </td>
                             <td style={{ ...styles.td, fontWeight: 600, textAlign: 'center' }}>
                               {u.condomini_count}
+                            </td>
+                            <td style={styles.td}>
+                              {(() => {
+                                const compCount = u.onboarding_state?.completedSteps?.length || 0
+                                const pct = Math.round((compCount / 10) * 100)
+                                return (
+                                  <div style={{ minWidth: 110 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
+                                      <span style={{ color: 'var(--text-muted)' }}>Progress:</span>
+                                      <span style={{ color: compCount === 10 ? '#22c55e' : '#3b82f6' }}>{compCount}/10 ({pct}%)</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: 6, background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 3, overflow: 'hidden' }}>
+                                      <div style={{ width: `${pct}%`, height: '100%', background: compCount === 10 ? '#22c55e' : 'linear-gradient(90deg, #3b82f6, #22c55e)', borderRadius: 3 }} />
+                                    </div>
+                                  </div>
+                                )
+                              })()}
                             </td>
                             <td style={styles.td}>
                               {renderAiProgressBar(u.ai_calls_count, u.piano)}

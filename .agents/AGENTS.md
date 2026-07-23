@@ -1303,3 +1303,48 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Iconografia Professionale & Rimozione Emoji:** Tutte le emoji (🔒, 🚀, 🧙‍♂️, 🏦) sono state rimosse e sostituite con icone SVG di Lucide React (`Lock`, `Clock`, `Sparkles`, `ShieldCheck`, `CheckCircle2`, `ArrowRight`, `Building2`, `Bot`).
 - **Scansione Bug Triager & Hardening:** Scansione statica superata con 0 errori di sintassi. Ripuliti gli import ed azzerato lo stato `noMatchWarning`.
 
+### 6. Filtro Esercizio Globale & Anonimizzazione Studio (Deploy Unificato S61)
+- **Filtro Esercizio Globale (`EsercizioSelectorHeader.jsx`, `useEsercizioCorrente.js`):** Implementato il selettore globale dell'esercizio contabile nella barra di testata superiore, sincronizzato in tempo reale con tutte le pagine e schede del condominio corrente.
+- **Anonimizzazione Dati Studio (`AppLayout.jsx`, `ImpostazioniPage.jsx`):** Sostituiti tutti i placeholder di esempio contenenti dati reali dello studio con riferimenti generici d'esempio (`Es. Studio Amministrazione Rossi di Rag. Mario Rossi`, `Es. Via Roma n° 10 – 20100 Milano (MI)`, `info@studiorossi.it`, `12345678901`, `RSSMRA80A01H501Z`).
+- **Deploy Unificato Completato (`npm run deploy:all`):**
+  - Build Vite verificata e superata (Zero Errori).
+  - Push del commit `S61 step1: filtro esercizio globale e anonimizzazione studio` su branch `main` di GitHub, con trigger automatico del deploy frontend su Vercel.
+  - Deploy con successo di tutte le 8 Edge Functions Supabase (`gemini-proxy`, `inbound-email`, `gocardless-proxy`, `sync-bank-transactions`, `stripe-checkout`, `invia-comunicazione`, `invia-email-marketing`, `delete-account`).
+  - Esecuzione dello Smoke Test concluso con esito verde (Proxy OK).
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S59 (22 Luglio 2026 - Inserimento Multi-Fattura Batch Max 5 File)
+
+### 1. Inserimento Multi-Fattura Batch (Fino a 5 File) con Coda Sequenziale
+- **Gestione Lotti Batch (`SpeseForm.jsx`, `SpesePage.jsx`):** Implementata la funzionalità di caricamento fino a 5 fatture contemporaneamente nella sezione Spese via input file multiplo (`multiple`) o Drag & Drop.
+- **Queue Anti-Rate-Limit:** I file vengono processati in coda sequenziale (`File 1` → `File 2` → `File 3`...) con progress bar in tempo reale, prevenendo picchi API ed evitando rate-limiting sul proxy AI.
+- **Griglia di Anteprima Batch (Opzione A):** Una vista dedicata permette all'amministratore di revisionare al volo tutte le 5 spese estratte:
+  - Selezione a 1 click della Tabella Millesimale e del Criterio per ciascuna riga.
+  - Modifica immediata di Fornitore, Descrizione, Importo e Data.
+  - Accordion di dettaglio quote per unità per deroghe e rettifiche manuali di legge/regolamento.
+- **Salvataggio Massivo in 1 Click:** Pulsante "Conferma e Salva N Spese" per memorizzare tutte le spese sul DB, caricare i file su Storage e creare i record corrispondenti in `fatture_fornitori`.
+- **Verifica e Test:** Build Vite e Smoke Test verificati con esito verde.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S60 (23 Luglio 2026 - Tutorial & Onboarding Prova Gratuita Completo)
+
+### 1. Esperienza Onboarding Trial (Opzione 1 Completa)
+- **Condominio Demo Auto-Generato (`src/lib/demoSeed.js`):** Implementata la generazione trasparentemente del *Condominio Parco delle Rose (DEMO)* per gli utenti in prova gratuita (Trial) privi di condomini. Include 4 unità abitative, tabelle millesimali, preventivo rate, 3 spese ed un estratto conto con movimenti da riconciliare.
+- **Banner Ambiente Demo (`src/components/DemoCondoBanner.jsx`):** Aggiunto un banner visivo in testa alle schede del condominio demo in `CondominiDetailPage.jsx`, avvisando l'utente dell'ambiente di prova e offrendo pulsanti diretti per eliminare il demo o migrare i propri dati reali.
+- **Checklist Interattiva in Dashboard (`src/components/OnboardingChecklist.jsx`):** Card con progress bar % e 4 step guidati (Esplora Demo, Spese OCR AI, Riconciliazione Bancaria, Consuntivo PDF) posizionata in testa a `DashboardPage.jsx`.
+- **Tour Guidato Interattivo (`src/components/OnboardingTourModal.jsx`):** Modal/Popover passo-passo con faretti (spotlight) sui 6 punti chiave della UI (Header esercizi, Sidebar migrazione, Spese OCR, Riconciliazione banca, Consuntivo PDF, Chatbot AI 24/7).
+- **Centro Guida Rapida & Mini-Tutorial (`src/components/GuidaRapidaModal.jsx`):** Modale accessibile dall'header (pulsante `HelpCircle`) e dalla sidebar con 5 tab interattivi contenenti procedure passo-passo e consigli d'uso dell'AI.
+- **Masterclass Operativa a 10 Step (`src/hooks/useMasterclass.js`, `src/components/MasterclassBar.jsx`):** Percorso guidato chirurgico a 10 step per il completamento dell'intero ciclo annuale condominiale (dalla profilazione studio/branding fino alla chiusura ed ai verbali).
+- **Persistenza Atomica ad Ogni Azione:** I progressi vengono salvati istantaneamente sia in `localStorage` che su Supabase DB nel campo `profiles.onboarding_state` ad ogni completamento o avanzamento di step.
+- **Faretti Chirurgici Spotlight (`src/components/SpotlightHighlight.jsx`):** Tasto *"Mostrami Dove Cliccare"* per posizionare dinamicamente un faretto azzurro pulsante con popover esplicativo sull'elemento targhettizzato (`data-tour-target`).
+- **Schema DB (`sql/s59_onboarding_demo.sql`):** Esteso lo schema con le colonne `is_demo` su `condomini` e `onboarding_state` su `profiles`.
+- **Potenziamenti Avanzati Masterclass:**
+  - **Generatore File di Prova (`src/lib/demoFilesGenerator.js`):** Download in 1-click di una fattura PDF fittizia (La Brillante Srl) e di un CSV estratto conto di test durante gli step 5 e 6.
+  - **Auto-Completamento Reattivo:** Rilevamento automatico delle risorse create sul DB per far avanzare lo step senza spunta manuale.
+  - **Reward +100 Crediti AI:** Accredito automatico di 100 chiamate AI bonus al completamento del 100% dell'onboarding.
+  - **Telemetria Backoffice (`BackofficePage.jsx`):** Integrazione della colonna *Onboarding Masterclass* con la percentuale di avanzamento per ciascun utente in prova.
+- **Verifica e Build:** Build Vite completata con successo (`✓ built in 526ms`).
+
+

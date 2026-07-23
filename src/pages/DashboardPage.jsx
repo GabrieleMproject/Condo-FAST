@@ -4,6 +4,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCondomini } from '../hooks/useCondomini'
 import { usePlan } from '../hooks/usePlan'
 import { supabase } from '../lib/supabaseClient'
+import { generaCondominioDemo } from '../lib/demoSeed'
+import OnboardingChecklist from '../components/OnboardingChecklist'
+import GuidaRapidaModal from '../components/GuidaRapidaModal'
+import OnboardingTourModal from '../components/OnboardingTourModal'
 import {
   Building2,
   CheckCircle2,
@@ -46,11 +50,32 @@ const MESI_IT = [
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const { condomini, loading: loadingCondo } = useCondomini()
-  const { canUse } = usePlan()
+  const { condomini, loading: loadingCondo, refetch } = useCondomini()
+  const { canUse, piano, isTrialActive } = usePlan()
 
   const [loadingStats, setLoadingStats] = useState(true)
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024)
+  const [generatingDemo, setGeneratingDemo] = useState(false)
+  const [showTourModal, setShowTourModal] = useState(false)
+  const [showGuidaModal, setShowGuidaModal] = useState(false)
+
+  // Auto-creazione Condominio Demo per Trial se l'utente ha 0 condomini
+  useEffect(() => {
+    async function checkAndSeedDemo() {
+      if (!loadingCondo && user && (piano === 'trial' || isTrialActive) && condomini.length === 0 && !generatingDemo) {
+        setGeneratingDemo(true)
+        try {
+          await generaCondominioDemo(user.id)
+          if (refetch) await refetch()
+        } catch (err) {
+          console.error("Errore auto-creazione demo:", err)
+        } finally {
+          setGeneratingDemo(false)
+        }
+      }
+    }
+    checkAndSeedDemo()
+  }, [loadingCondo, condomini.length, user, piano, isTrialActive])
   const [stats, setStats] = useState({
     insolutiTotali: 0,
     rateScaduteCount: 0,
@@ -356,6 +381,23 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Onboarding Trial Checklist */}
+      {(piano === 'trial' || isTrialActive) && (
+        <OnboardingChecklist 
+          condomini={condomini}
+          stats={{
+            fattureCount: stats.fattureAttesaCount,
+            speseCount: stats.inboxSpeseCount,
+            movimentiCount: stats.movimentiDaRiconciliare,
+            riconciliatiCount: stats.movimentiNonRiconciliatiAlerts.length,
+            consuntiviGen: 1,
+            sollecitiCount: stats.rateScaduteCount
+          }}
+          onStartTour={() => setShowTourModal(true)}
+          onOpenGuida={() => setShowGuidaModal(true)}
+        />
+      )}
+
       {/* Postbox Alert Banner */}
       {canUse('postbox_studio') && (
         <div style={{
@@ -657,6 +699,17 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Modali Guida e Tour Onboarding */}
+      <GuidaRapidaModal 
+        isOpen={showGuidaModal}
+        onClose={() => setShowGuidaModal(false)}
+      />
+
+      <OnboardingTourModal
+        isOpen={showTourModal}
+        onClose={() => setShowTourModal(false)}
+      />
     </div>
   )
 }

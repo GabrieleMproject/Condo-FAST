@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { callGemini, callGeminiDocument } from '../lib/geminiClient'
 import { estraiFattura, fileToBase64, comprimiImmagine } from '../lib/fileExtractor'
 import { supabase } from '../lib/supabaseClient'
-import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet } from 'lucide-react'
+import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet, Trash2, ChevronDown, ChevronUp, Layers, FileText } from 'lucide-react'
 
 const CATEGORIE = [
   { value: 'ordinaria', label: 'Ordinaria' },
@@ -59,7 +59,56 @@ const trovaTabellaFuzzy = (tabelleList, nomeConsigliato, criterio) => {
   return null
 }
 
-export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onCancel, fromFattura = false, prefillData = null, onRefreshTabelle = null, initialFile = null, initialAiDatiEstratti = null }) {
+const calcolaRipartizioniBatch = (importoVal, criterio, tabellaId, percentualeMillesimi, importiManualiObj, unitaList, tabelleList) => {
+  const importo = parseFloat(importoVal) || 0
+  if (!importo || !unitaList?.length) return []
+
+  if (criterio === 'manuale') {
+    return unitaList.map(u => {
+      const val = parseFloat(importiManualiObj?.[u.id])
+      return {
+        unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
+        importo: Number.isFinite(val) ? Math.round(val * 100) / 100 : 0,
+        millesimi: null,
+        override_manuale: true,
+        importo_override: Number.isFinite(val) ? Math.round(val * 100) / 100 : 0,
+      }
+    })
+  }
+
+  if (criterio === 'quota_fissa') {
+    const quota = importo / unitaList.length
+    return unitaList.map(u => ({
+      unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
+      importo: Math.round(quota * 100) / 100, millesimi: null,
+    }))
+  }
+
+  const tabella = (tabelleList || []).find(t => t.id === tabellaId)
+  if (!tabella?.millesimi_unita?.length) return []
+
+  const totMill = tabella.millesimi_unita.reduce((s, m) => s + parseFloat(m.valore || 0), 0)
+  if (!totMill) return []
+
+  const importoMill = criterio === 'mista'
+    ? importo * ((parseFloat(percentualeMillesimi) || 100) / 100)
+    : importo
+  const importoFisso = importo - importoMill
+
+  return unitaList.map(u => {
+    const mill = tabella.millesimi_unita.find(m => m.unita_id === u.id)
+    const vMill = parseFloat(mill?.valore || 0)
+    const qMill = (vMill / totMill) * importoMill
+    const qFissa = unitaList.length > 0 ? importoFisso / unitaList.length : 0
+    return {
+      unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
+      importo: Math.round((qMill + qFissa) * 100) / 100,
+      millesimi: vMill,
+    }
+  })
+}
+
+export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onSaveBatch, onCancel, fromFattura = false, prefillData = null, onRefreshTabelle = null, initialFile = null, initialAiDatiEstratti = null }) {
   const [strutturandoDoc, setStrutturandoDoc] = useState(false)
 
   const tabelleAssociate = useMemo(() => {
@@ -208,12 +257,110 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [forceSave, setForceSave] = useState(false)
   const [checkingDuplicate, setCheckingDuplicate] = useState(false)
 
-  // Stato import fattura
+  // Stato import fattura singola
   const [loadingFattura, setLoadingFattura] = useState(false)
   const [fatturaImportata, setFatturaImportata] = useState(!!initialAiDatiEstratti)
   const [dragOver, setDragOver] = useState(false)
   const [errFattura, setErrFattura] = useState(null)
   const fileInputRef = useRef()
+
+  // Stato import batch multi-fattura (fino a 5 file)
+  const [isBatchMode, setIsBatchMode] = useState(false)
+  const [codaFatture, setCodaFatture] = useState([])
+  const [savingBatch, setSavingBatch] = useState(false)
+
+  const avviaLottoFatture = async (filesList) => {
+    if (!filesList || !filesList.length) return
+    setErrFattura(null)
+
+    let targetFiles = Array.from(filesList)
+    if (targetFiles.length > 5) {
+      targetFiles = targetFiles.slice(0, 5)
+      setErrFattura('Attenzione: sono state accettate le prime 5 fatture (limite massimo per lotto).')
+    }
+
+    setIsBatchMode(true)
+
+    const initialQueue = targetFiles.map((file, idx) => ({
+      id: `batch_${Date.now()}_${idx}`,
+      file,
+      nome: file.name,
+      stato: 'in_attesa',
+      errore: null,
+      fileCompresso: null,
+      estratto: null,
+      form: {
+        descrizione: file.name.replace(/\.[^/.]+$/, ""),
+        importo: '',
+        data_spesa: new Date().toISOString().split('T')[0],
+        fornitore: '',
+        numero_fattura: '',
+        categoria: 'ordinaria',
+        criterio: 'millesimi',
+        tabella_millesimale_id: '',
+        percentuale_millesimi: 100,
+        note: '',
+      },
+      ripartizioni: [],
+      importiManuali: {},
+      showDetails: false,
+    }))
+
+    setCodaFatture(initialQueue)
+
+    for (let i = 0; i < initialQueue.length; i++) {
+      const item = initialQueue[i]
+      setCodaFatture(prev => prev.map((q, idx) => idx === i ? { ...q, stato: 'elaborazione' } : q))
+
+      try {
+        if (item.file.size > 10 * 1024 * 1024) {
+          throw new Error('Il file supera 10MB')
+        }
+
+        const fileCompresso = await comprimiImmagine(item.file)
+        const estratto = await estraiFattura(fileCompresso)
+
+        const CAT_VALIDE = CATEGORIE.map(c => c.value)
+        const catSpesa = CAT_VALIDE.includes(estratto.categoria) ? estratto.categoria : 'ordinaria'
+
+        const trovata = trovaTabellaFuzzy(tabelleAssociate, estratto.descrizione || estratto.fornitore, 'millesimi')
+        const defaultTabella = tabelleAssociate.find(t => !t.id.startsWith('doc_'))?.id || tabelleAssociate[0]?.id || ''
+        const tabId = trovata?.id || defaultTabella
+
+        const formItem = {
+          descrizione: estratto.descrizione || item.form.descrizione,
+          importo: estratto.importo_totale != null ? String(estratto.importo_totale) : '',
+          data_spesa: estratto.data_fattura || item.form.data_spesa,
+          fornitore: estratto.fornitore || '',
+          numero_fattura: estratto.numero_fattura || '',
+          categoria: catSpesa,
+          criterio: 'millesimi',
+          tabella_millesimale_id: tabId,
+          percentuale_millesimi: 100,
+          note: estratto.note || '',
+        }
+
+        const initialRipartizioni = calcolaRipartizioniBatch(formItem.importo, formItem.criterio, formItem.tabella_millesimale_id, formItem.percentuale_millesimi, {}, unita, tabelleAssociate)
+
+        setCodaFatture(prev => prev.map((q, idx) => idx === i ? {
+          ...q,
+          stato: 'completato',
+          fileCompresso,
+          estratto,
+          form: formItem,
+          ripartizioni: initialRipartizioni,
+        } : q))
+
+      } catch (err) {
+        console.error(`Errore elaborazione fattura ${item.nome}:`, err)
+        setCodaFatture(prev => prev.map((q, idx) => idx === i ? {
+          ...q,
+          stato: 'errore',
+          errore: err.message || 'Estrazione fallita'
+        } : q))
+      }
+    }
+  }
 
   useEffect(() => {
     if (spesaInEdit) {
@@ -380,7 +527,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     if (!tabella?.millesimi_unita?.length) { setRipartizioni([]); return }
 
     const totMill = tabella.millesimi_unita.reduce((s, m) => s + parseFloat(m.valore || 0), 0)
-    if (!totMill) return
+    if (!totMill) { setRipartizioni([]); return }
 
     const importoMill = form.criterio === 'mista'
       ? importo * (parseFloat(form.percentuale_millesimi) / 100)
@@ -442,13 +589,148 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const handleDrop = (e) => {
     e.preventDefault()
     setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) elaboraFattura(file)
+    const files = Array.from(e.dataTransfer.files || [])
+    if (files.length === 1) {
+      elaboraFattura(files[0])
+    } else if (files.length > 1) {
+      avviaLottoFatture(files)
+    }
   }
 
   const handleFileInput = (e) => {
-    const file = e.target.files?.[0]
-    if (file) elaboraFattura(file)
+    const files = Array.from(e.target.files || [])
+    if (files.length === 1) {
+      elaboraFattura(files[0])
+    } else if (files.length > 1) {
+      avviaLottoFatture(files)
+    }
+  }
+
+  const updateBatchItemForm = (id, field, value) => {
+    setCodaFatture(prev => prev.map(item => {
+      if (item.id !== id) return item
+      const updatedForm = { ...item.form, [field]: value }
+      const updatedRipartizioni = calcolaRipartizioniBatch(
+        updatedForm.importo,
+        updatedForm.criterio,
+        updatedForm.tabella_millesimale_id,
+        updatedForm.percentuale_millesimi,
+        item.importiManuali,
+        unita,
+        tabelleAssociate
+      )
+      return {
+        ...item,
+        form: updatedForm,
+        ripartizioni: updatedRipartizioni
+      }
+    }))
+  }
+
+  const updateBatchItemImportoManuale = (id, unitaId, val) => {
+    setCodaFatture(prev => prev.map(item => {
+      if (item.id !== id) return item
+      const updatedImporti = { ...item.importiManuali, [unitaId]: val }
+      const updatedRipartizioni = calcolaRipartizioniBatch(
+        item.form.importo,
+        'manuale',
+        item.form.tabella_millesimale_id,
+        item.form.percentuale_millesimi,
+        updatedImporti,
+        unita,
+        tabelleAssociate
+      )
+      return {
+        ...item,
+        importiManuali: updatedImporti,
+        ripartizioni: updatedRipartizioni
+      }
+    }))
+  }
+
+  const toggleBatchItemDetails = (id) => {
+    setCodaFatture(prev => prev.map(item => item.id === id ? { ...item, showDetails: !item.showDetails } : item))
+  }
+
+  const removeBatchItem = (id) => {
+    setCodaFatture(prev => {
+      const filtered = prev.filter(item => item.id !== id)
+      if (filtered.length === 0) {
+        setIsBatchMode(false)
+      }
+      return filtered
+    })
+  }
+
+  const handleSalvaBatch = async () => {
+    const lottoCompletato = codaFatture.filter(item => item.stato === 'completato')
+    if (!lottoCompletato.length) {
+      alert('Nessuna fattura estratta con successo nel lotto.')
+      return
+    }
+
+    for (const item of lottoCompletato) {
+      if (!item.form.descrizione?.trim()) {
+        alert(`Inserisci una descrizione valida per la fattura: ${item.nome}`)
+        return
+      }
+      if (!item.form.importo || parseFloat(item.form.importo) <= 0) {
+        alert(`Inserisci un importo valido per la fattura: ${item.nome}`)
+        return
+      }
+      if (item.form.criterio !== 'quota_fissa' && item.form.criterio !== 'manuale' && !item.form.tabella_millesimale_id) {
+        alert(`Seleziona una tabella millesimale per la fattura: ${item.nome}`)
+        return
+      }
+      if (!item.ripartizioni || item.ripartizioni.length === 0) {
+        alert(`Impossibile ripartire la spesa per "${item.nome}": verifica che la tabella millesimale contenga quote e unità valide.`)
+        return
+      }
+    }
+
+    setSavingBatch(true)
+    try {
+      const lottoPayload = lottoCompletato.map(item => ({
+        payload: {
+          esercizio_id: esercizioId,
+          condominio_id: condominioId,
+          descrizione: item.form.descrizione,
+          importo: parseFloat(item.form.importo),
+          data_spesa: item.form.data_spesa,
+          categoria: item.form.categoria,
+          tipo_lavoro: 'ordinario',
+          criterio: item.form.criterio,
+          tabella_millesimale_id: item.form.tabella_millesimale_id || null,
+          percentuale_millesimi: parseFloat(item.form.percentuale_millesimi) || 100,
+          fornitore: item.form.fornitore,
+          numero_fattura: item.form.numero_fattura,
+          note: item.form.note,
+        },
+        ripartizioni: item.ripartizioni.map(r => ({
+          unita_id: r.unita_id,
+          importo: r.importo,
+          millesimi_usati: r.millesimi != null ? r.millesimi : null,
+          ...(item.form.criterio === 'manuale'
+            ? { override_manuale: true, importo_override: r.importo_override ?? r.importo }
+            : {}),
+        })),
+        fileCaricato: item.fileCompresso,
+        aiDatiEstratti: item.estratto,
+      }))
+
+      if (onSaveBatch) {
+        await onSaveBatch(lottoPayload)
+      } else {
+        for (const spesaData of lottoPayload) {
+          await onSave(spesaData.payload, spesaData.ripartizioni, spesaData.fileCaricato, spesaData.aiDatiEstratti)
+        }
+      }
+    } catch (err) {
+      console.error('Errore salvataggio batch:', err)
+      alert('Errore durante il salvataggio del lotto: ' + (err.message || err))
+    } finally {
+      setSavingBatch(false)
+    }
   }
 
   // ─── AI suggerimento criterio (firma canonica) ──────────────────────────────
@@ -551,8 +833,9 @@ Formato JSON:
     if (!validate()) return
     setSaving(true)
     try {
+      const { suggerimento_ai, criterio_override, ...formClean } = form
       const payload = {
-        ...form,
+        ...formClean,
         importo: parseFloat(form.importo),
         percentuale_millesimi: parseFloat(form.percentuale_millesimi) || 100,
         tabella_millesimale_id: form.tabella_millesimale_id || null,
@@ -560,7 +843,7 @@ Formato JSON:
       const ripartDaSalvare = ripartizioni.map(r => ({
         unita_id: r.unita_id,
         importo: r.importo,
-        millesimi_usati: r.millesimi || null,
+        millesimi_usati: r.millesimi != null ? r.millesimi : null,
         ...(form.criterio === 'manuale'
           ? { override_manuale: true, importo_override: r.importo_override ?? r.importo }
           : {}),
@@ -573,6 +856,257 @@ Formato JSON:
 
   const confidenzaColore = { alta: '#10b981', media: '#f59e0b', bassa: '#ef4444' }
   const isManuale = form.criterio === 'manuale'
+
+  if (isBatchMode && codaFatture.length > 0) {
+    const completati = codaFatture.filter(item => item.stato === 'completato')
+    const inCorso = codaFatture.filter(item => item.stato === 'elaborazione' || item.stato === 'in_attesa')
+    const errori = codaFatture.filter(item => item.stato === 'errore')
+    const totaleImportoBatch = completati.reduce((sum, item) => sum + (parseFloat(item.form.importo) || 0), 0)
+
+    return (
+      <div style={{ background: 'var(--card-bg)', borderRadius: 16, padding: 28, border: '1px solid var(--border-color)', fontFamily: 'Sora, sans-serif' }}>
+        {/* Header Batch */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div>
+            <h3 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 18, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Layers size={20} style={{ color: '#7c3aed' }} /> Inserimento Multi-Fattura Batch AI (Max 5 file)
+            </h3>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13 }}>
+              {inCorso.length > 0
+                ? `Elaborazione in corso... (${completati.length} di ${codaFatture.length} fatture estratte)`
+                : `Tutte le ${completati.length} fatture sono state elaborate dall'AI. Verifica i dati e salva in 1 click.`}
+            </p>
+          </div>
+          <button
+            onClick={() => { setIsBatchMode(false); setCodaFatture([]); }}
+            style={{
+              background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-color)',
+              borderRadius: 8, padding: '6px 12px', fontSize: 13, cursor: 'pointer', fontFamily: 'Sora, sans-serif'
+            }}
+          >
+            Annulla lotto
+          </button>
+        </div>
+
+        {/* Progress Bar */}
+        {inCorso.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ height: 6, width: '100%', background: 'var(--app-bg)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${(completati.length / codaFatture.length) * 100}%`,
+                background: 'linear-gradient(90deg, #3b82f6, #7c3aed)',
+                transition: 'width 0.3s ease'
+              }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, color: '#3b82f6', fontSize: 12 }}>
+              <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+              <span>Estrazione sequenziale AI in corso... ({completati.length}/${codaFatture.length})</span>
+            </div>
+          </div>
+        )}
+
+        {/* Error alert se presenti */}
+        {errori.length > 0 && (
+          <div style={{ background: '#ef444415', border: '1px solid #ef444433', borderRadius: 10, padding: 12, marginBottom: 16, color: '#ef4444', fontSize: 13 }}>
+            ⚠️ Impossibile estrarre i dati da {errori.length} file (es. file illeggibile). Gli altri file rimangono pronti per il salvataggio.
+          </div>
+        )}
+
+        {/* Griglia anteprima fatture */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+          {codaFatture.map((item, index) => (
+            <div
+              key={item.id}
+              style={{
+                background: 'var(--app-bg)',
+                borderRadius: 12,
+                border: `1px solid ${item.stato === 'errore' ? '#ef444444' : item.stato === 'completato' ? '#10b98144' : 'var(--border-color)'}`,
+                padding: 16,
+                transition: 'all 0.2s'
+              }}
+            >
+              {/* Header Riga */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: item.stato === 'completato' ? 12 : 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <FileText size={18} style={{ color: item.stato === 'completato' ? '#10b981' : item.stato === 'errore' ? '#ef4444' : '#3b82f6' }} />
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14 }}>
+                    #{index + 1} - {item.nome}
+                  </span>
+                  {item.stato === 'elaborazione' && (
+                    <span style={{ fontSize: 11, background: '#3b82f622', color: '#3b82f6', borderRadius: 4, padding: '2px 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> In lettura AI...
+                    </span>
+                  )}
+                  {item.stato === 'completato' && (
+                    <span style={{ fontSize: 11, background: '#10b98122', color: '#10b981', borderRadius: 4, padding: '2px 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Check size={10} /> Estratto
+                    </span>
+                  )}
+                  {item.stato === 'errore' && (
+                    <span style={{ fontSize: 11, background: '#ef444422', color: '#ef4444', borderRadius: 4, padding: '2px 6px' }}>
+                      Errore
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => removeBatchItem(item.id)}
+                  title="Rimuovi fattura dal lotto"
+                  style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4 }}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+
+              {/* Form Riga (solo se completato) */}
+              {item.stato === 'completato' && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1fr 1.5fr 1fr', gap: 10, alignItems: 'center' }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Fornitore</label>
+                      <input
+                        style={{ ...inputStyle, padding: '6px 8px', fontSize: 13 }}
+                        value={item.form.fornitore}
+                        placeholder="Fornitore"
+                        onChange={e => updateBatchItemForm(item.id, 'fornitore', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Descrizione *</label>
+                      <input
+                        style={{ ...inputStyle, padding: '6px 8px', fontSize: 13 }}
+                        value={item.form.descrizione}
+                        placeholder="Descrizione spesa"
+                        onChange={e => updateBatchItemForm(item.id, 'descrizione', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Importo (€) *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        style={{ ...inputStyle, padding: '6px 8px', fontSize: 13 }}
+                        value={item.form.importo}
+                        placeholder="0.00"
+                        onChange={e => updateBatchItemForm(item.id, 'importo', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Data *</label>
+                      <input
+                        type="date"
+                        style={{ ...inputStyle, padding: '6px 8px', fontSize: 12 }}
+                        value={item.form.data_spesa}
+                        onChange={e => updateBatchItemForm(item.id, 'data_spesa', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Tabella Millesimale *</label>
+                      <select
+                        style={{ ...inputStyle, padding: '6px 8px', fontSize: 12 }}
+                        value={item.form.tabella_millesimale_id}
+                        onChange={e => updateBatchItemForm(item.id, 'tabella_millesimale_id', e.target.value)}
+                      >
+                        <option value="">-- Seleziona Tabella --</option>
+                        {tabelleAssociate.map(t => (
+                          <option key={t.id} value={t.id}>{t.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Criterio</label>
+                      <select
+                        style={{ ...inputStyle, padding: '6px 8px', fontSize: 12 }}
+                        value={item.form.criterio}
+                        onChange={e => updateBatchItemForm(item.id, 'criterio', e.target.value)}
+                      >
+                        <option value="millesimi">Millesimi</option>
+                        <option value="quota_fissa">Quota Fissa</option>
+                        <option value="mista">Mista</option>
+                        <option value="manuale">Manuale</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Pulsante espansione Dettaglio Quote per unità */}
+                  <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => toggleBatchItemDetails(item.id)}
+                      style={{
+                        background: 'transparent', border: 'none', color: '#3b82f6', fontSize: 12,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0
+                      }}
+                    >
+                      {item.showDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      <span>{item.showDetails ? 'Nascondi dettaglio quote unità' : `Vedi/Modifica quote ripartite (${item.ripartizioni.length} unità)`}</span>
+                    </button>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      Totale Ripartito: <strong style={{ color: 'var(--text-primary)' }}>€{(item.ripartizioni.reduce((s, r) => s + (r.importo || 0), 0)).toFixed(2)}</strong>
+                    </span>
+                  </div>
+
+                  {/* Accordion Dettaglio Quote per unità */}
+                  {item.showDetails && (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--border-color)', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+                      {item.ripartizioni.map(r => (
+                        <div key={r.unita_id} style={{ background: 'var(--card-bg)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+                          <span>Unità {r.interno} (Sc. {r.scala || '-'})</span>
+                          {item.form.criterio === 'manuale' ? (
+                            <input
+                              type="number"
+                              step="0.01"
+                              style={{ ...inputStyle, width: 80, padding: '2px 6px', fontSize: 12 }}
+                              value={item.importiManuali[r.unita_id] ?? r.importo ?? ''}
+                              onChange={e => updateBatchItemImportoManuale(item.id, r.unita_id, e.target.value)}
+                            />
+                          ) : (
+                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>€{r.importo?.toFixed(2)}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer Salvataggio Batch */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+            Totale Lotto ({completati.length} spese): <strong style={{ color: '#10b981', fontSize: 16 }}>€{totaleImportoBatch.toFixed(2)}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              onClick={() => { setIsBatchMode(false); setCodaFatture([]); }}
+              style={{
+                background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
+                borderRadius: 8, padding: '10px 18px', fontSize: 14, cursor: 'pointer', fontFamily: 'Sora, sans-serif'
+              }}
+            >
+              Annulla
+            </button>
+            <button
+              onClick={handleSalvaBatch}
+              disabled={savingBatch || completati.length === 0}
+              style={{
+                background: savingBatch || completati.length === 0 ? '#6b7280' : 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px',
+                fontSize: 14, fontWeight: 600, cursor: savingBatch || completati.length === 0 ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Sora, sans-serif'
+              }}
+            >
+              {savingBatch ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={18} />}
+              <span>Conferma e Salva {completati.length} {completati.length === 1 ? 'Spesa' : 'Spese'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ background: 'var(--card-bg)', borderRadius: 16, padding: 28, border: '1px solid var(--border-color)' }}>
@@ -601,6 +1135,7 @@ Formato JSON:
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.csv,.txt"
               style={{ display: 'none' }}
               onChange={handleFileInput}
@@ -632,10 +1167,10 @@ Formato JSON:
               <div>
                 <Receipt size={28} style={{ margin: '0 auto 8px', color: 'var(--text-muted)' }} />
                 <div style={{ color: 'var(--text-secondary)', fontSize: 14, fontWeight: 600 }}>
-                  Trascina la fattura qui oppure clicca per selezionarla
+                  Trascina le fatture qui oppure clicca per selezionarle (fino a 5 file)
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
-                  PDF, immagine, DOCX, Excel · L'AI compilerà automaticamente i campi
+                  PDF, immagini, DOCX, Excel · L'AI compilerà i campi ed effettuerà la ripartizione per ciascun file
                 </div>
               </div>
             )}

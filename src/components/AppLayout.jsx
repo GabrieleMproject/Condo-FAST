@@ -8,6 +8,11 @@ import { PlanBadge } from './PlanGate';
 import { toast } from 'react-hot-toast';
 import BrandLogo from './BrandLogo';
 import NotificheDropdown from './NotificheDropdown';
+import GuidaRapidaModal from './GuidaRapidaModal';
+import OnboardingTourModal from './OnboardingTourModal';
+import MasterclassBar from './MasterclassBar';
+import SpotlightHighlight from './SpotlightHighlight';
+import { useMasterclass } from '../hooks/useMasterclass';
 import { supabase } from '../lib/supabaseClient';
 import { useTheme } from '../contexts/ThemeContext';
 import {
@@ -29,7 +34,9 @@ import {
   Inbox,
   Menu,
   X,
-  Clock
+  Clock,
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 
 
@@ -185,6 +192,23 @@ export default function AppLayout() {
     segnaLetta, segnaAllLette,
   } = useNotifiche();
   const [dropdownNotificheOpen, setDropdownNotificheOpen] = useState(false);
+  const [showGuidaModal, setShowGuidaModal] = useState(false);
+  const [showTourModal, setShowTourModal] = useState(false);
+
+  // Hook Masterclass Operativa a 10 Step
+  const {
+    currentStep: masterclassStep,
+    completedSteps: masterclassCompleted,
+    isGuidanceActive: masterclassActive,
+    spotlightTarget,
+    activeStepData: masterclassStepData,
+    totalStepsCount: masterclassTotalSteps,
+    completeStep: completeMasterclassStep,
+    goToStep: goToMasterclassStep,
+    toggleGuidance: toggleMasterclassGuidance,
+    showSpotlight: showMasterclassSpotlight,
+    hideSpotlight: hideMasterclassSpotlight
+  } = useMasterclass();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -475,6 +499,28 @@ export default function AppLayout() {
                 />
               )}
             </div>
+
+            {/* Pulsante Guida & Onboarding */}
+            <button
+              onClick={() => setShowGuidaModal(true)}
+              title="Centro Guida Rapida & Tutorial"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: '6px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'color 0.15s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--primary-color, #3b82f6)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            >
+              <HelpCircle size={18} />
+            </button>
             <div
               onClick={() => setDrawerOpen(true)}
               style={{
@@ -505,6 +551,21 @@ export default function AppLayout() {
         <AiBanner />
 
         <main style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+          {/* Barra Masterclass Operativa a 10 Step */}
+          {(piano === 'trial' || isTrialActive) && (
+            <MasterclassBar
+              currentStep={masterclassStep}
+              completedSteps={masterclassCompleted}
+              activeStepData={masterclassStepData}
+              totalStepsCount={masterclassTotalSteps}
+              onCompleteStep={completeMasterclassStep}
+              onGoToStep={goToMasterclassStep}
+              onToggleGuidance={toggleMasterclassGuidance}
+              onShowSpotlight={showMasterclassSpotlight}
+              isGuidanceActive={masterclassActive}
+            />
+          )}
+
           <Outlet />
         </main>
       </div>
@@ -1103,6 +1164,31 @@ export default function AppLayout() {
           </button>
         </div>
       </div>
+
+      {/* Modali Guida Rapida e Tour Guidato Onboarding */}
+      <GuidaRapidaModal 
+        isOpen={showGuidaModal} 
+        onClose={() => setShowGuidaModal(false)} 
+      />
+
+      <OnboardingTourModal 
+        isOpen={showTourModal} 
+        onClose={() => setShowTourModal(false)} 
+      />
+
+      {/* Spotlight chirurgico per la Masterclass */}
+      {spotlightTarget && (
+        <SpotlightHighlight
+          targetId={spotlightTarget}
+          title={masterclassStepData.title}
+          desc={masterclassStepData.desc}
+          onClose={hideMasterclassSpotlight}
+          onNextStep={() => {
+            completeMasterclassStep(masterclassStepData.id)
+            hideMasterclassSpotlight()
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -829,7 +829,7 @@ export default function ImpostazioniPage() {
             Logo e intestazione usati su consuntivi e documenti esportati (PDF/XLS).
           </p>
 
-          <div style={styles.brandingCard}>
+          <div style={styles.brandingCard} data-tour-target="studio-branding-form">
             <div style={styles.brandingGrid}>
               {/* Logo */}
               <div>

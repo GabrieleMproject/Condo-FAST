@@ -1483,9 +1483,12 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Export PDF Consuntivo Rendiconto (`rendiconto_pdf`):**
   - Avvolto il pulsante *"Esporta PDF"* in `ConsuntivoTab.jsx` con `<PlanGate feature="rendiconto_pdf" compact>`. Sui piani Base, il pulsante viene sostituito da un prompt di upgrade inline compatto con lucchetto (`Funzione Studio — Aggiorna piano`).
 
-### 2. Build e Deploy Unificato
-- **Build Verification:** Eseguito `npm run build` con esito verde (✓ built in 491ms, 2117 moduli compilati).
-- **Deploy Unificato (`deploy_all.mjs`):** Commit `e491e88`, push su GitHub `main` (scatenando il deploy automatico del frontend su Vercel), deploy delle Edge Functions e superamento dello smoke test.
+### 2. Bug Risolti
+- **Crash Dashboard (`DashboardPage.jsx`):** Risolto `ReferenceError: useNavigate is not defined` causato dall'assenza dell'import `useNavigate` da `react-router-dom` nel file `DashboardPage.jsx`, che provocava l'intercettazione e la schermata di errore da parte dell'ErrorBoundary React al caricamento della dashboard.
+
+### 3. Build e Deploy Unificato
+- **Build Verification:** Eseguito `npm run build` con esito verde (✓ built in 479ms, 2117 moduli compilati).
+- **Deploy Unificato (`deploy_all.mjs`):** Commit `97c58ba`, push su GitHub `main` (scatenando il deploy automatico del frontend su Vercel), deploy delle Edge Functions e superamento dello smoke test.
 
 
 

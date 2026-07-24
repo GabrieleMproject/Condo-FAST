@@ -50,6 +50,7 @@ const MESI_IT = [
 ]
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { condomini, loading: loadingCondo, refetch } = useCondomini()
   const { canUse, piano, isTrialActive } = usePlan()
@@ -606,7 +607,7 @@ export default function DashboardPage() {
 
         {/* Colonna Destra: Scadenzario e Urgenze */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ScadenzarioWidget compact={true} />
+          <ScadenzarioWidget compact={true} onNavigate={(path) => navigate(path)} />
 
           <div style={styles.card}>
             <div style={styles.cardHeader}>

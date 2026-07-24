@@ -6,6 +6,12 @@ const BLU = [15, 23, 42]
 const TESTO = [51, 65, 85]
 const GRIGIO = [100, 116, 139]
 
+const formattaData = (dataStr) => {
+  if (!dataStr) return '—'
+  const d = new Date(dataStr)
+  return isNaN(d.getTime()) ? dataStr : d.toLocaleDateString('it-IT')
+}
+
 export function exportBozzaCU(condominio, anno, fornitori, profile, withWatermark = false) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   

@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { usePlan } from './usePlan'
 
 export function useComunicazioni() {
+  const { canUse } = usePlan()
   const [comunicazioni, setComunicazioni] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -33,6 +35,11 @@ export function useComunicazioni() {
   }, [])
 
   const inviaComunicazione = useCallback(async ({ condominioId, destinatari, oggetto, messaggio, tipo, allegati, skipFetch = false }) => {
+    if (!canUse('comunicazioni_resend')) {
+      const msg = 'L\'invio di comunicazioni via email è riservato ai piani Studio e Professional.'
+      setError(msg)
+      throw new Error(msg)
+    }
     setLoading(true)
     setError(null)
     try {

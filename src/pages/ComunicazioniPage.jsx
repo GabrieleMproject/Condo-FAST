@@ -3,6 +3,7 @@ import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { supabase } from '../lib/supabaseClient';
 import { useCondomini } from '../hooks/useCondomini';
 import { useComunicazioni } from '../hooks/useComunicazioni';
+import PlanGate from '../components/PlanGate';
 import { Mail, RefreshCw, Calendar, Eye, Filter, CheckCircle2, AlertTriangle, Send, X } from 'lucide-react';
 
 export default function ComunicazioniPage() {
@@ -59,182 +60,184 @@ export default function ComunicazioniPage() {
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Registro Comunicazioni</h1>
-          <p style={styles.subtitle}>Monitora lo storico delle email e dei solleciti inviati ai condòmini</p>
+    <PlanGate feature="comunicazioni_resend">
+      <div style={styles.page}>
+        <div style={styles.header}>
+          <div>
+            <h1 style={styles.title}>Registro Comunicazioni</h1>
+            <p style={styles.subtitle}>Monitora lo storico delle email e dei solleciti inviati ai condòmini</p>
+          </div>
+          <button onClick={() => fetchComunicazioni()} style={styles.btnRefresh} disabled={loading}>
+            <RefreshCw size={15} style={{ marginRight: 6 }} className={loading ? 'spin' : ''} /> Aggiorna
+          </button>
         </div>
-        <button onClick={() => fetchComunicazioni()} style={styles.btnRefresh} disabled={loading}>
-          <RefreshCw size={15} style={{ marginRight: 6 }} className={loading ? 'spin' : ''} /> Aggiorna
-        </button>
+
+        {/* KPI Row */}
+        <div style={styles.kpiRow}>
+          {[
+            { label: 'Totale Invii', value: totali, icon: Mail, color: '#3b82f6' },
+            { label: 'Consegnate', value: consegnate, icon: CheckCircle2, color: '#10b981' },
+            { label: 'Fallite', value: fallite, icon: AlertTriangle, color: '#ef4444' },
+            { label: 'Tasso Consegna', value: `${tassoConsegna}%`, icon: Send, color: '#8b5cf6' },
+          ].map(k => (
+            <div key={k.label} style={styles.kpiCard}>
+              <div style={styles.kpiContent}>
+                <div style={styles.kpiLabel}>{k.label}</div>
+                <div style={{ ...styles.kpiValue, color: k.color }}>{k.value}</div>
+              </div>
+              <div style={{ ...styles.kpiIconWrap, background: `${k.color}15` }}>
+                <k.icon size={20} color={k.color} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filtri */}
+        <div style={styles.filterBar}>
+          <div style={styles.filterTitle}>
+            <Filter size={14} style={{ marginRight: 6 }} /> Filtri Rapidi
+          </div>
+          <div style={styles.filterInputs}>
+            <div style={styles.filterGroup}>
+              <label style={styles.filterLabel}>Condominio</label>
+              <select value={filtroCondo} onChange={e => setFiltroCondo(e.target.value)} style={styles.select}>
+                <option value="">Tutti</option>
+                {condomini.map(c => (
+                  <option key={c.id} value={c.id}>{c.nome}</option>
+                ))}
+              </select>
+            </div>
+            <div style={styles.filterGroup}>
+              <label style={styles.filterLabel}>Tipo</label>
+              <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={styles.select}>
+                <option value="">Tutti</option>
+                {Object.entries(TIPI).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div style={styles.filterGroup}>
+              <label style={styles.filterLabel}>Stato</label>
+              <select value={filtroStato} onChange={e => setFiltroStato(e.target.value)} style={styles.select}>
+                <option value="">Tutti</option>
+                <option value="inviata">Inviata</option>
+                <option value="consegnata">Consegnata</option>
+                <option value="fallita">Fallita</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabella Registri */}
+        {loading ? (
+          <div style={styles.loadingWrap}>Caricamento registro comunicazioni...</div>
+        ) : comunicazioniFiltrate.length === 0 ? (
+          <div style={styles.emptyWrap}>
+            <Mail size={40} color="var(--text-muted)" style={{ marginBottom: 12 }} />
+            <p style={{ margin: 0 }}>Nessuna comunicazione registrata per i filtri selezionati.</p>
+          </div>
+        ) : (
+          <div style={styles.tableCard}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Data/Ora</th>
+                  <th style={styles.th}>Condominio</th>
+                  <th style={styles.th}>Destinatario</th>
+                  <th style={styles.th}>Oggetto</th>
+                  <th style={styles.th}>Tipo</th>
+                  <th style={styles.th}>Stato</th>
+                  <th style={styles.th}>Azione</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comunicazioniFiltrate.map(c => {
+                  const stato = STATI[c.stato] || STATI.inviata;
+                  return (
+                    <tr key={c.id} style={styles.tr}>
+                      <td style={styles.td}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Calendar size={13} color="#64748b" />
+                          {new Date(c.created_at).toLocaleDateString('it-IT')}{' '}
+                          {new Date(c.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        <span style={{ fontWeight: 600 }}>{condoNomi[c.condominio_id] || 'Generale'}</span>
+                      </td>
+                      <td style={styles.td}>
+                        <div style={styles.destWrap}>
+                          <span style={styles.destNome}>{c.destinatario_nome || 'Condòmino'}</span>
+                          <span style={styles.destEmail}>{c.destinatario_email}</span>
+                        </div>
+                      </td>
+                      <td style={styles.td}>{c.oggetto}</td>
+                      <td style={styles.td}>
+                        <span style={styles.tipoBadge}>{TIPI[c.tipo] || c.tipo}</span>
+                      </td>
+                      <td style={styles.td}>
+                        <span style={{ ...styles.statoBadge, color: stato.color, background: stato.bg }}>
+                          {stato.label}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        <button onClick={() => setSelectedMsg(c)} style={styles.btnView} title="Visualizza Messaggio">
+                          <Eye size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Modale Dettaglio Messaggio */}
+        {selectedMsg && (
+          <div style={styles.overlay}>
+            <div style={styles.modal}>
+              <div style={styles.modalHeader}>
+                <h3 style={styles.modalTitle}>Dettaglio Email Inviata</h3>
+                <button onClick={() => setSelectedMsg(null)} style={styles.btnClose}><X size={18} /></button>
+              </div>
+              <div style={styles.modalBody}>
+                <div style={styles.metaRow}>
+                  <span style={styles.metaLabel}>Destinatario:</span>
+                  <span style={styles.metaValue}>
+                    {selectedMsg.destinatario_nome ? `${selectedMsg.destinatario_nome} <${selectedMsg.destinatario_email}>` : selectedMsg.destinatario_email}
+                  </span>
+                </div>
+                <div style={styles.metaRow}>
+                  <span style={styles.metaLabel}>Condominio:</span>
+                  <span style={styles.metaValue}>{condoNomi[selectedMsg.condominio_id] || 'Generale'}</span>
+                </div>
+                <div style={styles.metaRow}>
+                  <span style={styles.metaLabel}>Data di invio:</span>
+                  <span style={styles.metaValue}>
+                    {new Date(selectedMsg.created_at).toLocaleString('it-IT')}
+                  </span>
+                </div>
+                <div style={styles.metaRow}>
+                  <span style={styles.metaLabel}>Oggetto:</span>
+                  <span style={{ ...styles.metaValue, fontWeight: 700 }}>{selectedMsg.oggetto}</span>
+                </div>
+                <div style={styles.msgContainer}>
+                  <div style={styles.msgLabel}>Contenuto Email (HTML):</div>
+                  <div 
+                    style={styles.msgContent}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedMsg?.messaggio) }} 
+                  />
+                </div>
+              </div>
+              <div style={styles.modalFooter}>
+                <button onClick={() => setSelectedMsg(null)} style={styles.btnSecondary}>Chiudi</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* KPI Row */}
-      <div style={styles.kpiRow}>
-        {[
-          { label: 'Totale Invii', value: totali, icon: Mail, color: '#3b82f6' },
-          { label: 'Consegnate', value: consegnate, icon: CheckCircle2, color: '#10b981' },
-          { label: 'Fallite', value: fallite, icon: AlertTriangle, color: '#ef4444' },
-          { label: 'Tasso Consegna', value: `${tassoConsegna}%`, icon: Send, color: '#8b5cf6' },
-        ].map(k => (
-          <div key={k.label} style={styles.kpiCard}>
-            <div style={styles.kpiContent}>
-              <div style={styles.kpiLabel}>{k.label}</div>
-              <div style={{ ...styles.kpiValue, color: k.color }}>{k.value}</div>
-            </div>
-            <div style={{ ...styles.kpiIconWrap, background: `${k.color}15` }}>
-              <k.icon size={20} color={k.color} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Filtri */}
-      <div style={styles.filterBar}>
-        <div style={styles.filterTitle}>
-          <Filter size={14} style={{ marginRight: 6 }} /> Filtri Rapidi
-        </div>
-        <div style={styles.filterInputs}>
-          <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Condominio</label>
-            <select value={filtroCondo} onChange={e => setFiltroCondo(e.target.value)} style={styles.select}>
-              <option value="">Tutti</option>
-              {condomini.map(c => (
-                <option key={c.id} value={c.id}>{c.nome}</option>
-              ))}
-            </select>
-          </div>
-          <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Tipo</label>
-            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={styles.select}>
-              <option value="">Tutti</option>
-              {Object.entries(TIPI).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
-            </select>
-          </div>
-          <div style={styles.filterGroup}>
-            <label style={styles.filterLabel}>Stato</label>
-            <select value={filtroStato} onChange={e => setFiltroStato(e.target.value)} style={styles.select}>
-              <option value="">Tutti</option>
-              <option value="inviata">Inviata</option>
-              <option value="consegnata">Consegnata</option>
-              <option value="fallita">Fallita</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabella Registri */}
-      {loading ? (
-        <div style={styles.loadingWrap}>Caricamento registro comunicazioni...</div>
-      ) : comunicazioniFiltrate.length === 0 ? (
-        <div style={styles.emptyWrap}>
-          <Mail size={40} color="var(--text-muted)" style={{ marginBottom: 12 }} />
-          <p style={{ margin: 0 }}>Nessuna comunicazione registrata per i filtri selezionati.</p>
-        </div>
-      ) : (
-        <div style={styles.tableCard}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Data/Ora</th>
-                <th style={styles.th}>Condominio</th>
-                <th style={styles.th}>Destinatario</th>
-                <th style={styles.th}>Oggetto</th>
-                <th style={styles.th}>Tipo</th>
-                <th style={styles.th}>Stato</th>
-                <th style={styles.th}>Azione</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comunicazioniFiltrate.map(c => {
-                const stato = STATI[c.stato] || STATI.inviata;
-                return (
-                  <tr key={c.id} style={styles.tr}>
-                    <td style={styles.td}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Calendar size={13} color="#64748b" />
-                        {new Date(c.created_at).toLocaleDateString('it-IT')}{' '}
-                        {new Date(c.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={{ fontWeight: 600 }}>{condoNomi[c.condominio_id] || 'Generale'}</span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={styles.destWrap}>
-                        <span style={styles.destNome}>{c.destinatario_nome || 'Condòmino'}</span>
-                        <span style={styles.destEmail}>{c.destinatario_email}</span>
-                      </div>
-                    </td>
-                    <td style={styles.td}>{c.oggetto}</td>
-                    <td style={styles.td}>
-                      <span style={styles.tipoBadge}>{TIPI[c.tipo] || c.tipo}</span>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={{ ...styles.statoBadge, color: stato.color, background: stato.bg }}>
-                        {stato.label}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <button onClick={() => setSelectedMsg(c)} style={styles.btnView} title="Visualizza Messaggio">
-                        <Eye size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Modale Dettaglio Messaggio */}
-      {selectedMsg && (
-        <div style={styles.overlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Dettaglio Email Inviata</h3>
-              <button onClick={() => setSelectedMsg(null)} style={styles.btnClose}><X size={18} /></button>
-            </div>
-            <div style={styles.modalBody}>
-              <div style={styles.metaRow}>
-                <span style={styles.metaLabel}>Destinatario:</span>
-                <span style={styles.metaValue}>
-                  {selectedMsg.destinatario_nome ? `${selectedMsg.destinatario_nome} <${selectedMsg.destinatario_email}>` : selectedMsg.destinatario_email}
-                </span>
-              </div>
-              <div style={styles.metaRow}>
-                <span style={styles.metaLabel}>Condominio:</span>
-                <span style={styles.metaValue}>{condoNomi[selectedMsg.condominio_id] || 'Generale'}</span>
-              </div>
-              <div style={styles.metaRow}>
-                <span style={styles.metaLabel}>Data di invio:</span>
-                <span style={styles.metaValue}>
-                  {new Date(selectedMsg.created_at).toLocaleString('it-IT')}
-                </span>
-              </div>
-              <div style={styles.metaRow}>
-                <span style={styles.metaLabel}>Oggetto:</span>
-                <span style={{ ...styles.metaValue, fontWeight: 700 }}>{selectedMsg.oggetto}</span>
-              </div>
-              <div style={styles.msgContainer}>
-                <div style={styles.msgLabel}>Contenuto Email (HTML):</div>
-                <div 
-                  style={styles.msgContent}
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedMsg?.messaggio) }} 
-                />
-              </div>
-            </div>
-            <div style={styles.modalFooter}>
-              <button onClick={() => setSelectedMsg(null)} style={styles.btnSecondary}>Chiudi</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </PlanGate>
   );
 }
 

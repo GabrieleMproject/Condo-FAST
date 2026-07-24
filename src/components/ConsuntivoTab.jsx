@@ -7,6 +7,7 @@ import { useMillesimi } from '../hooks/useMillesimi'
 import { estraiStrutturaConsuntivo } from '../lib/fileExtractor'
 import { exportConsuntivoPdf } from '../lib/exportConsuntivo'
 import { useWatermark } from '../hooks/useWatermark'
+import PlanGate from './PlanGate'
 import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame } from 'lucide-react'
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -128,7 +129,9 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
             <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.txt" style={{ display: 'none' }} onChange={onTemplateFile} disabled={uploadingTpl} />
           </label>
           <button style={st.btnGhost} onClick={fetch}><RefreshCw size={14} /> Ricalcola</button>
-          <button style={st.btnPrimary} onClick={scaricaPdf} disabled={!data}><Download size={14} /> Esporta PDF</button>
+          <PlanGate feature="rendiconto_pdf" compact>
+            <button style={st.btnPrimary} onClick={scaricaPdf} disabled={!data}><Download size={14} /> Esporta PDF</button>
+          </PlanGate>
         </div>
       </div>
 

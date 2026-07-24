@@ -1486,9 +1486,12 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 2. Bug Risolti
 - **Crash Dashboard (`DashboardPage.jsx`):** Risolto `ReferenceError: useNavigate is not defined` causato dall'assenza dell'import `useNavigate` da `react-router-dom` nel file `DashboardPage.jsx`, che provocava l'intercettazione e la schermata di errore da parte dell'ErrorBoundary React al caricamento della dashboard.
 
-### 3. Build e Deploy Unificato
-- **Build Verification:** Eseguito `npm run build` con esito verde (✓ built in 479ms, 2117 moduli compilati).
-- **Deploy Unificato (`deploy_all.mjs`):** Commit `97c58ba`, push su GitHub `main` (scatenando il deploy automatico del frontend su Vercel), deploy delle Edge Functions e superamento dello smoke test.
+### 3. Diagnosi Conformità Fiscale (`diagnosiFiscaleEngine.js` & `DiagnosiFiscaleModal.jsx`)
+- **Badge Condominio negli Avvisi:** Ogni rilievo/anomalia della Diagnosi Fiscale viene ora arricchito con il nome del condominio di riferimento (`condominioNome: condominio.nome`). Nella modale `DiagnosiFiscaleModal.jsx`, ciascuna scheda di anomalia mostra in evidenza un badge chiaro con il nome del condominio (`🏢 Nome Condominio`).
+
+### 4. Build e Deploy Unificato
+- **Build Verification:** Eseguito `npm run build` con esito verde (✓ built in 475ms, 2117 moduli compilati).
+- **Deploy Unificato (`deploy_all.mjs`):** Commit `944b160`, push su GitHub `main` (scatenando il deploy automatico del frontend su Vercel), deploy delle Edge Functions e superamento dello smoke test.
 
 
 

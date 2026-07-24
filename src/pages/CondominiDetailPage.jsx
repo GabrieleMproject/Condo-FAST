@@ -23,6 +23,9 @@ import {
   Mail, FileSignature, ShieldAlert,
 } from 'lucide-react'
 import VerbaliAssembleaTab from '../components/VerbaliAssembleaTab'
+import { eseguiDiagnosiConformitaFiscale } from '../lib/diagnosiFiscaleEngine'
+import DiagnosiFiscaleModal from '../components/DiagnosiFiscaleModal'
+import { Activity } from 'lucide-react'
 import { useEsercizioCorrente } from '../hooks/useEsercizioCorrente'
 import EsercizioSelectorHeader from '../components/EsercizioSelectorHeader'
 import DemoCondoBanner from '../components/DemoCondoBanner'
@@ -160,6 +163,42 @@ export default function CondominiDetailPage() {
   const c = useMemo(() => condomini.find(x => x.id === id), [condomini, id])
   const [activeTab, setActiveTab] = useState('panoramica')
   const [saldoConto, setSaldoConto] = useState(null)
+  
+  // Modal Diagnosi Conformità Fiscale
+  const [modalDiagnosiOpen, setModalDiagnosiOpen] = useState(false)
+  const [diagnosiResult, setDiagnosiResult] = useState(null)
+  const [diagnosiBusy, setDiagnosiBusy] = useState(false)
+
+  const handleAvviaDiagnosiFiscale = async () => {
+    if (!c) return
+    setDiagnosiBusy(true)
+    try {
+      const [resFornitori, resUnita, resOccupanti, resFatture, resDeleghe] = await Promise.all([
+        supabase.from('fornitori').select('*'),
+        supabase.from('unita').select('*').eq('condominio_id', id),
+        supabase.from('occupanti_unita').select('*, persona:persona_id(*)'),
+        supabase.from('fatture_fornitori').select('*').eq('condominio_id', id),
+        supabase.from('f24_deleghe').select('*').eq('condominio_id', id)
+      ])
+
+      const resDiagnosi = eseguiDiagnosiConformitaFiscale({
+        condominio: c,
+        fornitori: resFornitori.data || [],
+        unita: resUnita.data || [],
+        occupanti: resOccupanti.data || [],
+        fatture: resFatture.data || [],
+        f24Deleghe: resDeleghe.data || []
+      })
+
+      setDiagnosiResult(resDiagnosi)
+      setModalDiagnosiOpen(true)
+    } catch (err) {
+      console.error("Errore diagnosi:", err)
+      alert("Errore durante l'esecuzione della diagnosi: " + err.message)
+    } finally {
+      setDiagnosiBusy(false)
+    }
+  }
 
   // Hook centralizzato esercizio con sincronizzazione URL
   const {
@@ -231,6 +270,13 @@ export default function CondominiDetailPage() {
         <div style={S.headerActions}>
           <button style={S.btnSecondary} onClick={() => navigate('/condomini')}>
             <ArrowLeft size={15} style={{ marginRight: 6 }} /> Torna
+          </button>
+          <button
+            style={{ ...S.btnSuccess, background: '#10b981' }}
+            onClick={handleAvviaDiagnosiFiscale}
+            disabled={diagnosiBusy}
+          >
+            <Activity size={15} style={{ marginRight: 6 }} /> {diagnosiBusy ? 'Diagnosi...' : 'Diagnosi Conformità Fiscale'}
           </button>
           <button style={S.btnSuccess} data-tour-target="tab-spese-fatture" onClick={() => navigate(`/condomini/${id}/spese`)}>
             <Receipt size={15} style={{ marginRight: 6 }} /> Spese
@@ -400,6 +446,14 @@ export default function CondominiDetailPage() {
         {activeTab === 'storico' && <StoricoTab condominioId={c.id} />}
         {activeTab === 'consuntivo' && <ConsuntivoTab condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
       </div>
+
+      {/* MODALE DIAGNOSI CONFORMITÀ FISCALE */}
+      <DiagnosiFiscaleModal
+        isOpen={modalDiagnosiOpen}
+        onClose={() => setModalDiagnosiOpen(false)}
+        condominioNome={c?.nome}
+        diagnosiResult={diagnosiResult}
+      />
     </div>
   )
 }

@@ -253,3 +253,106 @@ export function exportQuietanzaFornitore(condominio, fornitore, fatture, delegaF
   applyWatermark(doc, withWatermark)
   doc.save(`Quietanza_Ritenuta_${condominio.nome.replace(/\s+/g, '_')}_${fornitore.ragione_sociale.replace(/\s+/g, '_')}.pdf`)
 }
+
+/**
+ * Genera il PDF della quietanza fornitore in memoria e lo restituisce come stringa Base64
+ * (utilizzabile come allegato nell'inoltro via email con Resend).
+ */
+export function generaPdfQuietanzaBase64(condominio, fornitore, fatture, delegaF24, profile, withWatermark = false) {
+  const doc = new jsPDF()
+  
+  const BLU = [37, 99, 235]
+  const SCURO = [30, 41, 59]
+  const TESTO = [71, 85, 105]
+
+  doc.setFontSize(16)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...BLU)
+  doc.text('CERTIFICAZIONE DI VERSAMENTO RITENUTA D\'ACCONTO', 14, 20)
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...TESTO)
+  doc.text(`Rilasciata ai sensi dell'art. 25-ter del D.P.R. 600/1973`, 14, 26)
+
+  let y = 38
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...BLU)
+  doc.text('SOSTITUTO D\'IMPOSTA (CONDOMINIO)', 14, y)
+
+  y += 6
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...SCURO)
+  doc.text(`Denominazione: ${condominio?.nome || '—'}`, 14, y)
+  y += 5
+  doc.text(`Codice Fiscale: ${condominio?.codice_fiscale || '—'}`, 14, y)
+  y += 5
+  doc.text(`Indirizzo: ${condominio?.indirizzo || ''} ${condominio?.cap || ''} ${condominio?.citta || ''} (${condominio?.provincia || ''})`, 14, y)
+
+  y += 10
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...BLU)
+  doc.text('PERCIPIENTE (FORNITORE)', 14, y)
+
+  y += 6
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...SCURO)
+  doc.text(`Ragione Sociale: ${fornitore?.ragione_sociale || '—'}`, 14, y)
+  y += 5
+  doc.text(`Codice Fiscale / P.IVA: ${fornitore?.codice_fiscale || fornitore?.partita_iva || '—'}`, 14, y)
+
+  y += 12
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...BLU)
+  doc.text('DETTAGLIO COMPENSI E RITENUTE APPLICATE', 14, y)
+
+  y += 6
+  const body = fatture.map(f => [
+    f.numero_fattura ? `N° ${f.numero_fattura}` : '—',
+    formattaData(f.data_fattura),
+    formattaData(f.data_pagamento),
+    `€ ${(parseFloat(f.imponibile_ritenuta) || 0).toFixed(2)}`,
+    `${parseFloat(f.aliquota_ritenuta_percentuale || 4)}%`,
+    `€ ${(parseFloat(f.importo_ritenuta || f.ritenuta_acconto || 0)).toFixed(2)}`
+  ])
+
+  autoTable(doc, {
+    startY: y,
+    head: [['N° Fattura', 'Data Fatt.', 'Data Pag.', 'Imponibile Ritenuta', 'Aliquota', 'Ritenuta']],
+    body,
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.5 },
+    headStyles: { fillColor: BLU, textColor: [255, 255, 255] },
+    margin: { left: 14, right: 14 }
+  })
+  
+  y = doc.lastAutoTable.finalY + 12
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...BLU)
+  doc.text(`RIFERIMENTI DEL VERSAMENTO (MODELLO F24)`, 14, y)
+  
+  y += 6
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...TESTO)
+  doc.text(`Stato Versamento: VERSATO (PAGATO)`, 14, y)
+  y += 5
+  doc.text(`Data di pagamento F24: ${formattaData(delegaF24?.data_pagamento)}`, 14, y)
+  y += 5
+  const codTributo = fatture[0]?.codice_tributo_f24 || '1019';
+  doc.text(`Codice Tributo utilizzato: ${codTributo}`, 14, y)
+  y += 5
+  const totaleRitenutaVersata = fatture.reduce((sum, f) => sum + (parseFloat(f.importo_ritenuta || f.ritenuta_acconto || 0)), 0);
+  doc.text(`Importo della ritenuta versata: € ${totaleRitenutaVersata.toFixed(2)}`, 14, y)
+  
+  applyWatermark(doc, withWatermark)
+  
+  const pdfOutput = doc.output('datauristring')
+  const base64Data = pdfOutput.split(',')[1] || ''
+  const filename = `Quietanza_Ritenuta_${(condominio?.nome || 'Condominio').replace(/\s+/g, '_')}_${(fornitore?.ragione_sociale || 'Fornitore').replace(/\s+/g, '_')}.pdf`
+
+  return { base64Data, filename }
+}

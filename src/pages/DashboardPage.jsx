@@ -8,6 +8,7 @@ import { generaCondominioDemo } from '../lib/demoSeed'
 import OnboardingChecklist from '../components/OnboardingChecklist'
 import GuidaRapidaModal from '../components/GuidaRapidaModal'
 import OnboardingTourModal from '../components/OnboardingTourModal'
+import ScadenzarioWidget from '../components/ScadenzarioWidget'
 import {
   Building2,
   CheckCircle2,
@@ -603,11 +604,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Colonna Destra: Urgenze e Notifiche */}
-        <div style={styles.card}>
-          <div style={styles.cardHeader}>
-            <h3 style={styles.cardTitle}>Scadenze & Urgenze</h3>
-          </div>
+        {/* Colonna Destra: Scadenzario e Urgenze */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <ScadenzarioWidget compact={true} />
+
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <h3 style={styles.cardTitle}>Scadenze & Urgenze</h3>
+            </div>
 
           <div style={styles.alertsContainer}>
             {/* F24 Ritenute */}
@@ -699,6 +703,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+    </div>
 
       {/* Modali Guida e Tour Onboarding */}
       <GuidaRapidaModal 

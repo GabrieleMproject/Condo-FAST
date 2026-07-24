@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Landmark, Download, FileSpreadsheet, Building2, User, Calendar, CheckCircle2, AlertTriangle, FileText, Upload, ChevronRight, ExternalLink, Monitor, ShieldCheck, PlayCircle } from 'lucide-react'
-import { exportBozzaCU, exportQuietanzaFornitore } from '../lib/exportFiscale'
+import { exportBozzaCU, exportQuietanzaFornitore, generaPdfQuietanzaBase64 } from '../lib/exportFiscale'
 import { generaCbiF24 } from '../lib/cbiGenerator'
 import { generaTelematicoCU, generaTelematico770 } from '../lib/fiscaleTelematico'
 import { validaDelegheCbi } from '../lib/cbiValidator'
 import PlanGate from '../components/PlanGate'
+import ScadenzarioWidget from '../components/ScadenzarioWidget'
+import { eseguiDiagnosiConformitaFiscale } from '../lib/diagnosiFiscaleEngine'
+import DiagnosiFiscaleModal from '../components/DiagnosiFiscaleModal'
 import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
-import { X, CheckSquare, AlertCircle, Info } from 'lucide-react'
+import { X, CheckSquare, AlertCircle, Info, Mail, Activity } from 'lucide-react'
 
 const formattaData = (dataStr) => {
   if (!dataStr) return '—';
@@ -42,6 +45,84 @@ export default function ModuloFiscalePage() {
   const [cbiValidazione, setCbiValidazione] = useState(null)
   const [cbiDisclaimerAccettato, setCbiDisclaimerAccettato] = useState(false)
   const [delegheDaEsportare, setDelegheDaEsportare] = useState([])
+
+  // Modal Diagnosi Conformità Fiscale & Invio Email Quietanza
+  const [modalDiagnosiOpen, setModalDiagnosiOpen] = useState(false)
+  const [diagnosiResult, setDiagnosiResult] = useState(null)
+  const [diagnosiBusy, setDiagnosiBusy] = useState(false)
+  const [invioEmailBusyId, setInvioEmailBusyId] = useState(null)
+
+  const handleAvviaDiagnosiFiscale = async () => {
+    setDiagnosiBusy(true)
+    try {
+      const condoTarget = condominioSelezionato ? condomini.find(c => c.id === condominioSelezionato) : condomini[0]
+      if (!condoTarget) {
+        alert("Seleziona prima un condominio su cui eseguire la diagnosi.")
+        return
+      }
+
+      const [resUnita, resOccupanti] = await Promise.all([
+        supabase.from('unita').select('*').eq('condominio_id', condoTarget.id),
+        supabase.from('occupanti_unita').select('*, persona:persona_id(*)')
+      ])
+
+      const resDiagnosi = eseguiDiagnosiConformitaFiscale({
+        condominio: condoTarget,
+        fornitori,
+        unita: resUnita.data || [],
+        occupanti: resOccupanti.data || [],
+        fatture,
+        f24Deleghe
+      })
+
+      setDiagnosiResult(resDiagnosi)
+      setModalDiagnosiOpen(true)
+    } catch (e) {
+      console.error("Errore diagnosi:", e)
+      alert("Errore durante l'esecuzione della diagnosi: " + e.message)
+    } finally {
+      setDiagnosiBusy(false)
+    }
+  }
+
+  const handleInviaQuietanzaEmail = async (fat) => {
+    const condominioInfo = condomini.find(c => c.id === fat.condominio_id)
+    const fornitoreInfo = fornitori.find(f => f.id === fat.fornitore_id) || { ragione_sociale: fat.fornitore }
+
+    const emailDest = fornitoreInfo.email || prompt(`Inserisci l'indirizzo email di ${fornitoreInfo.ragione_sociale} per l'invio della quietanza:`)
+    if (!emailDest) return
+
+    setInvioEmailBusyId(fat.id)
+    try {
+      const abb = abbinamenti.find(a => a.fattura_id === fat.id)
+      let delega = { data_pagamento: fat.data_pagamento, importo_totale: fat.importo_ritenuta }
+      if (abb) {
+        const d = f24Deleghe.find(x => x.id === abb.f24_id)
+        if (d) delega = d
+      }
+
+      const { base64Data, filename } = generaPdfQuietanzaBase64(condominioInfo, fornitoreInfo, [fat], delega, profile)
+
+      const bodyPayload = {
+        condominio_id: fat.condominio_id,
+        destinatari: [{ email: emailDest, nome: fornitoreInfo.ragione_sociale }],
+        oggetto: `Certificazione Ritenuta d'Acconto - ${condominioInfo?.nome || 'Condominio'}`,
+        messaggio: `Spettabile ${fornitoreInfo.ragione_sociale},\n\nIn allegato trasmettiamo la certificazione di avvenuto versamento della ritenuta d'acconto ai sensi dell'art. 25-ter D.P.R. 600/1973 per la fattura N° ${fat.numero_fattura || ''} del ${formattaData(fat.data_fattura)}.\n\nCordiali Saluti,\n${profile?.ragione_sociale || 'L\'Amministrazione'}`,
+        tipo: 'email',
+        allegati: [{ filename, content: base64Data, contentType: 'application/pdf' }]
+      }
+
+      const { error: invokeErr } = await supabase.functions.invoke('invia-comunicazione', { body: bodyPayload })
+      if (invokeErr) throw invokeErr
+
+      alert(`Attestazione quietanza inviata con successo all'indirizzo email ${emailDest}!`)
+    } catch (err) {
+      console.error("Errore invio quietanza email:", err)
+      alert("Errore durante l'invio dell'email al fornitore: " + err.message)
+    } finally {
+      setInvioEmailBusyId(null)
+    }
+  }
 
   useEffect(() => {
     loadData()
@@ -352,6 +433,14 @@ export default function ModuloFiscalePage() {
             <p style={styles.subtitle}>Gestione Ritenute d'Acconto, F24 Cumulativi (CBI) e invii telematici Agenzia delle Entrate</p>
           </div>
         </div>
+        <button
+          onClick={handleAvviaDiagnosiFiscale}
+          disabled={diagnosiBusy}
+          style={{ ...styles.btnActionPrimary, background: '#10b981', padding: '10px 16px', fontSize: 13.5 }}
+        >
+          <Activity size={18} />
+          {diagnosiBusy ? 'Diagnosi in corso...' : 'Diagnosi Conformità Fiscale'}
+        </button>
       </div>
 
       {/* Toolbar Filtri */}
@@ -622,6 +711,9 @@ export default function ModuloFiscalePage() {
           {tabAttivo === 'f24' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               
+              {/* Scadenzario Timeline Widget */}
+              <ScadenzarioWidget deleghe={f24Deleghe} />
+
               {/* Esportazione cumulativa CBI (Riservata a Piano Professional) */}
               {delegheFiltrare.some(d => d.stato === 'da_pagare') && (
                 <PlanGate feature="distinta_cbi_f24">
@@ -777,9 +869,18 @@ export default function ModuloFiscalePage() {
                                 € {parseFloat(fat.importo_ritenuta || fat.ritenuta_acconto || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                               </td>
                               <td style={{ ...styles.td, textAlign: 'center' }}>
-                                <button onClick={() => handleGeneraQuietanzaFornitore(fat)} style={styles.btnAction}>
-                                  <Download size={13} /> Scarica Ricevuta PDF
-                                </button>
+                                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                                  <button onClick={() => handleGeneraQuietanzaFornitore(fat)} style={styles.btnAction}>
+                                    <Download size={13} /> Scarica PDF
+                                  </button>
+                                  <button
+                                    onClick={() => handleInviaQuietanzaEmail(fat)}
+                                    disabled={invioEmailBusyId === fat.id}
+                                    style={{ ...styles.btnActionPrimary, fontSize: 12, padding: '4px 10px' }}
+                                  >
+                                    <Mail size={13} /> {invioEmailBusyId === fat.id ? 'Invio...' : 'Invia Email'}
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           )
@@ -937,6 +1038,14 @@ export default function ModuloFiscalePage() {
           </div>
         </div>
       )}
+
+      {/* MODALE DIAGNOSI CONFORMITÀ FISCALE */}
+      <DiagnosiFiscaleModal
+        isOpen={modalDiagnosiOpen}
+        onClose={() => setModalDiagnosiOpen(false)}
+        condominioNome={condomini.find(c => c.id === condominioSelezionato)?.nome || 'Condominio'}
+        diagnosiResult={diagnosiResult}
+      />
     </div>
   )
 }

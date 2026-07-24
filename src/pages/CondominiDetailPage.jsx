@@ -31,11 +31,24 @@ import DemoCondoBanner from '../components/DemoCondoBanner'
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
 const formattaDataOra = (d) => (d && !isNaN(new Date(d).getTime()) ? `${new Date(d).toLocaleDateString('it-IT')} ${new Date(d).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}` : '—')
 
+// ── Helper formattazione piani ─────────────────────────────
+const formattaPiani = (c) => {
+  const ft = c.num_piani_fuori_terra
+  const int = c.num_piani_interrati
+  if (ft != null || int != null) {
+    const parti = []
+    if (ft != null && ft > 0) parti.push(`${ft} fuori terra`)
+    if (int != null && int > 0) parti.push(`${int} interrat${int > 1 ? 'i' : 'o'}`)
+    return parti.length > 0 ? parti.join(', ') : (c.num_piani || '—')
+  }
+  return c.num_piani || '—'
+}
+
 // ── Icone KPI ────────────────────────────────────────────────
 const KPI_ITEMS = (c, saldoConto) => [
   { icon: DoorOpen,      label: 'Unità',            value: c.num_unita || 0 },
   { icon: Layers,        label: 'Scale',             value: c.num_scale || 1 },
-  { icon: ArrowUpDown,   label: 'Piani',             value: c.num_piani || '—' },
+  { icon: ArrowUpDown,   label: 'Piani',             value: formattaPiani(c) },
   { 
     icon: Wallet,        
     label: saldoConto ? `Fondo cassa (al ${formattaData(saldoConto.data)})` : 'Fondo cassa',       
@@ -50,7 +63,7 @@ const KPI_ITEMS = (c, saldoConto) => [
 const DOTAZIONI = (c) => [
   c.presenza_ascensore  && { icon: MoveVertical,    label: 'Ascensore' },
   c.presenza_giardino   && { icon: Trees,           label: 'Giardino' },
-  c.presenza_parcheggio && { icon: ParkingCircle,   label: 'Parcheggio' },
+  c.presenza_parcheggio && { icon: ParkingCircle,   label: 'Box' },
   c.presenza_portiere   && { icon: UserCheck,       label: 'Portiere' },
 ].filter(Boolean)
 
@@ -154,7 +167,7 @@ function StoricoTab({ condominioId }) {
 export default function CondominiDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { condomini, loading } = useCondomini()
+  const { condomini, loading, refetch } = useCondomini()
   const c = useMemo(() => condomini.find(x => x.id === id), [condomini, id])
   const [activeTab, setActiveTab] = useState('panoramica')
   const [saldoConto, setSaldoConto] = useState(null)

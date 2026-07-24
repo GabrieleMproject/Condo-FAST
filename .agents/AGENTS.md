@@ -1406,6 +1406,33 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Script SQL:** Creato `sql/s62_backoffice_v2.sql` con l'aggiunta delle colonne `note_admin`, `ai_bonus_calls` e `feature_flags` a `profiles`, ed aggiornata la RPC `get_utenti_statistiche()`.
 - **Build Verification:** Eseguito `npm run build` con successo (`✓ built in 465ms`, 2113 moduli compilati senza errori).
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S42 (24 Luglio 2026 - Caratteristiche Condominio: Box e Piani fuori terra / interrati)
+
+### 1. Decisioni su UI e Schema DB
+- **Aggiornamento Dicitura Parcheggio → Box:** Sostituita l'etichetta "Parcheggio" con "Box" nel Form Condominio (`CondominiForm.jsx`, tab *Struttura*) e nelle dotazioni della scheda Panoramica Condominio (`CondominiDetailPage.jsx`), preservando per retrocompatibilità la colonna boolean `presenza_parcheggio`.
+- **Separazione Piani fuori terra / interrati (Opzione A):**
+  - **Script SQL (`sql/s42_piani_condominio.sql`):** Aggiunte le colonne `num_piani_fuori_terra` (integer) e `num_piani_interrati` (integer) alla tabella `public.condomini`, con migrazione automatica dei valori esistenti di `num_piani` in `num_piani_fuori_terra`.
+  - **Form Condominio (`CondominiForm.jsx`):** Sostituito il singolo input "Numero piani" con due input dedicati: "Piani fuori terra" e "Piani interrati". Il totale viene salvato anche in `num_piani` per compatibilità retroattiva.
+  - **Scheda Dettaglio (`CondominiDetailPage.jsx`):** Formattata la voce KPI *Piani* per mostrare la combinazione esplicita dei piani fuori terra e interrati (es. `4 fuori terra, 1 interrato`).
+  - **Griglia Condomini (`CondominiPage.jsx`):** Aggiornato il badge di riepilogo nella card per evidenziare i piani fuori terra ed interrati (es. `4 f.t. / 1 int.`).
+
+### 2. Bug Risolti (Bug Fixer & Triager Report)
+- **ReferenceError `refetch` in `CondominiDetailPage.jsx`:** Destrutturata la funzione `refetch` dall'hook `useCondomini()` impedendo un potenziale crash fatale durante l'eliminazione dei condomini demo.
+- **Prop `onSave` in `CondominiForm.jsx`:** Aggiunta la gestione della callback `onSave` in `CondominiForm` per notificare i componenti genitori (`CondominiPage.jsx`) al completamento del salvataggio del condominio.
+- **Calcolo `totalPiani` per valore zero:** Corretta la logica booleana in `CondominiForm.jsx` per evitare che la combinazione `0 fuori terra + 0 interrati` ricada erroneamente in fallback su `form.num_piani`.
+
+### 4. Preset Tabelle Millesimali e Filtro Tipo Unità (`MillesimiEditor.jsx`)
+- **Pulsanti Preset Rapidi (Senza Emoji):** Aggiunti chip di testo preimpostati nel form di creazione nuova tabella (`+ Tabella A - Proprietà generale`, `+ Tabella Box / Autorimesse`, `+ Tabella B - Scale`, `+ Tabella C - Ascensore`, `+ Tabella D - Riscaldamento`) per consentire la creazione istantanea con un solo clic.
+- **Filtro per Tipo Unità nella Griglia:** Inserito il menu a tendina `Tipo:` accanto alla scala per filtrare al volo le unità per destinazione d'uso (*Tutti i tipi*, *Solo Box / Posti auto*, *Solo Appartamenti*, *Solo Cantine / Soffitte*, *Solo Negozi / Uffici*), facilitando la compilazione della Tabella Box o la ripartizione dei millesimi riservata a specifiche categorie.
+
+### 5. Build Verification
+- **Build Verification:** `npm run build` eseguito con esito verde (✓ built in 461ms, 2113 moduli compilati senza errori).
+
+
+
+
 
 
 

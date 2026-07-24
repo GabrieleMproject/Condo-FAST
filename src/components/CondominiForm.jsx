@@ -23,6 +23,8 @@ const EMPTY_FORM = {
   num_unita: '',
   num_scale: '1',
   num_piani: '',
+  num_piani_fuori_terra: '',
+  num_piani_interrati: '',
   presenza_ascensore: false,
   presenza_giardino: false,
   presenza_parcheggio: false,
@@ -35,7 +37,7 @@ const EMPTY_FORM = {
   iban: '',
 }
 
-export default function CondominiForm({ condominio, onClose }) {
+export default function CondominiForm({ condominio, onSave, onClose }) {
   const { createCondominio, updateCondominio } = useCondomini()
   const isEdit = !!condominio
 
@@ -53,6 +55,8 @@ export default function CondominiForm({ condominio, onClose }) {
         num_unita: condominio.num_unita ?? '',
         num_scale: condominio.num_scale ?? '1',
         num_piani: condominio.num_piani ?? '',
+        num_piani_fuori_terra: condominio.num_piani_fuori_terra ?? condominio.num_piani ?? '',
+        num_piani_interrati: condominio.num_piani_interrati ?? '',
         fondo_cassa: condominio.fondo_cassa ?? '',
         quote_annuali: condominio.quote_annuali ?? '',
         data_inizio_amministrazione: condominio.data_inizio_amministrazione ?? '',
@@ -91,27 +95,37 @@ export default function CondominiForm({ condominio, onClose }) {
 
     setSaving(true)
     try {
+      const ft = form.num_piani_fuori_terra !== '' && form.num_piani_fuori_terra !== null ? parseInt(form.num_piani_fuori_terra) : null
+      const int = form.num_piani_interrati !== '' && form.num_piani_interrati !== null ? parseInt(form.num_piani_interrati) : null
+      const totalPiani = (ft !== null || int !== null)
+        ? (ft ?? 0) + (int ?? 0)
+        : (form.num_piani ? parseInt(form.num_piani) : null)
+
       const payload = {
         ...form,
         anno_costruzione: form.anno_costruzione ? parseInt(form.anno_costruzione) : null,
         num_unita: parseInt(form.num_unita) || 0,
         num_scale: parseInt(form.num_scale) || 1,
-        num_piani: form.num_piani ? parseInt(form.num_piani) : null,
+        num_piani_fuori_terra: ft,
+        num_piani_interrati: int,
+        num_piani: totalPiani,
         fondo_cassa: form.fondo_cassa ? parseFloat(form.fondo_cassa) : 0,
         quote_annuali: form.quote_annuali ? parseFloat(form.quote_annuali) : 0,
         data_inizio_amministrazione: form.data_inizio_amministrazione || null,
         iban: form.iban || null,
       }
 
+      let res
       if (isEdit) {
         delete payload.amministratore_id
         delete payload.created_at
         delete payload.updated_at
         delete payload.id
-        await updateCondominio(condominio.id, payload)
+        res = await updateCondominio(condominio.id, payload)
       } else {
-        await createCondominio(payload)
+        res = await createCondominio(payload)
       }
+      if (onSave) onSave(res)
       onClose()
     } catch (err) {
       alert('Errore: ' + err.message)
@@ -242,13 +256,22 @@ export default function CondominiForm({ condominio, onClose }) {
                     min="1"
                   />
                 </Field>
-                <Field label="Numero piani">
+                <Field label="Piani fuori terra">
                   <input
                     type="number"
-                    value={form.num_piani}
-                    onChange={e => set('num_piani', e.target.value)}
+                    value={form.num_piani_fuori_terra}
+                    onChange={e => set('num_piani_fuori_terra', e.target.value)}
                     placeholder="5"
-                    min="1"
+                    min="0"
+                  />
+                </Field>
+                <Field label="Piani interrati">
+                  <input
+                    type="number"
+                    value={form.num_piani_interrati}
+                    onChange={e => set('num_piani_interrati', e.target.value)}
+                    placeholder="1"
+                    min="0"
                   />
                 </Field>
               </div>
@@ -272,7 +295,7 @@ export default function CondominiForm({ condominio, onClose }) {
                   {[
                     { field: 'presenza_ascensore', label: 'Ascensore' },
                     { field: 'presenza_giardino', label: 'Giardino / Aree verdi' },
-                    { field: 'presenza_parcheggio', label: 'Parcheggio' },
+                    { field: 'presenza_parcheggio', label: 'Box' },
                     { field: 'presenza_portiere', label: 'Portiere / Custode' },
                   ].map(({ field, label }) => (
                     <label key={field} className="checkbox-item">

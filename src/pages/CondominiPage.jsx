@@ -155,7 +155,14 @@ export default function CondominiPage() {
                 <div style={S.cardStats}>
                   <span style={{ ...S.stat, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Home size={12} /> {c.num_unita || 0} unità</span>
                   <span style={{ ...S.stat, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Layers size={12} /> {c.num_scale || 1} scale</span>
-                  {c.num_piani && <span style={{ ...S.stat, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Grid size={12} /> {c.num_piani} piani</span>}
+                  {(c.num_piani_fuori_terra || c.num_piani_interrati || c.num_piani) && (
+                    <span style={{ ...S.stat, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Grid size={12} /> 
+                      {c.num_piani_fuori_terra != null || c.num_piani_interrati != null 
+                        ? `${c.num_piani_fuori_terra || 0} f.t.${c.num_piani_interrati ? ` / ${c.num_piani_interrati} int.` : ''}`
+                        : `${c.num_piani} piani`}
+                    </span>
+                  )}
                 </div>
 
                 {/* Badge stato */}

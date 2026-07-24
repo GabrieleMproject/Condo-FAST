@@ -75,6 +75,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filtroScala, setFiltroScala] = useState('Tutte');
+  const [filtroTipo, setFiltroTipo] = useState('Tutti');
   const [soloPartecipanti, setSoloPartecipanti] = useState(false);
 
   // Modals
@@ -249,13 +250,24 @@ export default function MillesimiEditor({ condominioId: propId }) {
       // 2. Scale filter
       const matchesScale = filtroScala === 'Tutte' || (u.scala && u.scala.trim().toUpperCase() === filtroScala.toUpperCase());
 
-      // 3. Only participants (value > 0)
+      // 3. Unit type filter
+      const matchesTipo = (() => {
+        if (filtroTipo === 'Tutti') return true;
+        const t = (u.tipo || parseTipo(u.destinazione_uso, u.numero) || '').toLowerCase();
+        if (filtroTipo === 'box') return t === 'box' || t === 'posto_auto';
+        if (filtroTipo === 'appartamento') return t === 'appartamento';
+        if (filtroTipo === 'cantina') return t === 'cantina' || t === 'soffitta';
+        if (filtroTipo === 'commerciale') return t === 'negozio' || t === 'ufficio' || t === 'magazzino';
+        return t === filtroTipo;
+      })();
+
+      // 4. Only participants (value > 0)
       const val = parseFloat(valori[`${u.id}_${selectedTabellaId}`] || 0);
       const matchesParticipation = !soloPartecipanti || val > 0;
 
-      return matchesSearch && matchesScale && matchesParticipation;
+      return matchesSearch && matchesScale && matchesTipo && matchesParticipation;
     });
-  }, [unita, valori, selectedTabellaId, searchQuery, filtroScala, soloPartecipanti]);
+  }, [unita, valori, selectedTabellaId, searchQuery, filtroScala, filtroTipo, soloPartecipanti]);
 
   // Owner label fallback helper
   function getProprietarioLabel(u) {
@@ -822,6 +834,32 @@ export default function MillesimiEditor({ condominioId: propId }) {
                 onKeyDown={e => e.key === 'Enter' && handleCreaTabella()}
                 autoFocus
               />
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6, marginBottom: 6 }}>
+                {[
+                  'Tabella A - Proprietà generale',
+                  'Tabella Box / Autorimesse',
+                  'Tabella B - Scale',
+                  'Tabella C - Ascensore',
+                  'Tabella D - Riscaldamento',
+                ].map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    style={{
+                      fontSize: 10,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      border: '1px solid var(--border-color)',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => setNuovaTabella(preset)}
+                  >
+                    + {preset}
+                  </button>
+                ))}
+              </div>
               <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                 <button style={{ ...styles.btnPrimary, padding: '4px 8px', fontSize: 11, flex: 1 }} onClick={handleCreaTabella}>Crea</button>
                 <button className="millesimi-btn-secondary" style={{ ...styles.btnSecondary, padding: '4px 8px', fontSize: 11 }} onClick={() => setShowNuovaTabella(false)}>Annulla</button>
@@ -999,6 +1037,21 @@ export default function MillesimiEditor({ condominioId: propId }) {
                       {listScale.map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Tipo:</span>
+                    <select
+                      style={styles.filterSelect}
+                      value={filtroTipo}
+                      onChange={e => setFiltroTipo(e.target.value)}
+                    >
+                      <option value="Tutti">Tutti i tipi</option>
+                      <option value="box">Solo Box / Posti auto</option>
+                      <option value="appartamento">Solo Appartamenti</option>
+                      <option value="cantina">Solo Cantine / Soffitte</option>
+                      <option value="commerciale">Solo Negozi / Uffici</option>
                     </select>
                   </div>
 

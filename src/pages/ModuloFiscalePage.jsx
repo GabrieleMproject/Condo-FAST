@@ -4,8 +4,11 @@ import { Landmark, Download, FileSpreadsheet, Building2, User, Calendar, CheckCi
 import { exportBozzaCU, exportQuietanzaFornitore } from '../lib/exportFiscale'
 import { generaCbiF24 } from '../lib/cbiGenerator'
 import { generaTelematicoCU, generaTelematico770 } from '../lib/fiscaleTelematico'
+import { validaDelegheCbi } from '../lib/cbiValidator'
+import PlanGate from '../components/PlanGate'
 import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
+import { X, CheckSquare, AlertCircle, Info } from 'lucide-react'
 
 const formattaData = (dataStr) => {
   if (!dataStr) return '—';
@@ -29,10 +32,16 @@ export default function ModuloFiscalePage() {
   const [annoSelezionato, setAnnoSelezionato] = useState(new Date().getFullYear().toString())
   const [condominioSelezionato, setCondominioSelezionato] = useState('')
   
-  // Selezione per CBI massivo
+  // Selezione e Validazione Checkout per CBI massivo
   const [selezionatiCbi, setSelezionatiCbi] = useState({}) // f24Id -> boolean
   const [f24UploadingId, setF24UploadingId] = useState(null)
   const [wizardStepCU, setWizardStepCU] = useState(1)
+  
+  // Modal Checkout Fiscale CBI F24
+  const [modalCbiOpen, setModalCbiOpen] = useState(false)
+  const [cbiValidazione, setCbiValidazione] = useState(null)
+  const [cbiDisclaimerAccettato, setCbiDisclaimerAccettato] = useState(false)
+  const [delegheDaEsportare, setDelegheDaEsportare] = useState([])
 
   useEffect(() => {
     loadData()
@@ -192,7 +201,7 @@ export default function ModuloFiscalePage() {
     scaricaFileTxt(txt770, `770_${condominioInfo.nome.replace(/\s+/g, '_')}_${annoSelezionato}.txt`)
   }
 
-  const handleExportMassiveCBI = () => {
+  const handleAvviaExportCBI = () => {
     const idsSelezionati = Object.keys(selezionatiCbi).filter(id => selezionatiCbi[id])
     if (idsSelezionati.length === 0) {
       alert("Seleziona almeno un F24 da esportare.")
@@ -205,8 +214,40 @@ export default function ModuloFiscalePage() {
       f24_dettagli_tributi: tributi.filter(t => t.f24_id === d.id)
     }))
 
-    const cbiText = generaCbiF24(delegheDaGenerare, profile)
+    const resValidazione = validaDelegheCbi(delegheDaGenerare, profile)
+    setDelegheDaEsportare(delegheDaGenerare)
+    setCbiValidazione(resValidazione)
+    setCbiDisclaimerAccettato(false)
+    setModalCbiOpen(true)
+  }
+
+  const handleConfermaEGeneraCBI = async () => {
+    if (!cbiValidazione || !cbiValidazione.ok) {
+      alert("Impossibile procedere: correggi prima gli errori bloccanti indicati nella diagnostica.")
+      return
+    }
+    if (!cbiDisclaimerAccettato) {
+      alert("Spunta la casella di conferma e responsabilità per procedere al download.")
+      return
+    }
+
+    const cbiText = generaCbiF24(delegheDaEsportare, profile)
     scaricaFileTxt(cbiText, `DISTINTA_F24_${new Date().toISOString().split('T')[0]}.txt`)
+
+    // Tracciamento note aggiornate
+    try {
+      const ids = delegheDaEsportare.map(d => d.id)
+      const dataOra = new Date().toLocaleString('it-IT')
+      await supabase.from('f24_deleghe')
+        .update({ note: `Distinta CBI generata il ${dataOra}` })
+        .in('id', ids)
+    } catch (e) {
+      console.warn("Nota distinta non aggiornata:", e)
+    }
+
+    setModalCbiOpen(false)
+    await loadData()
+    alert("Distinta F24 CBI generata con successo. Il file è pronto per l'invio nel tuo home banking.")
   }
 
   const handleUploadQuietanza = async (f24Id, file) => {
@@ -581,16 +622,18 @@ export default function ModuloFiscalePage() {
           {tabAttivo === 'f24' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               
-              {/* Esportazione cumulativa CBI */}
+              {/* Esportazione cumulativa CBI (Riservata a Piano Professional) */}
               {delegheFiltrare.some(d => d.stato === 'da_pagare') && (
-                <div style={styles.massivePanel}>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-                    Seleziona le deleghe "Da Pagare" e scarica la distinta F24 CBI per l'addebito massivo in banca.
+                <PlanGate feature="distinta_cbi_f24">
+                  <div style={styles.massivePanel}>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+                      Seleziona le deleghe "Da Pagare" e scarica la distinta F24 CBI per l'addebito massivo in banca.
+                    </div>
+                    <button onClick={handleAvviaExportCBI} style={styles.btnActionPrimary}>
+                      <FileSpreadsheet size={16} /> Esporta Distinta CBI F24 ({Object.values(selezionatiCbi).filter(Boolean).length} sel.)
+                    </button>
                   </div>
-                  <button onClick={handleExportMassiveCBI} style={styles.btnActionPrimary}>
-                    <FileSpreadsheet size={16} /> Esporta Distinta CBI F24 ({Object.values(selezionatiCbi).filter(Boolean).length} sel.)
-                  </button>
-                </div>
+                </PlanGate>
               )}
 
               {delegheFiltrare.length === 0 ? (
@@ -749,6 +792,150 @@ export default function ModuloFiscalePage() {
             </div>
           )}
         </>
+      )}
+
+      {/* MODALE CHECKOUT & DIAGNOSTICA FISCALE CBI F24 */}
+      {modalCbiOpen && cbiValidazione && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
+        }}>
+          <div style={{
+            background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16,
+            width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto', padding: 28,
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', fontFamily: 'Sora, sans-serif'
+          }}>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: 16, marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <ShieldCheck size={24} color={cbiValidazione.ok ? '#10b981' : '#ef4444'} />
+                <div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                    Checkout & Pre-Flight Check Distinta F24 CBI
+                  </h3>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    Verifica di sicurezza ed assunzione di responsabilità per l'addebito massivo in banca
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setModalCbiOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Status Summary Banner */}
+            <div style={{
+              background: cbiValidazione.ok ? '#10b98115' : '#ef444415',
+              border: `1px solid ${cbiValidazione.ok ? '#10b98140' : '#ef444440'}`,
+              borderRadius: 10, padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12
+            }}>
+              {cbiValidazione.ok ? <ShieldCheck size={28} color="#10b981" /> : <AlertCircle size={28} color="#ef4444" />}
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: cbiValidazione.ok ? '#10b981' : '#ef4444' }}>
+                  {cbiValidazione.ok ? "Verifica completata con successo — Distinta idonea" : "Blocco di sicurezza: Rilevati errori formali"}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
+                  {cbiValidazione.ok 
+                    ? `Totale da addebitare: € ${cbiValidazione.totaleImporto.toLocaleString('it-IT', { minimumFractionDigits: 2 })} su ${delegheDaEsportare.length} deleghe.`
+                    : "Correggi le anomalie bloccanti indicate qui sotto prima di scaricare il file per l'home banking."
+                  }
+                </div>
+              </div>
+            </div>
+
+            {/* Diagnostic Logs (Errors, Warnings, Info) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+              {cbiValidazione.errors.map((err, idx) => (
+                <div key={`err-${idx}`} style={{ background: '#ef444410', borderLeft: '4px solid #ef4444', padding: '10px 14px', borderRadius: 6, fontSize: 13, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  <span>{err}</span>
+                </div>
+              ))}
+
+              {cbiValidazione.warnings.map((warn, idx) => (
+                <div key={`warn-${idx}`} style={{ background: '#f59e0b10', borderLeft: '4px solid #f59e0b', padding: '10px 14px', borderRadius: 6, fontSize: 13, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+                  <span>{warn}</span>
+                </div>
+              ))}
+
+              {cbiValidazione.info.map((inf, idx) => (
+                <div key={`inf-${idx}`} style={{ background: '#2563eb10', borderLeft: '4px solid #2563eb', padding: '10px 14px', borderRadius: 6, fontSize: 13, color: '#60a5fa', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Info size={16} style={{ flexShrink: 0 }} />
+                  <span>{inf}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* List of Deleghe */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 8 }}>
+                Riepilogo Deleghe F24 Incolonnate:
+              </div>
+              <div style={{ border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--app-bg)', borderBottom: '1px solid var(--border-color)' }}>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)' }}>Condominio</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)' }}>IBAN Addebito</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-secondary)' }}>Scadenza</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text-secondary)' }}>Importo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {delegheDaEsportare.map((del, i) => (
+                      <tr key={del.id || i} style={{ borderBottom: '1px solid var(--border-color-2)' }}>
+                        <td style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>{del.condominio?.nome || '-'}</td>
+                        <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontSize: 11 }}>{del.condominio?.iban || 'MANCANTE'}</td>
+                        <td style={{ padding: '8px 12px' }}>{formattaData(del.data_scadenza)}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          € {parseFloat(del.importo_totale || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Disclaimer Checkbox */}
+            {cbiValidazione.ok && (
+              <div style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 16, marginBottom: 24 }}>
+                <label style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={cbiDisclaimerAccettato}
+                    onChange={(e) => setCbiDisclaimerAccettato(e.target.checked)}
+                    style={{ width: 18, height: 18, marginTop: 2, cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: '1.5' }}>
+                    <b>Dichiaro di aver verificato i dati bancari e fiscali.</b> Confermo la copertura sul conto corrente del condominio e la correttezza dei codici tributo. Dichiaro di assumermi la piena responsabilità dell'addebito massivo autorizzato con il file CBI.
+                  </span>
+                </label>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
+              <button onClick={() => setModalCbiOpen(false)} style={styles.btnAction}>
+                Annulla
+              </button>
+              <button
+                onClick={handleConfermaEGeneraCBI}
+                disabled={!cbiValidazione.ok || !cbiDisclaimerAccettato}
+                style={{
+                  ...styles.btnActionPrimary,
+                  padding: '10px 20px', fontSize: 14,
+                  opacity: (cbiValidazione.ok && cbiDisclaimerAccettato) ? 1 : 0.4,
+                  cursor: (cbiValidazione.ok && cbiDisclaimerAccettato) ? 'pointer' : 'not-allowed'
+                }}
+              >
+                <Download size={16} /> Scarica Distinta CBI F24 (.txt)
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

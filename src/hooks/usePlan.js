@@ -77,6 +77,7 @@ const FEATURE_GATES = {
   multi_utente:        ['studio', 'professional'],   // Studio+ supporta ora collaboratori limitati
   api_access:          ['professional'],             // futuro
   open_banking:        ['professional'],             // S51
+  distinta_cbi_f24:    ['professional'],             // Distinta CBI F24 riservata a Professional
 }
 
 const PlanContext = createContext(null)

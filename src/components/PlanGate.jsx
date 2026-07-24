@@ -72,6 +72,7 @@ function getFeatureDesc(feature) {
     postbox_studio:       'Gestisci centralmente tutta la posta dello studio: ricevi spese ed estrai i dati con l\'AI, gestisci subentri anagrafici e calcola i conguagli finanziari in due tempi inviando lettere di benvenuto, e archivia la cronologia di tutte le comunicazioni ricevute dai condòmini.',
     multi_utente:         'Aggiungi fino a 5 collaboratori con ruoli personalizzati (admin, collaboratore, sola lettura).',
     api_access:           'Accedi alle API per integrare con altri software gestionali.',
+    distinta_cbi_f24:     'Genera ed esporta la distinta F24 CBI per l\'addebito massivo in banca con validazione automatica anti-errore.',
   }
   return descs[feature] || 'Questa funzione è disponibile in un piano superiore.'
 }
@@ -90,6 +91,7 @@ function getUpgradeFeatures(piano) {
     professional: [
       'Multi-utente fino a 5 collaboratori',
       'Gestione fornitori e contratti',
+      'Distinta CBI F24 massiva + Open Banking',
       'Alert scadenze automatici',
       'AI calls illimitate',
       'Condomini illimitati',        // ✅ concordato

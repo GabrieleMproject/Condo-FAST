@@ -29,11 +29,19 @@ export function eseguiDiagnosiConformitaFiscale({
     }
   }
 
+  // Helper per inserire anomalie arricchite con il nome del condominio
+  const pushAnomalia = (ano) => {
+    anomalie.push({
+      ...ano,
+      condominioNome: condominio?.nome || ''
+    })
+  }
+
   // ── 1. VERIFICA CONDOMINIO ─────────────────────────────────────────────
   puntiTotali += 3
   
   if (!condominio.codice_fiscale) {
-    anomalie.push({
+    pushAnomalia({
       id: 'c_cf_mancante',
       tipo: 'errore',
       titolo: 'Codice Fiscale Condominio Mancante',
@@ -41,7 +49,7 @@ export function eseguiDiagnosiConformitaFiscale({
       categoria: 'condominio'
     })
   } else if (!validaCodiceFiscaleOPiva(condominio.codice_fiscale)) {
-    anomalie.push({
+    pushAnomalia({
       id: 'c_cf_errato',
       tipo: 'errore',
       titolo: 'Codice Fiscale Condominio Non Valido',
@@ -53,7 +61,7 @@ export function eseguiDiagnosiConformitaFiscale({
   }
 
   if (!condominio.iban) {
-    anomalie.push({
+    pushAnomalia({
       id: 'c_iban_mancante',
       tipo: 'errore',
       titolo: 'IBAN di Addebito Mancante',
@@ -61,7 +69,7 @@ export function eseguiDiagnosiConformitaFiscale({
       categoria: 'condominio'
     })
   } else if (!validaIbanItaliano(condominio.iban)) {
-    anomalie.push({
+    pushAnomalia({
       id: 'c_iban_errato',
       tipo: 'errore',
       titolo: 'IBAN Condominio Non Valido (Check MOD-97 Fallito)',
@@ -73,7 +81,7 @@ export function eseguiDiagnosiConformitaFiscale({
   }
 
   if (!condominio.indirizzo || !condominio.cap || !condominio.citta) {
-    anomalie.push({
+    pushAnomalia({
       id: 'c_indirizzo_incompleto',
       tipo: 'warning',
       titolo: 'Indirizzo Condominio Incompleto',
@@ -92,7 +100,7 @@ export function eseguiDiagnosiConformitaFiscale({
 
   const fornitoriSenzaPiva = fornitoriCondo.filter(f => !f.partita_iva && !f.codice_fiscale)
   if (fornitoriSenzaPiva.length > 0) {
-    anomalie.push({
+    pushAnomalia({
       id: 'f_piva_mancante',
       tipo: 'errore',
       titolo: `${fornitoriSenzaPiva.length} Fornitore/i Senza Partita IVA / CF`,
@@ -105,7 +113,7 @@ export function eseguiDiagnosiConformitaFiscale({
 
   const fornitoriSenzaRegime = fornitoriCondo.filter(f => f.regime_forfettario === undefined || f.regime_forfettario === null)
   if (fornitoriSenzaRegime.length > 0) {
-    anomalie.push({
+    pushAnomalia({
       id: 'f_regime_mancante',
       tipo: 'warning',
       titolo: `Regime Fiscale Non Specificato per ${fornitoriSenzaRegime.length} Fornitori`,
@@ -122,7 +130,7 @@ export function eseguiDiagnosiConformitaFiscale({
   const unitaSenzaCatasto = unitaCondo.filter(u => !u.foglio || !u.particella)
   
   if (unitaSenzaCatasto.length > 0) {
-    anomalie.push({
+    pushAnomalia({
       id: 'u_catasto_incompleto',
       tipo: 'warning',
       titolo: `${unitaSenzaCatasto.length} Unità con Dati Catastali Mancanti`,
@@ -137,7 +145,7 @@ export function eseguiDiagnosiConformitaFiscale({
   const occupantiSenzaCf = occupantiCondo.filter(o => !o.persona?.codice_fiscale && !o.codice_fiscale)
   
   if (occupantiSenzaCf.length > 0) {
-    anomalie.push({
+    pushAnomalia({
       id: 'a_cf_mancante',
       tipo: 'warning',
       titolo: `${occupantiSenzaCf.length} Condòmino/i o Proprietario/i Senza Codice Fiscale`,
@@ -155,7 +163,7 @@ export function eseguiDiagnosiConformitaFiscale({
   const fattureSenzaQuietanza = fattureSoggette.filter(f => !f.ritenuta_pagata && !f.f24_url)
 
   if (fattureSenzaQuietanza.length > 0) {
-    anomalie.push({
+    pushAnomalia({
       id: 'fis_ritenute_in_attesa',
       tipo: 'warning',
       titolo: `${fattureSenzaQuietanza.length} Ritenuta/e d'Acconto in Attesa di F24 Pagato`,
@@ -174,7 +182,7 @@ export function eseguiDiagnosiConformitaFiscale({
   )
 
   if (f24DaPagareScaduti.length > 0) {
-    anomalie.push({
+    pushAnomalia({
       id: 'fis_f24_scaduti',
       tipo: 'errore',
       titolo: `${f24DaPagareScaduti.length} Delega/he F24 Scaduta/e Non Ancora Saldata/e`,

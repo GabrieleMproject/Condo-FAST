@@ -138,9 +138,20 @@ export default function DiagnosiFiscaleModal({ isOpen, onClose, condominioNome, 
                   borderRadius: 8, padding: 14
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  {ano.tipo === 'errore' ? <AlertCircle size={16} color="#ef4444" /> : <AlertTriangle size={16} color="#f59e0b" />}
-                  <span style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--text-primary)' }}>{ano.titolo}</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {ano.tipo === 'errore' ? <AlertCircle size={16} color="#ef4444" /> : <AlertTriangle size={16} color="#f59e0b" />}
+                    <span style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--text-primary)' }}>{ano.titolo}</span>
+                  </div>
+                  {(ano.condominioNome || condominioNome) && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
+                      background: 'var(--app-bg)', border: '1px solid var(--border-color)',
+                      padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap'
+                    }}>
+                      🏢 {ano.condominioNome || condominioNome}
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: '1.4' }}>
                   {ano.descrizione}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Sparkles, CheckCircle2, ChevronRight, Target, Unlock, Lock, ChevronDown, ChevronUp, Award, Download } from 'lucide-react'
+import { Sparkles, CheckCircle2, ChevronRight, ChevronLeft, Target, Unlock, Lock, ChevronDown, ChevronUp, Award, Download } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { scaricaFatturaPdfDemo, scaricaEstrattoContoCsvDemo } from '../lib/demoFilesGenerator'
 
@@ -35,15 +35,14 @@ export default function MasterclassBar({
 
   const progressPercent = Math.round(((completedSteps.length) / totalStepsCount) * 100)
   const isStepCompleted = completedSteps.includes(activeStepData.id)
+  const maxUnlocked = Math.max(0, ...completedSteps, completedSteps.length)
 
   const handleNavigateAndSpotlight = () => {
-    if (activeStepData.pageUrl && !location.pathname.startsWith(activeStepData.pageUrl)) {
+    if (activeStepData?.pageUrl && !location.pathname.startsWith(activeStepData.pageUrl)) {
       navigate(activeStepData.pageUrl)
     }
-    if (onShowSpotlight && activeStepData.target) {
-      setTimeout(() => {
-        onShowSpotlight(activeStepData.target)
-      }, 200)
+    if (onShowSpotlight && activeStepData?.target) {
+      onShowSpotlight(activeStepData.target)
     }
   }
 
@@ -59,6 +58,13 @@ export default function MasterclassBar({
         </div>
 
         <div style={styles.rightGroup}>
+          {currentStep > 0 && (
+            <button onClick={() => onGoToStep(currentStep - 1)} style={styles.btnPrev} title="Torna allo step precedente per rivedere il passaggio">
+              <ChevronLeft size={14} style={{ marginRight: 3 }} />
+              Indietro (Step {currentStep - 1})
+            </button>
+          )}
+
           {activeStepData?.id === 5 && (
             <button onClick={scaricaFatturaPdfDemo} style={styles.btnDownloadDemo} title="Scarica un PDF di fattura fittizio per provare l'OCR AI">
               <Download size={14} style={{ marginRight: 4 }} />
@@ -107,29 +113,39 @@ export default function MasterclassBar({
       {expanded && (
         <div style={styles.stepsDropdown}>
           <div style={styles.dropdownHeader}>
-            <span style={styles.dropdownTitle}>Percorso Operativo Condominiale (Tutti i 10 Step):</span>
-            <button onClick={() => onToggleGuidance(false)} style={styles.btnToggleOff}>
-              <Lock size={13} style={{ marginRight: 4 }} />
-              Disattiva Guida (Sblocca Tutto)
-            </button>
+            <span style={styles.dropdownTitle}>Percorso Guidato Sequenziale (10 Step):</span>
+            {completedSteps.length === totalStepsCount && (
+              <button onClick={() => onToggleGuidance(false)} style={styles.btnToggleOff}>
+                <Lock size={13} style={{ marginRight: 4 }} />
+                Disattiva Guida
+              </button>
+            )}
           </div>
 
           <div style={styles.stepsGrid}>
             {Array.from({ length: totalStepsCount }).map((_, idx) => {
               const isDone = completedSteps.includes(idx)
               const isActive = currentStep === idx
+              const isUnlocked = idx <= maxUnlocked || isDone
+
               return (
                 <button
                   key={idx}
-                  onClick={() => onGoToStep(idx)}
+                  onClick={() => isUnlocked && onGoToStep(idx)}
+                  disabled={!isUnlocked}
+                  title={!isUnlocked ? 'Completa prima gli step precedenti per sbloccare' : `Vai allo Step ${idx}`}
                   style={{
                     ...styles.stepChip,
                     borderColor: isActive ? 'var(--primary-color, #2563eb)' : 'var(--border-color)',
                     background: isActive ? 'rgba(59, 130, 246, 0.15)' : 'var(--app-bg)',
-                    color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)'
+                    color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    opacity: isUnlocked ? 1 : 0.45,
+                    cursor: isUnlocked ? 'pointer' : 'not-allowed'
                   }}
                 >
-                  {isDone ? (
+                  {!isUnlocked ? (
+                    <Lock size={12} color="var(--text-muted)" style={{ marginRight: 6 }} />
+                  ) : isDone ? (
                     <CheckCircle2 size={14} color="#22c55e" style={{ marginRight: 6 }} />
                   ) : (
                     <span style={styles.chipNum}>{idx}</span>
@@ -188,6 +204,18 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
+  },
+  btnPrev: {
+    background: 'rgba(148, 163, 184, 0.12)',
+    color: 'var(--text-secondary, #94a3b8)',
+    border: '1px solid var(--border-color, #334155)',
+    borderRadius: '8px',
+    padding: '6px 12px',
+    fontSize: '12px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center'
   },
   btnSpotlight: {
     background: 'rgba(59, 130, 246, 0.2)',

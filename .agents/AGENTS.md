@@ -1423,9 +1423,10 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Prop `onSave` in `CondominiForm.jsx`:** Aggiunta la gestione della callback `onSave` in `CondominiForm` per notificare i componenti genitori (`CondominiPage.jsx`) al completamento del salvataggio del condominio.
 - **Fix Schermata Nera (Import mancante `ThemeProvider` in `App.jsx`):** Risolto il problema per cui l'applicazione mostrava una schermata nera/vuota a runtime a causa del mancato import del componente `ThemeProvider` da `./contexts/ThemeContext` all'interno di `App.jsx`.
 - **Rebranding & Fix Spotlight Tutorial Guidato:** Rinominata la "Masterclass Operativa" in **"Tutorial Guidato"**. Corretto il problema della riapertura dello spotlight sul pulsante *"Mostrami dove cliccare"*, inserendo il reset di stato prima della ri-assegnazione target. Eliminato l'avanzamento automatico dello step alla chiusura del pop-up, richiedendo l'effettivo completamento dell'operazione o la spunta esplicita.
+- **Tutorial Guidato Sequenziale & Pulsante Indietro:** Reso il tutorial sequenziale ed obbligatorio. Gli step futuri rimangono bloccati 🔒 finché non vengono completati gli step precedenti. Aggiunto il pulsante *"Indietro (Step X)"* per consentire all'utente di tornare a qualsiasi step precedente già svolto e rivedere o ripetere la guida visiva Spotlight in ogni momento.
 
 ### 5. Build Verification
-- **Build Verification:** `npm run build` eseguito con esito verde (✓ built in 503ms, 2113 moduli compilati senza errori).
+- **Build Verification:** `npm run build` eseguito con esito verde (✓ built in 375ms, 2113 moduli compilati senza errori).
 
 
 

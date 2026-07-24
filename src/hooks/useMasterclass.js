@@ -186,10 +186,10 @@ export function useMasterclass() {
         supabase
           .rpc('reward_masterclass_bonus', { target_user_id: user.id })
           .then(({ error }) => {
-            alert('🎉 Complimenti! Hai completato l\'intero percorso Masterclass Condominiale! Ti sono stati accreditati +100 crediti AI bonus gratuiti!')
+            alert('🎉 Complimenti! Hai completato l\'intero Tutorial Guidato Condominiale! Ti sono stati accreditati +100 crediti AI bonus gratuiti!')
           })
           .catch(() => {
-            alert('🎉 Complimenti! Hai completato l\'intero percorso Masterclass Condominiale!')
+            alert('🎉 Complimenti! Hai completato l\'intero Tutorial Guidato Condominiale!')
           })
       }
 
@@ -197,9 +197,10 @@ export function useMasterclass() {
     })
   }, [isGuidanceActive, saveProgress, user])
 
-  // Cambia manualmente step attivo
+  // Cambia manualmente step attivo (solo se sbloccato o precedente)
   const goToStep = useCallback((stepId) => {
-    if (stepId >= 0 && stepId < MASTERCLASS_STEPS.length) {
+    const maxUnlocked = Math.max(0, ...completedSteps, completedSteps.length)
+    if (stepId >= 0 && stepId <= maxUnlocked && stepId < MASTERCLASS_STEPS.length) {
       setCurrentStep(stepId)
       saveProgress(stepId, completedSteps, isGuidanceActive)
     }

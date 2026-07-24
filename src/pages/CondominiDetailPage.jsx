@@ -32,23 +32,12 @@ const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).to
 const formattaDataOra = (d) => (d && !isNaN(new Date(d).getTime()) ? `${new Date(d).toLocaleDateString('it-IT')} ${new Date(d).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}` : '—')
 
 // ── Helper formattazione piani ─────────────────────────────
-const formattaPiani = (c) => {
-  const ft = c.num_piani_fuori_terra
-  const int = c.num_piani_interrati
-  if (ft != null || int != null) {
-    const parti = []
-    if (ft != null && ft > 0) parti.push(`${ft} fuori terra`)
-    if (int != null && int > 0) parti.push(`${int} interrat${int > 1 ? 'i' : 'o'}`)
-    return parti.length > 0 ? parti.join(', ') : (c.num_piani || '—')
-  }
-  return c.num_piani || '—'
-}
-
 // ── Icone KPI ────────────────────────────────────────────────
 const KPI_ITEMS = (c, saldoConto) => [
-  { icon: DoorOpen,      label: 'Unità',            value: c.num_unita || 0 },
-  { icon: Layers,        label: 'Scale',             value: c.num_scale || 1 },
-  { icon: ArrowUpDown,   label: 'Piani',             value: formattaPiani(c) },
+  { icon: DoorOpen,      label: 'Unità',                value: c.num_unita || 0 },
+  { icon: Layers,        label: 'Scale',                 value: c.num_scale || 1 },
+  { icon: ArrowUpDown,   label: 'Piani fuori terra',     value: c.num_piani_fuori_terra != null ? c.num_piani_fuori_terra : (c.num_piani || '—') },
+  { icon: ArrowUpDown,   label: 'Piani interrati',       value: c.num_piani_interrati != null ? c.num_piani_interrati : 0 },
   { 
     icon: Wallet,        
     label: saldoConto ? `Fondo cassa (al ${formattaData(saldoConto.data)})` : 'Fondo cassa',       
@@ -56,8 +45,8 @@ const KPI_ITEMS = (c, saldoConto) => [
       ? `€${Number(saldoConto.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}` 
       : (c.fondo_cassa ? `€${Number(c.fondo_cassa).toLocaleString('it-IT')}` : '—') 
   },
-  { icon: ClipboardList, label: 'Quote annuali',     value: c.quote_annuali ? `€${Number(c.quote_annuali).toLocaleString('it-IT')}` : '—' },
-  { icon: CalendarDays,  label: 'Anno costruzione',  value: c.anno_costruzione || '—' },
+  { icon: ClipboardList, label: 'Quote annuali',         value: c.quote_annuali ? `€${Number(c.quote_annuali).toLocaleString('it-IT')}` : '—' },
+  { icon: CalendarDays,  label: 'Anno costruzione',      value: c.anno_costruzione || '—' },
 ]
 
 const DOTAZIONI = (c) => [

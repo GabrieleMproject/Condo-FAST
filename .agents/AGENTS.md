@@ -1451,6 +1451,28 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Build Verification:** Eseguito `npm run build` con esito verde (✓ built in 501ms, 2114 moduli compilati).
 - **Deploy Unificato (`deploy_all.mjs`):** Eseguito il commit, push su GitHub (deploy automatico su Vercel), deploy delle 8 Edge Functions Supabase e superamento dello smoke test.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S62 / S19 (24 Luglio 2026 - Tris di Perfezionamenti: Inoltro Email Quietanza, Scadenzario & Diagnosi Conformità Fiscale)
+
+### 1. Inoltro 1-Click Quietanza Fornitore via Email
+- **Generatore Base64 (`exportFiscale.js`):** Creata la funzione `generaPdfQuietanzaBase64` per la compilazione in memoria del PDF della certificazione di versamento ritenute.
+- **Integrazione Resend (`ModuloFiscalePage.jsx`):** Aggiunto il pulsante *"✉️ Invia Email"* in Tab 3 per trasmettere l'attestazione allegata direttamente al fornitore via Edge Function `invia-comunicazione`.
+
+### 2. Scadenzario & Timeline Fiscale/Amministrativa (`ScadenzarioWidget.jsx`)
+- **Calcolo Dinamico Scadenze:** Calcolo in tempo reale dei giorni rimanenti per le scadenze F24 mensili (16 del mese), CU (16 marzo), 770 (31 ottobre) e ritenute differite.
+- **Integrazione UI:** Inserito il widget visivo compatto sia nella colonna destra della `DashboardPage.jsx` che in testata al Tab 2 di `ModuloFiscalePage.jsx`.
+
+### 3. Diagnosi Conformità Fiscale (`diagnosiFiscaleEngine.js` & `DiagnosiFiscaleModal.jsx`)
+- **Engine Audit Locale (Zero Costi AI):** Esecuzione dell'analisi di completezza su condominio (CF, IBAN), fornitori (P.IVA/CF, regime), unità/occupanti (CF condòmini, dati catastali Quadro AC) e ritenute in attesa.
+- **Score % & Modale Visiva:** Calcolo del punteggio di conformità in % (0-100%) e visualizzazione della modale con indicatore circolare e filtri per anomalie.
+- **Pulsante 1-Click:** Inserito il pulsante *"🩺 Diagnosi Conformità Fiscale"* nelle sezioni header di `CondominiDetailPage.jsx` e `ModuloFiscalePage.jsx`.
+
+### 4. Build e Deploy Unificato
+- **Build Verification:** `npm run build` completato con successo (✓ built in 481ms, 2117 moduli).
+- **Deploy Unificato (`deploy_all.mjs`):** Commit `894afcd`, push su GitHub `main` (deploy Vercel), deploy delle 8 Edge Functions Supabase e Smoke Test superato.
+
+
 
 
 

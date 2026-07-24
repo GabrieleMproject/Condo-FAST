@@ -1428,6 +1428,30 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 5. Build Verification
 - **Build Verification:** `npm run build` eseguito con esito verde (✓ built in 375ms, 2113 moduli compilati senza errori).
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S61 / S18 (24 Luglio 2026 - Distinta CBI F24: Gating su Professional & Validazione Anti-Errore)
+
+### 1. Decisioni su Feature Gating e Riservatezza Piano
+- **Feature Gating su Professional (`distinta_cbi_f24`):** Riservata l'esportazione massiva della Distinta CBI F24 in `ModuloFiscalePage.jsx` agli abbonati con piano **Professional**.
+- **Coerenza Commerciale:** Collegato il modulo CBI F24 alle funzionalità bancarie avanzate e all'Open Banking (anch'esso riservato a Professional).
+- **Protezione Interfaccia:** Avvolto il pannello di esportazione massiva nel componente `<PlanGate feature="distinta_cbi_f24">` in `ModuloFiscalePage.jsx`.
+
+### 2. Normativa Italiana e Motore di Validazione (`cbiValidator.js`)
+- **Algoritmo IBAN MOD-97 (ISO 13616):** Implementato il controllo algoritmico del checksum per validare la correttezza dell'IBAN del condominio (27 caratteri, formato IT) prima di consentire il download.
+- **Conformità Ritenute d'Acconto (art. 25-ter DPR 600/1973 & DL 223/2006):** Validazione della quadratura dei tributi per contratti d'appalto (4%, codici tributo `1019` e `1020`) e prestazioni di lavoro autonomo (20%, codice tributo `1040`).
+- **Controllo Scadenze & Codice SIA:** Rilevamento di scadenze passate (avviso di potenziale ravvedimento) e segnalazione di codici SIA del mittente non personalizzati.
+
+### 3. Checkout Fiscale & Paracadute Anti-Errore
+- **Modale Pre-Flight Check:** Introdotta la modale di diagnostica prima del download della distinta CBI con feedback visivo differenziato (Rosso = Errori bloccanti, Giallo = Avvisi non bloccanti, Blu = Note informative).
+- **Assunzione di Responsabilità:** Checkbox obbligatoria da spuntare prima di abilitare il pulsante *"Scarica Distinta CBI F24 (.txt)"*.
+- **Locking Anti-Duplicazione:** Aggiornamento delle note delle deleghe con marca temporale di generazione dell'esportazione per evitare l'invio duplice in banca.
+
+### 4. Build e Deploy Unificato
+- **Build Verification:** Eseguito `npm run build` con esito verde (✓ built in 501ms, 2114 moduli compilati).
+- **Deploy Unificato (`deploy_all.mjs`):** Eseguito il commit, push su GitHub (deploy automatico su Vercel), deploy delle 8 Edge Functions Supabase e superamento dello smoke test.
+
+
 
 
 

@@ -32,6 +32,7 @@ import SuperAdminGuard from './components/SuperAdminGuard'
 import MigrazionePage from './pages/MigrazionePage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import WaitlistPage from './pages/WaitlistPage'
+import { ThemeProvider } from './contexts/ThemeContext'
 
 export default function App() {
   return (

@@ -1421,14 +1421,11 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 2. Bug Risolti (Bug Fixer & Triager Report)
 - **ReferenceError `refetch` in `CondominiDetailPage.jsx`:** Destrutturata la funzione `refetch` dall'hook `useCondomini()` impedendo un potenziale crash fatale durante l'eliminazione dei condomini demo.
 - **Prop `onSave` in `CondominiForm.jsx`:** Aggiunta la gestione della callback `onSave` in `CondominiForm` per notificare i componenti genitori (`CondominiPage.jsx`) al completamento del salvataggio del condominio.
-- **Calcolo `totalPiani` per valore zero:** Corretta la logica booleana in `CondominiForm.jsx` per evitare che la combinazione `0 fuori terra + 0 interrati` ricada erroneamente in fallback su `form.num_piani`.
-
-### 4. Preset Tabelle Millesimali e Filtro Tipo Unità (`MillesimiEditor.jsx`)
-- **Pulsanti Preset Rapidi (Senza Emoji):** Aggiunti chip di testo preimpostati nel form di creazione nuova tabella (`+ Tabella A - Proprietà generale`, `+ Tabella Box / Autorimesse`, `+ Tabella B - Scale`, `+ Tabella C - Ascensore`, `+ Tabella D - Riscaldamento`) per consentire la creazione istantanea con un solo clic.
-- **Filtro per Tipo Unità nella Griglia:** Inserito il menu a tendina `Tipo:` accanto alla scala per filtrare al volo le unità per destinazione d'uso (*Tutti i tipi*, *Solo Box / Posti auto*, *Solo Appartamenti*, *Solo Cantine / Soffitte*, *Solo Negozi / Uffici*), facilitando la compilazione della Tabella Box o la ripartizione dei millesimi riservata a specifiche categorie.
+- **Fix Schermata Nera (Import mancante `ThemeProvider` in `App.jsx`):** Risolto il problema per cui l'applicazione mostrava una schermata nera/vuota a runtime a causa del mancato import del componente `ThemeProvider` da `./contexts/ThemeContext` all'interno di `App.jsx`.
 
 ### 5. Build Verification
-- **Build Verification:** `npm run build` eseguito con esito verde (✓ built in 461ms, 2113 moduli compilati senza errori).
+- **Build Verification:** `npm run build` eseguito con esito verde (✓ built in 480ms, 2113 moduli compilati senza errori).
+
 
 
 

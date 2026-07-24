@@ -20,6 +20,7 @@ export default function CondominiPage() {
   const [editItem, setEditItem]   = useState(null)
   const [toast, setToast]         = useState(null)
   const [menuOpen, setMenuOpen]   = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
 
   const filtered = useMemo(() => condomini.filter(c => {
     const matchSearch = !search ||
@@ -47,14 +48,18 @@ export default function CondominiPage() {
 
   const handleDelete = async (id) => {
     if (!confirm('Eliminare questo condominio? L\'operazione è irreversibile.')) return
+    setDeletingId(id)
     try { await deleteCondominio(id); showToast('Condominio eliminato') }
     catch (err) { showToast(err.message, 'error') }
+    finally { setDeletingId(null) }
     setMenuOpen(null)
   }
 
   const handleArchivia = async (id) => {
+    setDeletingId(id)
     try { await archiviaCondominio(id); showToast('Condominio archiviato') }
     catch (err) { showToast(err.message, 'error') }
+    finally { setDeletingId(null) }
     setMenuOpen(null)
   }
 
@@ -144,8 +149,8 @@ export default function CondominiPage() {
                       <div style={S.dropdown}>
                         <button style={{ ...S.ddItem, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => navigate(`/condomini/${c.id}`)}><Eye size={14} /> Visualizza</button>
                         <button style={{ ...S.ddItem, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => { setEditItem(c); setShowForm(true); setMenuOpen(null) }}><Edit3 size={14} /> Modifica</button>
-                        <button style={{ ...S.ddItem, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => handleArchivia(c.id)}><Archive size={14} /> Archivia</button>
-                        <button style={{ ...S.ddItem, color:'#f87171', display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => handleDelete(c.id)}><Trash2 size={14} /> Elimina</button>
+                        <button disabled={deletingId === c.id} style={{ ...S.ddItem, display: 'flex', alignItems: 'center', gap: 8, opacity: deletingId === c.id ? 0.5 : 1 }} onClick={() => handleArchivia(c.id)}><Archive size={14} /> Archivia</button>
+                        <button disabled={deletingId === c.id} style={{ ...S.ddItem, color:'#f87171', display: 'flex', alignItems: 'center', gap: 8, opacity: deletingId === c.id ? 0.5 : 1 }} onClick={() => handleDelete(c.id)}><Trash2 size={14} /> Elimina</button>
                       </div>
                     )}
                   </div>

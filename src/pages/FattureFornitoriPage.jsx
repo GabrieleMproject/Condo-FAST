@@ -692,7 +692,7 @@ const styles = {
   kpiCard:     { flex: '1 1 140px', background: 'var(--card-bg)', borderRadius: 12, padding: '16px 20px', border: '1px solid var(--border-color)' },
   kpiVal:      { fontSize: 20, fontWeight: 700 },
   kpiLabel:    { fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  dropZone:    { border: '2px dashed var(--border-color)', borderRadius: 16, padding: '32px 20px', textAlign: 'center', marginBottom: 20, background: '#1e293b10', transition: 'all 0.2s' },
+  dropZone:    { border: '2px dashed var(--border-color)', borderRadius: 16, padding: '32px 20px', textAlign: 'center', marginBottom: 20, background: 'rgba(128,128,128,0.06)', transition: 'all 0.2s' },
   dropActive:  { borderColor: '#2563eb', background: '#2563eb10' },
   errMsg:      { background: '#ef444415', border: '1px solid #ef444440', borderRadius: 10, padding: '10px 16px', color: '#ef4444', fontSize: 13, marginBottom: 16 },
   toolbar:     { marginBottom: 16 },

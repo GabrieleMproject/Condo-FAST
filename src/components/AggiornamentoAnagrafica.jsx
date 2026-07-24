@@ -30,7 +30,7 @@ function StepDot({ active, done, label, n }) {
       <div style={{
         width:32, height:32, borderRadius:'50%', display:'flex',
         alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700,
-        background: done ? '#16a34a' : active ? '#2563eb' : '#1e293b',
+        background: done ? '#16a34a' : active ? '#2563eb' : 'var(--card-bg)',
         color: (done || active) ? 'white' : '#475569',
         border:`2px solid ${done ? '#16a34a' : active ? '#3b82f6' : 'var(--border-color)'}`,
         transition:'all .3s',
@@ -48,7 +48,7 @@ function StepLine({ done }) {
   return (
     <div style={{
       flex:1, height:2, marginBottom:22,
-      background: done ? '#16a34a' : '#1e293b',
+      background: done ? '#16a34a' : 'var(--card-bg)',
       transition:'background .4s',
     }} />
   )

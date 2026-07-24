@@ -1,5 +1,5 @@
 // src/pages/AnagraficaPage.jsx
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useUnita } from '../hooks/useUnita'
 import { usePersone } from '../hooks/usePersone'
@@ -17,7 +17,7 @@ const TIPO_COLORS = {
   cantina:      { bg: '#2d1f0e', text: '#fb923c', label: 'Cantina' },
   negozio:      { bg: '#2d1b2e', text: '#c084fc', label: 'Negozio' },
   ufficio:      { bg: '#1a2535', text: '#38bdf8', label: 'Ufficio' },
-  altro:        { bg: '#1e293b', text: '#94a3b8', label: 'Altro' },
+  altro:        { bg: 'var(--card-bg)', text: '#94a3b8', label: 'Altro' },
 }
 
 const RUOLO_ICON = { proprietario: Home, inquilino: Key }
@@ -127,7 +127,7 @@ export default function AnagraficaPage() {
   }, [nuovoCondominioId])
 
   // Caricamento dati per vista globale
-  const caricaDatiGlobali = async () => {
+  const caricaDatiGlobali = useCallback(async () => {
     setLoadingGlobal(true)
     try {
       const { data: condData, error: condErr } = await supabase
@@ -175,7 +175,7 @@ export default function AnagraficaPage() {
     } finally {
       setLoadingGlobal(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (!condominioId) {

@@ -198,13 +198,23 @@ Deno.serve(async (req) => {
           i => extraPrices.includes(i.price.id)
         )
 
-        await aggiornaProfile(userId, {
-          piano: piano || 'base',
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          stripe_status: subscription.status,
-          stripe_condomini_item_id: extraItem?.id ?? null,
-        })
+        if (!piano && (subscription.status === 'active' || subscription.status === 'trialing')) {
+          console.warn('[stripe-webhook] Piano non mappato per price_id:', item?.price?.id)
+          await aggiornaProfile(userId, {
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            stripe_status: subscription.status,
+            stripe_condomini_item_id: extraItem?.id ?? null,
+          })
+        } else {
+          await aggiornaProfile(userId, {
+            piano: piano || 'base',
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            stripe_status: subscription.status,
+            stripe_condomini_item_id: extraItem?.id ?? null,
+          })
+        }
 
         // Convalida / applica eventuale sconto referral
         await checkAndApplyReferral(userId)
@@ -233,12 +243,21 @@ Deno.serve(async (req) => {
           i => extraPrices.includes(i.price.id)
         )
 
-        await aggiornaProfile(userId, {
-          piano: piano || 'base',
-          stripe_status: subscription.status,
-          stripe_subscription_id: subscription.id,
-          stripe_condomini_item_id: extraItem?.id ?? null,
-        })
+        if (!piano && (subscription.status === 'active' || subscription.status === 'trialing')) {
+          console.warn('[stripe-webhook] Piano non mappato per price_id:', item?.price?.id)
+          await aggiornaProfile(userId, {
+            stripe_status: subscription.status,
+            stripe_subscription_id: subscription.id,
+            stripe_condomini_item_id: extraItem?.id ?? null,
+          })
+        } else {
+          await aggiornaProfile(userId, {
+            piano: piano || 'base',
+            stripe_status: subscription.status,
+            stripe_subscription_id: subscription.id,
+            stripe_condomini_item_id: extraItem?.id ?? null,
+          })
+        }
 
         // Convalida / applica eventuale sconto referral
         await checkAndApplyReferral(userId)

@@ -477,7 +477,7 @@ export default function PreventivoSection({ condominioId, esercizioId: esercizio
               disabled={!esercizioPrec}
               title={esercizioPrec ? `Calcola dai dati ${esercizioPrec.anno}` : 'Nessun esercizio precedente'}
               style={{
-                background: esercizioPrec ? '#0e7490' : '#1e293b',
+                background: esercizioPrec ? '#0e7490' : 'var(--card-bg)',
                 color: esercizioPrec ? '#fff' : '#475569',
                 border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 16px',
                 fontSize: 13, fontWeight: 600, cursor: esercizioPrec ? 'pointer' : 'not-allowed',

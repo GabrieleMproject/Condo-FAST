@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { toast } from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCondomini } from '../hooks/useCondomini'
@@ -57,22 +58,22 @@ export default function DashboardPage() {
 
   const [loadingStats, setLoadingStats] = useState(true)
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024)
-  const [generatingDemo, setGeneratingDemo] = useState(false)
+  const generatingDemoRef = useRef(false)
   const [showTourModal, setShowTourModal] = useState(false)
   const [showGuidaModal, setShowGuidaModal] = useState(false)
 
   // Auto-creazione Condominio Demo per Trial se l'utente ha 0 condomini
   useEffect(() => {
     async function checkAndSeedDemo() {
-      if (!loadingCondo && user && (piano === 'trial' || isTrialActive) && condomini.length === 0 && !generatingDemo) {
-        setGeneratingDemo(true)
+      if (!loadingCondo && user && (piano === 'trial' || isTrialActive) && condomini.length === 0 && !generatingDemoRef.current) {
+        generatingDemoRef.current = true
         try {
           await generaCondominioDemo(user.id)
           if (refetch) await refetch()
         } catch (err) {
           console.error("Errore auto-creazione demo:", err)
         } finally {
-          setGeneratingDemo(false)
+          generatingDemoRef.current = false
         }
       }
     }
@@ -104,8 +105,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return
+    let isMounted = true
 
     async function fetchDashboardStats() {
+      if (!isMounted) return
       setLoadingStats(true)
       try {
         const oggi = new Date()
@@ -330,6 +333,7 @@ export default function DashboardPage() {
           else inboxSpeseCount++
         })
 
+        if (!isMounted) return
         setStats({
           insolutiTotali,
           rateScaduteCount,
@@ -348,12 +352,14 @@ export default function DashboardPage() {
         })
       } catch (err) {
         console.error("Errore caricamento statistiche dashboard:", err)
+        toast.error('Errore nel caricamento della dashboard')
       } finally {
-        setLoadingStats(false)
+        if (isMounted) setLoadingStats(false)
       }
     }
 
     fetchDashboardStats()
+    return () => { isMounted = false }
   }, [user])
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Amministratore'

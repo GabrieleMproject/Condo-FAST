@@ -284,7 +284,7 @@ export default function EstrattoContoPage() {
           <button style={{...styles.docOpenBtn, background: 'var(--border-color)', color: 'var(--text-muted)', cursor: 'not-allowed'}} disabled>Passa a Pro</button>
         </div>
       }>
-        <div style={{...styles.dropZone, padding: 16, marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: bankingStatus?.status === 'LINKED' ? '#16a34a' : 'var(--border-color)', background: bankingStatus?.status === 'LINKED' ? '#16a34a10' : '#1e293b10'}}>
+        <div style={{...styles.dropZone, padding: 16, marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: bankingStatus?.status === 'LINKED' ? '#16a34a' : 'var(--border-color)', background: bankingStatus?.status === 'LINKED' ? '#16a34a10' : 'rgba(128,128,128,0.06)'}}>
           <div style={{ textAlign: 'left' }}>
             <div style={{fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6}}>
               <Building2 size={16} style={{ color: '#60a5fa' }} /> Sincronizzazione Bancaria (GoCardless)
@@ -527,7 +527,7 @@ dropZone: {
     borderWidth: '2px', borderStyle: 'dashed', borderColor: 'var(--border-color)',
     borderRadius: 16, padding: '36px 20px',
     textAlign: 'center', marginBottom: 20, transition: 'all 0.2s',
-    background: '#1e293b10',
+    background: 'rgba(128,128,128,0.06)',
   },
   dropZoneActive: { borderColor: '#2563eb', background: '#2563eb10' },
   dropIcon: { fontSize: 40, marginBottom: 10 },

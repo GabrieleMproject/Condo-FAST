@@ -402,9 +402,9 @@ Lo Studio Amministrativo`
           </p>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20, background: fase === 'A' ? '#2563eb' : '#1e293b', color: fase === 'A' ? '#fff' : 'var(--text-secondary)' }}>Fase A</span>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20, background: fase === 'A' ? '#2563eb' : 'var(--card-bg)', color: fase === 'A' ? '#fff' : 'var(--text-secondary)' }}>Fase A</span>
           <ArrowRight size={14} style={{ color: 'var(--text-muted)', alignSelf: 'center' }} />
-          <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20, background: fase === 'B' ? '#2563eb' : '#1e293b', color: fase === 'B' ? '#fff' : 'var(--text-secondary)' }}>Fase B</span>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20, background: fase === 'B' ? '#2563eb' : 'var(--card-bg)', color: fase === 'B' ? '#fff' : 'var(--text-secondary)' }}>Fase B</span>
         </div>
       </div>
 

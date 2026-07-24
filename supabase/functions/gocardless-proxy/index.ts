@@ -245,7 +245,8 @@ serve(async (req) => {
                     const { data, error: insertErr } = await supabaseAdmin.from('estratto_conto')
                         .upsert(movimentiDaInserire, { onConflict: 'bank_transaction_id', ignoreDuplicates: true })
                         .select('id');
-                    if (!insertErr && data) insertedCount = data.length;
+                    if (insertErr) throw new Error('Errore inserimento in DB: ' + insertErr.message)
+                    if (data) insertedCount = data.length;
                 }
             }
             

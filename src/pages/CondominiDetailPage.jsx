@@ -211,6 +211,7 @@ export default function CondominiDetailPage() {
 
   useEffect(() => {
     if (!id) return
+    let isMounted = true
     async function fetchSaldoConto() {
       const { data, error } = await supabase
         .from('estratto_conto')
@@ -218,6 +219,8 @@ export default function CondominiDetailPage() {
         .eq('condominio_id', id)
         .order('data_movimento', { ascending: false })
       
+      if (!isMounted) return
+
       if (!error && data && data.length > 0) {
         const movConSaldo = data.find(m => m.saldo != null && m.saldo !== '')
         if (movConSaldo) {
@@ -239,6 +242,7 @@ export default function CondominiDetailPage() {
       }
     }
     fetchSaldoConto()
+    return () => { isMounted = false }
   }, [id, c?.fondo_cassa])
 
   if (loading) return <div style={S.loading}>Caricamento…</div>

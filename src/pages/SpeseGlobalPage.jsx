@@ -813,7 +813,7 @@ export default function SpeseGlobalPage() {
                   <div style={{
                     width: 52,
                     height: 52,
-                    background: '#1e293b',
+                    background: 'var(--card-bg)',
                     borderRadius: 8,
                     display: 'flex',
                     alignItems: 'center',
@@ -1039,7 +1039,7 @@ export default function SpeseGlobalPage() {
                     </div>
                     
                     {/* Contenuto Modale (Preview) */}
-                    <div style={{ flex: 1, background: '#0f172a', position: 'relative' }}>
+                    <div style={{ flex: 1, background: 'var(--app-bg)', position: 'relative' }}>
                       {activeFileUrl ? (
                         (() => {
                           const filename = activeItem.file_name || activeItem.file?.name || ''

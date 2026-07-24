@@ -774,7 +774,7 @@ const S = {
     display: 'flex', flexDirection: 'column', gap: 1
   },
   listItem: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid #1e293b20', gap: 12
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid var(--border-color)', gap: 12
   },
   badge: {
     fontSize: 9, color: 'var(--text-secondary)', background: 'var(--card-bg)', padding: '2px 5px', borderRadius: 4, marginLeft: 6, fontWeight: 600

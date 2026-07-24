@@ -135,6 +135,7 @@ export default function AppLayout() {
 
   useEffect(() => {
     if (!user) return;
+    let mounted = true;
     
     const fetchInboxCount = async () => {
       try {
@@ -149,6 +150,7 @@ export default function AppLayout() {
             if (item.tipo === 'messaggio') return item.stato !== 'elaborato';
             return item.stato !== 'inserito';
           }).length;
+          if (!mounted) return;
           setInboxCount(activeCount);
         }
       } catch (err) {
@@ -171,6 +173,7 @@ export default function AppLayout() {
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [user]);

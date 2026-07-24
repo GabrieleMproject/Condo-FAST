@@ -13,14 +13,14 @@ export default function ProtectedRoute() {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100vh',
-        background: '#0f1117',
+        background: 'var(--app-bg)',
         color: 'var(--text-secondary)',
         fontFamily: 'Sora, sans-serif',
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: 32, height: 32,
-            border: '2px solid #1e293b',
+            border: '2px solid var(--card-bg)',
             borderTop: '2px solid #3b82f6',
             borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',

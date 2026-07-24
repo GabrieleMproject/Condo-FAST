@@ -46,8 +46,13 @@ serve(async (req) => {
                 },
                 body: JSON.stringify({ action: 'sync_transactions', payload: { connectionId: conn.id } })
             });
+            if (!res.ok) {
+              const errBody = await res.text().catch(() => '')
+              console.error(`[sync-bank] Errore sync per connessione ${conn.id}: HTTP ${res.status} - ${errBody.slice(0, 200)}`)
+              return 0
+            }
             const data = await res.json();
-            if (res.ok && data.newTransactions) return data.newTransactions;
+            if (data.newTransactions) return data.newTransactions;
             return 0;
         } catch (syncErr) {
             console.error(`Errore nel sync della connessione ${conn.id}:`, syncErr);

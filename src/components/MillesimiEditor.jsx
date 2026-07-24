@@ -1431,7 +1431,7 @@ const styles = {
   },
   spinner: {
     width: 36, height: 36,
-    border: '3px solid #1e293b',
+    border: '3px solid var(--card-bg)',
     borderTop: '3px solid #2563eb',
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
@@ -1587,7 +1587,7 @@ const styles = {
     borderBottom: '1px solid var(--border-color)',
   },
   td: {
-    padding: '6px 12px', borderBottom: '1px solid #1e293b30',
+    padding: '6px 12px', borderBottom: '1px solid var(--border-color)',
     color: 'var(--text-secondary)', verticalAlign: 'middle'
   },
   badgeUnita: {
@@ -1668,7 +1668,7 @@ const styles = {
     cursor: 'pointer', display: 'block', width: '100%',
   },
   spinnerSmall: {
-    width: 16, height: 16, border: '2px solid #1e293b', borderTop: '2px solid #38bdf8',
+    width: 16, height: 16, border: '2px solid var(--card-bg)', borderTop: '2px solid #38bdf8',
     borderRadius: '50%', animation: 'spin 0.8s linear infinite',
   },
   previewBox: {

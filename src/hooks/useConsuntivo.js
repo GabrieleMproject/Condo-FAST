@@ -264,7 +264,7 @@ export function useConsuntivo(condominioId, esercizioId) {
 
       const matchesKeywords = (txt, keywords) => {
         if (!txt) return false
-        const t = txt.toLowerCase()
+        const t = String(txt).toLowerCase()
         return keywords.some(k => t.includes(k))
       }
 

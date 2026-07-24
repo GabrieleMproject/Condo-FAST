@@ -116,7 +116,15 @@ serve(async (req) => {
     }
 
     // ── 3. Parsing del request body ────────────────────────────────────
-    const body = await req.json()
+    let body
+    try {
+      body = await req.json()
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Body JSON non valido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
     const type = body.type || 'text'
     const model = getModel(body.funzione || body.model)
 

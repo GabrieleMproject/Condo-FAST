@@ -54,7 +54,7 @@ function ItemNotifica({ notifica, letta, onSegna, onNavigate }) {
         {/* Icona */}
         <div style={{
           width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-          background: letta ? '#1e293b' : colori.bg,
+          background: letta ? 'var(--card-bg)' : colori.bg,
           border: `1px solid ${letta ? '#334155' : colori.border}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>

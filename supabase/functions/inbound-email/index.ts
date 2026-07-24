@@ -46,7 +46,7 @@ serve(async (req) => {
     }
 
     const { email_id, from, to, subject, text, html, attachments } = payload.data
-    const emailCorpo = text || html || ''
+    let emailCorpo = text || html || ''
 
     // 3. Estrazione Prefisso Destinatario per identificare l'amministratore
     const toEmails: string[] = Array.isArray(to) ? to : [to]
@@ -183,6 +183,7 @@ serve(async (req) => {
     // 6. Download e caricamento allegati su Storage (DOPO il check isAuthorized — fix H2)
     const uploadedAttachments = []
     const rawAttachments = attachments || []
+    let skippedCount = 0
 
     for (const attachment of rawAttachments) {
       const filename = attachment.filename || attachment.name || 'documento'
@@ -223,6 +224,7 @@ serve(async (req) => {
       // Controllo dimensione massima di 10MB per prevenire crash di RAM e storage
       if (arrayBuffer.byteLength > 10 * 1024 * 1024) {
         console.warn(`[Inbound Email] Allegato ${filename} saltato perché supera il limite di 10MB (dimensione: ${arrayBuffer.byteLength} byte)`)
+        skippedCount++
         continue
       }
 
@@ -249,6 +251,10 @@ serve(async (req) => {
         storagePath,
         base64Content
       })
+    }
+
+    if (skippedCount > 0) {
+      emailCorpo += `\n\n[CondoSmart] Nota: ${skippedCount} allegat${skippedCount === 1 ? 'o' : 'i'} non importat${skippedCount === 1 ? 'o' : 'i'} per limiti di dimensione (max 10MB).`
     }
 
     // 7. Chiamata a Gemini per classificazione ed estrazione dati (fix H1: systemInstruction + canary anti-injection)

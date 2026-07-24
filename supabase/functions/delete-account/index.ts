@@ -44,18 +44,34 @@ serve(async (req) => {
     if (condomini && condomini.length > 0) {
       for (const condo of condomini) {
         try {
-          const { data: fileList, error: listError } = await supabaseAdmin.storage
-            .from('documenti-condominio')
-            .list(condo.id, { limit: 1000 })
-
-          if (!listError && fileList && fileList.length > 0) {
-            const pathsToRemove = fileList.map(f => `${condo.id}/${f.name}`)
-            const { error: removeError } = await supabaseAdmin.storage
+          let allFiles = []
+          let offset = 0
+          let hasMore = true
+          while (hasMore) {
+            const { data: fileList, error: listError } = await supabaseAdmin.storage
               .from('documenti-condominio')
-              .remove(pathsToRemove)
+              .list(condo.id, { limit: 1000, offset })
             
-            if (removeError) {
-              console.error(`Errore rimozione file documenti-condominio per condo ${condo.id}:`, removeError.message)
+            if (listError || !fileList || fileList.length === 0) {
+              hasMore = false
+            } else {
+              allFiles = allFiles.concat(fileList)
+              offset += fileList.length
+              hasMore = fileList.length === 1000
+            }
+          }
+
+          if (allFiles.length > 0) {
+            const pathsToRemove = allFiles.map(f => `${condo.id}/${f.name}`)
+            for (let i = 0; i < pathsToRemove.length; i += 100) {
+              const chunk = pathsToRemove.slice(i, i + 100)
+              const { error: removeError } = await supabaseAdmin.storage
+                .from('documenti-condominio')
+                .remove(chunk)
+              
+              if (removeError) {
+                console.error(`Errore rimozione file documenti-condominio per condo ${condo.id}:`, removeError.message)
+              }
             }
           }
         } catch (storageErr: any) {
@@ -68,11 +84,24 @@ serve(async (req) => {
     const removeFilesRecursive = async (bucket: string, basePath: string, depth = 0) => {
       if (depth > 5) return // Sicurezza: evita ricorsione infinita
       try {
-        const { data: items, error: listError } = await supabaseAdmin.storage
-          .from(bucket)
-          .list(basePath, { limit: 1000 })
+        let items = []
+        let offset = 0
+        let hasMore = true
+        while (hasMore) {
+          const { data: chunk, error: listError } = await supabaseAdmin.storage
+            .from(bucket)
+            .list(basePath, { limit: 1000, offset })
+          
+          if (listError || !chunk || chunk.length === 0) {
+            hasMore = false
+          } else {
+            items = items.concat(chunk)
+            offset += chunk.length
+            hasMore = chunk.length === 1000
+          }
+        }
         
-        if (listError || !items || items.length === 0) return
+        if (items.length === 0) return
 
         // Separa file e directory
         const files = items.filter(i => i.id) // Ha un id = è un file
@@ -81,9 +110,12 @@ serve(async (req) => {
         // Rimuovi i file nel livello corrente
         if (files.length > 0) {
           const paths = files.map(f => `${basePath}/${f.name}`)
-          const { error: removeError } = await supabaseAdmin.storage.from(bucket).remove(paths)
-          if (removeError) {
-            console.error(`Errore rimozione file in ${bucket}/${basePath}:`, removeError.message)
+          for (let i = 0; i < paths.length; i += 100) {
+            const chunk = paths.slice(i, i + 100)
+            const { error: removeError } = await supabaseAdmin.storage.from(bucket).remove(chunk)
+            if (removeError) {
+              console.error(`Errore rimozione file in ${bucket}/${basePath}:`, removeError.message)
+            }
           }
         }
 

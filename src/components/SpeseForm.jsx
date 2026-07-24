@@ -65,7 +65,7 @@ const calcolaRipartizioniBatch = (importoVal, criterio, tabellaId, percentualeMi
 
   if (criterio === 'manuale') {
     return unitaList.map(u => {
-      const val = parseFloat(importiManualiObj?.[u.id])
+      const val = parseFloat(importiManualiObj?.[u.id]) || 0
       return {
         unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
         importo: Number.isFinite(val) ? Math.round(val * 100) / 100 : 0,
@@ -263,6 +263,13 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [dragOver, setDragOver] = useState(false)
   const [errFattura, setErrFattura] = useState(null)
   const fileInputRef = useRef()
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   // Stato import batch multi-fattura (fino a 5 file)
   const [isBatchMode, setIsBatchMode] = useState(false)
@@ -309,6 +316,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     setCodaFatture(initialQueue)
 
     for (let i = 0; i < initialQueue.length; i++) {
+      if (!isMountedRef.current) return
       const item = initialQueue[i]
       setCodaFatture(prev => prev.map((q, idx) => idx === i ? { ...q, stato: 'elaborazione' } : q))
 
@@ -342,6 +350,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
 
         const initialRipartizioni = calcolaRipartizioniBatch(formItem.importo, formItem.criterio, formItem.tabella_millesimale_id, formItem.percentuale_millesimi, {}, unita, tabelleAssociate)
 
+        if (!isMountedRef.current) return
         setCodaFatture(prev => prev.map((q, idx) => idx === i ? {
           ...q,
           stato: 'completato',
@@ -353,6 +362,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
 
       } catch (err) {
         console.error(`Errore elaborazione fattura ${item.nome}:`, err)
+        if (!isMountedRef.current) return
         setCodaFatture(prev => prev.map((q, idx) => idx === i ? {
           ...q,
           stato: 'errore',
@@ -496,7 +506,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   // ─── Ripartizione MANUALE ──────────────────────────────────────────────────
   const calcolaManuale = () => {
     setRipartizioni(unita.map(u => {
-      const val = parseFloat(importiManuali[u.id])
+      const val = parseFloat(importiManuali[u.id]) || 0
       return {
         unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
         importo: Number.isFinite(val) ? Math.round(val * 100) / 100 : 0,
@@ -510,6 +520,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const setImportoManuale = (unitaId, v) =>
     setImportiManuali(m => ({ ...m, [unitaId]: v }))
 
+  // TODO: wrappare in useCallback (M1 bug report)
   const calcolaRipartizioni = () => {
     const importo = parseFloat(form.importo)
     if (!importo) return

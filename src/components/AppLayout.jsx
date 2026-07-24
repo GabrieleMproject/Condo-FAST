@@ -1176,17 +1176,13 @@ export default function AppLayout() {
         onClose={() => setShowTourModal(false)} 
       />
 
-      {/* Spotlight chirurgico per la Masterclass */}
+      {/* Spotlight per il Tutorial Guidato */}
       {spotlightTarget && (
         <SpotlightHighlight
           targetId={spotlightTarget}
           title={masterclassStepData.title}
           desc={masterclassStepData.desc}
           onClose={hideMasterclassSpotlight}
-          onNextStep={() => {
-            completeMasterclassStep(masterclassStepData.id)
-            hideMasterclassSpotlight()
-          }}
         />
       )}
     </div>

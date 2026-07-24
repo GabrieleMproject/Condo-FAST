@@ -104,26 +104,23 @@ export default function SpotlightHighlight({ targetId, title, desc, onClose, onN
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          {onNextStep && (
-            <button
-              onClick={onNextStep}
-              style={{
-                background: 'var(--primary-color, #2563eb)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center'
-              }}
-            >
-              <span>Capito, Prosegui</span>
-              <ChevronRight size={14} style={{ marginLeft: 4 }} />
-            </button>
-          )}
+          <button
+            onClick={onClose}
+            style={{
+              background: 'var(--primary-color, #2563eb)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center'
+            }}
+          >
+            <span>Ho capito</span>
+          </button>
         </div>
       </div>
     </>

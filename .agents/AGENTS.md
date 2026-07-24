@@ -1422,9 +1422,10 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **ReferenceError `refetch` in `CondominiDetailPage.jsx`:** Destrutturata la funzione `refetch` dall'hook `useCondomini()` impedendo un potenziale crash fatale durante l'eliminazione dei condomini demo.
 - **Prop `onSave` in `CondominiForm.jsx`:** Aggiunta la gestione della callback `onSave` in `CondominiForm` per notificare i componenti genitori (`CondominiPage.jsx`) al completamento del salvataggio del condominio.
 - **Fix Schermata Nera (Import mancante `ThemeProvider` in `App.jsx`):** Risolto il problema per cui l'applicazione mostrava una schermata nera/vuota a runtime a causa del mancato import del componente `ThemeProvider` da `./contexts/ThemeContext` all'interno di `App.jsx`.
+- **Rebranding & Fix Spotlight Tutorial Guidato:** Rinominata la "Masterclass Operativa" in **"Tutorial Guidato"**. Corretto il problema della riapertura dello spotlight sul pulsante *"Mostrami dove cliccare"*, inserendo il reset di stato prima della ri-assegnazione target. Eliminato l'avanzamento automatico dello step alla chiusura del pop-up, richiedendo l'effettivo completamento dell'operazione o la spunta esplicita.
 
 ### 5. Build Verification
-- **Build Verification:** `npm run build` eseguito con esito verde (✓ built in 480ms, 2113 moduli compilati senza errori).
+- **Build Verification:** `npm run build` eseguito con esito verde (✓ built in 503ms, 2113 moduli compilati senza errori).
 
 
 

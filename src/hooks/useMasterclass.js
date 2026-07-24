@@ -214,7 +214,10 @@ export function useMasterclass() {
 
   // Attiva spotlight su elemento targhettizzato
   const showSpotlight = useCallback((targetId) => {
-    setSpotlightTarget(targetId)
+    setSpotlightTarget(null)
+    setTimeout(() => {
+      setSpotlightTarget(targetId)
+    }, 50)
   }, [])
 
   const hideSpotlight = useCallback(() => {

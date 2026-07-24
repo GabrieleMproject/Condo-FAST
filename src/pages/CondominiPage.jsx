@@ -78,7 +78,7 @@ export default function CondominiPage() {
           <h1 style={S.title}>Condomini</h1>
           <p style={S.subtitle}>Gestisci il tuo portafoglio condominiale</p>
         </div>
-        <button style={S.btnPrimary} onClick={() => { setEditItem(null); setShowForm(true) }}>
+        <button style={S.btnPrimary} data-tour-target="btn-nuovo-condominio" onClick={() => { setEditItem(null); setShowForm(true) }}>
           + Nuovo condominio
         </button>
       </div>

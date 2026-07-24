@@ -23,11 +23,11 @@ export default function MasterclassBar({
       <div style={styles.miniBar}>
         <div style={styles.miniBarLeft}>
           <Award size={16} color="#3b82f6" />
-          <span style={styles.miniText}>Modalità Masterclass Disattivata (Tutte le funzioni sbloccate)</span>
+          <span style={styles.miniText}>Modalità Tutorial Guidato Disattivata (Tutte le funzioni sbloccate)</span>
         </div>
         <button onClick={() => onToggleGuidance(true)} style={styles.btnMiniLink}>
           <Unlock size={14} style={{ marginRight: 4 }} />
-          Riattiva Percorso Guidato
+          Riattiva Tutorial Guidato
         </button>
       </div>
     )
@@ -43,7 +43,7 @@ export default function MasterclassBar({
     if (onShowSpotlight && activeStepData.target) {
       setTimeout(() => {
         onShowSpotlight(activeStepData.target)
-      }, 300)
+      }, 200)
     }
   }
 
@@ -53,7 +53,7 @@ export default function MasterclassBar({
         <div style={styles.leftGroup}>
           <div style={styles.badge}>
             <Sparkles size={14} style={{ marginRight: 4 }} />
-            MASTERCLASS OPERATIVA {activeStepData?.id ?? 0}/9
+            TUTORIAL GUIDATO {activeStepData?.id ?? 0}/9
           </div>
           <h4 style={styles.stepTitle}>{activeStepData?.title}</h4>
         </div>
@@ -75,18 +75,18 @@ export default function MasterclassBar({
 
           <button onClick={handleNavigateAndSpotlight} style={styles.btnSpotlight}>
             <Target size={15} style={{ marginRight: 6 }} />
-            Mostrami Dove Cliccare
+            Mostrami dove cliccare
           </button>
 
           {!isStepCompleted ? (
             <button onClick={() => onCompleteStep(activeStepData?.id)} style={styles.btnComplete}>
               <CheckCircle2 size={15} style={{ marginRight: 6 }} />
-              Spunta Completato
+              Spunta completato
             </button>
           ) : (
             <span style={styles.completedBadge}>
               <CheckCircle2 size={14} style={{ marginRight: 4 }} />
-              Completato 🟢
+              Completato
             </span>
           )}
 

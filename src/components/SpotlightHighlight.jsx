@@ -7,6 +7,9 @@ export default function SpotlightHighlight({ targetId, title, desc, onClose, onN
   useEffect(() => {
     if (!targetId) return
 
+    let attempts = 0
+    let timerId = null
+
     const updatePosition = () => {
       // Cerca l'elemento nel DOM tramite data-tour-target o ID
       const element = document.querySelector(`[data-tour-target="${targetId}"]`) || document.getElementById(targetId)
@@ -22,6 +25,9 @@ export default function SpotlightHighlight({ targetId, title, desc, onClose, onN
 
         // Scroll morbido per mettere a fuoco l'elemento
         element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+      } else if (attempts < 6) {
+        attempts++
+        timerId = setTimeout(updatePosition, 250)
       } else {
         setCoords(null)
       }
@@ -32,6 +38,7 @@ export default function SpotlightHighlight({ targetId, title, desc, onClose, onN
     window.addEventListener('scroll', updatePosition)
 
     return () => {
+      if (timerId) clearTimeout(timerId)
       window.removeEventListener('resize', updatePosition)
       window.removeEventListener('scroll', updatePosition)
     }
@@ -81,7 +88,7 @@ export default function SpotlightHighlight({ targetId, title, desc, onClose, onN
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Sparkles size={16} color="#3b82f6" />
             <span style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase' }}>
-              Guida Chirurgica
+              Tutorial Guidato
             </span>
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>

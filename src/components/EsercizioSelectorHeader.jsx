@@ -36,7 +36,7 @@ export default function EsercizioSelectorHeader({
   const isAperto = esercizioAttivo?.stato === 'aperto' || !esercizioAttivo?.stato
 
   return (
-    <div style={S.container}>
+    <div style={S.container} data-tour-target="header-esercizio-selector">
       <div style={S.leftLabelGroup}>
         <div style={S.iconWrap}>
           <Calendar size={16} color="#60a5fa" />

@@ -6,7 +6,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 0,
     key: 'profilo_studio',
-    title: 'Step 0: Profilo Studio & Branding Logo 🏢',
+    title: 'Step 0: Profilo Studio & Branding Logo',
     desc: 'Inserisci la Ragione Sociale, P.IVA/CF e carica il Logo del tuo Studio per personalizzare tutti i PDF e le email.',
     target: 'studio-branding-form',
     pageUrl: '/impostazioni',
@@ -15,7 +15,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 1,
     key: 'creazione_condominio',
-    title: 'Step 1: Creazione Condominio & Tabelle Millesimali 🏢',
+    title: 'Step 1: Creazione Condominio & Tabelle Millesimali',
     desc: 'Crea un nuovo condominio inserendo nome, indirizzo e la prima tabella millesimale (Proprietà Generale).',
     target: 'btn-nuovo-condominio',
     pageUrl: '/condomini',
@@ -24,7 +24,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 2,
     key: 'anagrafica_unita',
-    title: 'Step 2: Anagrafica Unità, Residenti & Dati Catastali 👥',
+    title: 'Step 2: Anagrafica Unità, Residenti & Dati Catastali',
     desc: 'Inserisci le unità (subalterni, mq, piano) con i relativi millesimi ed abbina i proprietari con dati catastali (Art. 1130 c.c.).',
     target: 'tab-anagrafica-unita',
     pageUrl: '/condomini',
@@ -33,7 +33,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 3,
     key: 'apertura_esercizio',
-    title: 'Step 3: Apertura Esercizio Amministrativo & Saldi Iniziali 📅',
+    title: 'Step 3: Apertura Esercizio Amministrativo & Saldi Iniziali',
     desc: 'Imposta le date del periodo contabile (es. 01/01/2026 - 31/12/2026) e registra i saldi iniziali di cassa e dei condòmini.',
     target: 'header-esercizio-selector',
     pageUrl: '/condomini',
@@ -42,7 +42,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 4,
     key: 'preventivo_rate',
-    title: 'Step 4: Preventivo di Spesa & Piano Rateizzazione 📊',
+    title: 'Step 4: Preventivo di Spesa & Piano Rateizzazione',
     desc: 'Inserisci le voci di spesa di previsione, ripartiscile in quota e genera le scadenze rate per ciascuna unità.',
     target: 'tab-preventivo-rate',
     pageUrl: '/condomini',
@@ -51,7 +51,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 5,
     key: 'spese_fatture_ocr',
-    title: 'Step 5: Registrazione Spese & Lettura OCR Fatture AI 📄',
+    title: 'Step 5: Registrazione Spese & Lettura OCR Fatture AI',
     desc: 'Carica le fatture dei fornitori: l\'IA legge in automatico importi, fornitori e la Ritenuta d\'Acconto 4% F24.',
     target: 'tab-spese-fatture',
     pageUrl: '/condomini',
@@ -60,7 +60,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 6,
     key: 'estratto_conto_riconciliazione',
-    title: 'Step 6: Estratto Conto Bancario & Riconciliazione AI 🏛️',
+    title: 'Step 6: Estratto Conto Bancario & Riconciliazione AI',
     desc: 'Carica i movimenti del conto corrente bancario ed abbina con 1 clic incassi ↔ rate ed uscite ↔ fatture.',
     target: 'tab-estratto-conto',
     pageUrl: '/condomini',
@@ -69,7 +69,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 7,
     key: 'morosita_solleciti',
-    title: 'Step 7: Gestione Morosità & Invio Solleciti Rate ✉️',
+    title: 'Step 7: Gestione Morosità & Invio Solleciti Rate',
     desc: 'Controlla le rate scadute da oltre 10 giorni ed invia lettere di sollecito personalizzate via email o PDF.',
     target: 'btn-solleciti-massivi',
     pageUrl: '/condomini',
@@ -78,7 +78,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 8,
     key: 'consuntivo_pdf',
-    title: 'Step 8: Rendiconto Ufficiale & Consuntivo PDF (Art. 1130-bis) 📑',
+    title: 'Step 8: Rendiconto Ufficiale & Consuntivo PDF (Art. 1130-bis)',
     desc: 'Verifica la quadratura di cassa (sez. D) e genera il bilancio consuntivo ufficiale completo in PDF col tuo logo.',
     target: 'tab-consuntivo-pdf',
     pageUrl: '/condomini',
@@ -87,7 +87,7 @@ export const MASTERCLASS_STEPS = [
   {
     id: 9,
     key: 'verbali_chiusura',
-    title: 'Step 9: Verbali Assemblea & Passaggio all\'Esercizio Successivo 📁',
+    title: 'Step 9: Verbali Assemblea & Passaggio all\'Esercizio Successivo',
     desc: 'Upload del verbale dell\'assemblea approvata, archiviazione con ricerca AI e riporto saldi al nuovo anno contabile.',
     target: 'tab-verbali-assemblea',
     pageUrl: '/condomini',

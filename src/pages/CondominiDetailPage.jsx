@@ -232,7 +232,7 @@ export default function CondominiDetailPage() {
           <button style={S.btnSecondary} onClick={() => navigate('/condomini')}>
             <ArrowLeft size={15} style={{ marginRight: 6 }} /> Torna
           </button>
-          <button style={S.btnSuccess} onClick={() => navigate(`/condomini/${id}/spese`)}>
+          <button style={S.btnSuccess} data-tour-target="tab-spese-fatture" onClick={() => navigate(`/condomini/${id}/spese`)}>
             <Receipt size={15} style={{ marginRight: 6 }} /> Spese
           </button>
           <button style={S.btnPrimary} onClick={() => navigate(`/condomini/${id}/anagrafica`)}>

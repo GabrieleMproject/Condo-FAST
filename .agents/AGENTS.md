@@ -1472,6 +1472,22 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Build Verification:** `npm run build` completato con successo (✓ built in 481ms, 2117 moduli).
 - **Deploy Unificato (`deploy_all.mjs`):** Commit `894afcd`, push su GitHub `main` (deploy Vercel), deploy delle 8 Edge Functions Supabase e Smoke Test superato.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S62 (24 Luglio 2026 - Protezione PlanGate e Audit Piani Abbonamento)
+
+### 1. Hardening Feature Gates e Allineamento Piani
+- **Inviati & Registro Comunicazioni Email (`comunicazioni_resend`):**
+  - Avvolta l'intera pagina `ComunicazioniPage.jsx` con `<PlanGate feature="comunicazioni_resend">`. Per gli utenti nel piano Base la pagina mostra ora il paywall grafico di upgrade a Studio/Professional.
+  - Inserito il controllo `canUse('comunicazioni_resend')` direttamente nell'hook centralizzato `useComunicazioni.js` dentro `inviaComunicazione`. Qualsiasi tentativo di invio mail da piano Base solleva l'errore bloccante: *"L'invio di comunicazioni via email è riservato ai piani Studio e Professional."*
+- **Export PDF Consuntivo Rendiconto (`rendiconto_pdf`):**
+  - Avvolto il pulsante *"Esporta PDF"* in `ConsuntivoTab.jsx` con `<PlanGate feature="rendiconto_pdf" compact>`. Sui piani Base, il pulsante viene sostituito da un prompt di upgrade inline compatto con lucchetto (`Funzione Studio — Aggiorna piano`).
+
+### 2. Build e Deploy Unificato
+- **Build Verification:** Eseguito `npm run build` con esito verde (✓ built in 491ms, 2117 moduli compilati).
+- **Deploy Unificato (`deploy_all.mjs`):** Commit `e491e88`, push su GitHub `main` (scatenando il deploy automatico del frontend su Vercel), deploy delle Edge Functions e superamento dello smoke test.
+
+
 
 
 

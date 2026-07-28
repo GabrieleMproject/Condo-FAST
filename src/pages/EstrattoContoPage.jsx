@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiMovimentiBancari, getTipoFile } from '../lib/fileExtractor';
 import { useDocumenti } from '../hooks/useDocumenti';
 import PlanGate from '../components/PlanGate';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
+import ModalWarningPertinenza from '../components/ModalWarningPertinenza';
 import { Trash2, Building2, User, Check, AlertTriangle, Settings, Sliders, Bot, Calendar, Download, RefreshCw, Loader2, UploadCloud, CheckCircle2 } from 'lucide-react';
 
 const TIPI_ACCETTATI = '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png';
@@ -12,7 +13,12 @@ const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).to
 
 export default function EstrattoContoPage() {
   const { condominioId } = useParams();
+  const navigate = useNavigate();
   const { documenti, fetch: fetchDocumenti, upload: uploadDoc } = useDocumenti(condominioId);
+
+  const [condominio, setCondominio] = useState(null);
+  const [warningModal, setWarningModal] = useState(null);
+  const [pendingFile, setPendingFile] = useState(null);
 
   const [movimenti, setMovimenti] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +79,8 @@ export default function EstrattoContoPage() {
       loadMovimenti();
       fetchDocumenti();
       loadBankingStatus();
+      supabase.from('condomini').select('id, nome, codice_fiscale, indirizzo').eq('id', condominioId).single()
+        .then(({ data }) => setCondominio(data));
     }
   }, [condominioId, fetchDocumenti]);
 
@@ -112,9 +120,38 @@ export default function EstrattoContoPage() {
 
     try {
       setUploadProgress('Analisi AI in corso... (può richiedere 15-30 secondi)');
-      const risultato = await estraiMovimentiBancari(file);
+      const risultato = await estraiMovimentiBancari(file, condominio);
 
-      setUploadProgress('Salvataggio movimenti...');
+      if (risultato?._warningPertinenza) {
+        setPendingFile({ file, risultato, tipo });
+        setWarningModal({
+          slotErrato: risultato._warningPertinenza.slotErrato ? {
+            tipoRilevato: risultato._warningPertinenza.slotErrato.tipoRilevato,
+            slotAtteso: 'Estratto Conto'
+          } : null,
+          condominioErrato: risultato._warningPertinenza.condominioErrato ? {
+            intestatarioRilevato: risultato._warningPertinenza.condominioErrato.intestatarioRilevato,
+            condominioAttivoNome: condominio?.nome || 'Condominio Corrente',
+            motivoDiscrepanza: risultato._warningPertinenza.condominioErrato.motivoDiscrepanza
+          } : null
+        });
+        setUploading(false);
+        setUploadProgress('');
+        return;
+      }
+
+      await salvaMovimentiEstratti(file, risultato, tipo);
+    } catch (e) {
+      setErroreUpload('Errore: ' + e.message);
+      setUploadProgress('');
+      setUploading(false);
+    }
+  }
+
+  async function salvaMovimentiEstratti(file, risultato, tipo) {
+    setUploading(true);
+    setUploadProgress('Salvataggio movimenti...');
+    try {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!risultato.movimenti?.length) {
@@ -190,10 +227,12 @@ export default function EstrattoContoPage() {
       await fetchDocumenti();
       setTimeout(() => setUploadProgress(''), 5000);
     } catch (e) {
-      setErroreUpload('Errore estrazione: ' + e.message);
+      setErroreUpload('Errore: ' + e.message);
       setUploadProgress('');
     } finally {
       setUploading(false);
+      setPendingFile(null);
+      setWarningModal(null);
     }
   }
 
@@ -508,6 +547,28 @@ export default function EstrattoContoPage() {
         onSaveSuccess={() => {
           loadMovimenti();
           loadBankingStatus();
+        }}
+      />
+
+      {/* Modale Avviso Pertinenza Documento */}
+      <ModalWarningPertinenza
+        isOpen={!!warningModal}
+        onClose={() => { setWarningModal(null); setPendingFile(null); }}
+        warning={warningModal}
+        onProcediComunque={() => {
+          if (pendingFile) {
+            salvaMovimentiEstratti(pendingFile.file, pendingFile.risultato, pendingFile.tipo);
+          }
+        }}
+        onSposta={() => {
+          const tipo = warningModal?.slotErrato?.tipoRilevato || '';
+          setWarningModal(null);
+          setPendingFile(null);
+          if (tipo.includes('fattura')) {
+            navigate(`/condomini/${condominioId}/fatture`);
+          } else {
+            navigate(`/condomini/${condominioId}`);
+          }
         }}
       />
     </div>

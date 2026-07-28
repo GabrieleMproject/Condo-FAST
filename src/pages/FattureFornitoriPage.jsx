@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiFattura, getTipoFile, comprimiImmagine } from '../lib/fileExtractor';
 import { useFornitori } from '../hooks/useFornitori';
+import ModalWarningPertinenza from '../components/ModalWarningPertinenza';
 import { Edit3, Trash2, AlertTriangle, Upload, Paperclip, Loader2, Receipt, Calendar, Clock, Link2, FileText } from 'lucide-react';
 
 const STATI = {
@@ -28,6 +29,11 @@ function badgeRitenuta(f) {
 
 export default function FattureFornitoriPage() {
   const { condominioId } = useParams();
+  const navigate = useNavigate();
+
+  const [condominio, setCondominio]       = useState(null);
+  const [warningModal, setWarningModal]   = useState(null);
+  const [pendingFile, setPendingFile]     = useState(null);
 
   const [fatture, setFatture]             = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -50,7 +56,12 @@ export default function FattureFornitoriPage() {
   const [pendingNewFornitore, setPendingNewFornitore] = useState(null);
 
   useEffect(() => {
-    if (condominioId) { loadFatture(); loadSpese(); }
+    if (condominioId) {
+      loadFatture();
+      loadSpese();
+      supabase.from('condomini').select('id, nome, codice_fiscale, indirizzo').eq('id', condominioId).single()
+        .then(({ data }) => setCondominio(data));
+    }
   }, [condominioId]);
 
   async function loadFatture() {
@@ -134,8 +145,38 @@ export default function FattureFornitoriPage() {
     try {
       const fileCompresso = await comprimiImmagine(file);
       setUploadProgress('Estrazione dati fattura con AI...');
-      const datiAI = await estraiFattura(fileCompresso);
+      const datiAI = await estraiFattura(fileCompresso, condominio);
 
+      if (datiAI?._warningPertinenza) {
+        setPendingFile({ fileCompresso, datiAI, tipo });
+        setWarningModal({
+          slotErrato: datiAI._warningPertinenza.slotErrato ? {
+            tipoRilevato: datiAI._warningPertinenza.slotErrato.tipoRilevato,
+            slotAtteso: 'Fatture Fornitori'
+          } : null,
+          condominioErrato: datiAI._warningPertinenza.condominioErrato ? {
+            intestatarioRilevato: datiAI._warningPertinenza.condominioErrato.intestatarioRilevato,
+            condominioAttivoNome: condominio?.nome || 'Condominio Corrente',
+            motivoDiscrepanza: datiAI._warningPertinenza.condominioErrato.motivoDiscrepanza
+          } : null
+        });
+        setUploading(false);
+        setUploadProgress('');
+        return;
+      }
+
+      await salvaFatturaEstratta(fileCompresso, datiAI, tipo);
+    } catch (e) {
+      setErroreUpload('Errore: ' + e.message);
+      setUploadProgress('');
+      setUploading(false);
+    }
+  }
+
+  async function salvaFatturaEstratta(fileCompresso, datiAI, tipo) {
+    setUploading(true);
+    setUploadProgress('Salvataggio...');
+    try {
       let fileUrl = null;
       if (tipo !== 'unknown') {
         setUploadProgress('Caricamento file su storage...');
@@ -192,11 +233,9 @@ export default function FattureFornitoriPage() {
         }
 
         if (fornitoreTrovato) {
-          // Assegna in automatico se trovato in rubrica
           await supabase.from('fatture_fornitori').update({ fornitore_id: fornitoreTrovato.id }).eq('id', insertedRow.id);
           await loadFatture();
         } else {
-          // Proponi salvataggio in rubrica
           setPendingNewFornitore({ 
             fatturaId: insertedRow.id, 
             ragioneSociale: datiAI.fornitore || '', 
@@ -211,6 +250,8 @@ export default function FattureFornitoriPage() {
       setUploadProgress('');
     } finally {
       setUploading(false);
+      setPendingFile(null);
+      setWarningModal(null);
     }
   }
 
@@ -577,6 +618,28 @@ export default function FattureFornitoriPage() {
           </div>
         </div>
       )}
+
+      {/* Modale Avviso Pertinenza Documento */}
+      <ModalWarningPertinenza
+        isOpen={!!warningModal}
+        onClose={() => { setWarningModal(null); setPendingFile(null); }}
+        warning={warningModal}
+        onProcediComunque={() => {
+          if (pendingFile) {
+            salvaFatturaEstratta(pendingFile.fileCompresso, pendingFile.datiAI, pendingFile.tipo);
+          }
+        }}
+        onSposta={() => {
+          const tipo = warningModal?.slotErrato?.tipoRilevato || '';
+          setWarningModal(null);
+          setPendingFile(null);
+          if (tipo.includes('estratto')) {
+            navigate(`/condomini/${condominioId}/estratto-conto`);
+          } else {
+            navigate(`/condomini/${condominioId}`);
+          }
+        }}
+      />
 
     </div>
   );

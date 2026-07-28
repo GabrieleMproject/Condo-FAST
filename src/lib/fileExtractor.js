@@ -51,12 +51,38 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
   try {
     const parsed = JSON.parse(clean);
     
-    // Supporto per il nuovo schema OpenAPI con validazione congruenza
-    if (parsed && typeof parsed === 'object' && 'is_valido' in parsed) {
-      if (parsed.is_valido === false) {
-        throw new Error(parsed.motivo_errore || "Il documento caricato non è congruo alla funzione richiesta.");
+    // Supporto per la validazione di congruenza e pertinenza dello slot e del condominio
+    if (parsed && typeof parsed === 'object' && ('is_valido' in parsed || 'is_valido_per_slot' in parsed || 'congruenza_condominio' in parsed)) {
+      const isValidoSlot = parsed.is_valido !== false && parsed.is_valido_per_slot !== false;
+      const pertine = parsed.congruenza_condominio;
+      const ePertinente = !pertine || pertine.e_pertinente !== false;
+
+      let warningPertinenza = null;
+      if (!isValidoSlot || !ePertinente) {
+        warningPertinenza = {
+          slotErrato: !isValidoSlot ? {
+            tipoRilevato: parsed.tipo_documento_rilevato || 'documento di altro tipo',
+            motivo: parsed.motivo_errore || 'Il file non sembra congruo allo slot di destinazione.'
+          } : null,
+          condominioErrato: !ePertinente ? {
+            intestatarioRilevato: pertine?.intestatario_rilevato || 'altro condominio',
+            motivoDiscrepanza: pertine?.motivo_discrepanza || 'Il documento risulta intestato ad un altro condominio.'
+          } : null
+        };
       }
-      return parsed.dati;
+
+      let resData = parsed.dati !== undefined ? parsed.dati : parsed;
+      
+      // Se resData è un oggetto o array, possiamo allegare _warningPertinenza
+      if (warningPertinenza) {
+        if (resData && typeof resData === 'object') {
+          resData._warningPertinenza = warningPertinenza;
+        } else {
+          resData = { dati: resData, _warningPertinenza: warningPertinenza };
+        }
+      }
+
+      return resData;
     }
     
     return parsed;
@@ -184,8 +210,6 @@ async function preparaContenuto(file) {
 
   switch (tipo) {
     case 'pdf':
-      // ✅ Path document attivo nel proxy: inviamo il PDF come base64 grezzo,
-      // il proxy costruisce il blocco { type:'document', media_type:'application/pdf' }.
       return { contenuto: await fileToBase64(file), isPdf: true, mediaType: 'application/pdf' };
 
     case 'xlsx':
@@ -207,15 +231,19 @@ async function preparaContenuto(file) {
 }
 
 // ─── ESTRATTO CONTO: Estrai movimenti bancari dal file ────────────────────────
-export async function estraiMovimentiBancari(file) {
+export async function estraiMovimentiBancari(file, condominioCorrente = null) {
   if (!validaMimeType(file)) {
     throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XLSX, DOCX, CSV, JPG o PNG.`);
   }
 
   const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
 
+  const condoInfoText = condominioCorrente
+    ? `\n\nCONTESTO CONDOMINIO ATTIVO:\n- Nome: "${condominioCorrente.nome || ''}"\n- Codice Fiscale: "${condominioCorrente.codice_fiscale || ''}"\n- Indirizzo: "${condominioCorrente.indirizzo || ''}"\nVerifica se l'intestatario del conto o documento appartiene a questo condominio.`
+    : '';
+
   const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di estratti conto bancari condominiali.
-Estrai i movimenti bancari dal documento fornito.
+Estrai i movimenti bancari dal documento fornito.${condoInfoText}
 
 Regole importanti:
 - Gli importi in USCITA (addebiti, pagamenti) devono essere NEGATIVI
@@ -230,8 +258,17 @@ Regole importanti:
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se il file è realmente un estratto conto bancario o lista movimenti. False se è palesemente un altro tipo di documento." },
-      motivo_errore: { type: "STRING", description: "Spiega brevemente perché il file non è valido, se is_valido è false." },
+      is_valido: { type: "BOOLEAN", description: "True se il file è realmente un estratto conto bancario o lista movimenti. False se è palesemente un altro tipo di documento (es. fattura, verbale, f24)." },
+      tipo_documento_rilevato: { type: "STRING", description: "Es: estratto_conto, fattura, f24, verbale, anagrafica, altro" },
+      motivo_errore: { type: "STRING", description: "Spiega brevemente perché il file non è un estratto conto bancario, se is_valido è false." },
+      congruenza_condominio: {
+        type: "OBJECT",
+        properties: {
+          e_pertinente: { type: "BOOLEAN", description: "False se l'intestazione del conto differisce nettamente dal condominio attivo." },
+          intestatario_rilevato: { type: "STRING", nullable: true, description: "Intestatario del conto corrente o documento" },
+          motivo_discrepanza: { type: "STRING", nullable: true, description: "Spiega perché non appartiene a questo condominio" }
+        }
+      },
       dati: {
         type: "OBJECT",
         properties: {
@@ -280,15 +317,19 @@ Regole importanti:
 }
 
 // ─── FATTURA FORNITORE: Estrai dati da fattura ────────────────────────────────
-export async function estraiFattura(file) {
+export async function estraiFattura(file, condominioCorrente = null) {
   if (!validaMimeType(file)) {
     throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, DOCX, JPG, PNG o XLSX.`);
   }
 
   const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
 
+  const condoInfoText = condominioCorrente
+    ? `\n\nCONTESTO CONDOMINIO ATTIVO:\n- Nome: "${condominioCorrente.nome || ''}"\n- Codice Fiscale: "${condominioCorrente.codice_fiscale || ''}"\n- Indirizzo: "${condominioCorrente.indirizzo || ''}"\nVerifica se l'intestatario o destinatario della fattura corrisponde a questo condominio.`
+    : '';
+
   const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di fatture di fornitori condominiali.
-Estrai i dati della fattura.
+Estrai i dati della fattura.${condoInfoText}
 
 Regole Ritenuta d'Acconto:
 - Se la fattura appartiene alla categoria "utenze" (es. acqua, luce, gas, telefonia) o "assicurazione", o acquisto beni, ritenuta NON si applica (imponibile 0, aliquota 0, importo 0, tributo null).
@@ -311,8 +352,17 @@ Regole Generali:
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se il file è realmente una fattura, scontrino o ricevuta. False se è palesemente un altro documento." },
-      motivo_errore: { type: "STRING", description: "Spiega brevemente perché il file non è valido, se is_valido è false." },
+      is_valido: { type: "BOOLEAN", description: "True se il file è realmente una fattura, scontrino o ricevuta. False se è palesemente un altro documento (es. estratto conto, verbale, f24)." },
+      tipo_documento_rilevato: { type: "STRING", description: "Es: fattura, estratto_conto, f24, verbale, anagrafica, altro" },
+      motivo_errore: { type: "STRING", description: "Spiega brevemente perché il file non è una fattura, se is_valido è false." },
+      congruenza_condominio: {
+        type: "OBJECT",
+        properties: {
+          e_pertinente: { type: "BOOLEAN", description: "False se l'intestazione/destinatario differisce palesemente dal condominio attivo." },
+          intestatario_rilevato: { type: "STRING", nullable: true, description: "Ragione sociale e CF del condominio destinatario presente sul documento" },
+          motivo_discrepanza: { type: "STRING", nullable: true, description: "Spiega perché non sembra essere intestato a questo condominio" }
+        }
+      },
       dati: {
         type: "OBJECT",
         properties: {

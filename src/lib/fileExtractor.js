@@ -231,16 +231,17 @@ async function preparaContenuto(file) {
 }
 
 // ─── Helper: controlli pre-volo veloci sul file ────────────────────────────────
-export async function validaFilePreVolo(file) {
+export async function validaFilePreVolo(file, maxMb = 25) {
   if (!file) {
     throw new Error('Nessun file selezionato.');
   }
   if (file.size === 0) {
     throw new Error(`Il file "${file.name}" è vuoto (0 byte) o corrotto.`);
   }
-  const MAX_FILE_SIZE = 25 * 1024 * 1024;
+  const MAX_FILE_SIZE = maxMb * 1024 * 1024;
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error(`Il file "${file.name}" supera la dimensione massima consentita di 25MB.`);
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    throw new Error(`Il file "${file.name}" (${sizeMb}MB) supera il limite massimo consentito di ${maxMb}MB per questo tipo di documento.`);
   }
   if (file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')) {
     try {
@@ -257,7 +258,7 @@ export async function validaFilePreVolo(file) {
 
 // ─── ESTRATTO CONTO: Estrai movimenti bancari dal file ────────────────────────
 export async function estraiMovimentiBancari(file, condominioCorrente = null) {
-  await validaFilePreVolo(file);
+  await validaFilePreVolo(file, 25); // max 25MB per estratti conto multi-pagina
   if (!validaMimeType(file)) {
     throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XLSX, DOCX, CSV, JPG o PNG.`);
   }
@@ -356,7 +357,7 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
 
 // ─── FATTURA FORNITORE: Estrai dati da fattura ────────────────────────────────
 export async function estraiFattura(file, condominioCorrente = null) {
-  await validaFilePreVolo(file);
+  await validaFilePreVolo(file, 15); // max 15MB per fatture e scontrini
   if (!validaMimeType(file)) {
     throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, DOCX, JPG, PNG o XLSX.`);
   }

@@ -58,10 +58,40 @@ export default function RiconciliazioniPage() {
     }
 
     setAnalizzando(true);
-    setProgressoAI('Analisi AI in corso...');
+    setProgressoAI('Analisi Auto-Match Causali e N. Fattura...');
 
     try {
-      const systemPrompt = `Sei un esperto contabile italiano. 
+      const { data: { user } } = await supabase.auth.getUser();
+      const suggerimentiPronti = [];
+      const fattureUsate = new Set();
+      const movimentiRimanenti = [];
+
+      // 1. First Pass: Auto-Matching causale + N. Fattura + Fornitore deterministico
+      for (const m of movNonRic) {
+        const fattureDisponibili = fatNonRic.filter(f => !fattureUsate.has(f.id));
+        const best = trovaBestMatchFattura(m, fattureDisponibili);
+        if (best && best.score >= 60) {
+          fattureUsate.add(best.fattura.id);
+          suggerimentiPronti.push({
+            condominio_id: condominioId,
+            user_id: user.id,
+            movimento_id: m.id,
+            fattura_id: best.fattura.id,
+            confidence_score: best.score,
+            metodo: 'auto_match',
+            stato: 'suggerita',
+            note: best.motivoMatch
+          });
+        } else {
+          movimentiRimanenti.push(m);
+        }
+      }
+
+      // 2. Second Pass: AI Fallback per i movimenti rimanenti non abbinati dal pattern causale
+      const fattureRimanenti = fatNonRic.filter(f => !fattureUsate.has(f.id));
+      if (movimentiRimanenti.length > 0 && fattureRimanenti.length > 0) {
+        setProgressoAI(`Analisi AI per i ${movimentiRimanenti.length} movimenti rimanenti...`);
+        const systemPrompt = `Sei un esperto contabile italiano. 
 Abbina i movimenti bancari alle fatture dei fornitori basandoti su:
 1. Corrispondenza importo (con tolleranza ±5€ per arrotondamenti/commissioni)
 2. Corrispondenza temporale (il pagamento di solito avviene entro 30-60 gg dalla fattura)
@@ -78,53 +108,55 @@ Restituisci SOLO un array JSON:
 ]
 Includi solo abbinamenti con confidence >= 30. Non abbinare lo stesso movimento a più fatture.`;
 
-      const userPrompt = `MOVIMENTI BANCARI (uscite non riconciliate):
-${JSON.stringify(movNonRic.map(m => ({
-        id: m.id,
-        data: m.data_movimento,
-        causale: m.causale,
-        importo: Math.abs(m.importo),
-        fornitore: m.fornitore_rilevato,
-      })), null, 2)}
+        const userPrompt = `MOVIMENTI BANCARI (uscite non riconciliate):
+${JSON.stringify(movimentiRimanenti.map(m => ({
+          id: m.id,
+          data: m.data_movimento,
+          causale: m.causale,
+          importo: Math.abs(m.importo),
+          fornitore: m.fornitore_rilevato,
+        })), null, 2)}
 
 FATTURE NON RICONCILIATE:
-${JSON.stringify(fatNonRic.map(f => ({
-        id: f.id,
-        fornitore: f.fornitore,
-        data_fattura: f.data_fattura,
-        importo: f.importo_totale,
-        descrizione: f.descrizione,
-        numero: f.numero_fattura,
-      })), null, 2)}
+${JSON.stringify(fattureRimanenti.map(f => ({
+          id: f.id,
+          fornitore: f.fornitore,
+          data_fattura: f.data_fattura,
+          importo: f.importo_totale,
+          descrizione: f.descrizione,
+          numero: f.numero_fattura,
+        })), null, 2)}
 
 Abbina i movimenti alle fatture.`;
 
-  setProgressoAI('Elaborazione suggerimenti...');
-      const risposta = await callGemini(userPrompt, { system: systemPrompt, maxTokens: 2048, funzione: 'riconcilia_uscite', condominio_id: condominioId });
-      const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
-      const suggerimenti = JSON.parse(clean);
+        const risposta = await callGemini(userPrompt, { system: systemPrompt, maxTokens: 2048, funzione: 'riconcilia_uscite', condominio_id: condominioId });
+        const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
+        const suggerimentiAi = JSON.parse(clean);
 
-      // Salva suggerimenti su Supabase
-      setProgressoAI(`Salvataggio ${suggerimenti.length} suggerimenti...`);
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (suggerimenti.length > 0) {
-        const inserts = suggerimenti.map(s => ({
-          condominio_id: condominioId,
-          user_id: user.id,
-          movimento_id: s.movimento_id,
-          fattura_id: s.fattura_id,
-          confidence_score: s.confidence_score,
-          metodo: 'ai',
-          stato: 'suggerita',
-          note: s.motivazione,
-        }));
-
-        await supabase.from('riconciliazioni')
-          .upsert(inserts, { onConflict: 'movimento_id,fattura_id', ignoreDuplicates: true });
+        if (Array.isArray(suggerimentiAi)) {
+          suggerimentiAi.forEach(s => {
+            suggerimentiPronti.push({
+              condominio_id: condominioId,
+              user_id: user.id,
+              movimento_id: s.movimento_id,
+              fattura_id: s.fattura_id,
+              confidence_score: s.confidence_score,
+              metodo: 'ai',
+              stato: 'suggerita',
+              note: s.motivazione,
+            });
+          });
+        }
       }
 
-      setProgressoAI(`${suggerimenti.length} abbinamenti suggeriti`);
+      // Salva tutti i suggerimenti generati su Supabase
+      if (suggerimentiPronti.length > 0) {
+        setProgressoAI(`Salvataggio ${suggerimentiPronti.length} suggerimenti di riconciliazione...`);
+        await supabase.from('riconciliazioni')
+          .upsert(suggerimentiPronti, { onConflict: 'movimento_id,fattura_id', ignoreDuplicates: true });
+      }
+
+      setProgressoAI(`${suggerimentiPronti.length} abbinamenti generati con successo`);
       await loadAll();
       setShowOrfaniModal(true);
       setTimeout(() => setProgressoAI(''), 4000);

@@ -230,8 +230,34 @@ async function preparaContenuto(file) {
   }
 }
 
+// ─── Helper: controlli pre-volo veloci sul file ────────────────────────────────
+export async function validaFilePreVolo(file) {
+  if (!file) {
+    throw new Error('Nessun file selezionato.');
+  }
+  if (file.size === 0) {
+    throw new Error(`Il file "${file.name}" è vuoto (0 byte) o corrotto.`);
+  }
+  const MAX_FILE_SIZE = 25 * 1024 * 1024;
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`Il file "${file.name}" supera la dimensione massima consentita di 25MB.`);
+  }
+  if (file.type === 'application/pdf' || file.name?.toLowerCase().endsWith('.pdf')) {
+    try {
+      const slice = file.slice(0, 4096);
+      const textHeader = await slice.text();
+      if (textHeader.includes('/Encrypt') || textHeader.includes('/Password')) {
+        throw new Error(`Il PDF "${file.name}" è protetto da password. Rimuovi la protezione prima di caricarlo.`);
+      }
+    } catch (e) {
+      if (e.message?.includes('password')) throw e;
+    }
+  }
+}
+
 // ─── ESTRATTO CONTO: Estrai movimenti bancari dal file ────────────────────────
 export async function estraiMovimentiBancari(file, condominioCorrente = null) {
+  await validaFilePreVolo(file);
   if (!validaMimeType(file)) {
     throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XLSX, DOCX, CSV, JPG o PNG.`);
   }
@@ -330,6 +356,7 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
 
 // ─── FATTURA FORNITORE: Estrai dati da fattura ────────────────────────────────
 export async function estraiFattura(file, condominioCorrente = null) {
+  await validaFilePreVolo(file);
   if (!validaMimeType(file)) {
     throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, DOCX, JPG, PNG o XLSX.`);
   }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiFattura, getTipoFile, comprimiImmagine } from '../lib/fileExtractor';
+import { calcolaFileHash } from '../lib/fileHash';
 import { useFornitori } from '../hooks/useFornitori';
 import ModalWarningPertinenza from '../components/ModalWarningPertinenza';
 import { Edit3, Trash2, AlertTriangle, Upload, Paperclip, Loader2, Receipt, Calendar, Clock, Link2, FileText } from 'lucide-react';
@@ -80,7 +81,7 @@ export default function FattureFornitoriPage() {
       .from('spese')
       .select('id, descrizione, importo')
       .eq('condominio_id', condominioId)
-      .order('data_spesa', { ascending: false })   // ✅ bug #9: era 'data_competenza' (colonna inesistente)
+      .order('data_spesa', { ascending: false })
       .limit(50);
     setSpese(data || []);
   }
@@ -140,15 +141,37 @@ export default function FattureFornitoriPage() {
 
     setUploading(true);
     setErroreUpload('');
-    setUploadProgress('Lettura file...');
+    setUploadProgress('Verifica integrità file e controllo duplicati...');
 
     try {
+      // 🛡️ Controllo Anti-Duplicato SHA-256
+      const hash = await calcolaFileHash(file);
+      if (hash) {
+        const { data: fatturaEsistente } = await supabase
+          .from('fatture_fornitori')
+          .select('id, fornitore, data_fattura, importo_totale')
+          .eq('condominio_id', condominioId)
+          .eq('file_hash', hash)
+          .maybeSingle();
+
+        if (fatturaEsistente) {
+          const confermata = window.confirm(
+            `⚠️ ATTENZIONE DUPLICATO:\nQuesto documento risulta già caricato nel sistema per la fattura "${fatturaEsistente.fornitore}" del ${fatturaEsistente.data_fattura} (€ ${fatturaEsistente.importo_totale}).\n\nVuoi procedere comunque col ricaricamento?`
+          );
+          if (!confermata) {
+            setUploading(false);
+            setUploadProgress('');
+            return;
+          }
+        }
+      }
+
       const fileCompresso = await comprimiImmagine(file);
       setUploadProgress('Estrazione dati fattura con AI...');
       const datiAI = await estraiFattura(fileCompresso, condominio);
 
       if (datiAI?._warningPertinenza) {
-        setPendingFile({ fileCompresso, datiAI, tipo });
+        setPendingFile({ fileCompresso, datiAI, tipo, hash });
         setWarningModal({
           slotErrato: datiAI._warningPertinenza.slotErrato ? {
             tipoRilevato: datiAI._warningPertinenza.slotErrato.tipoRilevato,
@@ -165,7 +188,7 @@ export default function FattureFornitoriPage() {
         return;
       }
 
-      await salvaFatturaEstratta(fileCompresso, datiAI, tipo);
+      await salvaFatturaEstratta(fileCompresso, datiAI, tipo, hash);
     } catch (e) {
       setErroreUpload('Errore: ' + e.message);
       setUploadProgress('');
@@ -173,7 +196,7 @@ export default function FattureFornitoriPage() {
     }
   }
 
-  async function salvaFatturaEstratta(fileCompresso, datiAI, tipo) {
+  async function salvaFatturaEstratta(fileCompresso, datiAI, tipo, hash = '') {
     setUploading(true);
     setUploadProgress('Salvataggio...');
     try {
@@ -207,6 +230,7 @@ export default function FattureFornitoriPage() {
         categoria:       datiAI.categoria || 'altro',
         stato:           'attesa',
         pdf_url:         fileUrl,
+        file_hash:       hash || null,
         ai_dati_estratti: datiAI,
         imponibile_ritenuta: datiAI.imponibile_ritenuta || 0.00,
         aliquota_ritenuta_percentuale: datiAI.aliquota_ritenuta_percentuale || 0.00,

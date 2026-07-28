@@ -18,6 +18,7 @@ export default function EstrattoContoPage() {
 
   const [condominio, setCondominio] = useState(null);
   const [warningModal, setWarningModal] = useState(null);
+  const [warningDiscontinuita, setWarningDiscontinuita] = useState(null);
   const [pendingFile, setPendingFile] = useState(null);
 
   const [movimenti, setMovimenti] = useState([]);
@@ -121,14 +122,37 @@ export default function EstrattoContoPage() {
 
     setUploading(true);
     setErroreUpload('');
-    setUploadProgress('Lettura file...');
+    setWarningDiscontinuita(null);
+    setUploadProgress('Verifica integrità file e controllo duplicati...');
 
     try {
+      // 🛡️ Controllo Anti-Duplicato SHA-256
+      const hash = await calcolaFileHash(file);
+      if (hash) {
+        const { data: docEsistente } = await supabase
+          .from('documenti_condominio')
+          .select('id, nome, created_at')
+          .eq('condominio_id', condominioId)
+          .eq('file_hash', hash)
+          .maybeSingle();
+
+        if (docEsistente) {
+          const confermata = window.confirm(
+            `⚠️ ATTENZIONE DUPLICATO:\nQuesto estratto conto ("${docEsistente.nome}") risulta già caricato nel sistema il ${formattaData(docEsistente.created_at)}.\n\nVuoi procedere comunque con il re-import?`
+          );
+          if (!confermata) {
+            setUploading(false);
+            setUploadProgress('');
+            return;
+          }
+        }
+      }
+
       setUploadProgress('Analisi AI in corso... (può richiedere 15-30 secondi)');
       const risultato = await estraiMovimentiBancari(file, condominio);
 
       if (risultato?._warningPertinenza) {
-        setPendingFile({ file, risultato, tipo });
+        setPendingFile({ file, risultato, tipo, hash });
         setWarningModal({
           slotErrato: risultato._warningPertinenza.slotErrato ? {
             tipoRilevato: risultato._warningPertinenza.slotErrato.tipoRilevato,
@@ -145,7 +169,7 @@ export default function EstrattoContoPage() {
         return;
       }
 
-      await salvaMovimentiEstratti(file, risultato, tipo);
+      await salvaMovimentiEstratti(file, risultato, tipo, hash);
     } catch (e) {
       setErroreUpload('Errore: ' + e.message);
       setUploadProgress('');
@@ -153,7 +177,7 @@ export default function EstrattoContoPage() {
     }
   }
 
-  async function salvaMovimentiEstratti(file, risultato, tipo) {
+  async function salvaMovimentiEstratti(file, risultato, tipo, hash = '') {
     setUploading(true);
     setUploadProgress('Salvataggio movimenti...');
     try {
@@ -163,6 +187,19 @@ export default function EstrattoContoPage() {
         setErroreUpload('Nessun movimento trovato nel file. Verifica che sia un estratto conto valido.');
         setUploadProgress('');
         return;
+      }
+
+      // 🔗 Verifica Continuità Saldi Bancari (Saldo Iniziale vs Saldo Finale Precedente)
+      const infoDocPrecedente = parseDateEstratto(docEstratto);
+      if (risultato.saldo_iniziale != null && infoDocPrecedente?.saldo_finale != null) {
+        const diff = Math.abs(Number(risultato.saldo_iniziale) - Number(infoDocPrecedente.saldo_finale));
+        if (diff > 0.05) {
+          setWarningDiscontinuita({
+            saldoIniziale: risultato.saldo_iniziale,
+            saldoFinalePrecedente: infoDocPrecedente.saldo_finale,
+            dataPrec: infoDocPrecedente.data_saldo_finale || infoDocPrecedente.al
+          });
+        }
       }
 
       // Inserisci movimenti
@@ -175,7 +212,7 @@ export default function EstrattoContoPage() {
         saldo: m.saldo ?? null,
         tipo: m.tipo || (m.importo >= 0 ? 'entrata' : 'uscita'),
         fornitore_rilevato: m.fornitore_rilevato ?? null,
-        pagante_rilevato: m.pagante_rilevato ?? null,   // ✅ S8b: ora si salva (entrate)
+        pagante_rilevato: m.pagante_rilevato ?? null,
         riferimento_esterno: m.riferimento_esterno ?? null,
         fonte_import: tipo,
         ai_processed: true,
@@ -233,7 +270,8 @@ export default function EstrattoContoPage() {
         saldo_finale: risultato.saldo_finale ?? null,
         data_saldo_finale: dataSaldoFinale ?? null,
         banca: risultato.banca ?? null,
-        conto: risultato.conto ?? null
+        conto: risultato.conto ?? null,
+        file_hash: hash || null
       });
       await uploadDoc(file, 'estratto_conto', file.name.replace(/\.[^.]+$/, ''), noteJson);
 
@@ -315,6 +353,32 @@ export default function EstrattoContoPage() {
           </div>
         </div>
       </div>
+
+      {warningDiscontinuita && (
+        <div style={{
+          background: 'rgba(245, 158, 11, 0.1)',
+          border: '1px solid rgba(245, 158, 11, 0.3)',
+          borderRadius: 8,
+          padding: '12px 16px',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          color: '#fbbf24',
+          fontSize: 13
+        }}>
+          <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <strong>ATTENZIONE DISCONTINUITÀ SALDI BANCARI:</strong> Il saldo iniziale del nuovo estratto conto (€ {Number(warningDiscontinuita.saldoIniziale).toLocaleString('it-IT', { minimumFractionDigits: 2 })}) differisce dal saldo finale registrato nel documento precedente (€ {Number(warningDiscontinuita.saldoFinalePrecedente).toLocaleString('it-IT', { minimumFractionDigits: 2 })}). Verifica se ci sono estratti conto intermedi o movimenti non contabilizzati.
+          </div>
+          <button
+            onClick={() => setWarningDiscontinuita(null)}
+            style={{ background: 'transparent', border: 'none', color: '#fbbf24', cursor: 'pointer', fontSize: 16, fontWeight: 'bold' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* KPI */}
       <div style={styles.kpiRow}>

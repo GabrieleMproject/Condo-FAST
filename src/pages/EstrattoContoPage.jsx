@@ -34,16 +34,21 @@ export default function EstrattoContoPage() {
   const docEstratto = documenti.find(d => d.tipo === 'estratto_conto');
 
   function parseDateEstratto(doc) {
-    if (!doc || !doc.note) return { dal: null, al: null };
+    if (!doc || !doc.note) return { dal: null, al: null, saldo_finale: null, data_saldo_finale: null };
     try {
       const parsed = JSON.parse(doc.note);
       if (parsed && typeof parsed === 'object') {
-        return { dal: parsed.dal || null, al: parsed.al || null };
+        return {
+          dal: parsed.dal || null,
+          al: parsed.al || null,
+          saldo_finale: parsed.saldo_finale ?? null,
+          data_saldo_finale: parsed.data_saldo_finale || parsed.al || null
+        };
       }
     } catch {
       // ignore
     }
-    return { dal: null, al: null };
+    return { dal: null, al: null, saldo_finale: null, data_saldo_finale: null };
   }
 
   async function visualizzaDocumento(urlStorage) {
@@ -219,7 +224,17 @@ export default function EstrattoContoPage() {
         msgSupplementare = ' (File salvato come estratto conto principale)';
       }
 
-      const noteJson = JSON.stringify({ dal: nuovoDal, al: nuovoAl });
+      const dataSaldoFinale = risultato.data_saldo_finale || risultato.periodo_a || nuovoAl;
+      const noteJson = JSON.stringify({
+        dal: nuovoDal,
+        al: nuovoAl,
+        saldo_iniziale: risultato.saldo_iniziale ?? null,
+        data_saldo_iniziale: risultato.data_saldo_iniziale ?? null,
+        saldo_finale: risultato.saldo_finale ?? null,
+        data_saldo_finale: dataSaldoFinale ?? null,
+        banca: risultato.banca ?? null,
+        conto: risultato.conto ?? null
+      });
       await uploadDoc(file, 'estratto_conto', file.name.replace(/\.[^.]+$/, ''), noteJson);
 
       setUploadProgress(`${records.length} movimenti importati${msgSupplementare}`);
@@ -248,12 +263,17 @@ export default function EstrattoContoPage() {
   const totaleUscite = movimenti.filter(m => m.tipo === 'uscita').reduce((a, m) => a + Math.abs(m.importo), 0);
   const nonRiconciliati = movimenti.filter(m => !m.riconciliato).length;
 
+  const infoDoc = parseDateEstratto(docEstratto);
   const ultimoMovConSaldo = movimenti.find(m => m.saldo != null && m.saldo !== '');
-  const saldoFinaleVal = ultimoMovConSaldo
-    ? `€ ${Number(ultimoMovConSaldo.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}`
-    : (movimenti.length > 0 ? `€ ${(totaleEntrate - totaleUscite).toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : '—');
-  const saldoFinaleLabel = ultimoMovConSaldo
-    ? `Saldo Finale (al ${formattaData(ultimoMovConSaldo.data_movimento)})`
+  const saldoFinaleVal = infoDoc.saldo_finale != null
+    ? `€ ${Number(infoDoc.saldo_finale).toLocaleString('it-IT', { minimumFractionDigits: 2 })}`
+    : (ultimoMovConSaldo
+      ? `€ ${Number(ultimoMovConSaldo.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}`
+      : (movimenti.length > 0 ? `€ ${(totaleEntrate - totaleUscite).toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : '—'));
+
+  const dataSaldoFin = infoDoc.data_saldo_finale || ultimoMovConSaldo?.data_movimento || infoDoc.al;
+  const saldoFinaleLabel = dataSaldoFin
+    ? `Saldo Finale (al ${formattaData(dataSaldoFin)})`
     : 'Saldo Finale C/C';
 
   return (

@@ -213,6 +213,28 @@ export default function CondominiDetailPage() {
     if (!id) return
     let isMounted = true
     async function fetchSaldoConto() {
+      // 1. Cerca il documento attivo dell'estratto conto con metadata
+      const { data: docData } = await supabase
+        .from('documenti_condominio')
+        .select('note')
+        .eq('condominio_id', id)
+        .eq('tipo', 'estratto_conto')
+        .maybeSingle()
+
+      let saldoDaDoc = null
+      let dataSaldoDaDoc = null
+
+      if (docData?.note) {
+        try {
+          const parsed = JSON.parse(docData.note)
+          if (parsed?.saldo_finale != null) {
+            saldoDaDoc = Number(parsed.saldo_finale)
+            dataSaldoDaDoc = parsed.data_saldo_finale || parsed.al
+          }
+        } catch {}
+      }
+
+      // 2. Movimenti estratto conto
       const { data, error } = await supabase
         .from('estratto_conto')
         .select('data_movimento, saldo, importo')
@@ -221,7 +243,13 @@ export default function CondominiDetailPage() {
       
       if (!isMounted) return
 
-      if (!error && data && data.length > 0) {
+      if (saldoDaDoc != null) {
+        setSaldoConto({
+          saldo: saldoDaDoc,
+          data: dataSaldoDaDoc || (data?.[0]?.data_movimento),
+          fonte: 'estratto'
+        })
+      } else if (!error && data && data.length > 0) {
         const movConSaldo = data.find(m => m.saldo != null && m.saldo !== '')
         if (movConSaldo) {
           setSaldoConto({

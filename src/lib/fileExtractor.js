@@ -259,7 +259,11 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
 4. FORMATO DATE ISO (YYYY-MM-DD):
    - Estrai la data del movimento in formato YYYY-MM-DD. Se la data riporta solo giorno e mese (es. "15/03"), desumi l'anno corretto dal periodo generale dell'estratto conto.
 5. RESILIENZA DI LAYOUT:
-   - Ignora righe di intestazione ripetute su ciascuna pagina, saldi intermedi di pagina o pie' di pagina. Estrai solo i movimenti effettivi.`;
+   - Ignora righe di intestazione ripetute su ciascuna pagina, saldi intermedi di pagina o pie' di pagina. Estrai solo i movimenti effettivi.
+6. SALDO FINALE E RELATIVA DATA:
+   - Cerca accuratamente se nel documento è riportato il "Saldo Finale" / "Saldo di Chiusura" / "Nuovo Saldo" (es. "Saldo al 30/06/2026: € 14.250,00").
+   - Estrai "saldo_finale" (numero) e la relativa data in "data_saldo_finale" (YYYY-MM-DD).
+   - Estrai anche "saldo_iniziale" e "data_saldo_iniziale" se presenti.`;
 
   const jsonSchema = {
     type: "OBJECT",
@@ -278,8 +282,10 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
       dati: {
         type: "OBJECT",
         properties: {
-          saldo_iniziale: { type: "NUMBER", nullable: true },
-          saldo_finale: { type: "NUMBER", nullable: true },
+          saldo_iniziale: { type: "NUMBER", nullable: true, description: "Saldo contabile all'inizio del periodo" },
+          data_saldo_iniziale: { type: "STRING", nullable: true, description: "Data del saldo iniziale (YYYY-MM-DD)" },
+          saldo_finale: { type: "NUMBER", nullable: true, description: "Saldo contabile finale al termine del periodo" },
+          data_saldo_finale: { type: "STRING", nullable: true, description: "Data esatta a cui si riferisce il saldo finale (YYYY-MM-DD)" },
           periodo_da: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
           periodo_a: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
           banca: { type: "STRING", nullable: true },

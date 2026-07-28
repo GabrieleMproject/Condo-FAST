@@ -242,18 +242,24 @@ export async function estraiMovimentiBancari(file, condominioCorrente = null) {
     ? `\n\nCONTESTO CONDOMINIO ATTIVO:\n- Nome: "${condominioCorrente.nome || ''}"\n- Codice Fiscale: "${condominioCorrente.codice_fiscale || ''}"\n- Indirizzo: "${condominioCorrente.indirizzo || ''}"\nVerifica se l'intestatario del conto o documento appartiene a questo condominio.`
     : '';
 
-  const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di estratti conto bancari condominiali.
-Estrai i movimenti bancari dal documento fornito.${condoInfoText}
+  const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi universale di estratti conto bancari condominiali.
+Il tuo compito è analizzare minuziosamente l'INTERO documento fornito (anche se composto da più pagine o con layout tabellari complessi/senza bordi) ed estrare TUTTI i movimenti contabili senza ometterne alcuno.${condoInfoText}
 
-Regole importanti:
-- Gli importi in USCITA (addebiti, pagamenti) devono essere NEGATIVI
-- Gli importi in ENTRATA (accrediti, versamenti) devono essere POSITIVI
-- Le date devono essere in formato ISO YYYY-MM-DD
-- Se la data ha solo giorno e mese, usa l'anno del periodo dell'estratto conto
-- Per le USCITE: identifica il fornitore dalla causale quando possibile → "fornitore_rilevato"
-- Per le ENTRATE (accrediti/bonifici dei condòmini): identifica il nominativo del PAGANTE dalla causale quando possibile → "pagante_rilevato". Estrai solo nome e cognome della persona, senza la parte descrittiva.
-- "fornitore_rilevato" e "pagante_rilevato" sono mutuamente alternativi.
-- Se non riesci a interpretare un movimento, includilo comunque con i dati disponibili.`;
+REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
+1. SCANSIONE COMPLETA DI TUTTE LE PAGINE:
+   - Analizza l'intero documento dall'inizio alla fine (anche se lungo 10+ pagine). Non fermarti alla prima pagina.
+2. INDIVIDUAZIONE SEGNI ED IMPORTI:
+   - Gli importi in USCITA (addebiti, pagamenti, addebiti SDD, commissioni, bonifici in uscita, F24, prelievi) devono essere SEMPRE NEGATIVI (es. -150.00).
+   - Gli importi in ENTRATA (accrediti, versamenti condòmini, bonifici in entrata, storni a favore) devono essere SEMPRE POSITIVI (es. +200.00).
+   - Cerca sinonimi di intestazione colonna: "Addebito/Accredito", "Dare/Avere", "Importo operazione", "Importo in Euro", "Segno +/-", "Entrate/Uscite".
+3. RILEVAMENTO SOGGETTI (PAGANTI E FORNITORI):
+   - Per le ENTRATE (accrediti/bonifici dei condòmini): individua il nominativo della persona dalla causale/descrizione (es. "Bonifico da Rossi Mario quota int. 4") → "pagante_rilevato": "Rossi Mario". Estrai SOLO nome e cognome della persona, eliminando causali contabili o codici CRO/TRN.
+   - Per le USCITE: individua la ragione sociale della ditta o fornitore dalla causale/descrizione (es. "SDD Enel Energia", "Pagamento Fattura Ditta Bianchi") → "fornitore_rilevato": "Ditta Bianchi" o "Enel Energia".
+   - "fornitore_rilevato" e "pagante_rilevato" sono mutuamente alternativi.
+4. FORMATO DATE ISO (YYYY-MM-DD):
+   - Estrai la data del movimento in formato YYYY-MM-DD. Se la data riporta solo giorno e mese (es. "15/03"), desumi l'anno corretto dal periodo generale dell'estratto conto.
+5. RESILIENZA DI LAYOUT:
+   - Ignora righe di intestazione ripetute su ciascuna pagina, saldi intermedi di pagina o pie' di pagina. Estrai solo i movimenti effettivi.`;
 
   const jsonSchema = {
     type: "OBJECT",
@@ -308,10 +314,10 @@ Regole importanti:
     : `Analizza questo estratto conto bancario ed estrai tutti i movimenti.\n\nContenuto del file:\n${contenuto}`;
 
   const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 4000, jsonMode: true, jsonSchema })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema })
     : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000, jsonMode: true, jsonSchema })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 4000, jsonMode: true, jsonSchema });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema });
 
   return pulisciEdEstraiJson(risposta, true);
 }
@@ -328,26 +334,35 @@ export async function estraiFattura(file, condominioCorrente = null) {
     ? `\n\nCONTESTO CONDOMINIO ATTIVO:\n- Nome: "${condominioCorrente.nome || ''}"\n- Codice Fiscale: "${condominioCorrente.codice_fiscale || ''}"\n- Indirizzo: "${condominioCorrente.indirizzo || ''}"\nVerifica se l'intestatario o destinatario della fattura corrisponde a questo condominio.`
     : '';
 
-  const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi di fatture di fornitori condominiali.
-Estrai i dati della fattura.${condoInfoText}
+  const systemPrompt = `Sei un esperto contabile italiano specializzato nell'analisi universale di fatture, scontrini, ricevute e note di credito per la gestione condominiale.
+Il tuo compito è estrarre con la massima precisione i dati fiscali e contabili dal documento, indipendentemente dal suo layout (fattura elettronica analogica, scontrino cartaceo, ricevuta d'opera, nota pro-forma) e anche se articolato su più pagine.${condoInfoText}
 
-Regole Ritenuta d'Acconto:
-- Se la fattura appartiene alla categoria "utenze" (es. acqua, luce, gas, telefonia) o "assicurazione", o acquisto beni, ritenuta NON si applica (imponibile 0, aliquota 0, importo 0, tributo null).
-- Se fornitore è in Regime Forfettario o dei minimi, ritenuta NON si applica (tutto 0/null).
-- Negli altri casi (prestazioni di servizi, appalto, professionisti):
-  - "imponibile_ritenuta": solitamente coincide con l'importo netto.
-  - "aliquota_ritenuta_percentuale": es. 4.00 per ditte/appalti, 20.00 per professionisti.
-  - "importo_ritenuta": (imponibile_ritenuta * aliquota / 100).
-- "codice_tributo_f24":
-  - "1019" per contratti d'appalto condominio (es: ditte di pulizie, imprese edili, ascensori, giardinaggio - 4%).
-  - "1020" per contratti d'opera (4%).
-  - "1040" per compensi per prestazioni di lavoro autonomo/professionisti (20%).
-
-Regole Generali:
-- Se la fattura ha più righe, somma gli importi
-- La categoria deve essere appropriata (manutenzione, pulizie, utenze, assicurazione, amministrazione, altro)
-- Gli importi devono essere numeri puri
-- Se un campo non è presente, usa null.`;
+REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
+1. FORNITORE E PARTITA IVA / CF:
+   - Estrai la Ragione Sociale completa del fornitore o professionista emittente (solitamente presente nell'intestazione in alto o nel piè di pagina).
+   - Estrai la Partita IVA (11 cifre) o il Codice Fiscale del fornitore.
+2. IMPORTI E TOTALE DOCUMENTO (Tolleranza sinonimi):
+   - "importo_totale": Cerca "Totale Documento", "Totale da Pagare", "Importo Complessivo", "Netto a Pagare", "Somma Dovuta", "Totale Euro". Se ci sono più righe o pagine, estrai il totale generale finale.
+   - "importo_netto": Imponibile prima dell'IVA (pari all'importo totale se esente IVA o utenza).
+   - "importo_iva": L'importo IVA in Euro (0.00 se esente o non indicata).
+   - "aliquota_iva": Percentuale IVA applicata (es. 22.00, 10.00, 4.00 o 0.00).
+3. DATE (YYYY-MM-DD):
+   - "data_fattura": Data di emissione del documento (es. "Data documento", "Data fattura", "Del").
+   - "data_scadenza": Data limite di pagamento (se indicata, altrimenti null).
+4. CATEGORIE E DESCRIZIONE:
+   - Sintetizza l'oggetto dei lavori o servizi in "descrizione".
+   - Assegna una categoria coerente tra: "manutenzione", "pulizie", "utenze", "assicurazione", "amministrazione", "altro".
+5. REGOLE RITENUTA D'ACCONTO E CODICE TRIBUTO F24:
+   - Se la fattura riguarda "utenze" (acqua, luce, gas, telefonia), "assicurazione", o acquisto beni, la ritenuta NON si applica (imponibile 0, aliquota 0, importo 0, codice tributo null).
+   - Se il fornitore è in Regime Forfettario o dei Minimi (dicitura "operazione senza applicazione della ritenuta d'acconto"), la ritenuta è 0.00.
+   - Negli altri casi (prestazioni di servizi, ditte edili, giardinieri, ascensoristi, professionisti):
+     - "imponibile_ritenuta": solitamente coincide con l'importo netto o compenso.
+     - "aliquota_ritenuta_percentuale": 4.00 per ditte/appalti (pulizie, edilizia, manutenzioni) o 20.00 per professionisti/prestazioni d'opera.
+     - "importo_ritenuta": (imponibile_ritenuta * aliquota / 100).
+     - "codice_tributo_f24":
+       - "1019" per contratti d'appalto condominio (4%).
+       - "1020" per contratti d'opera (4%).
+       - "1040" per compensi professionisti / lavoro autonomo (20%).`;
 
   const jsonSchema = {
     type: "OBJECT",
@@ -401,10 +416,10 @@ Regole Generali:
     : `Analizza questa fattura ed estrai i dati.\n\n${contenuto}`;
 
   const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 2000, jsonMode: true, jsonSchema })
+    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema })
     : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000, jsonMode: true, jsonSchema })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 2000, jsonMode: true, jsonSchema });
+    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema })
+    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema });
 
   return pulisciEdEstraiJson(risposta, false);
 }

@@ -53,10 +53,7 @@ function getModel(funzione?: string): string {
   const proFunctions = [
     'ricerca_verbali_ai',
     'criterio_ripartizione',
-    'struttura_tabella_millesimale',
-    'assistenza_chat',
-    'estrai_fattura',
-    'estrai_movimenti'
+    'struttura_tabella_millesimale'
   ];
   if (funzione && proFunctions.includes(funzione)) {
     return 'gemini-pro-latest';
@@ -185,10 +182,7 @@ serve(async (req) => {
       }]
     }
 
-    let maxTokens = body.maxTokens || body.max_tokens || 8192
-    if (maxTokens < 8192) {
-      maxTokens = 8192
-    }
+    let maxTokens = body.maxTokens || body.max_tokens || 4000
     // H5 fix: cap maxTokens to prevent excessive output/cost
     const MAX_OUTPUT_TOKENS = 16384
     if (maxTokens > MAX_OUTPUT_TOKENS) {

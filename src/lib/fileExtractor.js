@@ -185,7 +185,7 @@ const MIME_CONSENTITI = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // ✅ .docx
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
   'text/csv',
   'text/plain',
   'image/jpeg',

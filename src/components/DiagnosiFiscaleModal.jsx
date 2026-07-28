@@ -1,6 +1,6 @@
 // src/components/DiagnosiFiscaleModal.jsx
 import React, { useState } from 'react'
-import { ShieldCheck, AlertCircle, AlertTriangle, CheckCircle2, X, Activity, ExternalLink } from 'lucide-react'
+import { ShieldCheck, AlertCircle, AlertTriangle, CheckCircle2, X, Activity, ExternalLink, Building2 } from 'lucide-react'
 
 export default function DiagnosiFiscaleModal({ isOpen, onClose, condominioNome, diagnosiResult }) {
   const [filtroSelezionato, setFiltroSelezionato] = useState('tutti') // tutti | errore | warning
@@ -147,9 +147,10 @@ export default function DiagnosiFiscaleModal({ isOpen, onClose, condominioNome, 
                     <span style={{
                       fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
                       background: 'var(--app-bg)', border: '1px solid var(--border-color)',
-                      padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap'
+                      padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap',
+                      display: 'inline-flex', alignItems: 'center', gap: 4
                     }}>
-                      🏢 {ano.condominioNome || condominioNome}
+                      <Building2 size={12} /> {ano.condominioNome || condominioNome}
                     </span>
                   )}
                 </div>

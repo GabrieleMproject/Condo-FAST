@@ -919,8 +919,9 @@ Formato JSON:
 
         {/* Error alert se presenti */}
         {errori.length > 0 && (
-          <div style={{ background: '#ef444415', border: '1px solid #ef444433', borderRadius: 10, padding: 12, marginBottom: 16, color: '#ef4444', fontSize: 13 }}>
-            ⚠️ Impossibile estrarre i dati da {errori.length} file (es. file illeggibile). Gli altri file rimangono pronti per il salvataggio.
+          <div style={{ background: '#ef444415', border: '1px solid #ef444433', borderRadius: 10, padding: 12, marginBottom: 16, color: '#ef4444', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+            <span>Impossibile estrarre i dati da {errori.length} file (es. file illeggibile). Gli altri file rimangono pronti per il salvataggio.</span>
           </div>
         )}
 

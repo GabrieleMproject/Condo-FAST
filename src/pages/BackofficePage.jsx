@@ -5,7 +5,7 @@ import {
   Users, Ticket, Search, Save, MessageSquare, Send, Gift, Plus, 
   Building2, Sparkles, Activity, ShieldCheck, DollarSign, Cpu, Eye, 
   FileText, ToggleLeft, ToggleRight, CheckCircle2, AlertTriangle, RefreshCw, 
-  Layers, Zap, X, ChevronRight, HelpCircle
+  Layers, Zap, X, ChevronRight, HelpCircle, BookOpen, Bot
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { callGemini } from '../lib/geminiClient'
@@ -1039,7 +1039,9 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                               <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                                 {u.nome || u.cognome ? `${u.nome || ''} ${u.cognome || ''}`.trim() : '—'}
                                 {u.note_admin && (
-                                  <span title={`Note Admin: ${u.note_admin}`} style={{ cursor: 'help' }}>📝</span>
+                                  <span title={`Note Admin: ${u.note_admin}`} style={{ cursor: 'help', display: 'inline-flex', alignItems: 'center' }}>
+                                    <FileText size={14} color="#3b82f6" />
+                                  </span>
                                 )}
                               </div>
                               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
@@ -1279,10 +1281,12 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                       padding: '6px 14px',
                       fontSize: 13,
                       fontWeight: 600,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center'
                     }}
                   >
-                    📚 Articoli Knowledge Base ({knowledgeList.length})
+                    <BookOpen size={14} style={{ marginRight: 6 }} /> Articoli Knowledge Base ({knowledgeList.length})
                   </button>
                   <button
                     onClick={() => setKbSubTab('supervisione')}
@@ -1294,10 +1298,12 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                       padding: '6px 14px',
                       fontSize: 13,
                       fontWeight: 600,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center'
                     }}
                   >
-                    🤖 Supervisione Chatbot AI & QA ({chatLogsAll.length})
+                    <Bot size={14} style={{ marginRight: 6 }} /> Supervisione Chatbot AI & QA ({chatLogsAll.length})
                   </button>
                 </div>
 
@@ -2023,7 +2029,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                 onClick={() => setUser360Tab('note')}
                 style={{ ...styles.subTabBtn, ...(user360Tab === 'note' ? styles.subTabActive : {}) }}
               >
-                <FileText size={14} /> Note Admin {selectedUser360.note_admin ? '📝' : ''}
+                <FileText size={14} /> Note Admin
               </button>
               <button
                 onClick={() => setUser360Tab('bonus')}

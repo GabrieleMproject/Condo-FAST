@@ -19,7 +19,7 @@ export default function GuidaRapidaModal({ isOpen, onClose }) {
         'L\'IA di Gemini analizzerà automaticamente la struttura ed estrarrà nomi, codici fiscali, unità e millesimi.',
         'Verifica l\'anteprima estratta nella modale e clicca "Conferma ed Importa" per popolare il database.'
       ],
-      tip: '💡 Puoi caricare anche foto o scansioni di schede cartacee: l\'IA estrae i dati catastali senza errori di battitura!'
+      tip: 'Puoi caricare anche foto o scansioni di schede cartacee: l\'IA estrae i dati catastali senza errori di battitura!'
     },
     {
       id: 'spese',
@@ -33,7 +33,7 @@ export default function GuidaRapidaModal({ isOpen, onClose }) {
         'L\'IA compila in automatico: Fornitore, Importo Totale, Data Spesa e Ritenuta d\'Acconto (se presente).',
         'Seleziona la tabella millesimale (es. Proprietà generale o Ascensore) per ripartire la spesa in quota per ciascuna unità.'
       ],
-      tip: '⚡ Se una fattura contiene la ritenuta del 4% (F24), CondoSmart calcola automaticamente il netto a pagare e registra la scadenza F24 per il 16 del mese successivo.'
+      tip: 'Se una fattura contiene la ritenuta del 4% (F24), CondoSmart calcola automaticamente il netto a pagare e registra la scadenza F24 per il 16 del mese successivo.'
     },
     {
       id: 'banca',
@@ -47,7 +47,7 @@ export default function GuidaRapidaModal({ isOpen, onClose }) {
         'Clicca su "Riconciliazioni Entrate" o "Riconciliazioni Uscite": il sistema associa ogni bonifico alla rata del condomino o alla fattura del fornitore.',
         'Conferma gli abbinamenti con un solo click.'
       ],
-      tip: '🎯 In caso di pagamenti parziali, l\'IA propone l\'abbinamento calcolando automaticamente il residuo da saldare per l\'unità.'
+      tip: 'In caso di pagamenti parziali, l\'IA propone l\'abbinamento calcolando automaticamente il residuo da saldare per l\'unità.'
     },
     {
       id: 'consuntivo',
@@ -61,7 +61,7 @@ export default function GuidaRapidaModal({ isOpen, onClose }) {
         'Clicca su "Stampa Consuntivo PDF": verrà generato il prospetto ufficiale strutturato secondo le sezioni A, B, C, D, E dell\'art. 1130-bis c.c.',
         'Il PDF include il logo del tuo studio, l\'intestazione personalizzata e la quadratura di cassa automatica.'
       ],
-      tip: '📄 Il consuntivo in PDF Landscape è ottimizzato per la stampa e pronto per la notifica e l\'approvazione in assemblea.'
+      tip: 'Il consuntivo in PDF Landscape è ottimizzato per la stampa e pronto per la notifica e l\'approvazione in assemblea.'
     },
     {
       id: 'solleciti',
@@ -75,7 +75,7 @@ export default function GuidaRapidaModal({ isOpen, onClose }) {
         'L\'IA genera una lettera di sollecito personalizzata con l\'estratto conto aggiornato dell\'unità.',
         'Invia direttamente via email (via Resend) o scarica il PDF pronto da inviare a mezzo raccomandata.'
       ],
-      tip: '✉️ Il condomino riceverà un\'email professionale contenente le coordinate bancarie IBAN e il riepilogo preciso delle quote insolute.'
+      tip: 'Il condomino riceverà un\'email professionale contenente le coordinate bancarie IBAN e il riepilogo preciso delle quote insolute.'
     }
   ]
 

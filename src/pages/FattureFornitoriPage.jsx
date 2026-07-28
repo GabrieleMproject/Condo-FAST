@@ -144,7 +144,7 @@ export default function FattureFornitoriPage() {
     setUploadProgress('Verifica integrità file e controllo duplicati...');
 
     try {
-      // 🛡️ Controllo Anti-Duplicato SHA-256
+      // Controllo Anti-Duplicato SHA-256
       const hash = await calcolaFileHash(file);
       if (hash) {
         const { data: fatturaEsistente } = await supabase
@@ -156,7 +156,7 @@ export default function FattureFornitoriPage() {
 
         if (fatturaEsistente) {
           const confermata = window.confirm(
-            `⚠️ ATTENZIONE DUPLICATO:\nQuesto documento risulta già caricato nel sistema per la fattura "${fatturaEsistente.fornitore}" del ${fatturaEsistente.data_fattura} (€ ${fatturaEsistente.importo_totale}).\n\nVuoi procedere comunque col ricaricamento?`
+            `ATTENZIONE DUPLICATO:\nQuesto documento risulta già caricato nel sistema per la fattura "${fatturaEsistente.fornitore}" del ${fatturaEsistente.data_fattura} (€ ${fatturaEsistente.importo_totale}).\n\nVuoi procedere comunque col ricaricamento?`
           );
           if (!confermata) {
             setUploading(false);

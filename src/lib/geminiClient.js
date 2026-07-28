@@ -60,7 +60,7 @@ async function callEdge(body) {
     body: JSON.stringify(body),
   });
 
-  // ✅ Gestione 429 — rate limit raggiunto
+  // Gestione 429 — rate limit raggiunto
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get('Retry-After') ?? '60', 10)
     throw new RateLimitError(retryAfter)
@@ -199,7 +199,7 @@ export async function callGeminiDocument(prompt, base64Document, opts = {}) {
   const data = await callEdge({
     type:      'document',
     prompt:    sanitizeInput(prompt),
-    document:  base64Document,   // ⚠️ NON sanitizzare: base64 grezzo
+    document:  base64Document,   // NON sanitizzare: base64 grezzo
     mediaType,
     maxTokens,
     system:    system ? sanitizeInput(system, 4000) : undefined,

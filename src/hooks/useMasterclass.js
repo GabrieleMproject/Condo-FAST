@@ -186,10 +186,10 @@ export function useMasterclass() {
         supabase
           .rpc('reward_masterclass_bonus', { target_user_id: user.id })
           .then(({ error }) => {
-            alert('🎉 Complimenti! Hai completato l\'intero Tutorial Guidato Condominiale! Ti sono stati accreditati +100 crediti AI bonus gratuiti!')
+            alert('Complimenti! Hai completato l\'intero Tutorial Guidato Condominiale! Ti sono stati accreditati +100 crediti AI bonus gratuiti!')
           })
           .catch(() => {
-            alert('🎉 Complimenti! Hai completato l\'intero Tutorial Guidato Condominiale!')
+            alert('Complimenti! Hai completato l\'intero Tutorial Guidato Condominiale!')
           })
       }
 

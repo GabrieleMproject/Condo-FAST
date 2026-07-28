@@ -51,7 +51,7 @@ export default function EsercizioSelectorHeader({
             >
               {esercizi.map((e) => (
                 <option key={e.id} value={e.id} style={S.option}>
-                  Anno {e.anno} ({formattaData(e.data_inizio)} – {formattaData(e.data_fine)}) {e.stato === 'chiuso' ? '🔒' : ''}
+                  Anno {e.anno} ({formattaData(e.data_inizio)} – {formattaData(e.data_fine)}) {e.stato === 'chiuso' ? '(Chiuso)' : ''}
                 </option>
               ))}
             </select>
@@ -64,7 +64,8 @@ export default function EsercizioSelectorHeader({
       {esercizioAttivo && (
         <div style={S.rightMetaGroup}>
           <span style={S.dateRangeBadge}>
-            📅 {formattaData(esercizioAttivo.data_inizio)} → {formattaData(esercizioAttivo.data_fine)}
+            <Calendar size={13} style={{ marginRight: 5, verticalAlign: 'middle' }} />
+            {formattaData(esercizioAttivo.data_inizio)} → {formattaData(esercizioAttivo.data_fine)}
           </span>
 
           <span

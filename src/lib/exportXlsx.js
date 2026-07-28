@@ -76,8 +76,8 @@ function buildFoglioRipartizione(ws, spese, unita, ripartizioni) {
     const rips = ripartizioni.filter(r => r.spesa_id === s.id);
     const rowData = {
       descrizione: s.descrizione, categoria: s.categoria || '',
-      criterio: s.criterio || '',            // ✅ fix
-      data: fmtData(s.data_spesa),           // ✅ fix (era data_competenza)
+      criterio: s.criterio || '',            // fix
+      data: fmtData(s.data_spesa),           // fix (era data_competenza)
       totale: s.importo,
     };
     let sommaRip = 0;

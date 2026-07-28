@@ -6,7 +6,7 @@ import { useDocumenti } from '../hooks/useDocumenti';
 import PlanGate from '../components/PlanGate';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
 import ModalWarningPertinenza from '../components/ModalWarningPertinenza';
-import { Trash2, Building2, User, Check, AlertTriangle, Settings, Sliders, Bot, Calendar, Download, RefreshCw, Loader2, UploadCloud, CheckCircle2 } from 'lucide-react';
+import { Trash2, Building2, User, Check, AlertTriangle, Settings, Sliders, Bot, Calendar, Download, RefreshCw, Loader2, UploadCloud, CheckCircle2, X } from 'lucide-react';
 
 const TIPI_ACCETTATI = '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png';
 const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—');
@@ -126,7 +126,7 @@ export default function EstrattoContoPage() {
     setUploadProgress('Verifica integrità file e controllo duplicati...');
 
     try {
-      // 🛡️ Controllo Anti-Duplicato SHA-256
+      // Controllo Anti-Duplicato SHA-256
       const hash = await calcolaFileHash(file);
       if (hash) {
         const { data: docEsistente } = await supabase
@@ -138,7 +138,7 @@ export default function EstrattoContoPage() {
 
         if (docEsistente) {
           const confermata = window.confirm(
-            `⚠️ ATTENZIONE DUPLICATO:\nQuesto estratto conto ("${docEsistente.nome}") risulta già caricato nel sistema il ${formattaData(docEsistente.created_at)}.\n\nVuoi procedere comunque con il re-import?`
+            `ATTENZIONE DUPLICATO:\nQuesto estratto conto ("${docEsistente.nome}") risulta già caricato nel sistema il ${formattaData(docEsistente.created_at)}.\n\nVuoi procedere comunque con il re-import?`
           );
           if (!confermata) {
             setUploading(false);
@@ -189,7 +189,7 @@ export default function EstrattoContoPage() {
         return;
       }
 
-      // 🔗 Verifica Continuità Saldi Bancari (Saldo Iniziale vs Saldo Finale Precedente)
+      // Verifica Continuità Saldi Bancari (Saldo Iniziale vs Saldo Finale Precedente)
       const infoDocPrecedente = parseDateEstratto(docEstratto);
       if (risultato.saldo_iniziale != null && infoDocPrecedente?.saldo_finale != null) {
         const diff = Math.abs(Number(risultato.saldo_iniziale) - Number(infoDocPrecedente.saldo_finale));
@@ -373,9 +373,9 @@ export default function EstrattoContoPage() {
           </div>
           <button
             onClick={() => setWarningDiscontinuita(null)}
-            style={{ background: 'transparent', border: 'none', color: '#fbbf24', cursor: 'pointer', fontSize: 16, fontWeight: 'bold' }}
+            style={{ background: 'transparent', border: 'none', color: '#fbbf24', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
           >
-            ✕
+            <X size={16} />
           </button>
         </div>
       )}

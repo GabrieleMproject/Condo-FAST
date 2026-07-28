@@ -85,8 +85,11 @@ function getUpgradeFeatures(piano) {
       'Rendiconto annuale PDF automatico',
       'Assemblee e verbali AI',
       'Notifiche automatiche rate scadute',
-      '500 AI calls/mese',           // ✅ concordato
-      '50 condomini inclusi',        // ✅ concordato
+      '500 AI calls/mese',           // concordato
+      '50 condomini inclusi',        // concordato
+      'Assistenza prioritaria',
+      'Export consuntivo PDF & XLSX',
+      'Tutte le Edge Functions Supabase',
     ],
     professional: [
       'Multi-utente fino a 5 collaboratori',
@@ -94,7 +97,7 @@ function getUpgradeFeatures(piano) {
       'Distinta CBI F24 massiva + Open Banking',
       'Alert scadenze automatici',
       'AI calls illimitate',
-      'Condomini illimitati',        // ✅ concordato
+      'Condomini illimitati',        // concordato
       'API access + SLA dedicato',
     ],
   }

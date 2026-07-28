@@ -80,7 +80,7 @@ const NAV_ITEMS = [
   { path: '/postbox',      label: 'Postbox Studio',        icon: Inbox, badge: 'STUDIO' },
   { path: '/comunicazioni', label: 'Comunicazioni',        icon: Send },
   { path: '/fiscale',      label: 'Certificazioni',        icon: Landmark },
-  { path: '/archivio',     label: 'Storico operazioni',    icon: Archive }, // ✅ rinominato
+  { path: '/archivio',     label: 'Storico operazioni',    icon: Archive }, // rinominato
   { path: '/migrazione',   label: 'Migra gestionale',      icon: ArrowLeftRight, badge: 'NEW' },
   { path: '/assistenza',   label: 'Assistenza',            icon: LifeBuoy },
   { path: '/impostazioni', label: 'Impostazioni',          icon: Settings },
@@ -420,7 +420,7 @@ export default function AppLayout() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Topbar */}
         <header style={{ height: 64, background: 'var(--app-bg)', borderBottom: '1px solid var(--border-color-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
-          {/* ✅ breadcrumb legge la label aggiornata da NAV_ITEMS */}
+          {/* breadcrumb legge la label aggiornata da NAV_ITEMS */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               className="mobile-menu-btn"

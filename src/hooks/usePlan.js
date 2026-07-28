@@ -21,7 +21,7 @@ export const PIANI = {
   base: {
     label: 'Base',
     canone: 129,
-    condomini_inclusi: 50,       // ✅ 50 condomini per Base
+    condomini_inclusi: 50,       // 50 condomini per Base
     extra_per_cond: 7,
     ai_calls_mese: 100,          // 100 chiamate AI
     portale_condomino: false,
@@ -34,7 +34,7 @@ export const PIANI = {
   studio: {
     label: 'Studio',
     canone: 249,
-    condomini_inclusi: 100,      // ✅ fino a 100 condomini per Studio
+    condomini_inclusi: 100,      // fino a 100 condomini per Studio
     extra_per_cond: 6,
     ai_calls_mese: 500,          // 500 chiamate AI
     portale_condomino: true,
@@ -47,9 +47,9 @@ export const PIANI = {
   professional: {
     label: 'Professional',
     canone: 399,
-    condomini_inclusi: null,     // ✅ illimitati
+    condomini_inclusi: null,     // illimitati
     extra_per_cond: 0,
-    ai_calls_mese: 1000,         // ✅ 1000 chiamate AI/mese
+    ai_calls_mese: 1000,         // 1000 chiamate AI/mese
     portale_condomino: true,
     rendiconto_pdf: true,
     assemblee: true,
@@ -139,7 +139,7 @@ export function PlanProvider({ children }) {
 
       setProfile(prof)
 
-      // ✅ Fix: usa amministratore_id (colonna canonica su condomini)
+      // Fix: usa amministratore_id (colonna canonica su condomini)
       const { count: condCount } = await supabase
         .from('condomini')
         .select('id', { count: 'exact', head: true })

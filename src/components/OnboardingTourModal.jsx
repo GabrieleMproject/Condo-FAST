@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Sparkles, X, ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react'
+import { Sparkles, X, ChevronRight, ChevronLeft, CheckCircle, Building2, FolderSync, FileText, Landmark, PieChart, MessageSquare } from 'lucide-react'
 
 export default function OnboardingTourModal({ isOpen, onClose }) {
   const [currentStep, setCurrentStep] = useState(0)
@@ -8,52 +8,60 @@ export default function OnboardingTourModal({ isOpen, onClose }) {
 
   const tourSteps = [
     {
-      title: '👋 Benvenuto in CondoSmart!',
+      title: 'Benvenuto in CondoSmart!',
       subtitle: 'Il gestionale condominiale potenziato dall\'Intelligenza Artificiale.',
       desc: 'In questo breve tour di 60 secondi ti mostreremo dove trovare i comandi principali per semplificare e velocizzare la gestione del tuo studio.',
-      badge: 'PROVA GRATUITA'
+      badge: 'PROVA GRATUITA',
+      icon: Sparkles
     },
     {
-      title: '🏛️ Header & Esercizio Amministrativo',
+      title: 'Header & Esercizio Amministrativo',
       subtitle: 'Passaggio istantaneo tra esercizi contabili.',
       desc: 'In alto a destra nell\'header trovi la selezione rapida dell\'Esercizio Amministrativo (es. 2026 Ordinario). Cambiandolo, tutti i dati di spese, rate e bilanci si sincronizzano all\'istante senza ricaricare la pagina.',
-      badge: 'NAVIGAZIONE'
+      badge: 'NAVIGAZIONE',
+      icon: Building2
     },
     {
-      title: '📂 Migrazione AI & Anagrafica',
+      title: 'Migrazione AI & Anagrafica',
       subtitle: 'Carica i tuoi vecchi file Excel/PDF in 1 click.',
       desc: 'Dalla barra laterale accedi a "Migrazione AI": carica l\'anagrafica del tuo vecchio gestionale o i dati catastali. L\'IA riconoscerà automaticamente condomòni, unità e millesimi.',
-      badge: 'INTELLIGENZA ARTIFICIALE'
+      badge: 'INTELLIGENZA ARTIFICIALE',
+      icon: FolderSync
     },
     {
-      title: '📄 Registrazione Spese & Lettura Fatture',
+      title: 'Registrazione Spese & Lettura Fatture',
       subtitle: 'Lettura automatica di PDF, immagini e scontrini.',
       desc: 'Nel tab Spese puoi trascinare qualsiasi fattura o scontrino: Gemini estrarrà in automatico fornitore, data, importo e suggerirà la tabella millesimale corretta.',
-      badge: 'AUTOMAZIONE'
+      badge: 'AUTOMAZIONE',
+      icon: FileText
     },
     {
-      title: '🏛️ Estratto Conto & Riconciliazione Bancaria',
+      title: 'Estratto Conto & Riconciliazione Bancaria',
       subtitle: 'Riconcilia entrate ed uscite senza errori.',
       desc: 'Collega i movimenti del conto bancario o carica il file CSV/Excel per abbinare automaticamente le rate dei condòmini e i pagamenti ai fornitori.',
-      badge: 'BANCA & INCASSI'
+      badge: 'BANCA & INCASSI',
+      icon: Landmark
     },
     {
-      title: '📊 Consuntivo PDF & Solleciti Rate',
+      title: 'Consuntivo PDF & Solleciti Rate',
       subtitle: 'Bilanci trasparenti e gestione della morosità.',
       desc: 'Genera il consuntivo di legge ex Art. 1130-bis c.c. con branding del tuo studio in formato PDF landscape o invia solleciti integrati via email in 1 click.',
-      badge: 'DOCUMENTI & COMUNICAZIONE'
+      badge: 'DOCUMENTI & COMUNICAZIONE',
+      icon: PieChart
     },
     {
-      title: '💬 Assistente AI & Chatbot 24/7',
+      title: 'Assistente AI & Chatbot 24/7',
       subtitle: 'Supporto immediato in basso a destra.',
       desc: 'Hai dubbi su dove trovare una funzione? Clicca sul pulsante della chat in basso a destra: il nostro assistente AI conosce l\'intero software ed è pronto a guidarti!',
-      badge: 'ASSISTENZA'
+      badge: 'ASSISTENZA',
+      icon: MessageSquare
     }
   ]
 
   const step = tourSteps[currentStep]
   const isFirst = currentStep === 0
   const isLast = currentStep === tourSteps.length - 1
+  const StepIcon = step.icon || Sparkles
 
   const handleNext = () => {
     if (isLast) {
@@ -81,7 +89,7 @@ export default function OnboardingTourModal({ isOpen, onClose }) {
 
         <div style={styles.modalBody}>
           <div style={styles.iconBox}>
-            <Sparkles size={28} color="#3b82f6" />
+            <StepIcon size={28} color="#3b82f6" />
           </div>
           <h2 style={styles.title}>{step.title}</h2>
           <h4 style={styles.subtitle}>{step.subtitle}</h4>

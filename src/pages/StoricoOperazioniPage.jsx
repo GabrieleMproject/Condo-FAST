@@ -31,7 +31,7 @@ const AZIONE_COLORI = {
   DELETE: { bg: '#ef444422', color: '#f87171', label: 'Eliminazione' },
 }
 
-// ✅ Rinominato: ArchivioPage → StoricoOperazioniPage
+// Rinominato: ArchivioPage → StoricoOperazioniPage
 export default function StoricoOperazioniPage() {
   const { log, loading, totale, fetch } = useAuditLog()
   const [condomini, setCondomini] = useState([])
@@ -118,7 +118,7 @@ export default function StoricoOperazioniPage() {
 
   return (
     <div style={{ padding: 32, maxWidth: 1200, margin: '0 auto', fontFamily: 'Sora, sans-serif' }}>
-      {/* ✅ Header rinominato */}
+      {/* Header rinominato */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 26, fontWeight: 700 }}>
           Storico operazioni

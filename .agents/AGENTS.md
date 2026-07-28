@@ -20,6 +20,9 @@
 - Per edit già decisi / fix / wiring → procedere in batch.
 - Se mancano dettagli o ci sono incongruenze tra istruzioni, codice e documento di progetto → **fermarsi e chiedere** prima di scrivere.
 
+## Divieto Emoji (PERMANENTE)
+- **DIVIETO ASSOLUTO EMOJI**: Mai più implementare emoji o pittogrammi Unicode nell'interfaccia (UI, modali, tour guidati, alert, notifiche, log, commenti). Utilizzare **esclusivamente** le icone vettoriali di Lucide React (`lucide-react`) o simboli grafici SVG standard dove serve.
+
 ---
 
 ## Regole di sessione

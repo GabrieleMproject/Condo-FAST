@@ -68,7 +68,7 @@ export default function DocumentiCondominio({ condominioId }) {
     e.preventDefault()
     if (!selectedFile || !form.tipo) return
     setUploading(true)
-    // ✅ Messaggio generico per PDF e DOCX
+    // Messaggio generico per PDF e DOCX
     const ext = selectedFile.name.split('.').pop().toLowerCase()
     setUploadProgress(
       ext === 'pdf' || ext === 'docx'
@@ -332,7 +332,7 @@ export default function DocumentiCondominio({ condominioId }) {
                     <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Clicca per selezionare un file</span>
                   )}
                 </div>
-                {/* ✅ accept: .docx abilitato, .doc legacy rimosso */}
+                {/* accept: .docx abilitato, .doc legacy rimosso */}
                 <input ref={fileRef} type="file" style={{ display: 'none' }} onChange={handleFile}
                   accept=".pdf,.docx,.xls,.xlsx,.jpg,.png,.webp,.txt" />
               </div>

@@ -18,7 +18,7 @@ export const PIANI = {
     storico_anni: 3,
     api_access: false,
     features_list: [
-      { ok: true, label: '500 chiamate AI Gemini/mese' },
+      { ok: true, label: '500 chiamate AI / mese' },
       { ok: true, label: 'Fino a 50 condomini inclusi' },
       { ok: true, label: 'Fatturazione Elettronica SDI inclusa (0€ extra)' },
       { ok: true, label: 'OCR automatico Fatture & Estratti Conto' },
@@ -43,7 +43,7 @@ export const PIANI = {
     storico_anni: 1,
     api_access: false,
     features_list: [
-      { ok: true, label: '300 chiamate AI Gemini/mese' },
+      { ok: true, label: '300 chiamate AI / mese' },
       { ok: true, label: 'Fino a 50 condomini inclusi (+3€/cond. extra)' },
       { ok: true, label: 'Fatturazione Elettronica SDI inclusa (0€ extra)' },
       { ok: true, label: '1 Utente titolare incluso' },
@@ -70,7 +70,7 @@ export const PIANI = {
     storico_anni: 3,
     api_access: false,
     features_list: [
-      { ok: true, label: '800 chiamate AI Gemini/mese' },
+      { ok: true, label: '800 chiamate AI / mese' },
       { ok: true, label: 'Fino a 100 condomini inclusi (+2,50€/cond. extra)' },
       { ok: true, label: 'Fatturazione Elettronica SDI inclusa (0€ extra)' },
       { ok: true, label: '2 Collaboratori inclusi (+15€/m extra)' },
@@ -97,7 +97,7 @@ export const PIANI = {
     storico_anni: null,          // illimitato
     api_access: true,
     features_list: [
-      { ok: true, label: '2.000 chiamate AI Gemini/mese potenziate' },
+      { ok: true, label: '2.000 chiamate AI / mese potenziate' },
       { ok: true, label: 'Fino a 200 condomini inclusi (+2€/cond. extra)' },
       { ok: true, label: 'Fatturazione Elettronica SDI inclusa (0€ extra)' },
       { ok: true, label: '4 Collaboratori inclusi (+12€/m extra)' },

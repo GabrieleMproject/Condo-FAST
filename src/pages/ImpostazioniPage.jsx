@@ -1440,7 +1440,7 @@ export default function ImpostazioniPage() {
                     <Sparkles size={20} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>AI Gemini & Verbali Nativi</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>Assistente AI & Verbali Nativi</div>
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>OCR automatico, ricerca intelligente nei verbali d'assemblea e solleciti compresi.</div>
                   </div>
                 </div>

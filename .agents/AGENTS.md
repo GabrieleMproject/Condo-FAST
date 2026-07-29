@@ -339,6 +339,20 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Sincronizzazione URL Anti-Refresh (`useEsercizioCorrente.js`):** Creato l'hook custom che mantiene lo stato dell'esercizio sincronizzato con la query string dell'URL (`?esercizio=ID_ESERCIZIO`). Se l'utente ricarica la pagina o condivide il link, il contesto d'anno selezionato viene mantenuto fedelmente.
 - **Propagazione e Sincronizzazione a Tutte le Schede:** Sincronizzati i tab **Preventivo & Saldi** (`PreventivoSection`), **Rate** (`RateGridTab`), **Consuntivo** (`ConsuntivoTab`), **Finanze** (`FinanzeTab`) e **Spese** (`SpesePage`), ereditando l'esercizio selezionato in Header.
 
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S59 (29 Luglio 2026 - Apprendimento e Selezione Modello Consuntivo)
+
+### 1. Decisioni di Architettura e UI ("Propone → Conferma")
+- **Scelta Guidata tra Modello Identico e Modello CondoSmart (`ModelloConsuntivoModal.jsx`):** Quando l'amministratore carica un proprio documento di consuntivo (PDF, Excel, Word, Immagine), l'AI analizza la struttura del file e mostra una modale a due schede per consentire la scelta tra:
+  1. *Modello Identico Caricato*: Mantiene fedelmente l'ordine delle voci e le etichette delle categorie lette dal file dell'amministratore.
+  2. *Modello Proposto da CondoSmart (Raccomandato)*: Applica lo standard ottimizzato ex art. 1130-bis c.c. con le 5 sezioni A→E + Nota Sintetica, quadratura cassa e situazione fatture/F24.
+- **Supporto `tipo_modello` in `useConsuntivo.js`:** Memorizzato il campo `tipo_modello` (`'identico'` vs `'condosmart'`) all'interno dell'oggetto JSONB `struttura` in `consuntivo_template`.
+- **Banner dinamico in `ConsuntivoTab.jsx`:** Il banner visivo indica chiaramente se il rendiconto attivo sta utilizzando il *Modello Identico (da [FileOriginale])* o il *Modello Proposto da CondoSmart*.
+- **Qualità Grafica e Layout:** Chiarito il principio di prodotto per cui il Modello Identico rispetta fedelmente la struttura e le etichette dell'amministratore, renderizzandole con la veste grafica moderna, chiara e ad alto contrasto di CondoSmart (senza tentare cloni "pixel-perfect" instabili).
+- **Conformità UI:** La modale è stata realizzata senza emoji visive Unicode in UI, utilizzando esclusivamente le icone vettoriali di Lucide React (`FileText`, `Sparkles`, `CheckCircle2`, `ShieldCheck`, `ArrowRight`, `X`).
+
+
 ### 2. Normativa e Prevenzione Errori Contabili
 - **Gestione Esercizi Chiusi (Art. 1130-bis c.c.):** Se l'esercizio attivo in Header ha `stato === 'chiuso'`, l'interfaccia entra in modalità sola lettura protetta.
 - **Gestione Spese Tardive:** Le spese inserite in esercizi passati aperti ricadono di competenza nell'anno corretto; per esercizi già chiusi l'applicazione avvisa l'amministratore proponendo l'imputazione come spesa tardiva o la riapertura dell'esercizio prima di alterare un bilancio storico.

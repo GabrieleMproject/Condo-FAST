@@ -145,7 +145,7 @@ export function useConsuntivo(condominioId, esercizioId) {
       }
 
       // 10) template attivo dell'amministratore titolare
-      let tmpl = DEFAULT_TEMPLATE
+      let tmpl = { ...DEFAULT_TEMPLATE, tipo_modello: 'condosmart', nome: 'Modello Standard CondoSmart' }
       if (titolareId) {
         const { data: ct } = await supabase
           .from('consuntivo_template')
@@ -155,10 +155,25 @@ export function useConsuntivo(condominioId, esercizioId) {
           .order('updated_at', { ascending: false })
           .limit(1).maybeSingle()
         if (ct?.struttura && Object.keys(ct.struttura).length) {
-          tmpl = { ...DEFAULT_TEMPLATE, ...ct.struttura,
-            nome: ct.nome,
-            sezioni: { ...DEFAULT_TEMPLATE.sezioni, ...(ct.struttura.sezioni || {}) },
-            etichette_categorie: { ...DEFAULT_TEMPLATE.etichette_categorie, ...(ct.struttura.etichette_categorie || {}) },
+          const tipo = ct.struttura.tipo_modello || 'identico'
+          if (tipo === 'condosmart') {
+            tmpl = {
+              ...DEFAULT_TEMPLATE,
+              id: ct.id,
+              nome: 'Modello Standard CondoSmart',
+              tipo_modello: 'condosmart',
+              file_origine: ct.nome || null,
+            }
+          } else {
+            tmpl = {
+              ...DEFAULT_TEMPLATE,
+              ...ct.struttura,
+              id: ct.id,
+              nome: ct.nome || 'Modello Identico',
+              tipo_modello: 'identico',
+              sezioni: { ...DEFAULT_TEMPLATE.sezioni, ...(ct.struttura.sezioni || {}) },
+              etichette_categorie: { ...DEFAULT_TEMPLATE.etichette_categorie, ...(ct.struttura.etichette_categorie || {}) },
+            }
           }
         }
       }

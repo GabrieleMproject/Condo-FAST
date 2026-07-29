@@ -8,7 +8,8 @@ import { estraiStrutturaConsuntivo } from '../lib/fileExtractor'
 import { exportConsuntivoPdf } from '../lib/exportConsuntivo'
 import { useWatermark } from '../hooks/useWatermark'
 import PlanGate from './PlanGate'
-import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame } from 'lucide-react'
+import ModelloConsuntivoModal from './ModelloConsuntivoModal'
+import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame, Sparkles } from 'lucide-react'
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const sgn = (n) => (Number(n) < 0 ? '-' : '') + '€ ' + Math.abs(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })
@@ -21,6 +22,13 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
   const [tabellaMillId, setTabellaMillId] = useState(null)
   const [uploadingTpl, setUploadingTpl] = useState(false)
   const [tplMsg, setTplMsg] = useState('')
+  
+  // Modale Selezione Modello
+  const [strutturaEstratta, setStrutturaEstratta] = useState(null)
+  const [fileNomeCaricato, setFileNomeCaricato] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [savingModello, setSavingModello] = useState(false)
+
   const { data, template, loading, error, fetch, setTemplate } = useConsuntivo(condominioId, esercizioId)
   const { unita, getProprietario } = useUnita(condominioId)
   const { tabelle, getMillesimiUnita, getTotaleTabella } = useMillesimi(condominioId)
@@ -64,23 +72,52 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
     const file = e.target.files?.[0]
     if (!file) return
     setUploadingTpl(true)
-    setTplMsg('Analisi modello in corso…')
+    setTplMsg('Analisi modello con AI in corso…')
     try {
       const struttura = await estraiStrutturaConsuntivo(file)
-      const { data: { user } } = await supabase.auth.getUser()
-      // disattiva i precedenti, inserisce il nuovo attivo
-      await supabase.from('consuntivo_template').update({ attivo: false }).eq('amministratore_id', user.id)
-      const { error: e1 } = await supabase.from('consuntivo_template').insert({
-        amministratore_id: user.id, nome: file.name, struttura, attivo: true,
-      })
-      if (e1) throw e1
-      setTplMsg('Modello salvato e applicato')
-      await fetch()
-      setTimeout(() => setTplMsg(''), 3000)
+      if (!struttura) throw new Error("Impossibile analizzare il file selezionato.")
+      setStrutturaEstratta(struttura)
+      setFileNomeCaricato(file.name)
+      setIsModalOpen(true)
+      setTplMsg('')
     } catch (err) {
       setTplMsg('Errore: ' + err.message)
     } finally {
       setUploadingTpl(false)
+      e.target.value = ''
+    }
+  }
+
+  async function handleSelectModello(tipoModello, datiStruttura) {
+    setSavingModello(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Utente non autenticato")
+
+      // Disattiva i precedenti e inserisce il nuovo attivo con flag tipo_modello
+      await supabase.from('consuntivo_template').update({ attivo: false }).eq('amministratore_id', user.id)
+
+      const strutturaFinale = {
+        ...(datiStruttura || {}),
+        tipo_modello: tipoModello, // 'identico' oppure 'condosmart'
+      }
+
+      const { error: e1 } = await supabase.from('consuntivo_template').insert({
+        amministratore_id: user.id,
+        nome: fileNomeCaricato || 'Modello Amministratore',
+        struttura: strutturaFinale,
+        attivo: true,
+      })
+      if (e1) throw e1
+
+      setTplMsg(`Modello ${tipoModello === 'condosmart' ? 'Proposto da CondoSmart' : 'Identico'} applicato con successo!`)
+      setIsModalOpen(false)
+      await fetch()
+      setTimeout(() => setTplMsg(''), 4000)
+    } catch (err) {
+      setTplMsg('Errore salvataggio modello: ' + err.message)
+    } finally {
+      setSavingModello(false)
     }
   }
 
@@ -102,6 +139,15 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
   return (
     <div>
       <WatermarkModal />
+      <ModelloConsuntivoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        fileNome={fileNomeCaricato}
+        struttura={strutturaEstratta}
+        onConfirm={handleSelectModello}
+        loading={savingModello}
+      />
+
       {/* Toolbar */}
       <div style={st.toolbar}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -125,7 +171,7 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
             </select>
           )}
           <label style={st.btnGhost}>
-            <Upload size={14} /> {uploadingTpl ? 'Analisi…' : 'Carica modello'}
+            <Upload size={14} /> {uploadingTpl ? 'Analisi AI…' : 'Carica modello'}
             <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.txt" style={{ display: 'none' }} onChange={onTemplateFile} disabled={uploadingTpl} />
           </label>
           <button style={st.btnGhost} onClick={fetch}><RefreshCw size={14} /> Ricalcola</button>
@@ -152,8 +198,14 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Banner template */}
           <div style={st.tplBanner}>
-            <FileText size={15} color="#60a5fa" />
-            <span>Modello attivo: <b>{template == null ? '—' : (template.nome || 'profilo amministratore')}</b> · le sezioni seguono la presentazione del tuo consuntivo di riferimento.</span>
+            {template?.tipo_modello === 'condosmart' ? (
+              <Sparkles size={15} color="#60a5fa" />
+            ) : (
+              <FileText size={15} color="#60a5fa" />
+            )}
+            <span>
+              Modello attivo: <b>{template?.tipo_modello === 'condosmart' ? 'Modello Proposto da CondoSmart (Standard Art. 1130-bis c.c.)' : (template?.nome ? `Modello Identico (da ${template.nome})` : 'Standard CondoSmart')}</b> · presenta le sezioni ed etichette contabili selezionate.
+            </span>
           </div>
 
           {/* A/B competenza */}

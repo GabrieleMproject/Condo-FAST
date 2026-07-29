@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { generaExportGDPR } from '../lib/exportDatiGdpr'
-import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon, Building2, Download, X } from 'lucide-react'
+import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon, Building2, Download, X, ShieldCheck } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
@@ -1358,6 +1358,42 @@ export default function ImpostazioniPage() {
             <h2 style={styles.sectionTitle}>
               {isTrialActive || isTrialScaduto ? 'Scegli il tuo piano' : 'Cambia piano'}
             </h2>
+
+            {/* Banner Tutto Incluso - Zero Costi Nascosti */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(37, 99, 235, 0.08) 100%)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: 14,
+              padding: '16px 20px',
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justify: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12
+            }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ShieldCheck size={18} style={{ color: '#10b981' }} />
+                  <span>Garanzia Tutto Incluso · Zero Costi Nascosti</span>
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 4 }}>
+                  A differenza di altri software, la <strong>Fatturazione Elettronica SDI</strong>, la conservazione a norma e i moduli assembleari sono inclusi a 0€ senza balzelli o sorprese in fattura.
+                </div>
+              </div>
+              <div style={{
+                fontSize: 11.5,
+                fontWeight: 700,
+                color: '#10b981',
+                background: 'rgba(16, 185, 129, 0.15)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                padding: '4px 10px',
+                borderRadius: 20,
+                whiteSpace: 'nowrap'
+              }}>
+                Prezzo Trasparente Flat
+              </div>
+            </div>
 
             <div style={styles.pianiGrid}>
               {Object.entries(PIANI)

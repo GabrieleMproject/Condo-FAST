@@ -20,6 +20,7 @@ export const PIANI = {
     features_list: [
       { ok: true, label: '500 chiamate AI Gemini/mese' },
       { ok: true, label: 'Fino a 50 condomini inclusi' },
+      { ok: true, label: 'Fatturazione Elettronica SDI inclusa (0€ extra)' },
       { ok: true, label: 'OCR automatico Fatture & Estratti Conto' },
       { ok: true, label: 'Rendiconto PDF di legge (Art. 1130-bis c.c.)' },
       { ok: true, label: 'Ricerca AI nei Verbali di Assemblea' },
@@ -44,6 +45,7 @@ export const PIANI = {
     features_list: [
       { ok: true, label: '300 chiamate AI Gemini/mese' },
       { ok: true, label: 'Fino a 50 condomini inclusi (+3€/cond. extra)' },
+      { ok: true, label: 'Fatturazione Elettronica SDI inclusa (0€ extra)' },
       { ok: true, label: '1 Utente titolare incluso' },
       { ok: true, label: 'OCR automatico Fatture XML/PDF & Saldi' },
       { ok: true, label: 'Rendiconto PDF di legge (Art. 1130-bis c.c.)' },
@@ -70,6 +72,7 @@ export const PIANI = {
     features_list: [
       { ok: true, label: '800 chiamate AI Gemini/mese' },
       { ok: true, label: 'Fino a 100 condomini inclusi (+2,50€/cond. extra)' },
+      { ok: true, label: 'Fatturazione Elettronica SDI inclusa (0€ extra)' },
       { ok: true, label: '2 Collaboratori inclusi (+15€/m extra)' },
       { ok: true, label: 'Ricerca & Analisi AI nei Verbali di Assemblea' },
       { ok: true, label: 'Solleciti & Comunicazioni email (Resend)' },
@@ -96,6 +99,7 @@ export const PIANI = {
     features_list: [
       { ok: true, label: '2.000 chiamate AI Gemini/mese potenziate' },
       { ok: true, label: 'Fino a 200 condomini inclusi (+2€/cond. extra)' },
+      { ok: true, label: 'Fatturazione Elettronica SDI inclusa (0€ extra)' },
       { ok: true, label: '4 Collaboratori inclusi (+12€/m extra)' },
       { ok: true, label: 'Open Banking Automatico Notturno (PSD2)' },
       { ok: true, label: 'Distinta CBI massiva F24 per Home Banking' },

@@ -1400,7 +1400,7 @@ export default function ImpostazioniPage() {
                 Un unico canone trasparente. Zero costi nascosti per il tuo studio.
               </h3>
               <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: '0 0 20px', lineHeight: 1.5, maxWidth: 850 }}>
-                Mentre i gestionali tradizionali applicano costi extra per ogni condominio (fatturazione elettronica SDI da 39€ a 49€/anno) e fanno pagare salatamente ogni collaboratore aggiuntivo, CondoSmart include tutto ciò che serve in un canone flat chiaro.
+                A differenza dei gestionali tradizionali che applicano costi accessori a consumo per ogni condominio o per adempimento telematico, CondoSmart include tutti i moduli essenziali e la Fatturazione Elettronica SDI in un unico canone flat chiaro e prevedibile.
               </p>
 
               {/* Griglia a 3 Pillole di Garanzia */}

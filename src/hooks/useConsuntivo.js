@@ -324,6 +324,25 @@ export function useConsuntivo(condominioId, esercizioId) {
         }
       }
 
+      // 7) Comunicazioni inviate nel periodo
+      let countCom = 0
+      try {
+        const { count } = await supabase
+          .from('comunicazioni')
+          .select('id', { count: 'exact', head: true })
+          .eq('condominio_id', condominioId)
+        countCom = count || 0
+      } catch (errCom) {
+        countCom = 0
+      }
+
+      const attivitaStudio = {
+        fattureElaborate: (spese || []).length,
+        ritenuteGestite: (spese || []).filter(s => (s.ritenuta_acconto && Number(s.ritenuta_acconto) > 0) || s.applica_ritenuta).length,
+        movimentiRiconciliati: (ec || []).filter(e => e.spesa_id || e.rata_unita_id || e.riconciliato).length,
+        comunicazioniInviate: countCom,
+      }
+
       setData({
         esercizio: es,
         branding,
@@ -339,6 +358,8 @@ export function useConsuntivo(condominioId, esercizioId) {
         confronto: { rows: confronto, tot: confrontoTot },
         // storico
         storico,
+        // Pro-Admin: lavoro dello studio
+        attivitaStudio,
       })
     } catch (e) {
       setError(e.message)

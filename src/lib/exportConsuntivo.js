@@ -434,9 +434,33 @@ export async function exportConsuntivoPdf({ condominio, consuntivo, template, un
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40)
     const lines = doc.splitTextToSize(txt, doc.internal.pageSize.getWidth() - 28)
     doc.text(lines, 14, y + 2)
+    y += lines.length * 5 + 10
+  }
+
+  // Riepilogo Attività & Gestione Studio (Pro-Admin)
+  if (c.attivitaStudio) {
+    if (y > doc.internal.pageSize.getHeight() - 55) { doc.addPage(); y = 20 }
+    y = sezioneTitolo(doc, y, 'Riepilogo Attività & Gestione Studio')
+    
+    autoTable(doc, {
+      startY: y + 2,
+      head: [['Attività Operativa', 'Dettaglio Esecuzione']],
+      body: [
+        ['Fatture e Giustificativi di Spesa Elaborati', `${c.attivitaStudio.fattureElaborate || 0} documenti registrati e verificati`],
+        ['Pratiche Ritenute d\'Acconto e F24', `${c.attivitaStudio.ritenuteGestite || 0} ritenute elaborate per la dichiarazione`],
+        ['Riconciliazioni Bancarie Effettuate', `${c.attivitaStudio.movimentiRiconciliati || 0} movimenti bancari abbinati`],
+        ['Comunicazioni e Solleciti Gestiti', `${c.attivitaStudio.comunicazioniInviate || 0} invii di sollecito/avviso registrati`],
+      ],
+      headStyles: HEAD,
+      bodyStyles: BODY,
+      margin: { left: 14, right: 14 },
+    })
   }
 
   footer(doc)
   applyWatermark(doc, withWatermark)
+  if (c.returnDoc) {
+    return doc.output('arraybuffer')
+  }
   doc.save(`Consuntivo_${(condominio?.nome || '').replace(/\s+/g, '_')}_${c.esercizio?.anno || ''}.pdf`)
 }

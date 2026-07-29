@@ -350,7 +350,9 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Supporto `tipo_modello` in `useConsuntivo.js`:** Memorizzato il campo `tipo_modello` (`'identico'` vs `'condosmart'`) all'interno dell'oggetto JSONB `struttura` in `consuntivo_template`.
 - **Banner dinamico in `ConsuntivoTab.jsx`:** Il banner visivo indica chiaramente se il rendiconto attivo sta utilizzando il *Modello Identico (da [FileOriginale])* o il *Modello Proposto da CondoSmart*.
 - **Qualità Grafica e Layout:** Chiarito il principio di prodotto per cui il Modello Identico rispetta fedelmente la struttura e le etichette dell'amministratore, renderizzandole con la veste grafica moderna, chiara e ad alto contrasto di CondoSmart (senza tentare cloni "pixel-perfect" instabili).
-- **Conformità UI:** La modale è stata realizzata senza emoji visive Unicode in UI, utilizzando esclusivamente le icone vettoriali di Lucide React (`FileText`, `Sparkles`, `CheckCircle2`, `ShieldCheck`, `ArrowRight`, `X`).
+- **Prospetto Pro-Admin Attività Studio (`ConsuntivoTab.jsx` e `exportConsuntivo.js`):** Aggiunta la sezione "Riepilogo Attività & Gestione Studio" che sintetizza sia in UI che nel PDF le fatture lavorate, le ritenute/F24 gestite, le riconciliazioni bancarie eseguite e le comunicazioni/solleciti registrati nel periodo, valorizzando l'operato dello studio.
+- **Export Completo Rendicontazione Dossier ZIP (`exportDossier.js`):** Sviluppata la funzione di pacchettizzazione con `JSZip` per scaricare in un unico file `.zip` il consuntivo PDF ex art. 1130-bis c.c., la cartella degli estratti conto ed la cartella con tutte le fatture/giustificativi di spesa del periodo.
+- **Conformità UI:** La modale e la toolbar sono state realizzate senza emoji visive Unicode in UI, utilizzando esclusivamente le icone vettoriali di Lucide React (`FileText`, `Sparkles`, `CheckCircle2`, `ShieldCheck`, `ArrowRight`, `X`, `Archive`, `FileCheck`, `Receipt`, `Landmark`, `Send`).
 
 
 ### 2. Normativa e Prevenzione Errori Contabili

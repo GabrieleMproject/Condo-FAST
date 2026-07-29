@@ -6,10 +6,11 @@ import { useUnita } from '../hooks/useUnita'
 import { useMillesimi } from '../hooks/useMillesimi'
 import { estraiStrutturaConsuntivo } from '../lib/fileExtractor'
 import { exportConsuntivoPdf } from '../lib/exportConsuntivo'
+import { exportDossierRendiconto } from '../lib/exportDossier'
 import { useWatermark } from '../hooks/useWatermark'
 import PlanGate from './PlanGate'
 import ModelloConsuntivoModal from './ModelloConsuntivoModal'
-import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame, Sparkles } from 'lucide-react'
+import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame, Sparkles, Archive, FileCheck, Receipt, Landmark, Send } from 'lucide-react'
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const sgn = (n) => (Number(n) < 0 ? '-' : '') + '€ ' + Math.abs(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })
@@ -28,6 +29,10 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
   const [fileNomeCaricato, setFileNomeCaricato] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [savingModello, setSavingModello] = useState(false)
+
+  // Export Dossier ZIP
+  const [exportingZip, setExportingZip] = useState(false)
+  const [zipMsg, setZipMsg] = useState('')
 
   const { data, template, loading, error, fetch, setTemplate } = useConsuntivo(condominioId, esercizioId)
   const { unita, getProprietario } = useUnita(condominioId)
@@ -94,12 +99,11 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Utente non autenticato")
 
-      // Disattiva i precedenti e inserisce il nuovo attivo con flag tipo_modello
       await supabase.from('consuntivo_template').update({ attivo: false }).eq('amministratore_id', user.id)
 
       const strutturaFinale = {
         ...(datiStruttura || {}),
-        tipo_modello: tipoModello, // 'identico' oppure 'condosmart'
+        tipo_modello: tipoModello,
       }
 
       const { error: e1 } = await supabase.from('consuntivo_template').insert({
@@ -130,6 +134,35 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
       }).catch(err => {
         setTplMsg('Errore generazione PDF: ' + err.message)
         setTimeout(() => setTplMsg(''), 5000)
+      })
+    })
+  }
+
+  async function scaricaDossierZip() {
+    if (!data) return
+    setExportingZip(true)
+    setZipMsg('Avvio generazione Dossier ZIP…')
+    checkWatermark((withWatermark) => {
+      exportDossierRendiconto({
+        condominio,
+        consuntivo: data,
+        template,
+        unita,
+        getProprietario,
+        getMillesimiUnita,
+        getTotaleTabella,
+        tabellaMillId,
+        withWatermark,
+        onProgress: (p) => setZipMsg(p.messaggio || 'Pacchettizzazione ZIP…'),
+      }).then(() => {
+        setTplMsg('Dossier Completo (.zip) scaricato con successo!')
+        setTimeout(() => setTplMsg(''), 4000)
+      }).catch(err => {
+        setTplMsg('Errore generazione Dossier ZIP: ' + err.message)
+        setTimeout(() => setTplMsg(''), 5000)
+      }).finally(() => {
+        setExportingZip(false)
+        setZipMsg('')
       })
     })
   }
@@ -175,6 +208,9 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
             <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.txt" style={{ display: 'none' }} onChange={onTemplateFile} disabled={uploadingTpl} />
           </label>
           <button style={st.btnGhost} onClick={fetch}><RefreshCw size={14} /> Ricalcola</button>
+          <button style={st.btnGhost} onClick={scaricaDossierZip} disabled={!data || exportingZip} title="Scarica consuntivo, estratti conto e tutte le fatture in un unico archivio ZIP">
+            <Archive size={14} color="#60a5fa" /> {exportingZip ? (zipMsg || 'Dossier…') : 'Dossier Completo (.zip)'}
+          </button>
           <PlanGate feature="rendiconto_pdf" compact>
             <button style={st.btnPrimary} onClick={scaricaPdf} disabled={!data}><Download size={14} /> Esporta PDF</button>
           </PlanGate>
@@ -314,6 +350,45 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
                   ) : (
                     <div style={st.statSub}>Nessun dato storico per il confronto</div>
                   )}
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Riepilogo Attività & Gestione Studio (Pro-Admin) */}
+          {data.attivitaStudio && (
+            <Card title="Riepilogo Attività & Gestione Studio">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                <div style={st.statBox}>
+                  <div style={{ ...st.statLabel, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileCheck size={14} color="#60a5fa" /> FATTURE & SPESE
+                  </div>
+                  <div style={st.statValue}>{data.attivitaStudio.fattureElaborate || 0}</div>
+                  <div style={st.statSub}>Documenti lavorati e registrati</div>
+                </div>
+
+                <div style={st.statBox}>
+                  <div style={{ ...st.statLabel, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Receipt size={14} color="#10b981" /> RITENUTE & F24
+                  </div>
+                  <div style={st.statValue}>{data.attivitaStudio.ritenuteGestite || 0}</div>
+                  <div style={st.statSub}>Pratiche fiscali elaborate</div>
+                </div>
+
+                <div style={st.statBox}>
+                  <div style={{ ...st.statLabel, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Landmark size={14} color="#a855f7" /> RICONCILIAZIONI
+                  </div>
+                  <div style={st.statValue}>{data.attivitaStudio.movimentiRiconciliati || 0}</div>
+                  <div style={st.statSub}>Movimenti bancari abbinati</div>
+                </div>
+
+                <div style={st.statBox}>
+                  <div style={{ ...st.statLabel, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Send size={14} color="#f59e0b" /> COMUNICAZIONI
+                  </div>
+                  <div style={st.statValue}>{data.attivitaStudio.comunicazioniInviate || 0}</div>
+                  <div style={st.statSub}>Invii e solleciti registrati</div>
                 </div>
               </div>
             </Card>

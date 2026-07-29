@@ -711,6 +711,14 @@ export default function ModuloFiscalePage() {
           {tabAttivo === 'f24' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               
+              {/* Banner Chiarificatore F24 per Piani */}
+              <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Info size={16} color="#60a5fa" style={{ flexShrink: 0 }} />
+                <span>
+                  <b>Gestione F24:</b> Nei piani Base e Studio puoi monitorare lo Scadenzario F24 e registrare i pagamenti effettuati. L'esportazione del tracciato telematico massivo <b>CBI F24</b> per l'Home Banking è inclusa nel piano Professional.
+                </span>
+              </div>
+
               {/* Scadenzario Timeline Widget */}
               <ScadenzarioWidget deleghe={f24Deleghe} />
 

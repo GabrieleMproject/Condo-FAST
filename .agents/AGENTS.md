@@ -353,6 +353,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Prospetto Pro-Admin Attività Studio (`ConsuntivoTab.jsx` e `exportConsuntivo.js`):** Aggiunta la sezione "Riepilogo Attività & Gestione Studio" che sintetizza sia in UI che nel PDF le fatture lavorate, le ritenute/F24 gestite, le riconciliazioni bancarie eseguite e le comunicazioni/solleciti registrati nel periodo, valorizzando l'operato dello studio.
 - **Export Completo Rendicontazione Dossier ZIP (`exportDossier.js`):** Sviluppata la funzione di pacchettizzazione con `JSZip` per scaricare in un unico file `.zip` il consuntivo PDF ex art. 1130-bis c.c., la cartella degli estratti conto ed la cartella con tutte le fatture/giustificativi di spesa del periodo.
 - **Conformità UI:** La modale e la toolbar sono state realizzate senza emoji visive Unicode in UI, utilizzando esclusivamente le icone vettoriali di Lucide React (`FileText`, `Sparkles`, `CheckCircle2`, `ShieldCheck`, `ArrowRight`, `X`, `Archive`, `FileCheck`, `Receipt`, `Landmark`, `Send`).
+- **Chiarimento Piani Abbonamento F24 (`ModuloFiscalePage.jsx`):** Inserito un banner esplicativo nel tab F24 che delucida chiaramente come i piani Base e Studio consentano il calcolo dello scadenzario e la registrazione delle quietanze di pagamento, mentre l'esportazione del tracciato telematico massivo CBI F24 per l'Home Banking è riservata al piano Professional.
 
 
 ### 2. Normativa e Prevenzione Errori Contabili

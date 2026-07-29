@@ -1,59 +1,44 @@
+// src/hooks/useAuditLog.js
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-export function useAuditLog() {
-  const [log, setLog] = useState([])
+export function useAuditLog(condominioId) {
+  const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [totale, setTotale] = useState(0)
 
-  const fetch = useCallback(async ({
-    condominioId = null,
-    categoria = null,
-    azione = null,
-    dataDal = null,
-    dataAl = null,
-    cerca = '',
-    pagina = 0,
-    perPagina = 50,
-  } = {}) => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true)
-    setError(null)
     try {
-      let query = supabase
-        .from('audit_log')
-        .select('*, condomini(nome)', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(pagina * perPagina, (pagina + 1) * perPagina - 1)
-
-      if (condominioId) query = query.eq('condominio_id', condominioId)
-      if (categoria) query = query.eq('categoria', categoria)
-      if (azione) query = query.eq('azione', azione)
-      if (dataDal) query = query.gte('created_at', dataDal)
-      if (dataAl) query = query.lte('created_at', dataAl + 'T23:59:59')
-      if (cerca) query = query.or(`tabella_modificata.ilike.%${cerca}%,note.ilike.%${cerca}%`)
-
-      const { data, error, count } = await query
-      if (error) throw error
-      setLog(data || [])
-      setTotale(count || 0)
+      let query = supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(100)
+      if (condominioId) {
+        query = query.eq('condominio_id', condominioId)
+      }
+      const { data } = await query
+      setLogs(data || [])
     } catch (e) {
-      setError(e.message)
+      console.warn('Impossibile caricare audit log:', e)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [condominioId])
 
-  // Fetch log per un record specifico (es. storico di una singola unità)
-  const fetchRecord = useCallback(async (recordId) => {
-    const { data, error } = await supabase
-      .from('audit_log')
-      .select('*')
-      .eq('record_id', recordId)
-      .order('created_at', { ascending: false })
-    if (error) throw error
-    return data || []
-  }, [])
+  const logEvento = useCallback(async (azione, entita, idEntita = null, dettagli = {}) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-  return { log, loading, error, totale, fetch, fetchRecord }
+      await supabase.from('audit_log').insert({
+        condominio_id: condominioId || null,
+        user_id: user.id,
+        azione,
+        entita,
+        id_entita: idEntita ? String(idEntita) : null,
+        dettagli,
+      })
+    } catch (e) {
+      console.warn('Errore tracciamento audit log:', e)
+    }
+  }, [condominioId])
+
+  return { logs, loading, fetchLogs, logEvento }
 }

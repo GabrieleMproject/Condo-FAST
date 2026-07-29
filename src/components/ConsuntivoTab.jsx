@@ -4,13 +4,13 @@ import { supabase } from '../lib/supabaseClient'
 import { useConsuntivo } from '../hooks/useConsuntivo'
 import { useUnita } from '../hooks/useUnita'
 import { useMillesimi } from '../hooks/useMillesimi'
-import { estraiStrutturaConsuntivo } from '../lib/fileExtractor'
+import { estraiStrutturaConsuntivo, generaNotaSinteticaAi } from '../lib/fileExtractor'
 import { exportConsuntivoPdf } from '../lib/exportConsuntivo'
 import { exportDossierRendiconto } from '../lib/exportDossier'
 import { useWatermark } from '../hooks/useWatermark'
 import PlanGate from './PlanGate'
 import ModelloConsuntivoModal from './ModelloConsuntivoModal'
-import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame, Sparkles, Archive, FileCheck, Receipt, Landmark, Send } from 'lucide-react'
+import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame, Sparkles, Archive, FileCheck, Receipt, Landmark, Send, Bot } from 'lucide-react'
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const sgn = (n) => (Number(n) < 0 ? '-' : '') + '€ ' + Math.abs(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })
@@ -33,11 +33,32 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
   // Export Dossier ZIP
   const [exportingZip, setExportingZip] = useState(false)
   const [zipMsg, setZipMsg] = useState('')
+  const [loadingAiNote, setLoadingAiNote] = useState(false)
+  const [notaSinteticaCustom, setNotaSinteticaCustom] = useState('')
 
   const { data, template, loading, error, fetch, setTemplate } = useConsuntivo(condominioId, esercizioId)
   const { unita, getProprietario } = useUnita(condominioId)
   const { tabelle, getMillesimiUnita, getTotaleTabella } = useMillesimi(condominioId)
   const { WatermarkModal, checkWatermark } = useWatermark()
+
+  const handleGeneraNotaSinteticaAi = async () => {
+    if (!condominio || !data?.esercizio) return
+    setLoadingAiNote(true)
+    try {
+      const nota = await generaNotaSinteticaAi({
+        condominio,
+        esercizio: data.esercizio,
+        spese: data.speseRaw || [],
+        rate: data.rateRaw || [],
+        attivitaStudio: data.attivitaStudio || {}
+      })
+      setNotaSinteticaCustom(nota)
+    } catch (errNote) {
+      alert('Errore generazione Nota Sintetica AI: ' + errNote.message)
+    } finally {
+      setLoadingAiNote(false)
+    }
+  }
 
   useEffect(() => {
     if (esercizioIdProp && esercizioIdProp !== esercizioId) {
@@ -396,27 +417,72 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
 
           {/* Nota sintetica (art. 1130-bis c.c.) */}
           <Card title="Nota sintetica esplicativa (art. 1130-bis c.c.)">
-            <p style={{ ...st.note, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              {(() => {
-                const diff = data.confronto.tot.differenza
-                const saldo = data.cassa.saldoFinaleCassa
-                const quadr = data.cassa.scartoQuadratura
-                return (
-                  <>
-                    L'esercizio chiude con un totale spese di competenza pari a {eur(data.competenza.totSpese)}
-                    {data.competenza.totStr > 0 && <>, di cui {eur(data.competenza.totStr)} per gestione straordinaria</>}.
-                    {' '}Rispetto al preventivo di {eur(data.confronto.tot.preventivo)}, si registra
-                    {diff >= 0
-                      ? <> un <b style={{ color: '#10b981' }}>avanzo di {eur(Math.abs(diff))}</b> (speso meno del previsto)</>
-                      : <> un <b style={{ color: '#ef4444' }}>disavanzo di {eur(Math.abs(diff))}</b> (speso più del previsto)</>}.
-                    {' '}Il saldo di cassa finale ammonta a {sgn(saldo)}.
-                    {Math.abs(quadr) < 0.01
-                      ? <> La quadratura competenza-cassa è <b style={{ color: '#10b981' }}>verificata</b> (scarto nullo).</>
-                      : <> Lo scarto di quadratura competenza-cassa è pari a {sgn(quadr)}, dovuto a movimenti non ancora riconciliati.</>}
-                  </>
-                )
-              })()}
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Relazione formale ex art. 1130-bis c.c. a tutela dell'operato dell'amministratore</span>
+              <button 
+                onClick={handleGeneraNotaSinteticaAi} 
+                disabled={loadingAiNote}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '6px 12px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'Sora, sans-serif'
+                }}
+              >
+                <Bot size={14} />
+                {loadingAiNote ? 'Generazione AI in corso...' : 'Genera Nota Sintetica con AI'}
+              </button>
+            </div>
+
+            {notaSinteticaCustom ? (
+              <textarea 
+                value={notaSinteticaCustom}
+                onChange={(e) => setNotaSinteticaCustom(e.target.value)}
+                style={{
+                  width: '100%',
+                  minHeight: 180,
+                  background: 'var(--app-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 8,
+                  padding: 12,
+                  color: 'var(--text-primary)',
+                  fontSize: 12.5,
+                  lineHeight: 1.5,
+                  fontFamily: 'Sora, sans-serif',
+                  resize: 'vertical'
+                }}
+              />
+            ) : (
+              <p style={{ ...st.note, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                {(() => {
+                  const diff = data.confronto.tot.differenza
+                  const saldo = data.cassa.saldoFinaleCassa
+                  const quadr = data.cassa.scartoQuadratura
+                  return (
+                    <>
+                      L'esercizio chiude con un totale spese di competenza pari a {eur(data.competenza.totSpese)}
+                      {data.competenza.totStr > 0 && <>, di cui {eur(data.competenza.totStr)} per gestione straordinaria</>}.
+                      {' '}Rispetto al preventivo di {eur(data.confronto.tot.preventivo)}, si registra
+                      {diff >= 0
+                        ? <> un <b style={{ color: '#10b981' }}>avanzo di {eur(Math.abs(diff))}</b> (speso meno del previsto)</>
+                        : <> un <b style={{ color: '#ef4444' }}>disavanzo di {eur(Math.abs(diff))}</b> (speso più del previsto)</>}.
+                      {' '}Il saldo di cassa finale ammonta a {sgn(saldo)}.
+                      {Math.abs(quadr) < 0.01
+                        ? <> La quadratura competenza-cassa è <b style={{ color: '#10b981' }}>verificata</b> (scarto nullo).</>
+                        : <> Lo scarto di quadratura competenza-cassa è pari a {sgn(quadr)}, dovuto a movimenti non ancora riconciliati.</>}
+                    </>
+                  )
+                })()}
+              </p>
+            )}
           </Card>
         </div>
       )}

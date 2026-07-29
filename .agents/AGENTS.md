@@ -361,6 +361,10 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Auto-Deduplicazione Estratto Conto (`EstrattoContoPage.jsx`):** Firma univoca deterministica (`data + importo + causale`) per gli estratti conto bancari con scarto automatico dei movimenti duplicati per garantire la quadratura di cassa nella Sezione D.
 - **Caching Client-Side Tabelle Millesimali (`useMillesimi.js`):** Memoria locale a 5 minuti per la mappa delle quote millesimali per condominio, riducendo le query e velocizzando il calcolo rate/spese sub-millisecondo.
 - **Wizard Storno Contabile (`StornoSpesaModal.jsx`):** Modale guidata anti-errore per la gestione sicura delle modifiche o storni su spese saldate, riconciliate o con F24 associato.
+- **Motore Anti-Discrepanza Ritenute 770/CU (`auditFiscaleEngine.js`):** Calcolo in tempo reale della quadratura tra ritenute liquidate nelle fatture ed F24 versati, evitando lo scarto delle pratiche 770/CU da parte dell'Agenzia delle Entrate.
+- **Audit Log Inalterabile Operazioni Sensibili (`s60_audit_log.sql`, `useAuditLog.js`):** Registrazione di tracciabilità di sicurezza per le azioni critiche dello studio a tutela legale dell'amministratore (art. 1130-bis c.c.).
+- **Smart Pre-Processing Scontrini Sbiaditi (`fileExtractor.js`):** Ottimizzazione contrasto e nitidezza via Canvas JavaScript per l'estrazione AI da ricevute e scontrini cartacei difficili.
+- **Generatore AI Nota Sintetica (`fileExtractor.js`, `ConsuntivoTab.jsx`):** Generatore automatico della relazione esplicativa formale ex art. 1130-bis c.c. con intelligenza artificiale difensiva pro-amministratore.
 
 
 ### 2. Normativa e Prevenzione Errori Contabili

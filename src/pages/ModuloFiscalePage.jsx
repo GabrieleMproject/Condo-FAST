@@ -8,6 +8,7 @@ import { validaDelegheCbi } from '../lib/cbiValidator'
 import PlanGate from '../components/PlanGate'
 import ScadenzarioWidget from '../components/ScadenzarioWidget'
 import { eseguiDiagnosiConformitaFiscale } from '../lib/diagnosiFiscaleEngine'
+import { verificaQuadraturaFiscaleRitenute } from '../lib/auditFiscaleEngine'
 import DiagnosiFiscaleModal from '../components/DiagnosiFiscaleModal'
 import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
@@ -157,6 +158,11 @@ export default function ModuloFiscalePage() {
       setLoading(false)
     }
   }
+
+  // --- LOGICA AUDIT FISCALE QUADRATURA 770/CU ---
+  const quadratura770 = useMemo(() => {
+    return verificaQuadraturaFiscaleRitenute(fatture, f24Deleghe)
+  }, [fatture, f24Deleghe])
 
   // --- LOGICA RAGGRUPPAMENTO CERTIFICAZIONE UNICA ---
   const datiRaggruppatiCU = useMemo(() => {

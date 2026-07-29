@@ -10,6 +10,80 @@ import ExcelJS  from 'exceljs';
 import mammoth  from 'mammoth';
 import { callGemini, callGeminiVision, callGeminiDocument } from './geminiClient';
 
+/**
+ * Applica pre-processing grafico tramite Canvas JavaScript per migliorare nitidezza,
+ * contrasto e binarizzazione di immagini/scontrini cartacei sbiaditi.
+ */
+export async function applicaMiglioramentoContrasto(file) {
+  if (!file || !file.type.startsWith('image/')) return file
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const data = imageData.data
+        const contrast = 1.35 // Aumenta il contrasto del 35%
+        const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255))
+
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = factor * (data[i] - 128) + 128
+          data[i + 1] = factor * (data[i + 1] - 128) + 128
+          data[i + 2] = factor * (data[i + 2] - 128) + 128
+        }
+        ctx.putImageData(imageData, 0, 0)
+        canvas.toBlob((blob) => {
+          if (!blob) resolve(file)
+          else resolve(new File([blob], file.name, { type: file.type }))
+        }, file.type, 0.92)
+      }
+      img.onerror = () => resolve(file)
+      img.src = e.target.result
+    }
+    reader.onerror = () => resolve(file)
+    reader.readAsDataURL(file)
+  })
+}
+
+/**
+ * Genera la Nota Sintetica Esplicativa ex art. 1130-bis c.c. con AI Gemini Pro-Amministratore
+ */
+export async function generaNotaSinteticaAi({ condominio, esercizio, spese = [], rate = [], attivitaStudio = {} }) {
+  const totSpese = (spese || []).reduce((s, x) => s + Number(x.importo || 0), 0)
+  const userPrompt = `Sei un consulente legale e contabile esperto in diritto condominiale italiano (art. 1130-bis c.c.).
+Redigi la "Nota Sintetica Esplicativa" ufficiale per l'esercizio contabile ${esercizio?.anno || ''} del Condominio ${condominio?.nome || ''}.
+
+Dati di sintesi dell'esercizio:
+- Anno di gestione: ${esercizio?.anno || ''} (dal ${esercizio?.data_inizio || ''} al ${esercizio?.data_fine || ''})
+- Totale Spese dell'Esercizio: € ${totSpese.toFixed(2)}
+- Fatture Lavorate: ${attivitaStudio?.fattureLavorate || spese.length}
+- F24 e Ritenute Gestite: ${attivitaStudio?.ritenuteGestite || 0}
+- Riconciliazioni Bancarie Eseguite: ${attivitaStudio?.movimentiRiconciliati || 0}
+
+Linee guida di stesura:
+1. Usa un tono formale, professionale e protettivo per l'amministratore (spiegando con rigore la correttezza della gestione, il rispetto dei criteri millesimali e la quadratura contabile).
+2. Articola il testo nei seguenti paragrafi:
+   - 1. CRITERI DI GESTIONE E QUADRATURA CONTABILE
+   - 2. DETTAGLIO SPESE ED ADEMPIMENTI FISCALI (F24 / CU)
+   - 3. MOROSITÀ E SOLLECITI DI PAGAMENTO
+   - 4. CONSIDERAZIONI FINALI ED APPROVAZIONE DELL'ASSEMBLEA
+3. Non inserire emoji visive. Restituisci il testo formale pronto da includere nel consuntivo PDF.`
+
+  const risposta = await callGemini(userPrompt, {
+    system: 'Sei un esperto legale in amministrazione condominiale ex art. 1130-bis c.c.',
+    funzione: 'genera_nota_sintetica',
+    condominio_id: condominio?.id
+  })
+
+  return risposta.trim()
+}
+
 function pulisciEdEstraiJson(risposta, isArray = false) {
   const rawStr = String(risposta || '').trim();
   const regex = isArray ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;

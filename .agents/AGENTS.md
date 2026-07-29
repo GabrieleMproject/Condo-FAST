@@ -1548,15 +1548,15 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Value Proposition All-Inclusive:** Posizionamento basato sulla totale assenza di costi nascosti (fatturazione elettronica SDI, assemblee, conservazione e comunicazioni incluse a 0€).
 - **Lista Funzionalità Dettagliata per Piano (`usePlan.js` & `ImpostazioniPage.jsx`):** Integrata l'infrastruttura `features_list` nell'oggetto `PIANI` ed adeguata la visualizzazione dinamica nella griglia della pagina Impostazioni.
 
+---
 
+## Storico Decisioni e Fatti Verificati della Sessione S59 (29 Luglio 2026 - Ricerca Rapida Globale, Cronologia & Navigazione Contestuale)
 
+### 1. Implementazione Ricerca Rapida Globale (`RicercaPage.jsx`)
+- **Punto di accesso e Tastiera:** Aggiunta la voce `"Ricerca Rapida"` nei `NAV_ITEMS` della sidebar e nella topbar header (con il badge visivo `⌘K`). Registrata la scorciatoia da tastiera globale `Cmd + K` / `Ctrl + K` in `AppLayout.jsx` per l'accesso immediato da qualsiasi schermata dell'app.
+- **Cronologia Ricerche:** Salvataggio automatico delle ultime 15 ricerche in `localStorage` (`condosmart_search_history`). Mostra dei chip/tag cliccabili per eseguire la ricerca al volo con 1 click o svuotare la cronologia.
+- **Motore Multi-Entità (Zero Costi AI):** Interrogazione in parallelo su Supabase (query SQL `.ilike()`) per 6 categorie (Condomini, Persone & Anagrafica, Unità Immobiliari, Spese & Fatture, Documenti & Verbali, Comunicazioni). Non utilizza API AI, quindi è totalmente **gratuita (0 crediti AI)** ed istantanea (<50ms).
+- **Navigazione Contestuale ("VAI AL RISULTATO"):** Ogni risultato include il pulsante d'azione *"Vai al contesto"* (icona `ArrowRight` di Lucide React) che reindirizza l'amministratore direttamente alla sezione ed al bilancio o anagrafica specifica del condominio.
 
-
-
-
-
-
-
-
-
-
+### 2. Bug Risolti
+- **Crash / Pagina Bianca (`AppLayout.jsx`):** Risolto il bug di rendering causato dalla mancata importazione dell'icona `Search` da `lucide-react` nell'intestazione delle icone di `AppLayout.jsx`, che provocava l'eccezione `Element type is invalid: got undefined` durante il `NAV_ITEMS.map`.

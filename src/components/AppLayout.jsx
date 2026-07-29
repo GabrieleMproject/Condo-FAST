@@ -37,7 +37,9 @@ import {
   Clock,
   HelpCircle,
   Sparkles,
-  Search
+  Search,
+  Trash2,
+  ArrowRight
 } from 'lucide-react';
 
 
@@ -115,6 +117,436 @@ function AiBanner() {
         style={{ marginLeft: 16, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 4, borderRadius: 4 }}
         aria-label="Chiudi banner"
       ><X size={16} /></button>
+    </div>
+  );
+}
+
+// ── Componente Barra di Ricerca Interattiva in Topbar Header ──────────────
+function HeaderSearchBar({ navigate }) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [results, setResults] = useState({
+    condomini: [],
+    persone: [],
+    spese: [],
+    documenti: []
+  });
+
+  const inputRef = useRef(null);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('condosmart_search_history');
+      if (saved) setHistory(JSON.parse(saved));
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        if (inputRef.current) {
+          inputRef.current.focus();
+          setIsOpen(true);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const salvaInCronologia = (term) => {
+    const trimmed = term.trim();
+    if (!trimmed || trimmed.length < 2) return;
+    setHistory((prev) => {
+      const filtered = prev.filter((item) => item.term.toLowerCase() !== trimmed.toLowerCase());
+      const updated = [{ id: Date.now(), term: trimmed, timestamp: new Date().toISOString() }, ...filtered].slice(0, 15);
+      try {
+        localStorage.setItem('condosmart_search_history', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  };
+
+  useEffect(() => {
+    const term = query.trim();
+    if (term.length < 2) {
+      setResults({ condomini: [], persone: [], spese: [], documenti: [] });
+      return;
+    }
+
+    setLoading(true);
+    const pattern = `%${term}%`;
+
+    const timer = setTimeout(async () => {
+      try {
+        const [resC, resP, resS, resD] = await Promise.all([
+          supabase.from('condomini').select('id, nome, indirizzo, comune').or(`nome.ilike.${pattern},indirizzo.ilike.${pattern},comune.ilike.${pattern}`).limit(3),
+          supabase.from('persone').select('id, nome, cognome, email, telefono, occupanti_unita(unita(condominio_id, condomini(id, nome)))').or(`nome.ilike.${pattern},cognome.ilike.${pattern},email.ilike.${pattern}`).limit(3),
+          supabase.from('spese').select('id, descrizione, fornitore, importo, data_spesa, condominio_id, condomini(id, nome)').or(`descrizione.ilike.${pattern},fornitore.ilike.${pattern}`).order('data_spesa', { ascending: false }).limit(3),
+          supabase.from('documenti_condominio').select('id, nome, note, tipo, condominio_id, condomini(id, nome)').or(`nome.ilike.${pattern},note.ilike.${pattern}`).order('created_at', { ascending: false }).limit(3)
+        ]);
+
+        setResults({
+          condomini: resC.data || [],
+          persone: resP.data || [],
+          spese: resS.data || [],
+          documenti: resD.data || []
+        });
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const handleSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (!query.trim()) return;
+    salvaInCronologia(query);
+    setIsOpen(false);
+    navigate(`/ricerca?q=${encodeURIComponent(query.trim())}`);
+  };
+
+  const handleSelectResult = (path, termToSave) => {
+    if (termToSave) salvaInCronologia(termToSave);
+    setIsOpen(false);
+    navigate(path);
+  };
+
+  const rimuoviDaCronologia = (id, e) => {
+    e.stopPropagation();
+    setHistory((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      try {
+        localStorage.setItem('condosmart_search_history', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+      return updated;
+    });
+  };
+
+  const svuotaCronologia = () => {
+    setHistory([]);
+    try {
+      localStorage.removeItem('condosmart_search_history');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const totalResults = results.condomini.length + results.persone.length + results.spese.length + results.documenti.length;
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', width: '320px', maxWidth: '100%' }}>
+      <form onSubmit={handleSubmit} style={{ margin: 0, padding: 0 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          background: 'var(--card-bg)',
+          border: '1px solid var(--border-color-2)',
+          borderRadius: 8,
+          padding: '6px 12px',
+          gap: 8,
+          transition: 'all 0.15s',
+          borderColor: isOpen ? 'var(--accent)' : 'var(--border-color-2)',
+        }}>
+          <Search size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
+            onFocus={() => setIsOpen(true)}
+            placeholder="Cerca spesa, persona, via..."
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: 'var(--text-primary)',
+              fontSize: 13,
+              width: '100%',
+            }}
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => { setQuery(''); setResults({ condomini: [], persone: [], spese: [], documenti: [] }); }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2, display: 'flex' }}
+            >
+              <X size={14} />
+            </button>
+          )}
+          {loading && (
+            <div style={{ width: 14, height: 14, border: '2px solid var(--border-color-2)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+          )}
+          <kbd style={{
+            background: 'var(--app-bg)',
+            border: '1px solid var(--border-color-2)',
+            borderRadius: 4,
+            padding: '1px 5px',
+            fontSize: 10,
+            fontWeight: 600,
+            color: 'var(--text-muted)',
+            flexShrink: 0
+          }}>⌘K</kbd>
+        </div>
+      </form>
+
+      {/* Dropdown Results Overlay */}
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          marginTop: 6,
+          background: 'var(--card-bg)',
+          border: '1px solid var(--border-color-2)',
+          borderRadius: 10,
+          boxShadow: '0 10px 25px rgba(0,0,0,0.18)',
+          zIndex: 1000,
+          maxHeight: '420px',
+          overflowY: 'auto',
+          padding: '12px',
+        }}>
+          {query.trim().length < 2 && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--border-color-2)' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Clock size={13} /> Ricerche recenti
+                </span>
+                {history.length > 0 && (
+                  <button onClick={svuotaCronologia} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <Trash2 size={11} /> Svuota
+                  </button>
+                )}
+              </div>
+              {history.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '12px 0', textAlign: 'center' }}>
+                  Nessuna ricerca recente
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {history.map((h) => (
+                    <div
+                      key={h.id}
+                      onClick={() => { setQuery(h.term); setIsOpen(true); }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '4px 10px',
+                        borderRadius: 16,
+                        background: 'var(--app-bg)',
+                        border: '1px solid var(--border-color-2)',
+                        fontSize: 12,
+                        color: 'var(--text-primary)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span>{h.term}</span>
+                      <span onClick={(e) => rimuoviDaCronologia(h.id, e)} style={{ color: 'var(--text-muted)', display: 'flex', padding: 2 }} title="Elimina">
+                        <X size={11} />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {query.trim().length >= 2 && (
+            <div>
+              {totalResults === 0 && !loading && (
+                <div style={{ padding: '16px 8px', textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
+                  Nessun risultato trovato per "{query}"
+                </div>
+              )}
+
+              {/* Condomini */}
+              {results.condomini.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Building2 size={13} style={{ color: 'var(--accent)' }} /> Condomini
+                  </div>
+                  {results.condomini.map((c) => (
+                    <div
+                      key={c.id}
+                      onClick={() => handleSelectResult(`/condomini/${c.id}`, query)}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.nome}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.indirizzo}</div>
+                      </div>
+                      <ArrowRight size={14} style={{ color: 'var(--accent)' }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Persone */}
+              {results.persone.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Users size={13} style={{ color: 'var(--accent)' }} /> Persone
+                  </div>
+                  {results.persone.map((p) => {
+                    const condoId = p.occupanti_unita?.[0]?.unita?.condominio_id;
+                    const condoName = p.occupanti_unita?.[0]?.unita?.condomini?.nome;
+                    const path = condoId ? `/condomini/${condoId}/anagrafica` : '/anagrafica';
+
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => handleSelectResult(path, query)}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{p.cognome} {p.nome}</div>
+                          {condoName && <div style={{ fontSize: 11, color: 'var(--accent)' }}>{condoName}</div>}
+                        </div>
+                        <ArrowRight size={14} style={{ color: 'var(--accent)' }} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Spese */}
+              {results.spese.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Receipt size={13} style={{ color: 'var(--accent)' }} /> Spese
+                  </div>
+                  {results.spese.map((s) => (
+                    <div
+                      key={s.id}
+                      onClick={() => handleSelectResult(`/condomini/${s.condominio_id}/spese`, query)}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{s.descrizione}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                          € {Number(s.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })} {s.fornitore ? `• ${s.fornitore}` : ''}
+                        </div>
+                      </div>
+                      <ArrowRight size={14} style={{ color: 'var(--accent)' }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Documenti */}
+              {results.documenti.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <FileText size={13} style={{ color: 'var(--accent)' }} /> Documenti
+                  </div>
+                  {results.documenti.map((d) => (
+                    <div
+                      key={d.id}
+                      onClick={() => handleSelectResult(`/condomini/${d.condominio_id}`, query)}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{d.nome}</div>
+                        {d.condomini?.nome && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.condomini.nome}</div>}
+                      </div>
+                      <ArrowRight size={14} style={{ color: 'var(--accent)' }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Footer Vedi Tutti */}
+              <div
+                onClick={handleSubmit}
+                style={{
+                  marginTop: 8,
+                  padding: '8px',
+                  borderRadius: 6,
+                  background: 'rgba(37,99,235,0.1)',
+                  color: 'var(--accent)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
+              >
+                Vedi tutti i risultati per "{query}" (Invio) <ArrowRight size={14} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -460,38 +892,8 @@ export default function AppLayout() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* ── Bottone Ricerca Rapida ── */}
-            <button
-              onClick={() => navigate('/ricerca')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                background: 'var(--card-bg)',
-                border: '1px solid var(--border-color-2)',
-                borderRadius: 8,
-                padding: '6px 12px',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                fontSize: 13,
-                transition: 'all 0.15s',
-              }}
-              title="Ricerca rapida (Cmd+K)"
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color-2)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-            >
-              <Search size={15} style={{ color: 'var(--accent)' }} />
-              <span className="hide-mobile">Cerca...</span>
-              <kbd style={{
-                background: 'var(--app-bg)',
-                border: '1px solid var(--border-color-2)',
-                borderRadius: 4,
-                padding: '1px 5px',
-                fontSize: 10,
-                fontWeight: 600,
-                color: 'var(--text-muted)',
-              }}>⌘K</kbd>
-            </button>
+            {/* ── Barra di Ricerca Interattiva Topbar ── */}
+            <HeaderSearchBar navigate={navigate} />
 
             {/* ── Campanella Notifiche ── */}
             <div style={{ position: 'relative' }}>

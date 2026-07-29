@@ -1,13 +1,24 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
+
+// Cache globale in memoria per condominio (condominioId -> { data, expiresAt })
+const globalMillesimiCache = new Map()
 
 export function useMillesimi(condominioId) {
   const [tabelle, setTabelle] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fetch = useCallback(async () => {
+  const fetch = useCallback(async (forceRefresh = false) => {
     if (!condominioId) return
+    const now = Date.now()
+    const cached = globalMillesimiCache.get(condominioId)
+
+    if (!forceRefresh && cached && cached.expiresAt > now) {
+      setTabelle(cached.data)
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
@@ -17,12 +28,22 @@ export function useMillesimi(condominioId) {
         .eq('condominio_id', condominioId)
         .order('nome')
       if (error) throw error
-      setTabelle(data || [])
+      const list = data || []
+      setTabelle(list)
+      // Salva in cache per 5 minuti
+      globalMillesimiCache.set(condominioId, {
+        data: list,
+        expiresAt: now + 5 * 60 * 1000
+      })
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
+  }, [condominioId])
+
+  const invalidateCache = useCallback(() => {
+    if (condominioId) globalMillesimiCache.delete(condominioId)
   }, [condominioId])
 
   const creaTabella = useCallback(async (payload) => {
@@ -34,6 +55,7 @@ export function useMillesimi(condominioId) {
         .select()
         .single()
       if (error) throw error
+      invalidateCache()
       setTabelle(prev => [...prev, { ...data, millesimi_unita: [] }])
       return data
     } catch (e) {
@@ -42,7 +64,7 @@ export function useMillesimi(condominioId) {
     } finally {
       setLoading(false)
     }
-  }, [condominioId])
+  }, [condominioId, invalidateCache])
 
   const aggiornaTabella = useCallback(async (id, payload) => {
     const { data, error } = await supabase
@@ -52,15 +74,17 @@ export function useMillesimi(condominioId) {
       .select()
       .single()
     if (error) throw error
+    invalidateCache()
     setTabelle(prev => prev.map(t => t.id === id ? { ...t, ...data } : t))
     return data
-  }, [])
+  }, [invalidateCache])
 
   const eliminaTabella = useCallback(async (id) => {
     const { error } = await supabase.from('tabelle_millesimali').delete().eq('id', id)
     if (error) throw error
+    invalidateCache()
     setTabelle(prev => prev.filter(t => t.id !== id))
-  }, [])
+  }, [invalidateCache])
 
   // Salva i millesimi per tutte le unità di una tabella (upsert bulk)
   const salvaMillesimi = useCallback(async (tabellaId, valori) => {
@@ -79,6 +103,7 @@ export function useMillesimi(condominioId) {
         .select()
       if (error) throw error
 
+      invalidateCache()
       // Aggiorna stato locale
       setTabelle(prev => prev.map(t => {
         if (t.id !== tabellaId) return t

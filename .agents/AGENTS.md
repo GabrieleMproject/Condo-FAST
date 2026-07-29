@@ -357,6 +357,10 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Allerta Tempestiva Anti-Ravvedimento Operoso F24 (`notificheEngine.js`):** Attivata l'allerta preventiva dal 1° al 10 del mese successivo al pagamento (15 giorni prima del 16 del mese), notificando l'amministratore con anticipo prima che scattino le sanzioni del ravvedimento operoso (art. 13 D.Lgs. 472/97).
 - **Riconciliazione F24 a Triplo Riscontro (`RiconciliazioniPage.jsx`):** Bloccata qualsiasi riconciliazione bancaria "alla cieca" per gli addebiti F24 in mancanza del file fisico della quietanza versata o della delega registrata.
 - **Inclusione Cartella `04_Quietanze_F24/` nel Dossier ZIP (`exportDossier.js`):** Aggiunta la cartella delle quietanze F24 nell'archivio ZIP scaricabile del consuntivo per la consegna diretta al commercialista.
+- **Pre-Caching Batch Signed URL (`useDocumenti.js`):** Generazione in background dei Signed URL temporanei per gli allegati della schermata attiva in lotti da 15 minuti, portando a 0ms i tempi d'attesa all'apertura dei documenti.
+- **Auto-Deduplicazione Estratto Conto (`EstrattoContoPage.jsx`):** Firma univoca deterministica (`data + importo + causale`) per gli estratti conto bancari con scarto automatico dei movimenti duplicati per garantire la quadratura di cassa nella Sezione D.
+- **Caching Client-Side Tabelle Millesimali (`useMillesimi.js`):** Memoria locale a 5 minuti per la mappa delle quote millesimali per condominio, riducendo le query e velocizzando il calcolo rate/spese sub-millisecondo.
+- **Wizard Storno Contabile (`StornoSpesaModal.jsx`):** Modale guidata anti-errore per la gestione sicura delle modifiche o storni su spese saldate, riconciliate o con F24 associato.
 
 
 ### 2. Normativa e Prevenzione Errori Contabili

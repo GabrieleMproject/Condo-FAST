@@ -202,8 +202,8 @@ export default function EstrattoContoPage() {
         }
       }
 
-      // Inserisci movimenti
-      const records = risultato.movimenti.map(m => ({
+      // Inserisci movimenti con Auto-Deduplicazione Deterministica
+      const rawRecords = risultato.movimenti.map(m => ({
         condominio_id: condominioId,
         user_id: user.id,
         data_movimento: m.data,
@@ -218,6 +218,25 @@ export default function EstrattoContoPage() {
         ai_processed: true,
         riconciliato: false,
       }));
+
+      // Mappa delle firme univoche dei movimenti già salvati per il condominio (data + importo + causale)
+      const movimentiEsistentiMap = new Set(
+        (movimenti || []).map(m => `${m.data_movimento}_${Number(m.importo).toFixed(2)}_${(m.causale || '').trim().toLowerCase()}`)
+      );
+
+      const records = rawRecords.filter(r => {
+        const key = `${r.data_movimento}_${Number(r.importo).toFixed(2)}_${(r.causale || '').trim().toLowerCase()}`;
+        return !movimentiEsistentiMap.has(key);
+      });
+
+      const scartatiCount = rawRecords.length - records.length;
+
+      if (records.length === 0) {
+        setErroreUpload(`Tutti i ${rawRecords.length} movimenti nel file risultano già caricati (scartati ${scartatiCount} duplicati).`);
+        setUploadProgress('');
+        setUploading(false);
+        return;
+      }
 
       const { error } = await supabase.from('estratto_conto').insert(records);
       if (error) throw error;

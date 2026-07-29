@@ -205,13 +205,14 @@
 
     <h2>5. Misure di sicurezza (Allegato A — sintesi)</h2>
     <ul>
-      <li>Isolamento dei dati per account tramite Row-Level Security applicata a livello di database</li>
+      <li>Isolamento dei dati per account tramite Row-Level Security (RLS) applicata a livello di database</li>
       <li>Autenticazione con token JWT verificati server-side su ogni chiamata API</li>
-      <li>Cifratura dei dati in transito (TLS) e a riposo</li>
-      <li>Signed URL a scadenza (15 minuti) per l'accesso ai documenti</li>
-      <li>Cancellazione automatica dei log delle conversazioni AI dopo 30 giorni</li>
-      <li>Infrastruttura con certificazioni SOC 2 Type II e ISO 27001</li>
-      <li>Backup periodici cifrati e procedure di disaster recovery [DETTAGLIARE RPO/RTO]</li>
+      <li>Cifratura dei dati in transito (TLS 1.3) e a riposo (AES-256)</li>
+      <li>Minimizzazione dei dati ed efficienza storage: ottimizzazione/compressione automatica dei file caricati per prevenire l'archiviazione di master ad altissima risoluzione non necessari ai fini contabili</li>
+      <li>Signed URL a scadenza temporale (15 minuti) per l'accesso protetto ai documenti fisici</li>
+      <li>Cancellazione o anonimizzazione automatica dei log delle conversazioni e chiamate AI entro 30 giorni</li>
+      <li>Infrastruttura database ospitata in Data Center UE con certificazioni SOC 2 Type II e ISO 27001</li>
+      <li>Backup periodici cifrati e procedure di disaster recovery</li>
     </ul>
 
     <h2>6. Sub-responsabili autorizzati</h2>
@@ -221,11 +222,11 @@
         <tr><th scope="col">Sub-responsabile</th><th scope="col">Attività</th><th scope="col">Localizzazione dati</th></tr>
       </thead>
       <tbody>
-        <tr><td>Supabase</td><td>Database e storage documentale</td><td>UE — Francoforte (Germania)</td></tr>
-        <tr><td>Vercel</td><td>Hosting applicativo</td><td>[REGIONE — SPECIFICARE]</td></tr>
-        <tr><td>Anthropic</td><td>Elaborazione AI su richiesta esplicita; nessun uso per training</td><td>[SPECIFICARE + GARANZIE SCC]</td></tr>
-        <tr><td>Stripe</td><td>Gestione pagamenti del Titolare (non dati dei condòmini)</td><td>[SPECIFICARE + GARANZIE SCC]</td></tr>
-        <tr><td>Resend</td><td>Invio email transazionali e solleciti approvati dal Titolare</td><td>[SPECIFICARE]</td></tr>
+        <tr><td>Supabase Inc.</td><td>Database PostgreSQL & storage documentale cifrato</td><td>Unione Europea — Francoforte (Germania)</td></tr>
+        <tr><td>Vercel Inc.</td><td>Hosting applicativo Web & CDN</td><td>UE / USA (Clausole Contrattuali Standard SCC)</td></tr>
+        <tr><td>Google LLC (Gemini AI)</td><td>Elaborazione OCR ed analisi documenti su richiesta esplicita dell'Utente; zero training sui dati</td><td>UE / USA (SCC - Nessun dato usato per addestramento)</td></tr>
+        <tr><td>Stripe Payments Europe</td><td>Gestione pagamenti dell'abbonamento dell'Utente (nessun dato dei condòmini)</td><td>UE (Irlanda)</td></tr>
+        <tr><td>Resend Inc.</td><td>Invio email transazionali e solleciti approvati dal Titolare</td><td>UE / USA (Clausole Contrattuali Standard SCC)</td></tr>
       </tbody>
     </table>
 

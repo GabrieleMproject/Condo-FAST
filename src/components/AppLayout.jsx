@@ -36,7 +36,8 @@ import {
   X,
   Clock,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  Search
 } from 'lucide-react';
 
 

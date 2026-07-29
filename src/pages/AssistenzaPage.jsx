@@ -185,8 +185,9 @@ export default function AssistenzaPage() {
       })
       setChatHistory([...newHistory, { role: 'assistant', content: aiResponse }])
     } catch (err) {
-      toast.error('Errore di comunicazione AI: ' + err.message)
-      setChatHistory([...newHistory, { role: 'assistant', content: 'Scusa, ho riscontrato un errore di connessione. Se il problema persiste, ti consiglio di inoltrare la chat aprendo un ticket.' }])
+      console.error('[AssistenzaChat] Errore risposta AI:', err)
+      toast.error('Errore di comunicazione AI: ' + (err.message || 'Connessione fallita'))
+      setChatHistory([...newHistory, { role: 'assistant', content: `Scusa, ho riscontrato un errore di connessione: ${err.message || 'Connessione al server fallita'}. Se il problema persiste, puoi convertire questa conversazione in un ticket col pulsante in alto.` }])
     } finally {
       setIsTyping(false)
     }

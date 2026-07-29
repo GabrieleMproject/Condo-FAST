@@ -117,7 +117,43 @@ export async function exportDossierRendiconto({
     }
   }
 
-  // 4. Pacchettizza ed esporta il file ZIP
+  // 4. Recupera e scarica le Quietanze F24 dell'esercizio
+  onProgress({ percent: 75, messaggio: 'Raccolta Quietanze F24…' })
+  const folderF24 = zip.folder('04_Quietanze_F24')
+
+  const { data: delegheF24 } = await supabase
+    .from('f24_deleghe')
+    .select('id, data_scadenza, data_pagamento, importo_totale, quietanza_url')
+    .eq('condominio_id', condominio.id)
+
+  if (delegheF24 && delegheF24.length) {
+    for (let i = 0; i < delegheF24.length; i++) {
+      const del = delegheF24[i]
+      if (del.quietanza_url) {
+        try {
+          let downloadUrl = del.quietanza_url
+          if (!del.quietanza_url.startsWith('http')) {
+            const { data: sUrl } = await supabase.storage
+              .from('fatture')
+              .createSignedUrl(del.quietanza_url, 900)
+            downloadUrl = sUrl?.signedUrl || del.quietanza_url
+          }
+
+          const resQ = await fetch(downloadUrl)
+          if (resQ.ok) {
+            const bufQ = await resQ.arrayBuffer()
+            const extQ = del.quietanza_url.split('.').pop()?.split('?')[0] || 'pdf'
+            const dataScad = del.data_scadenza || `Scad_${i + 1}`
+            folderF24.file(`Quietanza_F24_${dataScad}_€${del.importo_totale}.${extQ}`, bufQ)
+          }
+        } catch (errQ) {
+          console.warn('Impossibile scaricare quietanza F24:', del.id, errQ)
+        }
+      }
+    }
+  }
+
+  // 5. Pacchettizza ed esporta il file ZIP
   onProgress({ percent: 90, messaggio: 'Compressione archivio ZIP…' })
   const contentBlob = await zip.generateAsync({ type: 'blob' }, (metadata) => {
     onProgress({ percent: 90 + Math.round(metadata.percent * 0.1), messaggio: 'Compressione in corso…' })

@@ -354,6 +354,9 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Export Completo Rendicontazione Dossier ZIP (`exportDossier.js`):** Sviluppata la funzione di pacchettizzazione con `JSZip` per scaricare in un unico file `.zip` il consuntivo PDF ex art. 1130-bis c.c., la cartella degli estratti conto ed la cartella con tutte le fatture/giustificativi di spesa del periodo.
 - **Conformità UI:** La modale e la toolbar sono state realizzate senza emoji visive Unicode in UI, utilizzando esclusivamente le icone vettoriali di Lucide React (`FileText`, `Sparkles`, `CheckCircle2`, `ShieldCheck`, `ArrowRight`, `X`, `Archive`, `FileCheck`, `Receipt`, `Landmark`, `Send`).
 - **Chiarimento Piani Abbonamento F24 (`ModuloFiscalePage.jsx`):** Inserito un banner esplicativo nel tab F24 che delucida chiaramente come i piani Base e Studio consentano il calcolo dello scadenzario e la registrazione delle quietanze di pagamento, mentre l'esportazione del tracciato telematico massivo CBI F24 per l'Home Banking è riservata al piano Professional.
+- **Allerta Tempestiva Anti-Ravvedimento Operoso F24 (`notificheEngine.js`):** Attivata l'allerta preventiva dal 1° al 10 del mese successivo al pagamento (15 giorni prima del 16 del mese), notificando l'amministratore con anticipo prima che scattino le sanzioni del ravvedimento operoso (art. 13 D.Lgs. 472/97).
+- **Riconciliazione F24 a Triplo Riscontro (`RiconciliazioniPage.jsx`):** Bloccata qualsiasi riconciliazione bancaria "alla cieca" per gli addebiti F24 in mancanza del file fisico della quietanza versata o della delega registrata.
+- **Inclusione Cartella `04_Quietanze_F24/` nel Dossier ZIP (`exportDossier.js`):** Aggiunta la cartella delle quietanze F24 nell'archivio ZIP scaricabile del consuntivo per la consegna diretta al commercialista.
 
 
 ### 2. Normativa e Prevenzione Errori Contabili

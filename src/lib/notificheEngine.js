@@ -71,17 +71,26 @@ export function calcolaF24Ritenute(settings, fatture, oggi = new Date()) {
     perCondominio[cid].totale += parseFloat(f.ritenuta_acconto || 0)
   })
 
-  return Object.values(perCondominio).map(({ condominioId, condominioNome, count, totale }) => ({
-    id: `f24_${condominioId}_${annoPrecedente}-${String(mesePrecedente + 1).padStart(2, '0')}`,
-    tipo: 'f24_ritenute',
-    severita: 'warning',
-    titolo: 'Promemoria F24 — Ritenute da versare',
-    messaggio: `${count} fattur${count === 1 ? 'a' : 'e'} pagate a ${nomeMese(mesePrecedente)} con ritenuta (totale: €${totale.toFixed(2)}). Presenta l'F24 entro il 16 ${nomeMese(meseCorrente)}.`,
-    condominioId,
-    condominioNome,
-    link: `/condomini/${condominioId}/fatture`,
-    data: oggi,
-  }))
+  return Object.values(perCondominio).map(({ condominioId, condominioNome, count, totale }) => {
+    const giorniRimanenti = 16 - giornoCorrente
+    const isUrgente = giornoCorrente >= 11
+
+    return {
+      id: `f24_${condominioId}_${annoPrecedente}-${String(mesePrecedente + 1).padStart(2, '0')}`,
+      tipo: 'f24_ritenute',
+      severita: isUrgente ? 'danger' : 'warning',
+      titolo: isUrgente 
+        ? `Urgenza F24 Anti-Ravvedimento (Scadenza tra ${giorniRimanenti} giorn${giorniRimanenti === 1 ? 'o' : 'i'})` 
+        : 'Allerta Anti-Ravvedimento F24 — Scadenza 16 del mese',
+      messaggio: isUrgente
+        ? `${count} fattur${count === 1 ? 'a' : 'e'} pagat${count === 1 ? 'a' : 'e'} a ${nomeMese(mesePrecedente)} con ritenuta (totale: €${totale.toFixed(2)}). Versa l'F24 entro il 16 ${nomeMese(meseCorrente)} per evitare sanzioni ed interessi dell'Agenzia delle Entrate.`
+        : `${count} fattur${count === 1 ? 'a' : 'e'} pagat${count === 1 ? 'a' : 'e'} a ${nomeMese(mesePrecedente)} con ritenuta (totale: €${totale.toFixed(2)}). Predisponi il versamento F24 entro il 16 ${nomeMese(meseCorrente)} per evitare il ravvedimento operoso.`,
+      condominioId,
+      condominioNome,
+      link: `/condomini/${condominioId}/fatture`,
+      data: oggi,
+    }
+  })
 }
 
 /**

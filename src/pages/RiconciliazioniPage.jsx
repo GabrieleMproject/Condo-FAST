@@ -170,15 +170,23 @@ Abbina i movimenti alle fatture.`;
   // ─── Conferma / rifiuta ──────────────────────────────────────
   async function aggiornaStato(ricId, nuovoStato, movimentoId, fatturaId) {
     try {
-      const { error: errRic } = await supabase.from('riconciliazioni').update({
-        stato: nuovoStato,
-        confermata_at: nuovoStato === 'confermata' ? new Date().toISOString() : null,
-      }).eq('id', ricId);
-      if (errRic) throw errRic;
-
       if (nuovoStato === 'confermata') {
         const mov = movimenti.find(m => m.id === movimentoId);
+        const fat = fatture.find(f => f.id === fatturaId);
         const dataPagamento = mov ? mov.data_movimento : new Date().toISOString().split('T')[0];
+
+        // Regola Triplo Riscontro: se è un F24 o la fattura ha ritenuta, verificare la presenza della quietanza F24
+        const isMovF24 = mov && (mov.causale?.toLowerCase().includes('f24') || mov.causale?.toLowerCase().includes('agenzia entrate'));
+        const haRitenuta = fat && (parseFloat(fat.importo_ritenuta || 0) > 0 || parseFloat(fat.ritenuta_acconto || 0) > 0);
+
+        if (isMovF24 || haRitenuta) {
+          // Verifica se la quietanza F24 è presente in fattura o f24_deleghe
+          const quietanzaPresente = fat?.f24_url || false;
+          if (!quietanzaPresente && isMovF24) {
+            alert('Impossibile riconciliare addebito F24 senza quietanza: carica prima il file della quietanza F24 nel sistema (regola del triplo riscontro).');
+            return;
+          }
+        }
 
         const [resMov, resFatt] = await Promise.all([
           supabase.from('estratto_conto').update({ riconciliato: true }).eq('id', movimentoId),
@@ -191,6 +199,13 @@ Abbina i movimenti alle fatture.`;
         if (resMov.error) throw resMov.error;
         if (resFatt.error) throw resFatt.error;
       }
+
+      const { error: errRic } = await supabase.from('riconciliazioni').update({
+        stato: nuovoStato,
+        confermata_at: nuovoStato === 'confermata' ? new Date().toISOString() : null,
+      }).eq('id', ricId);
+      if (errRic) throw errRic;
+
       await loadAll();
     } catch (err) {
       alert('Errore aggiornamento riconciliazione: ' + err.message);

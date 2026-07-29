@@ -78,7 +78,7 @@ async function callEdge(body) {
  * @throws {RateLimitError} se il rate limit è raggiunto
  */
 export async function callGemini(prompt, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 1000, system, jsonMode, jsonSchema } = opts;
+  const { funzione, condominio_id, maxTokens = 2500, system, jsonMode, jsonSchema } = opts;
 
   const data = await callEdge({
     type:      'text',
@@ -110,7 +110,7 @@ export async function callGemini(prompt, opts = {}) {
  * @param {object} [opts]
  */
 export async function callGeminiWithHistory(messages, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 1000, system, jsonMode, jsonSchema } = opts;
+  const { funzione, condominio_id, maxTokens = 2500, system, jsonMode, jsonSchema } = opts;
 
   const data = await callEdge({
     type:     'history',

@@ -181,7 +181,7 @@ export default function AssistenzaPage() {
       const aiResponse = await callGeminiWithHistory(historyToSend, { 
         system: systemPromptDinamico, 
         funzione: 'assistenza_chat',
-        maxTokens: 500
+        maxTokens: 3000
       })
       setChatHistory([...newHistory, { role: 'assistant', content: aiResponse }])
     } catch (err) {

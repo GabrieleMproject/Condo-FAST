@@ -10,53 +10,100 @@ export const PIANI = {
     canone: 0,
     condomini_inclusi: 50,       // trial = accesso Studio completo
     extra_per_cond: 0,
-    ai_calls_mese: 500,          // trial = accesso Studio completo
+    ai_calls_mese: 500,          // trial = 500 chiamate AI
     portale_condomino: true,
     rendiconto_pdf: true,
     assemblee: true,
     max_collaboratori: 0,
     storico_anni: 3,
     api_access: false,
+    features_list: [
+      { ok: true, label: '500 chiamate AI Gemini/mese' },
+      { ok: true, label: 'Fino a 50 condomini inclusi' },
+      { ok: true, label: 'OCR automatico Fatture & Estratti Conto' },
+      { ok: true, label: 'Rendiconto PDF di legge (Art. 1130-bis c.c.)' },
+      { ok: true, label: 'Ricerca AI nei Verbali di Assemblea' },
+      { ok: true, label: 'Gestione Solleciti & Morosità' },
+      { ok: false, label: 'Multi-utente collaboratori' },
+      { ok: false, label: 'Open Banking PSD2 notturno' },
+      { ok: false, label: 'Distinta CBI F24 per Home Banking' },
+    ]
   },
   base: {
-    label: 'Base',
-    canone: 129,
-    condomini_inclusi: 50,       // 50 condomini per Base
-    extra_per_cond: 7,
-    ai_calls_mese: 100,          // 100 chiamate AI
-    portale_condomino: false,
-    rendiconto_pdf: false,
-    assemblee: false,
+    label: 'Base / Starter',
+    canone: 59,
+    condomini_inclusi: 50,       // 50 condomini per Base/Starter
+    extra_per_cond: 3,
+    ai_calls_mese: 300,          // 300 chiamate AI/mese
+    portale_condomino: true,
+    rendiconto_pdf: true,
+    assemblee: true,
     max_collaboratori: 0,
     storico_anni: 1,
     api_access: false,
+    features_list: [
+      { ok: true, label: '300 chiamate AI Gemini/mese' },
+      { ok: true, label: 'Fino a 50 condomini inclusi (+3€/cond. extra)' },
+      { ok: true, label: '1 Utente titolare incluso' },
+      { ok: true, label: 'OCR automatico Fatture XML/PDF & Saldi' },
+      { ok: true, label: 'Rendiconto PDF di legge (Art. 1130-bis c.c.)' },
+      { ok: true, label: 'Scadenzario F24 e Ritenute d\'Acconto' },
+      { ok: false, label: 'Ricerca AI avanzata nei Verbali' },
+      { ok: false, label: 'Multi-utente per collaboratori' },
+      { ok: false, label: 'Open Banking automatico notturno' },
+      { ok: false, label: 'Distinta CBI F24 per Home Banking' },
+    ]
   },
   studio: {
     label: 'Studio',
-    canone: 249,
+    canone: 169,
     condomini_inclusi: 100,      // fino a 100 condomini per Studio
-    extra_per_cond: 6,
-    ai_calls_mese: 500,          // 500 chiamate AI
+    extra_per_cond: 2.5,
+    ai_calls_mese: 800,          // 800 chiamate AI/mese
     portale_condomino: true,
     rendiconto_pdf: true,
     assemblee: true,
-    max_collaboratori: 2,
+    max_collaboratori: 2,        // 2 collaboratori inclusi
+    extra_collaboratore: 15,
     storico_anni: 3,
     api_access: false,
+    features_list: [
+      { ok: true, label: '800 chiamate AI Gemini/mese' },
+      { ok: true, label: 'Fino a 100 condomini inclusi (+2,50€/cond. extra)' },
+      { ok: true, label: '2 Collaboratori inclusi (+15€/m extra)' },
+      { ok: true, label: 'Ricerca & Analisi AI nei Verbali di Assemblea' },
+      { ok: true, label: 'Solleciti & Comunicazioni email (Resend)' },
+      { ok: true, label: 'Registro Anagrafe Condominiale Catastale AI' },
+      { ok: true, label: 'Postbox Studio & Gestione Fornitori' },
+      { ok: true, label: 'Rendiconto PDF e Riparto Millesimale AI' },
+      { ok: false, label: 'Open Banking automatico notturno (PSD2)' },
+      { ok: false, label: 'Distinta CBI F24 per Home Banking' },
+    ]
   },
   professional: {
     label: 'Professional',
-    canone: 399,
-    condomini_inclusi: null,     // illimitati
-    extra_per_cond: 0,
-    ai_calls_mese: 1000,         // 1000 chiamate AI/mese
+    canone: 299,
+    condomini_inclusi: 200,      // fino a 200 condomini per Professional
+    extra_per_cond: 2,
+    ai_calls_mese: 2000,         // 2000 chiamate AI/mese
     portale_condomino: true,
     rendiconto_pdf: true,
     assemblee: true,
-    max_collaboratori: 10,
-    extra_collaboratore: 29,
+    max_collaboratori: 4,        // 4 collaboratori inclusi
+    extra_collaboratore: 12,
     storico_anni: null,          // illimitato
     api_access: true,
+    features_list: [
+      { ok: true, label: '2.000 chiamate AI Gemini/mese potenziate' },
+      { ok: true, label: 'Fino a 200 condomini inclusi (+2€/cond. extra)' },
+      { ok: true, label: '4 Collaboratori inclusi (+12€/m extra)' },
+      { ok: true, label: 'Open Banking Automatico Notturno (PSD2)' },
+      { ok: true, label: 'Distinta CBI massiva F24 per Home Banking' },
+      { ok: true, label: 'Tutto il Piano Studio incluso' },
+      { ok: true, label: 'Storico illimitato ed Export Avanzati' },
+      { ok: true, label: 'Accesso API ed Integrazioni Custom' },
+      { ok: true, label: 'Manager dedicato & Supporto Telefonico' },
+    ]
   },
 }
 
@@ -78,6 +125,7 @@ const FEATURE_GATES = {
   api_access:          ['professional'],             // futuro
   open_banking:        ['professional'],             // S51
   distinta_cbi_f24:    ['professional'],             // Distinta CBI F24 riservata a Professional
+  fatturazione_xml_sdi:['studio', 'professional'],   // Importazione nativa XML/p7m a 0 token per Studio e Professional
 }
 
 const PlanContext = createContext(null)

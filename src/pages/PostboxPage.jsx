@@ -270,11 +270,11 @@ function PostboxPaywall() {
           SBLOCCA ORA POSTBOX STUDIO
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 6, marginBottom: 16 }}>
-          <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)' }}>249€</span>
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>/ mese + IVA (include 50 condomini)</span>
+          <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)' }}>169€</span>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>/ mese + IVA (include 100 condomini)</span>
         </div>
         <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.5, margin: '0 0 24px' }}>
-          Passa al piano <strong>Studio</strong> per sbloccare la Postbox Studio, l'AI inclusa (500 scansioni/mese), l'invio solleciti con Resend, l'assemblea digitale AI e il portale per ciascun condomino.
+          Passa al piano <strong>Studio</strong> per sbloccare la Postbox Studio, l'AI inclusa (800 scansioni/mese), l'invio solleciti con Resend, l'assemblea digitale AI e la multi-utenza per i collaboratori.
         </p>
         <a href="/impostazioni#piani-abbonamento" style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,

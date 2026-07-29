@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiFattura, getTipoFile, comprimiImmagine } from '../lib/fileExtractor';
+import { parseFatturaXmlP7m } from '../lib/xmlFatturaParser';
 import { calcolaFileHash } from '../lib/fileHash';
 import { useFornitori } from '../hooks/useFornitori';
+import { usePlan } from '../hooks/usePlan';
 import ModalWarningPertinenza from '../components/ModalWarningPertinenza';
 import { Edit3, Trash2, AlertTriangle, Upload, Paperclip, Loader2, Receipt, Calendar, Clock, Link2, FileText } from 'lucide-react';
 
@@ -52,7 +54,8 @@ export default function FattureFornitoriPage() {
   const [f24TargetId, setF24TargetId] = useState(null);
   const [f24Busy, setF24Busy]  = useState(false);
 
-  // Modulo Fiscale (Fornitori)
+  // Modulo Fiscale (Fornitori) e Piani
+  const { canUse } = usePlan();
   const { fornitori, createFornitore } = useFornitori();
   const [pendingNewFornitore, setPendingNewFornitore] = useState(null);
 
@@ -130,12 +133,18 @@ export default function FattureFornitoriPage() {
     if (!file) return;
     const tipo = getTipoFile(file);
     if (tipo === 'unknown') {
-      setErroreUpload('Formato non supportato. Usa PDF, DOCX, immagine, Excel o TXT.');
+      setErroreUpload('Formato non supportato. Usa PDF, XML, p7m, DOCX, immagine, Excel o TXT.');
       return;
     }
 
     if (file.size > 15 * 1024 * 1024) {
       setErroreUpload('Il file supera il limite massimo consentito di 15MB.');
+      return;
+    }
+
+    // Controllo Feature Gate per Fatture Elettroniche XML/p7m
+    if ((tipo === 'xml' || tipo === 'p7m') && !canUse('fatturazione_xml_sdi')) {
+      setErroreUpload('L\'importazione nativa delle Fatture Elettroniche XML/p7m è una funzionalità esclusiva del piano Professional. Passa al piano Professional per accedere all\'estrazione istantanea a costo zero.');
       return;
     }
 
@@ -166,9 +175,18 @@ export default function FattureFornitoriPage() {
         }
       }
 
-      const fileCompresso = await comprimiImmagine(file);
-      setUploadProgress('Estrazione dati fattura con AI...');
-      const datiAI = await estraiFattura(fileCompresso, condominio);
+      let datiAI = null;
+      let fileCompresso = file;
+
+      if (tipo === 'xml' || tipo === 'p7m') {
+        setUploadProgress('Estrazione nativa Fattura Elettronica XML (0ms)...');
+        const resXml = await parseFatturaXmlP7m(file);
+        datiAI = resXml.dati;
+      } else {
+        fileCompresso = await comprimiImmagine(file);
+        setUploadProgress('Estrazione dati fattura con AI...');
+        datiAI = await estraiFattura(fileCompresso, condominio);
+      }
 
       if (datiAI?._warningPertinenza) {
         setPendingFile({ fileCompresso, datiAI, tipo, hash });
@@ -454,7 +472,7 @@ export default function FattureFornitoriPage() {
         onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
       >
         <input
-          type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp,.xlsx,.xls,.txt"
+          type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp,.xlsx,.xls,.txt,.xml,.p7m"
           style={{ display: 'none' }} id="fattura-upload"
           onChange={e => handleFile(e.target.files[0])}
           disabled={uploading}
@@ -467,7 +485,7 @@ export default function FattureFornitoriPage() {
             {uploading ? uploadProgress : 'Trascina una fattura qui'}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {uploading ? '' : 'PDF, DOCX, immagine, Excel, TXT — l\'AI estrarrà i dati automaticamente'}
+            {uploading ? '' : 'PDF, XML, p7m, DOCX, immagine, Excel — estrazione nativa SDI o con IA'}
           </div>
         </label>
       </div>

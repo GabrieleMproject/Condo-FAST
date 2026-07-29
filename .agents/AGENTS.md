@@ -663,7 +663,18 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Estensione Schema DB:** Creata la migrazione `sql/s34_documenti_date.sql` per introdurre il campo `data_documento` in `documenti_condominio` per storicizzare la data reale del verbale/assemblea.
 
 ### 2. Migrazione AI a Gemini (Pro & Flash)
-- **Mappatura Strategica dei Modelli:** Configurato il proxy intelligente per instradare le chiamate a `gemini-pro-latest` (per compiti ad alta complessità cognitiva: ricerca nei verbali, scelta dei criteri di ripartizione e strutturazione millesimali) e `gemini-flash-latest` (per estrazioni dati standardizzate e veloci: analisi fatture, estratti conto e importazione anagrafica), ottimizzando costi e latenza senza alcuna perdita di accuratezza.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S61 (29 Luglio 2026 - Parser Nativo XML/p7m e Automazione Fiscale)
+
+### 1. Decisioni di Architettura e UI (Opzione A - Indipendenza 0 Token AI)
+- **Parser Nativo Fatturazione Elettronica (`xmlFatturaParser.js`):** Sviluppato il parser JavaScript nativo in grado di decodificare istantaneamente (in meno di 50ms e con 0 chiamate API/token AI) sia i file `.xml` puri che le buste crittografiche `.p7m` (PKCS#7) delle Fatture Elettroniche SDI B2B/PA.
+- **Riservatezza Esclusiva al Piano Professional:** Registrata la feature gate `fatturazione_xml_sdi: ['professional']` in `usePlan.js`. L'estrazione nativa immediata delle fatture XML/p7m è una leva esclusiva del piano Professional (399€/mese). Se tentata da utenti nei piani Trial, Base o Studio, l'applicazione mostra un avviso dedicato invitando all'upgrade.
+- **Smart File Router (Zero Collisioni con Formati Esistenti):** Aggiornate le DropZone di `FattureFornitoriPage.jsx` e `SpeseForm.jsx` per accettare `.xml` e `.p7m` insieme a tutti i formati precedenti (`.pdf`, `.docx`, `.jpg`, `.png`, `.webp`, `.xlsx`, `.txt`). I file XML/p7m vengono lavorati in modo nativo deterministico dal parser, mentre le scansionati analogici/PDF continuano ad essere analizzati dall'OCR IA di Gemini senza alcun conflitto.
+- **Mappatura Fiscale Automatica:** Il parser estrae nativamente i tag `<DatiRitenuta>` (aliquote 4%/20%, imponibili, importi ritenuta e causali pagamento `W`, `S`, `Z`) auto-mappando i codici tributo F24 (`1019`, `1020`, `1040`). I dati popolano direttamente `fatture_fornitori` ed alimentano l'F24, le Certificazioni Uniche (CU) e il Modello 770 in `ModuloFiscalePage.jsx`.
+- **Verifica Build:** Eseguita con successo la build di produzione (`npm run build` - 2123 moduli trasformati in 472ms).
+`gemini-flash-latest` (per estrazioni dati standardizzate e veloci: analisi fatture, estratti conto e importazione anagrafica), ottimizzando costi e latenza senza alcuna perdita di accuratezza.
 - **Output JSON Garantito:** Abilitata la modalità nativa `responseMimeType: "application/json"` di Gemini per forzare risposte sintatticamente strutturate in JSON per tutte le operazioni di estrazione dati, azzerando i crash di parsing.
 - **Retrocompatibilità Totale:** L'Edge Function `claude-proxy` traduce la risposta di Gemini nel formato Anthropic (content ed usage), evitando modifiche a cascata e mantenendo intatta la compatibilità e la logica di telemetria (`logAiCall`).
 - **Verifica con Smoke Test:** Validata la connessione ed il corretto funzionamento end-to-end con esito verde e risposta corretta tramite `npm run smoke`.
@@ -1520,9 +1531,23 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 ### 3. Diagnosi Conformità Fiscale (`diagnosiFiscaleEngine.js` & `DiagnosiFiscaleModal.jsx`)
 - **Badge Condominio negli Avvisi:** Ogni rilievo/anomalia della Diagnosi Fiscale viene ora arricchito con il nome del condominio di riferimento (`condominioNome: condominio.nome`). Nella modale `DiagnosiFiscaleModal.jsx`, ciascuna scheda di anomalia mostra in evidenza un badge chiaro con il nome del condominio (`🏢 Nome Condominio`).
 
-### 4. Build e Deploy Unificato
-- **Build Verification:** Eseguito `npm run build` con esito verde (✓ built in 475ms, 2117 moduli compilati).
-- **Deploy Unificato (`deploy_all.mjs`):** Commit `944b160`, push su GitHub `main` (scatenando il deploy automatico del frontend su Vercel), deploy delle Edge Functions e superamento dello smoke test.
+
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S62 (29 Luglio 2026 - Riconfigurazione Pricing Tiers e Value Proposition All-Inclusive)
+
+### 1. Decisioni sul Pricing e Posizionamento Tiers
+- **Soglie Condomini e Postazioni Utente:** Impostate ufficialmente le soglie a 50 condomini (Starter), 100 condomini (Studio) e 200 condomini (Professional). Oltre 200 condomini è prevista la trattativa riservata per piano Enterprise / Custom.
+- **Postazioni Utilizzatori Incluse:** Starter (1 utente titolare / 0 collaboratori), Studio (2 utenti inclusi, extra collaboratore a 15€/m), Professional (4 utenti inclusi, extra collaboratore a 12€/m).
+- **Nuovo Listino Prezzi:**
+  - **Starter**: 59 € / mese (o 590 € / anno)
+  - **Studio**: 169 € / mese (o 1.690 € / anno)
+  - **Professional**: 299 € / mese (o 2.990 € / anno)
+  - **Enterprise**: Su misura per >200 condomini.
+- **Value Proposition All-Inclusive:** Posizionamento basato sulla totale assenza di costi nascosti (fatturazione elettronica SDI, assemblee, conservazione e comunicazioni incluse a 0€).
+- **Lista Funzionalità Dettagliata per Piano (`usePlan.js` & `ImpostazioniPage.jsx`):** Integrata l'infrastruttura `features_list` nell'oggetto `PIANI` ed adeguata la visualizzazione dinamica nella griglia della pagina Impostazioni.
+
 
 
 

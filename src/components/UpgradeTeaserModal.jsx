@@ -19,7 +19,7 @@ export default function UpgradeTeaserModal({
 
   const isPro = pianoRichiesto === 'professional'
   const computedBadge = badgeText || (isPro ? 'ESCLUSIVO PROFESSIONAL' : 'ESCLUSIVO PIANO STUDIO')
-  const defaultCtaText = isPro ? 'Passa a Professional (399€/m)' : 'Passa al Piano Studio (249€/m)'
+  const defaultCtaText = isPro ? 'Passa a Professional (299€/m)' : 'Passa al Piano Studio (169€/m)'
 
   return (
     <div style={{

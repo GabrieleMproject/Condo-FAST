@@ -443,7 +443,7 @@ export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSucc
           "Connessione diretta certificata da standard bancari PSD2",
           "Condomini ed estratti conto illimitati inclusi nel piano"
         ]}
-        ctaText="Passa a Professional (399€/m)"
+        ctaText="Passa a Professional (299€/m)"
       />
     </div>
   )

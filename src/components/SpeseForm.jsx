@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { callGemini, callGeminiDocument } from '../lib/geminiClient'
-import { estraiFattura, fileToBase64, comprimiImmagine } from '../lib/fileExtractor'
+import { estraiFattura, fileToBase64, comprimiImmagine, getTipoFile } from '../lib/fileExtractor'
+import { parseFatturaXmlP7m } from '../lib/xmlFatturaParser'
+import { usePlan } from '../hooks/usePlan'
 import { supabase } from '../lib/supabaseClient'
 import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet, Trash2, ChevronDown, ChevronUp, Layers, FileText } from 'lucide-react'
 
@@ -558,18 +560,36 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     }))
   }
 
- // ─── Import da fattura (via estraiFattura — fix #10) ────────────────────────
+  const { canUse } = usePlan()
+
+  // ─── Import da fattura (via estraiFattura / parseFatturaXmlP7m) ────────────────────────
   const elaboraFattura = async (file) => {
     if (!file) return
-    if (file.size > 10 * 1024 * 1024) {
-      setErrFattura('Il file supera il limite massimo consentito di 10MB.')
+    if (file.size > 15 * 1024 * 1024) {
+      setErrFattura('Il file supera il limite massimo consentito di 15MB.')
       return
     }
+
+    const tipo = getTipoFile(file)
+    if ((tipo === 'xml' || tipo === 'p7m') && !canUse('fatturazione_xml_sdi')) {
+      setErrFattura('L\'importazione nativa delle Fatture Elettroniche XML/p7m è riservata al piano Professional.')
+      return
+    }
+
     setLoadingFattura(true)
     setErrFattura(null)
     try {
-      const fileCompresso = await comprimiImmagine(file)
-      const estratto = await estraiFattura(fileCompresso)
+      let estratto = null
+      let fileCompresso = file
+
+      if (tipo === 'xml' || tipo === 'p7m') {
+        const resXml = await parseFatturaXmlP7m(file)
+        estratto = resXml.dati
+      } else {
+        fileCompresso = await comprimiImmagine(file)
+        const res = await estraiFattura(fileCompresso)
+        estratto = res
+      }
 
       // Mappa categoria fattura → categoria spesa (set ristretto del form)
       const CAT_VALIDE = CATEGORIE.map(c => c.value)
@@ -591,7 +611,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
       setAiDatiEstratti(estratto)
     } catch (e) {
       console.error('Errore estrazione fattura:', e)
-      setErrFattura('Impossibile estrarre i dati. Verifica il file e riprova.')
+      setErrFattura('Impossibile estrarre i dati: ' + e.message)
     } finally {
       setLoadingFattura(false)
     }
@@ -1148,7 +1168,7 @@ Formato JSON:
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.csv,.txt"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.csv,.txt,.xml,.p7m"
               style={{ display: 'none' }}
               onChange={handleFileInput}
             />
@@ -1182,7 +1202,7 @@ Formato JSON:
                   Trascina le fatture qui oppure clicca per selezionarle (fino a 5 file)
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
-                  PDF, immagini, DOCX, Excel · L'AI compilerà i campi ed effettuerà la ripartizione per ciascun file
+                  PDF, XML, p7m, immagini, DOCX, Excel · Estrazione nativa SDI o con IA
                 </div>
               </div>
             )}

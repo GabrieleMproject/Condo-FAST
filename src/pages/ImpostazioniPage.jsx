@@ -1388,12 +1388,9 @@ export default function ImpostazioniPage() {
                     </div>
 
                     <div style={styles.pianoOptionFeatures}>
-                      <FeatureRow ok label={`${info.ai_calls_mese ?? '∞'} AI calls/mese`} />
-                      <FeatureRow ok={info.portale_condomino} label="Portale condomino" />
-                      <FeatureRow ok={info.rendiconto_pdf} label="Rendiconto PDF automatico" />
-                      <FeatureRow ok={info.assemblee} label="Assemblee e verbali AI" />
-                      <FeatureRow ok={info.multi_utente} label={`Multi-utente${info.max_collaboratori ? ` (${info.max_collaboratori} collab.)` : ''}`} />
-                      <FeatureRow ok={info.api_access} label="API access" />
+                      {(info.features_list || []).map((feat, idx) => (
+                        <FeatureRow key={idx} ok={feat.ok} label={feat.label} />
+                      ))}
                     </div>
 
                     {/* SEPA sconto */}

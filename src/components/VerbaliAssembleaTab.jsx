@@ -535,7 +535,7 @@ Formato JSON atteso:
                   boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
                 }}
               >
-                <span>Passa al Piano Studio (249€/m)</span>
+                <span>Passa al Piano Studio (169€/m)</span>
                 <ArrowRight size={16} />
               </a>
             </div>
@@ -788,7 +788,7 @@ Formato JSON atteso:
           "Estrazione automatica delle citazioni testuali e delle delibere",
           "Riduzione azzerata dei tempi di ricerca contabile e legale"
         ]}
-        ctaText="Passa a Piano Studio (249€/m)"
+        ctaText="Passa a Piano Studio (169€/m)"
       />
     </div>
   );

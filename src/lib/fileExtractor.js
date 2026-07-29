@@ -242,6 +242,8 @@ export function getTipoFile(file) {
   const type = (file.type || '').toLowerCase();
 
   if (type === 'application/pdf' || name.endsWith('.pdf'))                                return 'pdf';
+  if (type.includes('xml') || name.endsWith('.xml'))                                     return 'xml';
+  if (name.endsWith('.p7m') || type.includes('pkcs7'))                                  return 'p7m';
   if (type.includes('spreadsheetml') || name.endsWith('.xlsx') || name.endsWith('.xls')) return 'xlsx';
   if (type === 'text/csv'  || name.endsWith('.csv'))                                     return 'csv';
   if (type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|webp|gif)$/))             return 'image';
@@ -257,6 +259,10 @@ export function getTipoFile(file) {
 // ─── Validazione MIME type (sicurezza upload) ─────────────────────────────────
 const MIME_CONSENTITI = new Set([
   'application/pdf',
+  'text/xml',
+  'application/xml',
+  'application/pkcs7-mime',
+  'application/x-pkcs7-mime',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
@@ -274,7 +280,7 @@ export function validaMimeType(file) {
   if (MIME_CONSENTITI.has(type)) return true;
 
   // Fallback su estensione (alcuni browser non rilevano correttamente il MIME)
-  const estensioniOk = ['.pdf', '.xlsx', '.xls', '.docx', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp'];
+  const estensioniOk = ['.pdf', '.xml', '.p7m', '.xlsx', '.xls', '.docx', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp'];
   return estensioniOk.some(ext => name.endsWith(ext));
 }
 

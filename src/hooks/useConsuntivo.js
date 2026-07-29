@@ -76,6 +76,7 @@ export function useConsuntivo(condominioId, esercizioId) {
         .from('spese')
         .select(`
           id, descrizione, importo, data_spesa, categoria, tipo_lavoro, criterio,
+          ritenuta_acconto, applica_ritenuta,
           ripartizioni(unita_id, importo, importo_override, override_manuale)
         `)
         .eq('condominio_id', condominioId)
@@ -98,7 +99,7 @@ export function useConsuntivo(condominioId, esercizioId) {
 
       // 5) cassa (periodo esercizio) — estratto_conto.data_movimento BETWEEN inizio/fine
       let qEc = supabase.from('estratto_conto')
-        .select('data_movimento, causale, importo, tipo')
+        .select('data_movimento, causale, importo, tipo, spesa_id, rata_unita_id, riconciliato')
         .eq('condominio_id', condominioId)
       if (es.data_inizio) qEc = qEc.gte('data_movimento', es.data_inizio)
       if (es.data_fine)   qEc = qEc.lte('data_movimento', es.data_fine)

@@ -51,11 +51,15 @@ async function logAiCall({ funzione, condominio_id, inputTokens, outputTokens })
 // ── Helper condiviso: chiama la Edge Function ─────────────────────────────
 async function callEdge(body) {
   const { data: { session } } = await supabase.auth.getSession();
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+  const token = session?.access_token || anonKey;
+
   const res = await fetch(EDGE_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization:  `Bearer ${session?.access_token ?? ''}`,
+      'Authorization': `Bearer ${token}`,
+      'apikey': anonKey,
     },
     body: JSON.stringify(body),
   });

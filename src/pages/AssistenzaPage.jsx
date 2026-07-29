@@ -169,10 +169,14 @@ export default function AssistenzaPage() {
         ? `${SYSTEM_PROMPT}\n\nKNOWLEDGE BASE CONTESTUALE (FAQ E CASI RISOLTI IN PRECEDENZA):\n${kbContext}\n\nUsa le informazioni qui sopra se sono pertinenti per formulare la tua risposta.`
         : SYSTEM_PROMPT
 
-      // Escludiamo il messaggio iniziale dell'assistente per iniziare la cronologia Gemini con un messaggio 'user'
-      const historyToSend = newHistory[0]?.role === 'assistant' && newHistory[0]?.content.includes("Benvenuto")
-        ? newHistory.slice(1)
-        : (newHistory[0]?.role === 'assistant' ? newHistory.slice(1) : newHistory);
+      // Sanificazione cronologia per Gemini: l'elenco deve iniziare sempre con un messaggio 'user'
+      let historyToSend = newHistory.filter(m => m.content && m.content.trim() !== '');
+      if (historyToSend[0]?.role === 'assistant') {
+        historyToSend = historyToSend.slice(1);
+      }
+      if (historyToSend.length === 0) {
+        historyToSend = [userMsg];
+      }
 
       const aiResponse = await callGeminiWithHistory(historyToSend, { 
         system: systemPromptDinamico, 

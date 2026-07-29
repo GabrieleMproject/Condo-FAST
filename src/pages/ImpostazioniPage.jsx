@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { generaExportGDPR } from '../lib/exportDatiGdpr'
-import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon, Building2, Download, X, ShieldCheck } from 'lucide-react'
+import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon, Building2, Download, X, ShieldCheck, CheckCircle2, FileCheck, Zap, Sparkles } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
@@ -1359,39 +1359,109 @@ export default function ImpostazioniPage() {
               {isTrialActive || isTrialScaduto ? 'Scegli il tuo piano' : 'Cambia piano'}
             </h2>
 
-            {/* Banner Tutto Incluso - Zero Costi Nascosti */}
+            {/* Banner Garanzia Trasparenza & All-Inclusive */}
             <div style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(37, 99, 235, 0.08) 100%)',
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.09) 0%, rgba(99, 102, 241, 0.07) 50%, rgba(15, 23, 42, 0.4) 100%)',
               border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: 14,
-              padding: '16px 20px',
-              marginBottom: 20,
-              display: 'flex',
-              alignItems: 'center',
-              justify: 'space-between',
-              flexWrap: 'wrap',
-              gap: 12
+              borderRadius: 18,
+              padding: '24px 28px',
+              marginBottom: 28,
+              boxShadow: '0 10px 30px -10px rgba(16, 185, 129, 0.1)',
+              position: 'relative',
+              overflow: 'hidden'
             }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <ShieldCheck size={18} style={{ color: '#10b981' }} />
-                  <span>Garanzia Tutto Incluso · Zero Costi Nascosti</span>
+              {/* Badge Header in Evidenza */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  color: '#34d399',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  padding: '4px 12px',
+                  borderRadius: 20
+                }}>
+                  <ShieldCheck size={14} />
+                  <span>Garanzia Tutto Incluso · Trasparenza 100%</span>
                 </div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 4 }}>
-                  A differenza di altri software, la <strong>Fatturazione Elettronica SDI</strong>, la conservazione a norma e i moduli assembleari sono inclusi a 0€ senza balzelli o sorprese in fattura.
-                </div>
+
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
+                  Nessun costo a sorpresa a fine anno
+                </span>
               </div>
+
+              {/* Titolo e Descrizione Principale */}
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', letterSpacing: '-0.01em' }}>
+                Un unico canone trasparente. Zero costi nascosti per il tuo studio.
+              </h3>
+              <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: '0 0 20px', lineHeight: 1.5, maxWidth: 850 }}>
+                Mentre i gestionali tradizionali applicano costi extra per ogni condominio (fatturazione elettronica SDI da 39€ a 49€/anno) e fanno pagare salatamente ogni collaboratore aggiuntivo, CondoSmart include tutto ciò che serve in un canone flat chiaro.
+              </p>
+
+              {/* Griglia a 3 Pillole di Garanzia */}
               <div style={{
-                fontSize: 11.5,
-                fontWeight: 700,
-                color: '#10b981',
-                background: 'rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                padding: '4px 10px',
-                borderRadius: 20,
-                whiteSpace: 'nowrap'
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: 14
               }}>
-                Prezzo Trasparente Flat
+                <div style={{
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12
+                }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FileCheck size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>Fatturazione SDI Inclusa (0€)</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>Ricezione, invio e conservazione a norma delle fatture senza costi al pezzo.</div>
+                  </div>
+                </div>
+
+                <div style={{
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12
+                }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>AI Gemini & Verbali Nativi</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>OCR automatico, ricerca intelligente nei verbali d'assemblea e solleciti compresi.</div>
+                  </div>
+                </div>
+
+                <div style={{
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12
+                }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Zap size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>Zero Spese di Manutenzione</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>Aggiornamenti normativi e tecnici automatici in cloud senza canoni straordinari.</div>
+                  </div>
+                </div>
               </div>
             </div>
 

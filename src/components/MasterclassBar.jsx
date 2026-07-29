@@ -163,12 +163,12 @@ export default function MasterclassBar({
 
 const styles = {
   container: {
-    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%)',
-    border: '1px solid rgba(59, 130, 246, 0.3)',
+    background: 'var(--gradient-card, var(--card-bg))',
+    border: '1px solid var(--border-color)',
     borderRadius: '14px',
-    padding: '14px 20px',
+    padding: '16px 20px',
     marginBottom: '20px',
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+    boxShadow: 'var(--shadow, 0 4px 20px rgba(0, 0, 0, 0.05))',
     color: 'var(--text-primary)'
   },
   headerRow: {
@@ -206,9 +206,9 @@ const styles = {
     gap: '8px'
   },
   btnPrev: {
-    background: 'rgba(148, 163, 184, 0.12)',
-    color: 'var(--text-secondary, #94a3b8)',
-    border: '1px solid var(--border-color, #334155)',
+    background: 'var(--app-bg)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     padding: '6px 12px',
     fontSize: '12px',
@@ -218,9 +218,9 @@ const styles = {
     alignItems: 'center'
   },
   btnSpotlight: {
-    background: 'rgba(59, 130, 246, 0.2)',
-    color: '#60a5fa',
-    border: '1px solid rgba(96, 165, 250, 0.4)',
+    background: 'rgba(37, 99, 235, 0.12)',
+    color: 'var(--accent, #2563eb)',
+    border: '1px solid rgba(37, 99, 235, 0.3)',
     borderRadius: '8px',
     padding: '6px 12px',
     fontSize: '12px',
@@ -230,9 +230,9 @@ const styles = {
     alignItems: 'center'
   },
   btnDownloadDemo: {
-    background: 'rgba(234, 179, 8, 0.15)',
-    color: '#eab308',
-    border: '1px solid rgba(234, 179, 8, 0.4)',
+    background: 'rgba(234, 179, 8, 0.12)',
+    color: 'var(--sepa-yellow, #d97706)',
+    border: '1px solid rgba(234, 179, 8, 0.35)',
     borderRadius: '8px',
     padding: '6px 12px',
     fontSize: '12px',
@@ -278,15 +278,15 @@ const styles = {
   },
   progressTrack: {
     width: '100%',
-    height: '4px',
-    background: 'var(--app-bg)',
-    borderRadius: '2px',
+    height: '5px',
+    background: 'var(--border-color)',
+    borderRadius: '3px',
     overflow: 'hidden'
   },
   progressBar: {
     height: '100%',
-    background: 'linear-gradient(90deg, #3b82f6 0%, #22c55e 100%)',
-    borderRadius: '2px',
+    background: 'linear-gradient(90deg, #2563eb 0%, #22c55e 100%)',
+    borderRadius: '3px',
     transition: 'width 0.3s ease'
   },
   stepsDropdown: {
@@ -364,7 +364,7 @@ const styles = {
   btnMiniLink: {
     background: 'transparent',
     border: 'none',
-    color: '#3b82f6',
+    color: 'var(--accent, #3b82f6)',
     fontSize: '12px',
     fontWeight: '600',
     cursor: 'pointer',

@@ -96,20 +96,21 @@ function AiBanner() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '8px 20px',
-      background: '#0c2340',
-      borderBottom: '1px solid #1d4ed8',
-      color: '#93c5fd',
+      padding: '9px 24px',
+      background: 'rgba(37, 99, 235, 0.08)',
+      borderBottom: '1px solid rgba(37, 99, 235, 0.2)',
+      color: 'var(--text-primary)',
       fontSize: 12,
       lineHeight: 1.5,
       flexShrink: 0,
     }}>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Bot size={16} style={{ flexShrink: 0 }} /> <span><strong>CondoSmart utilizza intelligenza artificiale</strong> (Google Gemini) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689.</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Bot size={16} style={{ color: 'var(--accent, #2563eb)', flexShrink: 0 }} />
+        <span><strong style={{ color: 'var(--text-primary)' }}>CondoSmart utilizza intelligenza artificiale</strong> (Google Gemini) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689.</span>
       </span>
       <button
         onClick={() => setDismissed(true)}
-        style={{ marginLeft: 16, background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', fontSize: 16, lineHeight: 1, flexShrink: 0, padding: '0 4px' }}
+        style={{ marginLeft: 16, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 4, borderRadius: 4 }}
         aria-label="Chiudi banner"
       ><X size={16} /></button>
     </div>

@@ -32,6 +32,7 @@ import SuperAdminGuard from './components/SuperAdminGuard'
 import MigrazionePage from './pages/MigrazionePage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import WaitlistPage from './pages/WaitlistPage'
+import RicercaPage from './pages/RicercaPage'
 import { ThemeProvider } from './contexts/ThemeContext'
 
 export default function App() {
@@ -51,6 +52,7 @@ export default function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/ricerca" element={<RicercaPage />} />
                 <Route path="/condomini" element={<CondominiPage />} />
                 <Route path="/anagrafica" element={<AnagraficaPage />} />
                 <Route path="/condomini/:id" element={<CondominiDetailPage />} />

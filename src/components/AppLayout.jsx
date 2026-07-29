@@ -75,6 +75,7 @@ async function apriPortaleStripe(customerId) {
 
 const NAV_ITEMS = [
   { path: '/dashboard',    label: 'Dashboard',            icon: LayoutDashboard },
+  { path: '/ricerca',      label: 'Ricerca Rapida',       icon: Search },
   { path: '/condomini',    label: 'Condomini',             icon: Building2 },
   { path: '/anagrafica',   label: 'Anagrafica',            icon: Users },
   { path: '/postbox',      label: 'Postbox Studio',        icon: Inbox, badge: 'STUDIO' },
@@ -130,6 +131,18 @@ export default function AppLayout() {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // Scorciatoia da tastiera globale Cmd+K / Ctrl+K per aprire la ricerca
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        navigate('/ricerca');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
   
   // Conteggio documenti Postbox pendenti
   const [inboxCount, setInboxCount] = useState(0);
@@ -446,6 +459,39 @@ export default function AppLayout() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* ── Bottone Ricerca Rapida ── */}
+            <button
+              onClick={() => navigate('/ricerca')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'var(--card-bg)',
+                border: '1px solid var(--border-color-2)',
+                borderRadius: 8,
+                padding: '6px 12px',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontSize: 13,
+                transition: 'all 0.15s',
+              }}
+              title="Ricerca rapida (Cmd+K)"
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color-2)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+            >
+              <Search size={15} style={{ color: 'var(--accent)' }} />
+              <span className="hide-mobile">Cerca...</span>
+              <kbd style={{
+                background: 'var(--app-bg)',
+                border: '1px solid var(--border-color-2)',
+                borderRadius: 4,
+                padding: '1px 5px',
+                fontSize: 10,
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+              }}>⌘K</kbd>
+            </button>
+
             {/* ── Campanella Notifiche ── */}
             <div style={{ position: 'relative' }}>
               <button

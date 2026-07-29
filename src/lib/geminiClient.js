@@ -1,8 +1,6 @@
 // src/lib/geminiClient.js
 import { supabase } from './supabaseClient';
 
-const EDGE_URL = import.meta.env.VITE_SUPABASE_URL + '/functions/v1/gemini-proxy';
-
 // ── Errore specifico per rate limit ──────────────────────────────────────
 export class RateLimitError extends Error {
   constructor(retryAfter = 60) {
@@ -50,32 +48,22 @@ async function logAiCall({ funzione, condominio_id, inputTokens, outputTokens })
 
 // ── Helper condiviso: chiama la Edge Function ─────────────────────────────
 async function callEdge(body) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
-  const token = session?.access_token || anonKey;
-
-  const res = await fetch(EDGE_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'apikey': anonKey,
-    },
-    body: JSON.stringify(body),
+  const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+    body,
   });
 
-  // Gestione 429 — rate limit raggiunto
-  if (res.status === 429) {
-    const retryAfter = parseInt(res.headers.get('Retry-After') ?? '60', 10)
-    throw new RateLimitError(retryAfter)
+  if (error) {
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('Troppe richieste')) {
+      throw new RateLimitError(60);
+    }
+    throw new Error(error.message || 'Errore durante la chiamata AI');
   }
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(estraiMessaggioErrore(err, res.status));
+  if (data?.error) {
+    throw new Error(typeof data.error === 'string' ? data.error : data.error.message || 'Errore Edge Function AI');
   }
 
-  return res.json();
+  return data;
 }
 
 // ── callGemini ────────────────────────────────────────────────────────────

@@ -7,14 +7,14 @@
   <!-- ============ Security headers ============
        NOTE: headers like HSTS, X-Frame-Options and the full CSP are best set
        server-side. Example (Netlify _headers / Vercel vercel.json):
-         Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+         Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://aapksiokakavarwaumwy.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
          X-Frame-Options: DENY
          X-Content-Type-Options: nosniff
          Referrer-Policy: strict-origin-when-cross-origin
          Permissions-Policy: camera=(), microphone=(), geolocation=()
          Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://aapksiokakavarwaumwy.supabase.co; base-uri 'self'; form-action 'self'">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
@@ -75,6 +75,7 @@
     ]
   }
   </script>
+
 
   <script src="js/main.js" defer></script>
   <script src="js/animations.js" defer></script>
@@ -729,13 +730,23 @@
       </div>
 
       <!-- AREA DRAG & DROP FATTURA / SCONTRINO UTENTE -->
-      <div class="demo-dropzone" id="demo-dropzone">
-        <input type="file" id="user-doc-input" accept=".pdf,.png,.jpg,.jpeg,.webp">
-        <div class="scanner-line" id="scanner-line"></div>
-        <div class="dropzone-icon">✦</div>
-        <div style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:4px">Trascina qui la tua Fattura o Scontrino di Prova</div>
-        <div style="color:var(--muted);font-size:0.85rem">Oppure <span style="color:var(--accent);text-decoration:underline">fai clic qui per selezionare un file dal tuo dispositivo</span></div>
-        <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF, immagini e ricevute fino a 15 MB · Nessun dato salvato o condiviso</div>
+      <div class="demo-dropzone-wrapper disabled-privacy" id="demo-dropzone-wrapper">
+        <div class="demo-dropzone disabled-privacy" id="demo-dropzone">
+          <input type="file" id="user-doc-input" accept=".pdf,.png,.jpg,.jpeg,.webp">
+          <div class="scanner-line" id="scanner-line"></div>
+          <div class="dropzone-icon">✦</div>
+          <div style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:4px">Trascina qui la tua Fattura o Scontrino di Prova</div>
+          <div style="color:var(--muted);font-size:0.85rem">Oppure <span style="color:var(--accent);text-decoration:underline">fai clic qui per selezionare un file dal tuo dispositivo</span></div>
+          <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF e Immagini fino a 15 MB · Nessun dato è salvato o usato per addestramenti. (Max 3 prove)</div>
+        </div>
+        <div class="demo-dropzone-overlay" id="demo-dropzone-overlay" onclick="alert('Devi spuntare la casella della Privacy Policy per sbloccare l\'area di elaborazione AI.')"></div>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <input type="checkbox" id="privacy-consent-checkbox" style="width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer;">
+        <label for="privacy-consent-checkbox" style="font-size: 0.85rem; color: var(--muted); cursor: pointer; user-select: none;">
+          Acconsento al trattamento temporaneo del documento per l'elaborazione AI, letta la <a href="privacy.html" style="color:var(--accent);text-decoration:underline">Privacy Policy</a> (art. 13 GDPR).
+        </label>
       </div>
 
       <div style="text-align:center;margin-top:14px">
@@ -801,9 +812,7 @@
                   <div class="extracted-card-val" style="color:#fff">€ 48,00 <span style="font-size:0.75rem;font-weight:normal;color:var(--muted)">(Versamento F24 entro il 16 del mese successivo)</span></div>
                 </div>
 
-                <div style="margin-top:8px;display:flex;gap:10px;justify-content:flex-end">
-                  <button style="background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem">Simula Registrazione Contabile</button>
-                </div>
+
               </div>
             </div>
           </div>

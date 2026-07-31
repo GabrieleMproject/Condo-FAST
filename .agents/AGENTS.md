@@ -1583,3 +1583,10 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ### 2. Bug Risolti
 - **Crash / Pagina Bianca (`AppLayout.jsx`):** Risolto il bug di rendering causato dalla mancata importazione dell'icona `Search` da `lucide-react` nell'intestazione delle icone di `AppLayout.jsx`, che provocava l'eccezione `Element type is invalid: got undefined` durante il `NAV_ITEMS.map`.
+
+## Storico Decisioni e Fatti Verificati della Sessione S62 (31 Luglio 2026 - Ottimizzazione Estrazione Dati AI Landing Page)
+
+### 1. Modulo Estrazione Dati Fattura Demo
+- **Rimozione Fallback Fittizi**: Rimossi tutti i messaggi placeholder e fallback automatici (es: 'Sincronizzazione da anagrafica', 'Proposta abbinamento'). L'estrazione ora mostra unicamente i dati contenuti effettivamente nel file caricato dall'utente, stampando 'Dato non rilevato nel documento' se mancante.
+- **Aggiunta Campo Data**: Integrata l'estrazione e visualizzazione del campo Data Fattura nella UI della demo Sandbox.
+- **Supporto Multi-Formato**: Migliorato il parser javascript per supportare sia l'estrazione rigorosa da file XML (Fattura Elettronica P7M/XML con i relativi tag , , ) che l'estrazione da testo grezzo/PDF tramite Regex estese e ottimizzate per qualsiasi layout.

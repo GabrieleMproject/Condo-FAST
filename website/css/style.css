@@ -1727,3 +1727,22 @@ p { margin: 0 0 1em; }
   color: var(--muted);
   line-height: 1.35;
 }
+
+/* Dropzone Privacy Consent */
+.demo-dropzone-wrapper {
+  position: relative;
+}
+.demo-dropzone-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: transparent;
+  z-index: 10;
+  cursor: not-allowed;
+  display: none;
+}
+.demo-dropzone.disabled-privacy {
+  opacity: 0.5;
+}
+.demo-dropzone-wrapper.disabled-privacy .demo-dropzone-overlay {
+  display: block;
+}

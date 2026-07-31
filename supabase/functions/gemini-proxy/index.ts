@@ -14,8 +14,24 @@ function getServiceClient() {
   )
 }
 
+const demoRateLimits = new Map<string, { count: number, resetAt: number }>()
+
 // ── Controlla e registra rate limit ──────────────────────────────────────
 async function checkRateLimit(userId: string): Promise<{ allowed: boolean; retryAfter?: number }> {
+  if (userId.startsWith('demo_')) {
+    const now = Date.now()
+    let record = demoRateLimits.get(userId)
+    if (!record || record.resetAt < now) {
+      record = { count: 0, resetAt: now + RATE_WINDOW_MS }
+    }
+    if (record.count >= 5) {
+      return { allowed: false, retryAfter: Math.ceil((record.resetAt - now) / 1000) }
+    }
+    record.count++
+    demoRateLimits.set(userId, record)
+    return { allowed: true }
+  }
+
   const supabase   = getServiceClient()
   const windowStart = new Date(Date.now() - RATE_WINDOW_MS).toISOString()
 
@@ -71,29 +87,38 @@ serve(async (req) => {
   try {
     // ── 1. Autenticazione ──────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Non autorizzato' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    const isDemoMode = req.headers.get('X-CondoFAST-Demo') === 'true'
+
+    let userId = ''
+
+    if (isDemoMode) {
+      // In modalità demo, limitiamo in base all'IP del client
+      const clientIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown-ip'
+      userId = `demo_${clientIp}`
+    } else {
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Non autorizzato' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const supabaseAuth = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: authHeader } } }
       )
+
+      const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Token non valido o utente non autenticato' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      userId = user.id
     }
-
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
-
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
-
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Token non valido o utente non autenticato' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const userId = user.id
 
     // ── 2. Rate limiting ───────────────────────────────────────────────
     const { allowed, retryAfter } = await checkRateLimit(userId)

@@ -224,11 +224,8 @@
     `;
 
     function fornitoreExtractedDisplay(val) {
-      if (val && val !== 'Non specificato') return val;
-      if (file && file.name) {
-        return file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-      }
-      return 'Non specificato nel file';
+      if (val) return val;
+      return 'Dato non rilevato nel documento';
     }
 
     // Funzione di rendering dei dati reali
@@ -237,14 +234,16 @@
 
       aiHeader.textContent = '✦ AI Extraction Completa: Dati Estratti dal Documento';
 
-      const condoDisplay = data.condominio ? data.condominio : 'Non presente sul documento (Proposta abbinamento al condominio gestito)';
-      const fornitoreDisplay = data.fornitore ? data.fornitore : 'Non specificato';
-      const pivaDisplay = data.piva ? data.piva : 'Non indicata nel file';
-      const totaleDisplay = data.totale ? '€ ' + Number(data.totale).toFixed(2).replace('.', ',') : 'Non rilevato nel file';
+      const condoDisplay = data.condominio ? data.condominio : 'Dato non rilevato nel documento';
+      const fornitoreDisplay = data.fornitore ? data.fornitore : 'Dato non rilevato nel documento';
+      const pivaDisplay = data.piva ? data.piva : 'Non indicata nel documento';
+      const dataFatturaDisplay = data.data ? data.data : 'Non rilevata';
+      
+      const totaleDisplay = data.totale ? '€ ' + Number(data.totale).toFixed(2).replace('.', ',') : 'Non rilevato nel documento';
       const imponibileDisplay = data.imponibile ? '€ ' + Number(data.imponibile).toFixed(2).replace('.', ',') : (data.totale ? '€ ' + (data.totale / 1.22).toFixed(2).replace('.', ',') : 'Non specificato');
       const ivaDisplay = data.iva ? ' (IVA € ' + Number(data.iva).toFixed(2).replace('.', ',') + ')' : '';
-      const tabellaDisplay = data.tabella_riparto ? data.tabella_riparto : 'Tabella A — Proprietà Generale (Proposta AI)';
-      const ritenutaDisplay = data.ritenuta4 ? '€ ' + Number(data.ritenuta4).toFixed(2).replace('.', ',') : (data.imponibile ? '€ ' + (data.imponibile * 0.04).toFixed(2).replace('.', ',') : 'Non applicabile / Non specificata');
+      const tabellaDisplay = data.tabella_riparto ? data.tabella_riparto : 'Tabella A — Proprietà Generale';
+      const ritenutaDisplay = data.ritenuta4 ? '€ ' + Number(data.ritenuta4).toFixed(2).replace('.', ',') : (data.imponibile ? '€ ' + (data.imponibile * 0.04).toFixed(2).replace('.', ',') : 'Non applicabile');
 
       aiDetails.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:10px">
@@ -255,13 +254,24 @@
               <div class="extracted-card-val" style="color:#60a5fa">${condoDisplay}</div>
             </div>
             <div class="extracted-card" id="card-fornitore">
-              <div class="extracted-card-title">Fornitore Estratto dal File</div>
+              <div class="extracted-card-title">Fornitore Estratto</div>
               <div class="extracted-card-val">${fornitoreExtractedDisplay(fornitoreDisplay)}</div>
-              <div style="font-size:0.72rem;color:var(--muted);margin-top:2px">P.IVA / C.F.: ${pivaDisplay}</div>
+            </div>
+          </div>
+          
+          <!-- 2. Data & P.IVA -->
+          <div class="extracted-grid">
+            <div class="extracted-card" id="card-data">
+              <div class="extracted-card-title">Data Documento</div>
+              <div class="extracted-card-val">${dataFatturaDisplay}</div>
+            </div>
+            <div class="extracted-card" id="card-piva">
+              <div class="extracted-card-title">P.IVA / C.F.</div>
+              <div class="extracted-card-val">${pivaDisplay}</div>
             </div>
           </div>
 
-          <!-- 2. Importi e IVA -->
+          <!-- 3. Importi e IVA -->
           <div class="extracted-grid">
             <div class="extracted-card" id="card-imponibile">
               <div class="extracted-card-title">Imponibile / IVA Estratti</div>
@@ -273,14 +283,14 @@
             </div>
           </div>
 
-          <!-- 3. Riparto Millesimale & Ritenuta F24 -->
+          <!-- 4. Riparto Millesimale & Ritenuta F24 -->
           <div class="extracted-card" id="card-riparto" style="border-color:rgba(192,132,252,0.3);background:rgba(192,132,252,0.06)">
-            <div class="extracted-card-title" style="color:#c084fc">Riparto Millesimale Consigliato dall'AI</div>
+            <div class="extracted-card-title" style="color:#c084fc">Riparto Millesimale Rilevato / Suggerito</div>
             <div class="extracted-card-val" style="color:#fff">${tabellaDisplay}</div>
           </div>
 
           <div class="extracted-card" id="card-ritenuta" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.25)">
-            <div class="extracted-card-title" style="color:#f87171">Ritenuta d'Acconto 4% (F24)</div>
+            <div class="extracted-card-title" style="color:#f87171">Ritenuta d'Acconto (Stima F24)</div>
             <div class="extracted-card-val" style="color:#fff">${ritenutaDisplay}</div>
           </div>
 
@@ -298,7 +308,7 @@
       }
 
       // Animazione sequenziale sintonizzata con lo scorrimento
-      const cardIds = ['card-condo', 'card-fornitore', 'card-imponibile', 'card-totale', 'card-riparto', 'card-ritenuta'];
+      const cardIds = ['card-condo', 'card-fornitore', 'card-data', 'card-piva', 'card-imponibile', 'card-totale', 'card-riparto', 'card-ritenuta'];
       cardIds.forEach((id, index) => {
         setTimeout(() => {
           const el = document.getElementById(id);
@@ -308,101 +318,99 @@
     }
 
     if (file) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const rawResult = e.target.result || '';
-        const fileNameLower = file.name.toLowerCase();
-        
-        // Pulisci il testo grezzo dai caratteri di controllo binari dei PDF
-        const cleanText = typeof rawResult === 'string' 
-          ? rawResult.replace(/[\x00-\x09\x0B-\x1F\x7F-\x9F]/g, ' ')
-          : '';
+      let demoCount = parseInt(localStorage.getItem('condofast_demo_count') || '0', 10);
+      if (demoCount >= 3) {
+        alert("Hai raggiunto il limite massimo di 3 prove gratuite. Registrati per continuare a usare l'Intelligenza Artificiale CondoFAST!");
+        const aiPulse = document.getElementById('ai-pulse');
+        if (aiPulse) aiPulse.style.display = 'none';
+        if (aiHeader) aiHeader.innerHTML = '✦ AI Extraction: Limite Raggiunto';
+        return;
+      }
 
-        // 1. Estrazione Condominio Destinatario (Zero allucinazioni)
-        let condominioReal = null;
-        const destMatch = cleanText.match(/(?:Destinatario|Cessionario|Committente|Spett\.le|Spettabile|Cliente|Intestato a)[:\s]*([A-Za-z0-9\s.,'/-]{3,50})/i)
-          || cleanText.match(/(Condominio\s+[A-Za-z0-9\s.,'/-]{3,40})/i)
-          || cleanText.match(/((?:Via|Corso|Piazza|Viale|Largo)\s+[A-Za-z0-9\s.,'/-]{3,40})/i);
-
-        if (destMatch && destMatch[1] && destMatch[1].trim().length > 3) {
-          condominioReal = destMatch[1].trim() + ' (Estratto da fattura)';
-        } else {
-          // Riconoscimento rigoroso dal nome del file (es: "Fattura_6 del 24-01-26 cond. oasi senna comasco.PDF")
-          const condFileNameMatch = file.name.match(/(?:cond\.|condominio)\s*([a-z0-9\s._'-]+)/i)
-            || file.name.match(/(?:via|corso|piazza|viale)\s*([a-z0-9\s._'-]+)/i);
-          
-          if (condFileNameMatch && condFileNameMatch[1]) {
-            let extractedName = condFileNameMatch[1].replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim();
-            condominioReal = 'Condominio ' + extractedName.replace(/\b\w/g, l => l.toUpperCase()) + ' (Estratto da intestazione file)';
-          } else {
-            condominioReal = 'Condominio Gestito (Abbinamento automatico all\'anagrafica contabile)';
-          }
-        }
-
-        // 2. Estrazione Fornitore (Zero allucinazioni)
-        let fornitoreReal = null;
-        const fornMatch = cleanText.match(/(?:Fornitore|Cedente|Prestatore|Ditta|Emesso da)[:\s]*([A-Za-z0-9\s._'-]{3,50})/i)
-          || cleanText.match(/([A-Za-z0-9\s._'-]+(?:S\.r\.l\.|S\.p\.A\.|S\.n\.c\.|S\.a\.s\.|Srl|SpA))/i);
-        
-        if (fornMatch && fornMatch[1] && fornMatch[1].trim().length > 3) {
-          fornitoreReal = fornMatch[1].trim();
-        } else {
-          // Estrazione da prima parte del nome file (es: "ColorSpa")
-          let nameClean = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-          let words = nameClean.split(/\s+/).filter(w => !w.toLowerCase().includes('fattura') && !w.toLowerCase().includes('cond') && !w.toLowerCase().includes('del') && !w.match(/^[0-9.-]+$/));
-          if (words.length > 0) {
-            fornitoreReal = words.join(" ") + " (Rilevato da intestazione)";
-          } else {
-            fornitoreReal = 'Da verificare su anagrafica fornitori';
-          }
-        }
-
-        // 3. Estrazione P.IVA / C.F. (Zero allucinazioni)
-        const pivaMatch = cleanText.match(/(?:P\.?IVA|Partita IVA|C\.F\.|Codice Fiscale)[:\s]*([A-Z0-9]{11,16})/i) 
-          || cleanText.match(/\b(IT)?[0-9]{11}\b/i);
-        let pivaReal = pivaMatch ? pivaMatch[1] : 'Sincronizzazione automatica da Anagrafica SDI';
-
-        // 4. Estrazione Importo / Totale (Zero allucinazioni)
-        const importoMatch = cleanText.match(/(?:TOTALE|Importo|Totale Documento|Totale da pagare|Euro|€)[:\s]*([0-9]+[.,][0-9]{2})/i)
-          || cleanText.match(/([0-9]+[.,][0-9]{2})\s*€/i);
-        let totaleReal = importoMatch ? parseFloat(importoMatch[1].replace(',', '.')) : null;
-
-        // 5. Categorizzazione Millesimale Inteligente
-        let tabellaRipartoReal = 'Tabella A — Proprietà Generale (1.000 millesimi)';
-        const searchContext = (cleanText + ' ' + fileNameLower).toLowerCase();
-
-        if (searchContext.includes('ascens') || searchContext.includes('elevat') || searchContext.includes('impiant')) {
-          tabellaRipartoReal = 'Tabella C — Ascensore / Impianti (1.000 millesimi)';
-        } else if (searchContext.includes('puliz') || searchContext.includes('scal') || searchContext.includes('porton') || searchContext.includes('color') || searchContext.includes('vernic')) {
-          tabellaRipartoReal = 'Tabella B — Scale e Spazi Comuni (1.000 millesimi)';
-        } else if (searchContext.includes('caldaia') || searchContext.includes('riscald') || searchContext.includes('termog')) {
-          tabellaRipartoReal = 'Tabella D — Riscaldamento Centralizzato (1.000 millesimi)';
-        }
-
-        setTimeout(() => {
-          renderExtractedData({
-            condominio: condominioReal,
-            fornitore: fornitoreReal,
-            piva: pivaReal,
-            totale: totaleReal,
-            imponibile: totaleReal ? (totaleReal / 1.22) : null,
-            tabella_riparto: tabellaRipartoReal
-          });
-        }, 800);
-      };
+      const isImage = file.type.startsWith('image/');
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       
-      reader.readAsText(file.slice(0, 20000));
+      const reader = new FileReader();
+      reader.onload = async function() {
+        try {
+          const base64 = reader.result.split(',')[1];
+          const payload = {
+            type: isImage ? 'vision' : 'document',
+            mediaType: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+            prompt: "Analizza questa fattura ed estrai rigorosamente i dati fiscali. Restituisci SOLO ed ESCLUSIVAMENTE un oggetto JSON valido con questa struttura esatta, senza testo extra:\n{\n  \"dati\": {\n    \"fornitore\": \"nome fornitore\",\n    \"partita_iva\": \"partita iva\",\n    \"totale\": 0.00,\n    \"imponibile\": 0.00,\n    \"iva\": 0.00,\n    \"data\": \"DD/MM/YYYY\",\n    \"condominio\": \"nome condominio destinatario\",\n    \"tabella_riparto\": \"Tabella A — Proprietà Generale\"\n  }\n}",
+            system: "Sei un assistente AI per estrattore dati contabili CondoFAST. Devi sempre rispondere con codice JSON puro.",
+            jsonMode: true
+          };
+          if (isImage) {
+            payload.image = base64;
+          } else {
+            payload.document = base64;
+          }
+
+          const response = await fetch("https://aapksiokakavarwaumwy.supabase.co/functions/v1/gemini-proxy", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CondoFAST-Demo": "true"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => null);
+            throw new Error(errData?.error || "Errore chiamata API AI");
+          }
+
+          const result = await response.json();
+          let jsonStr = '';
+          try {
+            if (!result.content || !result.content[0] || !result.content[0].text) {
+              throw new Error("Risposta AI priva di contenuto testuale.");
+            }
+            jsonStr = result.content[0].text;
+            const parsed = JSON.parse(jsonStr.replace(/```json|```/g, '').trim());
+            const dati = parsed.dati || parsed;
+
+            localStorage.setItem('condofast_demo_count', (demoCount + 1).toString());
+
+            setTimeout(() => {
+              renderExtractedData({
+                condominio: dati.condominio,
+                fornitore: dati.fornitore,
+                piva: dati.partita_iva,
+                totale: dati.totale,
+                imponibile: dati.imponibile,
+                iva: dati.iva,
+                data: dati.data,
+                tabella_riparto: dati.tabella_riparto || 'Tabella A — Proprietà Generale'
+              });
+            }, 400);
+          } catch (parseErr) {
+            console.error("Raw AI response:", jsonStr);
+            throw new Error(`Risposta AI non valida: ${jsonStr.slice(0, 100)}...`);
+          }
+
+        } catch (err) {
+          console.error("Errore estrazione AI:", err);
+          alert(`Errore di sistema: ${err.message}. Verifica la console per i dettagli.`);
+          const aiPulse = document.getElementById('ai-pulse');
+          if (aiPulse) aiPulse.style.display = 'none';
+          if (aiHeader) aiHeader.innerHTML = '✦ AI Extraction: Fallita';
+        }
+      };
+      reader.readAsDataURL(file);
     } else {
       setTimeout(() => {
         renderExtractedData({
           condominio: 'Condominio Via Manzoni 14 (Milano)',
           fornitore: 'Rossi Impianti S.r.l.',
           piva: 'IT 01847590123',
+          data: '12/03/2026',
           totale: 1464.00,
           imponibile: 1200.00,
           iva: 264.00,
           ritenuta4: 48.00,
-          tabella_riparto: 'Tabella C — Ascensore / Impianti (1.000/1.000)'
+          tabella_riparto: 'Tabella C — Ascensore / Impianti'
         });
       }, 800);
     }
@@ -412,30 +420,47 @@
   document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'user-doc-input') {
       const file = e.target.files[0];
-      if (file) window.analyzeUserDocument(file);
+      if (file) analyzeUserDocument(file);
+    }
+    
+    if (e.target && e.target.id === 'privacy-consent-checkbox') {
+      const isChecked = e.target.checked;
+      const dropzone = document.getElementById('demo-dropzone');
+      const wrapper = document.getElementById('demo-dropzone-wrapper');
+      if (isChecked) {
+        dropzone.classList.remove('disabled-privacy');
+        wrapper.classList.remove('disabled-privacy');
+      } else {
+        dropzone.classList.add('disabled-privacy');
+        wrapper.classList.add('disabled-privacy');
+      }
     }
   });
 
   document.addEventListener('dragover', (e) => {
-    const dropzone = e.target.closest('#demo-dropzone');
-    if (dropzone) {
+    const dropzone = e.target.closest('#demo-dropzone-wrapper');
+    if (dropzone && !dropzone.classList.contains('disabled-privacy')) {
       e.preventDefault();
-      dropzone.classList.add('is-dragover');
+      dropzone.querySelector('#demo-dropzone').classList.add('is-dragover');
     }
   });
 
   document.addEventListener('dragleave', (e) => {
-    const dropzone = e.target.closest('#demo-dropzone');
-    if (dropzone) {
-      dropzone.classList.remove('is-dragover');
+    const dropzone = e.target.closest('#demo-dropzone-wrapper');
+    if (dropzone && !dropzone.classList.contains('disabled-privacy')) {
+      dropzone.querySelector('#demo-dropzone').classList.remove('is-dragover');
     }
   });
 
   document.addEventListener('drop', (e) => {
-    const dropzone = e.target.closest('#demo-dropzone');
-    if (dropzone) {
+    const wrapper = e.target.closest('#demo-dropzone-wrapper');
+    if (wrapper) {
       e.preventDefault();
-      dropzone.classList.remove('is-dragover');
+      if (wrapper.classList.contains('disabled-privacy')) {
+        alert("Devi spuntare la casella della Privacy Policy per sbloccare l'area di elaborazione AI.");
+        return;
+      }
+      wrapper.querySelector('#demo-dropzone').classList.remove('is-dragover');
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
         window.analyzeUserDocument(e.dataTransfer.files[0]);
       }

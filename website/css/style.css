@@ -1391,3 +1391,230 @@ p { margin: 0 0 1em; }
   margin-left: 0.05em;
   transition: color 0.3s, text-shadow 0.3s, transform 0.3s;
 }
+
+/* ============================================================
+   MODALI POP-UP OVERLAY & GLASSMORPHISM
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10, 14, 26, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s ease;
+}
+.modal-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+.modal-container {
+  background: rgba(17, 24, 39, 0.95);
+  border: 1px solid var(--border-strong, rgba(148, 163, 184, 0.25));
+  border-radius: 20px;
+  max-width: 960px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6), 0 0 40px rgba(79, 142, 247, 0.15);
+  transform: scale(0.92) translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 36px 32px;
+}
+.modal-overlay.is-open .modal-container {
+  transform: scale(1) translateY(0);
+}
+.modal-close {
+  position: absolute;
+  top: 20px; right: 20px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 1.1rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+/* ============================================================
+   REDESIGN SANDBOX AI READER (SAAS CONSOLE 2 COLONNE)
+   ============================================================ */
+.console-split {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+@media (max-width: 820px) {
+  .console-split { grid-template-columns: 1fr; }
+}
+.console-doc-box {
+  background: #080c16;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  font-family: 'Sora', system-ui, sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--muted);
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+  position: relative;
+}
+.console-doc-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.highlight-cyan {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.highlight-emerald {
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #34d399;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.highlight-rose {
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #f87171;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.console-ai-box {
+  background: rgba(13, 18, 30, 0.98);
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.15);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.console-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.console-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(124, 58, 237, 0.2);
+  border: 1px solid rgba(124, 58, 237, 0.5);
+  color: #c084fc;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+/* ============================================================
+   CALCOLATORE ROI IN MODALE
+   ============================================================ */
+.roi-modal-content {
+  text-align: center;
+}
+.roi-slider-container {
+  margin: 28px 0 36px;
+}
+.roi-slider-label {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.roi-slider-val {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin: 0 6px;
+}
+.roi-slider {
+  width: 100%;
+  max-width: 550px;
+  height: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--surface-2);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+.roi-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 15px var(--accent);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.roi-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+.roi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 820px) {
+  .roi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.roi-kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.roi-kpi-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+.roi-kpi-num {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 4px;
+}
+.roi-kpi-lbl {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.35;
+}

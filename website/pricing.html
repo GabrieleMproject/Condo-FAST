@@ -190,39 +190,8 @@
           </div>
         </div>
 
-        <!-- CALCOLATORE ROI INTERATTIVO -->
-        <div class="roi-calculator reveal" style="margin-bottom:40px">
-          <div style="text-align:center">
-            <span class="eyebrow">Simulatore Risparmio</span>
-            <h3 style="font-size:1.6rem;font-weight:800;margin-top:6px">Calcola il risparmio per il tuo Studio</h3>
-            <p style="color:var(--muted);font-size:0.92rem">Seleziona il numero di condomini per vedere la stima dei benefici e del costo unitario:</p>
-          </div>
-
-          <div class="roi-slider-container">
-            <div class="roi-slider-label">
-              Stai gestendo <span class="roi-slider-val" id="roi-condo-val">35</span> condomini
-            </div>
-            <input type="range" min="5" max="200" step="5" value="35" class="roi-slider" id="roi-condo-slider" aria-label="Numero condomini gestiti">
-          </div>
-
-          <div class="roi-grid">
-            <div class="roi-kpi-card">
-              <div class="roi-kpi-num" id="roi-hours-val">28 Ore</div>
-              <div class="roi-kpi-lbl">Ore risparmiate ogni mese</div>
-            </div>
-            <div class="roi-kpi-card">
-              <div class="roi-kpi-num" id="roi-report-time-val">2 Giorni</div>
-              <div class="roi-kpi-lbl">Tempo chiusura consuntivo</div>
-            </div>
-            <div class="roi-kpi-card">
-              <div class="roi-kpi-num" id="roi-savings-val">€ 4.725</div>
-              <div class="roi-kpi-lbl">Risparmio stimato all'anno</div>
-            </div>
-            <div class="roi-kpi-card">
-              <div class="roi-kpi-num" id="roi-cost-condo-val">€ 1,69</div>
-              <div class="roi-kpi-lbl">Costo/condominio al mese</div>
-            </div>
-          </div>
+        <div style="text-align:center;margin-bottom:30px" class="reveal">
+          <button class="btn btn--ghost" data-open-modal="modal-roi-calc" type="button">Calcola il Risparmio per il tuo Studio (ROI) →</button>
         </div>
 
         <div style="text-align:center" class="reveal">
@@ -532,6 +501,115 @@
     <div class="cookie__actions">
       <button class="btn btn--primary btn--sm" id="cookie-accept" type="button">Accetta statistiche</button>
       <button class="btn btn--ghost btn--sm" id="cookie-reject" type="button">Solo essenziali</button>
+    </div>
+  </div>
+
+  <!-- ============ MODALE POP-UP: DEMO AI READER ============ -->
+  <div class="modal-overlay" id="modal-demo-ai" role="dialog" aria-modal="true" aria-labelledby="modal-demo-title-p">
+    <div class="modal-container">
+      <button type="button" class="modal-close" data-close-modal aria-label="Chiudi modale">✕</button>
+      
+      <div style="text-align:center;margin-bottom:20px">
+        <span class="eyebrow">Console Demo AI</span>
+        <h3 id="modal-demo-title-p" style="font-size:1.6rem;font-weight:800;margin-top:6px;color:#fff">Sandbox Prova AI Reader</h3>
+        <p style="color:var(--muted);font-size:0.92rem;margin-top:4px">Seleziona un documento di prova per testare l'estrazione contabile immediata:</p>
+      </div>
+
+      <div class="demo-tabs" style="justify-content:center">
+        <button type="button" class="demo-tab-btn active" data-tab="fattura">Fattura Fornitore</button>
+        <button type="button" class="demo-tab-btn" data-tab="estratto">Estratto Conto Bancario</button>
+        <button type="button" class="demo-tab-btn" data-tab="verbale">Verbale di Assemblea</button>
+      </div>
+
+      <div class="console-split">
+        <div class="console-doc-box" id="demo-doc-content">
+          <span class="console-doc-tag highlight-cyan">Documento Sorgente</span>
+          <div style="color:#60a5fa;font-weight:700;margin-bottom:8px">FATTURA ELETTRONICA N. 104/2026</div>
+          <div>Fornitore: <strong>Rossi Ascensori S.r.l.</strong> (P.IVA: 01847590123)</div>
+          <div>Destinatario: Condominio Via Manzoni 14</div>
+          <div>Data fattura: 14/07/2026</div>
+          <div>Descrizione: Manutenzione ordinaria III Trimestre + Sostituzione relè di sicurezza</div>
+          <div style="margin-top:12px;padding-top:8px;border-top:1px dashed #334155">
+            <div>Imponibile: <span class="highlight-cyan">€ 1.200,00</span></div>
+            <div>IVA (22%): € 264,00</div>
+            <div style="color:#fff;font-weight:700;margin-top:4px">TOTALE FATTURA: € 1.464,00</div>
+          </div>
+        </div>
+
+        <div class="console-ai-box">
+          <div>
+            <div class="console-ai-header">
+              <span class="console-ai-badge">✦ Assistente AI CondoFAST</span>
+              <span style="font-size:0.75rem;color:#34d399;font-weight:600">● 100% Conforme Art. 1130-bis</span>
+            </div>
+            <h4 id="demo-ai-header" style="font-size:1rem;font-weight:700;color:#fff;margin-bottom:14px">✦ AI Extraction: Riconosciuta Fattura Fornitore</h4>
+            <div id="demo-ai-details">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
+                  <div style="color:var(--muted);font-size:0.75rem">Fornitore estratto:</div>
+                  <div style="color:#fff;font-weight:700">Rossi Ascensori S.r.l. (P.IVA 01847590123)</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
+                  <div style="color:var(--muted);font-size:0.75rem">Riparto millesimale consigliato:</div>
+                  <div style="color:#34d399;font-weight:700">Tabella C — Ascensore (1.000 millesimi)</div>
+                </div>
+                <div style="background:rgba(239,68,68,0.1);padding:10px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.3)">
+                  <div style="color:#f87171;font-size:0.75rem">Ritenuta d'Acconto 4% (F24):</div>
+                  <div style="color:#fff;font-weight:700">€ 48,00 da versare entro il 16/08/2026</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end">
+            <button style="background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem">✓ Simula Registrazione</button>
+            <button data-close-modal style="background:transparent;color:var(--muted);border:1px solid var(--border);padding:10px 16px;border-radius:8px;font-size:0.85rem;cursor:pointer">Chiudi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODALE POP-UP: CALCOLATORE ROI ============ -->
+  <div class="modal-overlay" id="modal-roi-calc" role="dialog" aria-modal="true" aria-labelledby="modal-roi-title-p">
+    <div class="modal-container" style="max-width:800px">
+      <button type="button" class="modal-close" data-close-modal aria-label="Chiudi modale">✕</button>
+
+      <div class="roi-modal-content">
+        <span class="eyebrow">Simulatore Risparmio</span>
+        <h3 id="modal-roi-title-p" style="font-size:1.7rem;font-weight:800;margin-top:6px;color:#fff">Calcola il Risparmio per il tuo Studio</h3>
+        <p style="color:var(--muted);font-size:0.95rem;margin-top:4px">Sposta lo slider con il numero di condomini gestiti:</p>
+
+        <div class="roi-slider-container">
+          <div class="roi-slider-label">
+            Stai gestendo <span class="roi-slider-val" id="roi-condo-val">35</span> condomini
+          </div>
+          <input type="range" min="5" max="200" step="5" value="35" class="roi-slider" id="roi-condo-slider" aria-label="Numero condomini gestiti">
+        </div>
+
+        <div class="roi-grid">
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-hours-val">28 Ore</div>
+            <div class="roi-kpi-lbl">Ore risparmiate ogni mese</div>
+          </div>
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-report-time-val">2 Giorni</div>
+            <div class="roi-kpi-lbl">Tempo chiusura consuntivo</div>
+          </div>
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-savings-val">€ 4.725</div>
+            <div class="roi-kpi-lbl">Risparmio stimato all'anno</div>
+          </div>
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-cost-condo-val">€ 1,69</div>
+            <div class="roi-kpi-lbl">Costo/condominio al mese</div>
+          </div>
+        </div>
+
+        <div style="margin-top:30px;display:flex;justify-content:center;gap:12px">
+          <a href="/register" class="btn btn--primary">Inizia la prova gratuita di 14 giorni →</a>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -289,5 +289,53 @@
       }
     });
   });
+
+  /* ---------- Gestione Modali Pop-Up ---------- */
+  function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeModal(modal) {
+    if (modal) {
+      modal.classList.remove('is-open');
+      document.body.style.overflow = '';
+    }
+  }
+
+  document.querySelectorAll('[data-open-modal]').forEach((trigger) => {
+    trigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = trigger.getAttribute('data-open-modal');
+      openModal(targetId);
+    });
+  });
+
+  document.querySelectorAll('.modal-close, [data-close-modal]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const modal = btn.closest('.modal-overlay');
+      closeModal(modal);
+    });
+  });
+
+  document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        closeModal(overlay);
+      }
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const activeModal = document.querySelector('.modal-overlay.is-open');
+      if (activeModal) {
+        closeModal(activeModal);
+      }
+    }
+  });
 })();
 

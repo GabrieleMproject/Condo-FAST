@@ -9,6 +9,14 @@
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------- OS Detection for Window Mockup Bar ---------- */
+  const isWindows = /Win/i.test(navigator.userAgent || navigator.platform || '') || window.location.search.includes('os=win');
+  if (isWindows) {
+    document.documentElement.classList.add('os-windows');
+  } else {
+    document.documentElement.classList.add('os-mac');
+  }
+
   /* ---------- Scroll reveal ---------- */
   const revealEls = document.querySelectorAll('.reveal');
 

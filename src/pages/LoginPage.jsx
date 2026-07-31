@@ -48,11 +48,16 @@ export default function LoginPage() {
             L'automazione fa il resto.
           </h1>
           <p className="brand-sub">
-            La piattaforma moderna per amministratori condominiali professionisti.
-            Automatizza le comunicazioni, gestisci la contabilità, risolvi le pratiche più veloce.
+            La piattaforma intelligente per amministratori condominiali professionisti.
+            Automatizza la contabilità, riconcilia gli estratti conto ed invia solleciti in 1-click.
           </p>
           <div className="brand-features">
-            {['Comunicazioni e solleciti automatizzati', 'Contabilità condominiale integrata', 'Gestione fornitori e interventi', 'App per i condòmini inclusa'].map(f => (
+            {[
+              'Estrazione AI automatica da fatture ed estratti conto',
+              'Rendiconti e conguagli A→E a norma art. 1130-bis c.c.',
+              'Solleciti rate con calcolo conguaglio istantaneo',
+              'Casella studio unica @inbox.condofast.it integrata'
+            ].map(f => (
               <div key={f} className="feature-item">
                 <span className="feature-dot" />
                 {f}

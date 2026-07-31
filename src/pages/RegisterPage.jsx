@@ -72,11 +72,16 @@ export default function RegisterPage() {
             L'automazione fa il resto.
           </h1>
           <p className="brand-sub">
-            La piattaforma moderna per amministratori condominiali professionisti.
-            Crea il tuo account oggi e ottieni 30 giorni di prova gratuita con tutte le funzioni incluse.
+            La piattaforma intelligente per amministratori condominiali professionisti.
+            Crea il tuo account oggi e prova tutte le funzionalità di CondoFAST gratuitamente.
           </p>
           <div className="brand-features">
-            {['Prova gratuita per 30 giorni', 'Nessuna carta di credito richiesta', 'Accesso a tutte le funzionalità AI', 'DPA pre-compilato conforme GDPR'].map(f => (
+            {[
+              'Prova gratuita di 14 giorni senza impegno',
+              'Lettura ed estrazione AI da fatture ed estratti conto',
+              'Solleciti rate e rendiconti A→E (art. 1130-bis c.c.)',
+              'DPA ed accordo trattamento dati GDPR inclusi'
+            ].map(f => (
               <div key={f} className="feature-item">
                 <span className="feature-dot" />
                 {f}

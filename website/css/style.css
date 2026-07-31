@@ -1408,11 +1408,13 @@ p { margin: 0 0 1em; }
   padding: 20px;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s ease;
 }
 .modal-overlay.is-open {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
 }
 .modal-container {
   background: rgba(17, 24, 39, 0.95);

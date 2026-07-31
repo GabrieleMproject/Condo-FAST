@@ -290,29 +290,30 @@
     });
   });
 
-  /* ---------- Gestione Modali Pop-Up (Global Event Delegation) ---------- */
-  function openModal(modalId) {
+  /* ---------- Gestione Modali Pop-Up (Globale & Infallibile) ---------- */
+  window.openModal = function (modalId) {
     if (!modalId) return;
     const modal = document.getElementById(modalId);
     if (modal) {
       modal.classList.add('is-open');
       document.body.style.overflow = 'hidden';
     }
-  }
+  };
 
-  function closeModal(modal) {
+  window.closeModal = function (modalOrId) {
+    let modal = typeof modalOrId === 'string' ? document.getElementById(modalOrId) : modalOrId;
     if (modal) {
       modal.classList.remove('is-open');
       document.body.style.overflow = '';
     }
-  }
+  };
 
-  document.addEventListener('click', (e) => {
+  function handleGlobalClicks(e) {
     const trigger = e.target.closest('[data-open-modal]');
     if (trigger) {
       e.preventDefault();
       const targetId = trigger.getAttribute('data-open-modal');
-      openModal(targetId);
+      window.openModal(targetId);
       return;
     }
 
@@ -320,20 +321,22 @@
     if (closeBtn) {
       e.preventDefault();
       const modal = closeBtn.closest('.modal-overlay');
-      closeModal(modal);
+      window.closeModal(modal);
       return;
     }
 
     if (e.target.classList.contains('modal-overlay')) {
-      closeModal(e.target);
+      window.closeModal(e.target);
     }
-  });
+  }
+
+  document.addEventListener('click', handleGlobalClicks, true);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       const activeModal = document.querySelector('.modal-overlay.is-open');
       if (activeModal) {
-        closeModal(activeModal);
+        window.closeModal(activeModal);
       }
     }
   });

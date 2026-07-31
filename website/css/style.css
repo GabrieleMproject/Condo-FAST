@@ -1242,43 +1242,57 @@ p { margin: 0 0 1em; }
   display: inline-block;
   vertical-align: middle;
   transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: logo-breathe 3s ease-in-out infinite;
 }
 
-.condofast-logo-container:hover .condofast-icon,
-.condosmart-logo-container:hover .condosmart-icon {
-  transform: scale(1.08) translateY(-2px);
+@keyframes logo-breathe {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.06) translateY(-2px); }
 }
 
-/* Effetto 3D isometrico sui condomini all'hover */
-.condofast-logo-container:hover .tower-left,
-.condosmart-logo-container:hover .tower-left {
-  transform: translateY(-3px) translateX(-1px);
+/* Effetto 3D isometrico sui condomini - sempre attivo */
+.condofast-logo-container .tower-left,
+.condosmart-logo-container .tower-left {
+  animation: tower-float-left 3s ease-in-out infinite;
 }
-.condofast-logo-container:hover .tower-center,
-.condosmart-logo-container:hover .tower-center {
-  transform: translateY(-6px);
+.condofast-logo-container .tower-center,
+.condosmart-logo-container .tower-center {
+  animation: tower-float-center 3s ease-in-out infinite 0.15s;
 }
-.condofast-logo-container:hover .tower-right,
-.condosmart-logo-container:hover .tower-right {
-  transform: translateY(-4.5px) translateX(1.5px);
+.condofast-logo-container .tower-right,
+.condosmart-logo-container .tower-right {
+  animation: tower-float-right 3s ease-in-out infinite 0.3s;
 }
-.condofast-logo-container.interactive:hover .smart-flow-line,
-.condosmart-logo-container.interactive:hover .smart-flow-line {
+
+@keyframes tower-float-left {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  50% { transform: translateY(-3px) translateX(-1px); }
+}
+@keyframes tower-float-center {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes tower-float-right {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  50% { transform: translateY(-4.5px) translateX(1.5px); }
+}
+.condofast-logo-container.interactive .smart-flow-line,
+.condosmart-logo-container.interactive .smart-flow-line {
   filter: drop-shadow(0 0 5px rgba(236, 72, 153, 0.8));
   stroke-width: 5.5px;
 }
 
-/* Animazione Fogli Volanti */
-.condofast-logo-container.interactive:hover .sheet-1,
-.condosmart-logo-container.interactive:hover .sheet-1 {
+/* Animazione Fogli Volanti - sempre attiva */
+.condofast-logo-container.interactive .sheet-1,
+.condosmart-logo-container.interactive .sheet-1 {
   animation: fly-sheet-1 2.4s infinite ease-in-out;
 }
-.condofast-logo-container.interactive:hover .sheet-2,
-.condosmart-logo-container.interactive:hover .sheet-2 {
+.condofast-logo-container.interactive .sheet-2,
+.condosmart-logo-container.interactive .sheet-2 {
   animation: fly-sheet-2 2.4s infinite ease-in-out 0.4s;
 }
-.condofast-logo-container.interactive:hover .sheet-3,
-.condosmart-logo-container.interactive:hover .sheet-3 {
+.condofast-logo-container.interactive .sheet-3,
+.condosmart-logo-container.interactive .sheet-3 {
   animation: fly-sheet-3 2.4s infinite ease-in-out 0.8s;
 }
 
@@ -1313,10 +1327,10 @@ p { margin: 0 0 1em; }
 }
 
 /* Animazione della scritta al ricevimento dei documenti */
-.condosmart-logo-container.interactive:hover .text-prefix {
+.condosmart-logo-container.interactive .text-prefix {
   animation: receive-docs-prefix 2.4s infinite ease-in-out;
 }
-.condosmart-logo-container.interactive:hover .text-suffix {
+.condosmart-logo-container.interactive .text-suffix {
   animation: receive-docs-suffix 2.4s infinite ease-in-out;
 }
 

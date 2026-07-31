@@ -199,7 +199,7 @@
 
   const DEMO_DATA = {
     fattura: {
-      doc: `<div style="color:#60a5fa;font-weight:700;margin-bottom:8px">📄 FATTURA ELETTRONICA N. 104/2026</div>
+      doc: `<div style="color:#60a5fa;font-weight:700;margin-bottom:8px">FATTURA ELETTRONICA N. 104/2026</div>
 <div>Fornitore: <strong>Rossi Ascensori S.r.l.</strong> (P.IVA: 01847590123)</div>
 <div>Destinatario: Condominio Via Manzoni 14</div>
 <div>Data fattura: 14/07/2026</div>
@@ -230,7 +230,7 @@
 </div>`
     },
     estratto: {
-      doc: `<div style="color:#34d399;font-weight:700;margin-bottom:8px">🏦 ESTRATTO CONTO BANCARIO (CSV/PDF)</div>
+      doc: `<div style="color:#34d399;font-weight:700;margin-bottom:8px">ESTRATTO CONTO BANCARIO (CSV/PDF)</div>
 <div>Data: 02/07/2026 | Tipo: Bonifico SEPA in entrata</div>
 <div>Causale: <em>Quota condominiale rata 2 Sig. Mario Bianchi int 4 scale A Via Manzoni</em></div>
 <div style="margin-top:8px;font-size:1.1rem;color:#34d399;font-weight:800">+ € 320,00</div>
@@ -253,7 +253,7 @@
 </div>`
     },
     verbale: {
-      doc: `<div style="color:#c084fc;font-weight:700;margin-bottom:8px">📑 VERBALE ASSEMBLEA ORDINARIA (PDF)</div>
+      doc: `<div style="color:#c084fc;font-weight:700;margin-bottom:8px">VERBALE ASSEMBLEA ORDINARIA (PDF)</div>
 <div>Data Assemblea: 15/04/2026</div>
 <div>Ordine del Giorno: <em>Punto 4 — Ripartizione spese riparazione infiltrazione lastrico solare uso esclusivo int. 12</em></div>
 <div style="margin-top:10px;font-size:0.8rem;line-height:1.4">

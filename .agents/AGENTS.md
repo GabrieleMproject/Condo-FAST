@@ -152,6 +152,18 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Tabella `millesimi_unita` e `rate`**: non hanno la colonna `created_at` o ne demandano la gestione interamente al database. Lo script `sql/seed_e2e_consuntivo.sql` è stato corretto per rimuovere questi campi ed è stato eseguito con successo per il collaudo E2E.
 - **Autenticazione**: l'UUID dell'amministratore per il seed è stato validato con successo contro `auth.users`.
 
+## Storico Decisioni e Fatti Verificati della Sessione S61 (31 Luglio 2026 - Allineamento Sito Marketing & Redesign con Calcolatore ROI e Demo AI)
+
+### 1. Allineamento Dati e Prezzi Sito Marketing
+- **Piani e Limiti Sincronizzati**: Sincronizzati tutti i file promozionali (`website/index.html`, `website/pricing.html`, `website/features.html`) con le configurazioni reali di `usePlan.js` (Base 59€/m per 50 condomini, Studio 169€/m per 100 condomini, Professional 299€/m per 200 condomini).
+- **Trasparenza Roadmap**: Inserito il badge `In Arrivo` per le feature future (Open Banking PSD2, Distinta CBI F24, Accesso API).
+- **Pulizia Link Auth**: Sostituiti tutti i link di login/registrazione che puntavano a `localhost:5173` con rotte relative `/login` e `/register`.
+
+### 2. Moduli Interattivi ad Alta Conversione
+- **Servizio Zero Frizione**: Aggiunta la sezione ed il banner "Migrazione Gratuita Assistita" in 3 step per azzerare la frizione di passaggio da vecchi software.
+- **Calcolatore ROI Interattivo**: Implementato il calcolatore con slider reattivo (5-200 condomini) che stima ore risparmiate, costo unitario e abbattimento dei tempi del consuntivo.
+- **Sandbox Demo AI Reader**: Creata l'interfaccia interattiva a schede (Fattura, Estratto Conto, Verbale) per permettere la prova istantanea dell'AI prima della registrazione.
+
 ---
 
 ## Storico Decisioni e Fatti Verificati della Sessione S60 (31 Luglio 2026 - Rebranding Completo in CondoFAST)

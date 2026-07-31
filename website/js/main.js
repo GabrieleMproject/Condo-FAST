@@ -165,6 +165,7 @@
   const roiReportTimeDisplay = document.getElementById('roi-report-time-val');
   const roiReconDisplay = document.getElementById('roi-recon-val');
   const roiInvoicesDisplay = document.getElementById('roi-invoices-val');
+  const roiPlanBadge = document.getElementById('roi-plan-badge');
 
   function updateRoiCalculator(condoCount) {
     if (!roiValDisplay) return;
@@ -183,8 +184,14 @@
     const invoicesProcessedYear = count * 180;
     
     let planCost = 59;
-    if (count > 100) planCost = 299;
-    else if (count > 50) planCost = 169;
+    let planName = 'Base';
+    if (count > 100) {
+      planCost = 299;
+      planName = 'Professional';
+    } else if (count > 50) {
+      planCost = 169;
+      planName = 'Studio';
+    }
     const costPerCondo = (planCost / count).toFixed(2).replace('.', ',');
 
     const reportDays = count > 80 ? '3 Giorni' : '2 Giorni';
@@ -199,6 +206,9 @@
     }
     if (roiInvoicesDisplay) {
       roiInvoicesDisplay.textContent = invoicesProcessedYear.toLocaleString('it-IT');
+    }
+    if (roiPlanBadge) {
+      roiPlanBadge.textContent = planName;
     }
   }
 

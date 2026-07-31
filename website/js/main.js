@@ -310,35 +310,61 @@
     if (file) {
       const reader = new FileReader();
       reader.onload = function (e) {
-        const textContent = e.target.result;
+        const textContent = e.target.result || '';
+        const fileNameLower = file.name.toLowerCase();
         
-        // Estrazione di P.IVA reale tramite Regex dal file se presente
-        const pivaMatch = textContent.match(/(?:P\.?IVA|Partita IVA|C\.F\.|Codice Fiscale)[:\s]*([A-Z0-9]{11,16})/i) || textContent.match(/\b(IT)?[0-9]{11}\b/i);
-        // Estrazione di importo reale tramite Regex dal file se presente
-        const importoMatch = textContent.match(/(?:TOTALE|Importo|Euro|€)[:\s]*([0-9]+[.,][0-9]{2})/i) || textContent.match(/([0-9]+[.,][0-9]{2})\s*€/i);
+        // 1. Ricerca Destinatario / Condominio / Cessionario
+        const destMatch = textContent.match(/(?:Destinatario|Cessionario|Committente|Spett\.le|Spettabile|Cliente|Intestato a)[:\s]*([^\r\n]{3,60})/i)
+          || textContent.match(/(Condominio[^\r\n]{3,50})/i)
+          || textContent.match(/((?:Via|Corso|Piazza|Viale|Largo)[^\r\n]{3,50})/i);
+        
+        let condominioReal = destMatch ? destMatch[1].trim() : null;
 
+        // 2. Ricerca Fornitore / Cedente Prestatore
+        const fornMatch = textContent.match(/(?:Fornitore|Cedente|Prestatore|Ditta|Emesso da)[:\s]*([^\r\n]{3,60})/i)
+          || textContent.match(/([A-Z0-9\s._'-]+(?:S\.r\.l\.|S\.p\.A\.|S\.n\.c\.|S\.a\.s\.|Srl|SpA))/i);
+        
+        let fornitoreReal = fornMatch ? fornMatch[1].trim() : file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+
+        // 3. Estrazione P.IVA / C.F.
+        const pivaMatch = textContent.match(/(?:P\.?IVA|Partita IVA|C\.F\.|Codice Fiscale)[:\s]*([A-Z0-9]{11,16})/i) 
+          || textContent.match(/\b(IT)?[0-9]{11}\b/i);
         let pivaReal = pivaMatch ? pivaMatch[1] : null;
+
+        // 4. Estrazione Importo / Totale
+        const importoMatch = textContent.match(/(?:TOTALE|Importo|Totale Documento|Totale da pagare|Euro|€)[:\s]*([0-9]+[.,][0-9]{2})/i)
+          || textContent.match(/([0-9]+[.,][0-9]{2})\s*€/i);
         let totaleReal = importoMatch ? parseFloat(importoMatch[1].replace(',', '.')) : null;
 
-        let fornitoreReal = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        // 5. Categorizzazione e Tabella Riparto Millesimale
+        let tabellaRipartoReal = 'Tabella A — Proprietà Generale (1.000 millesimi)';
+        const fullContentLower = (textContent + ' ' + fileNameLower).toLowerCase();
+
+        if (fullContentLower.includes('ascens') || fullContentLower.includes('elevat') || fullContentLower.includes('impiant')) {
+          tabellaRipartoReal = 'Tabella C — Ascensore / Impianti (1.000 millesimi)';
+        } else if (fullContentLower.includes('puliz') || fullContentLower.includes('scal') || fullContentLower.includes('porton')) {
+          tabellaRipartoReal = 'Tabella B — Scale e Spazi Comuni (1.000 millesimi)';
+        } else if (fullContentLower.includes('caldaia') || fullContentLower.includes('riscald') || fullContentLower.includes('termog')) {
+          tabellaRipartoReal = 'Tabella D — Riscaldamento Centralizzato (1.000 millesimi)';
+        }
 
         setTimeout(() => {
           renderExtractedData({
-            condominio: textContent.includes('Condominio') ? 'Rilevato da intestazione file' : 'Non presente esplicitamente sul documento',
+            condominio: condominioReal ? `Destinatario: ${condominioReal}` : 'Destinatario non presente esplicitamente (Proposta abbinamento al condominio gestito)',
             fornitore: fornitoreReal,
             piva: pivaReal ? pivaReal : 'Non estratta dal documento',
             totale: totaleReal,
             imponibile: totaleReal ? (totaleReal / 1.22) : null,
-            tabella_riparto: file.name.toLowerCase().includes('ascens') ? 'Tabella C — Ascensore / Impianti (1.000 millesimi)' : 'Tabella A — Proprietà Generale (1.000 millesimi)'
+            tabella_riparto: tabellaRipartoReal
           });
         }, 800);
       };
       
-      reader.readAsText(file.slice(0, 10000));
+      reader.readAsText(file.slice(0, 15000));
     } else {
       setTimeout(() => {
         renderExtractedData({
-          condominio: 'Condominio Via Manzoni 14 (Milano)',
+          condominio: 'Destinatario: Condominio Via Manzoni 14 (Milano)',
           fornitore: 'Rossi Impianti S.r.l.',
           piva: 'IT 01847590123',
           totale: 1464.00,

@@ -310,41 +310,55 @@
     if (file) {
       const reader = new FileReader();
       reader.onload = function (e) {
-        const textContent = e.target.result || '';
+        const rawResult = e.target.result || '';
         const fileNameLower = file.name.toLowerCase();
         
-        // 1. Ricerca Destinatario / Condominio / Cessionario
-        const destMatch = textContent.match(/(?:Destinatario|Cessionario|Committente|Spett\.le|Spettabile|Cliente|Intestato a)[:\s]*([^\r\n]{3,60})/i)
-          || textContent.match(/(Condominio[^\r\n]{3,50})/i)
-          || textContent.match(/((?:Via|Corso|Piazza|Viale|Largo)[^\r\n]{3,50})/i);
-        
-        let condominioReal = destMatch ? destMatch[1].trim() : null;
+        // Pulisci il testo grezzo rimuovendo i caratteri di controllo binari sporchi dei PDF
+        const cleanText = typeof rawResult === 'string' 
+          ? rawResult.replace(/[\x00-\x09\x0B-\x1F\x7F-\x9F]/g, ' ')
+          : '';
 
-        // 2. Ricerca Fornitore / Cedente Prestatore
-        const fornMatch = textContent.match(/(?:Fornitore|Cedente|Prestatore|Ditta|Emesso da)[:\s]*([^\r\n]{3,60})/i)
-          || textContent.match(/([A-Z0-9\s._'-]+(?:S\.r\.l\.|S\.p\.A\.|S\.n\.c\.|S\.a\.s\.|Srl|SpA))/i);
+        // 1. Estrazione Destinatario / Cessionario Committente / Condominio
+        let condominioReal = null;
+        const destMatch = cleanText.match(/(?:Destinatario|Cessionario|Committente|Spett\.le|Spettabile|Cliente|Intestato a)[:\s]*([A-Za-z0-9\s.,'/-]{3,50})/i)
+          || cleanText.match(/(Condominio\s+[A-Za-z0-9\s.,'/-]{3,40})/i)
+          || cleanText.match(/((?:Via|Corso|Piazza|Viale|Largo)\s+[A-Za-z0-9\s.,'/-]{3,40})/i);
         
-        let fornitoreReal = fornMatch ? fornMatch[1].trim() : file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        if (destMatch && destMatch[1] && destMatch[1].trim().length > 3) {
+          condominioReal = destMatch[1].trim();
+        }
+
+        // 2. Estrazione Fornitore / Cedente Prestatore
+        let fornitoreReal = null;
+        const fornMatch = cleanText.match(/(?:Fornitore|Cedente|Prestatore|Ditta|Emesso da)[:\s]*([A-Za-z0-9\s._'-]{3,50})/i)
+          || cleanText.match(/([A-Za-z0-9\s._'-]+(?:S\.r\.l\.|S\.p\.A\.|S\.n\.c\.|S\.a\.s\.|Srl|SpA))/i);
+        
+        if (fornMatch && fornMatch[1] && fornMatch[1].trim().length > 3) {
+          fornitoreReal = fornMatch[1].trim();
+        } else {
+          // Nome pulito estratto dal file dell'utente
+          fornitoreReal = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        }
 
         // 3. Estrazione P.IVA / C.F.
-        const pivaMatch = textContent.match(/(?:P\.?IVA|Partita IVA|C\.F\.|Codice Fiscale)[:\s]*([A-Z0-9]{11,16})/i) 
-          || textContent.match(/\b(IT)?[0-9]{11}\b/i);
+        const pivaMatch = cleanText.match(/(?:P\.?IVA|Partita IVA|C\.F\.|Codice Fiscale)[:\s]*([A-Z0-9]{11,16})/i) 
+          || cleanText.match(/\b(IT)?[0-9]{11}\b/i);
         let pivaReal = pivaMatch ? pivaMatch[1] : null;
 
-        // 4. Estrazione Importo / Totale
-        const importoMatch = textContent.match(/(?:TOTALE|Importo|Totale Documento|Totale da pagare|Euro|€)[:\s]*([0-9]+[.,][0-9]{2})/i)
-          || textContent.match(/([0-9]+[.,][0-9]{2})\s*€/i);
+        // 4. Estrazione Importo / Totale Documento
+        const importoMatch = cleanText.match(/(?:TOTALE|Importo|Totale Documento|Totale da pagare|Euro|€)[:\s]*([0-9]+[.,][0-9]{2})/i)
+          || cleanText.match(/([0-9]+[.,][0-9]{2})\s*€/i);
         let totaleReal = importoMatch ? parseFloat(importoMatch[1].replace(',', '.')) : null;
 
-        // 5. Categorizzazione e Tabella Riparto Millesimale
+        // 5. Categorizzazione Millesimale Inteligente
         let tabellaRipartoReal = 'Tabella A — Proprietà Generale (1.000 millesimi)';
-        const fullContentLower = (textContent + ' ' + fileNameLower).toLowerCase();
+        const searchContext = (cleanText + ' ' + fileNameLower).toLowerCase();
 
-        if (fullContentLower.includes('ascens') || fullContentLower.includes('elevat') || fullContentLower.includes('impiant')) {
+        if (searchContext.includes('ascens') || searchContext.includes('elevat') || searchContext.includes('impiant')) {
           tabellaRipartoReal = 'Tabella C — Ascensore / Impianti (1.000 millesimi)';
-        } else if (fullContentLower.includes('puliz') || fullContentLower.includes('scal') || fullContentLower.includes('porton')) {
+        } else if (searchContext.includes('puliz') || searchContext.includes('scal') || searchContext.includes('porton')) {
           tabellaRipartoReal = 'Tabella B — Scale e Spazi Comuni (1.000 millesimi)';
-        } else if (fullContentLower.includes('caldaia') || fullContentLower.includes('riscald') || fullContentLower.includes('termog')) {
+        } else if (searchContext.includes('caldaia') || searchContext.includes('riscald') || searchContext.includes('termog')) {
           tabellaRipartoReal = 'Tabella D — Riscaldamento Centralizzato (1.000 millesimi)';
         }
 
@@ -360,7 +374,7 @@
         }, 800);
       };
       
-      reader.readAsText(file.slice(0, 15000));
+      reader.readAsText(file.slice(0, 20000));
     } else {
       setTimeout(() => {
         renderExtractedData({

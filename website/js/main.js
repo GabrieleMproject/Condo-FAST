@@ -192,7 +192,7 @@
   }
 
   /* ---------- Analizzatore AI Reale per qualsiasi Fattura / Scontrino Utente ---------- */
-  function analyzeUserDocument(file) {
+  window.analyzeUserDocument = function (file) {
     const docPreview = document.getElementById('demo-doc-content');
     const aiDetails = document.getElementById('demo-ai-details');
     const aiHeader = document.getElementById('demo-ai-header');

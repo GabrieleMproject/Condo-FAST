@@ -729,9 +729,9 @@
       </div>
 
       <!-- AREA DRAG & DROP FATTURA / SCONTRINO UTENTE -->
-      <div class="demo-dropzone" id="demo-dropzone" onclick="document.getElementById('user-doc-input').click()">
+      <div class="demo-dropzone" id="demo-dropzone">
+        <input type="file" id="user-doc-input" accept=".pdf,.png,.jpg,.jpeg,.webp">
         <div class="scanner-line" id="scanner-line"></div>
-        <input type="file" id="user-doc-input" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.webp">
         <div class="dropzone-icon">✦</div>
         <div style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:4px">Trascina qui la tua Fattura o Scontrino di Prova</div>
         <div style="color:var(--muted);font-size:0.85rem">Oppure <span style="color:var(--accent);text-decoration:underline">fai clic qui per selezionare un file dal tuo dispositivo</span></div>

@@ -1044,8 +1044,9 @@ p { margin: 0 0 1em; }
 }
 
 /* ============================================================
-   Logo CondoSmart - Animato & Dinamico
+   Logo CondoFAST - Animato & Dinamico
    ============================================================ */
+.condofast-logo-container,
 .condosmart-logo-container {
   display: inline-flex;
   align-items: center;
@@ -1061,38 +1062,48 @@ p { margin: 0 0 1em; }
   text-decoration: none !important;
 }
 
+.condofast-logo-container .condofast-icon,
+.condofast-logo-container .condosmart-icon,
 .condosmart-logo-container .condosmart-icon {
   display: inline-block;
   vertical-align: middle;
   transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+.condofast-logo-container:hover .condofast-icon,
 .condosmart-logo-container:hover .condosmart-icon {
   transform: scale(1.08) translateY(-2px);
 }
 
 /* Effetto 3D isometrico sui condomini all'hover */
+.condofast-logo-container:hover .tower-left,
 .condosmart-logo-container:hover .tower-left {
   transform: translateY(-3px) translateX(-1px);
 }
+.condofast-logo-container:hover .tower-center,
 .condosmart-logo-container:hover .tower-center {
   transform: translateY(-6px);
 }
+.condofast-logo-container:hover .tower-right,
 .condosmart-logo-container:hover .tower-right {
   transform: translateY(-4.5px) translateX(1.5px);
 }
+.condofast-logo-container.interactive:hover .smart-flow-line,
 .condosmart-logo-container.interactive:hover .smart-flow-line {
   filter: drop-shadow(0 0 5px rgba(236, 72, 153, 0.8));
   stroke-width: 5.5px;
 }
 
 /* Animazione Fogli Volanti */
+.condofast-logo-container.interactive:hover .sheet-1,
 .condosmart-logo-container.interactive:hover .sheet-1 {
   animation: fly-sheet-1 2.4s infinite ease-in-out;
 }
+.condofast-logo-container.interactive:hover .sheet-2,
 .condosmart-logo-container.interactive:hover .sheet-2 {
   animation: fly-sheet-2 2.4s infinite ease-in-out 0.4s;
 }
+.condofast-logo-container.interactive:hover .sheet-3,
 .condosmart-logo-container.interactive:hover .sheet-3 {
   animation: fly-sheet-3 2.4s infinite ease-in-out 0.8s;
 }

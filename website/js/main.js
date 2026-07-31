@@ -188,7 +188,10 @@
 
   if (roiSlider) {
     roiSlider.addEventListener('input', (e) => updateRoiCalculator(e.target.value));
-    updateRoiCalculator(roiSlider.value);  /* ---------- Analizzatore AI Reale per qualsiasi Fattura / Scontrino Utente ---------- */
+    updateRoiCalculator(roiSlider.value);
+  }
+
+  /* ---------- Analizzatore AI Reale per qualsiasi Fattura / Scontrino Utente ---------- */
   window.analyzeUserDocument = function (file) {
     const docPreview = document.getElementById('demo-doc-content');
     const aiDetails = document.getElementById('demo-ai-details');
@@ -219,6 +222,14 @@
         <div style="color:#34d399">Lettura rigorosa intestazioni, C.F./P.IVA, importi e riparto</div>
       </div>
     `;
+
+    function fornitoreExtractedDisplay(val) {
+      if (val && val !== 'Non specificato') return val;
+      if (file && file.name) {
+        return file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+      }
+      return 'Non specificato nel file';
+    }
 
     // Funzione di rendering dei dati reali
     function renderExtractedData(data) {
@@ -296,15 +307,6 @@
       });
     }
 
-    function fornitoreExtractedDisplay(val) {
-      if (val && val !== 'Non specificato') return val;
-      if (file && file.name) {
-        // Pulisci estensione dal nome file per usare il nome del file se non trovata la P.IVA
-        return file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
-      }
-      return 'Non specificato nel file';
-    }
-
     if (file) {
       const reader = new FileReader();
       reader.onload = function (e) {
@@ -318,7 +320,6 @@
         let pivaReal = pivaMatch ? pivaMatch[1] : null;
         let totaleReal = importoMatch ? parseFloat(importoMatch[1].replace(',', '.')) : null;
 
-        // Se non troviamo una P.IVA con regex dal testo grezzo (es: PDF binario), estraiamo nome pulito dal nome del file del cliente
         let fornitoreReal = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
 
         setTimeout(() => {
@@ -333,10 +334,8 @@
         }, 800);
       };
       
-      // Leggiamo come stringa/testo per la ricerca di pattern reali
       reader.readAsText(file.slice(0, 10000));
     } else {
-      // Caso di test con la fattura d'esempio
       setTimeout(() => {
         renderExtractedData({
           condominio: 'Condominio Via Manzoni 14 (Milano)',
@@ -350,15 +349,13 @@
         });
       }, 800);
     }
-  };     });
-    }, 1000);
-  }
+  };
 
   // Setup Event Listeners Drag & Drop e Upload File
   document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'user-doc-input') {
       const file = e.target.files[0];
-      if (file) analyzeUserDocument(file);
+      if (file) window.analyzeUserDocument(file);
     }
   });
 
@@ -383,7 +380,7 @@
       e.preventDefault();
       dropzone.classList.remove('is-dragover');
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        analyzeUserDocument(e.dataTransfer.files[0]);
+        window.analyzeUserDocument(e.dataTransfer.files[0]);
       }
     }
   });

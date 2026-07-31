@@ -157,8 +157,8 @@
         </ul>
       </nav>
       <div class="nav__cta">
-        <a class="btn btn--ghost btn--sm" href="http://localhost:5173/login" id="nav-login">Accedi</a>
-        <a class="btn btn--primary btn--sm" href="http://localhost:5173/register" id="nav-trial">Inizia gratis</a>
+        <a class="btn btn--ghost btn--sm" href="/login" id="nav-login">Accedi</a>
+        <a class="btn btn--primary btn--sm" href="/register" id="nav-trial">Inizia gratis</a>
         <button class="nav__toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Apri il menu">☰</button>
       </div>
     </div>
@@ -176,7 +176,54 @@
 
     <section class="section section--tight" id="piani" aria-labelledby="piani-title">
       <div class="container">
-        <h2 id="piani-title" class="sr-only" style="position:absolute;left:-9999px">Piani e prezzi</h2>
+        <!-- BANNER ZERO FRIZIONE: MIGRAZIONE GRATUITA -->
+        <div class="zero-frizione-card reveal" style="margin-bottom:36px">
+          <div class="zero-frizione-header">
+            <div>
+              <div class="badge-zero-frizione">🛡️ Garanzia Passaggio Software · Zero Frizione</div>
+              <h3 style="font-size:1.45rem;font-weight:800;color:#fff;margin:8px 0 4px">Passi a CondoFAST da un altro gestionale? La migrazione la facciamo noi gratuitamente.</h3>
+              <p style="color:var(--muted);font-size:0.92rem;margin:0;max-width:750px">
+                Nessuna digitazione manuale o perdita di dati. Importiamo anagrafiche, tabelle millesimali e saldi d'apertura dal tuo vecchio software in 48 ore.
+              </p>
+            </div>
+            <a href="/register" class="btn btn--primary" style="white-space:nowrap">Richiedi supporto migrazione →</a>
+          </div>
+        </div>
+
+        <!-- CALCOLATORE ROI INTERATTIVO -->
+        <div class="roi-calculator reveal" style="margin-bottom:40px">
+          <div style="text-align:center">
+            <span class="eyebrow">Simulatore Risparmio</span>
+            <h3 style="font-size:1.6rem;font-weight:800;margin-top:6px">Calcola il risparmio per il tuo Studio</h3>
+            <p style="color:var(--muted);font-size:0.92rem">Seleziona il numero di condomini per vedere la stima dei benefici e del costo unitario:</p>
+          </div>
+
+          <div class="roi-slider-container">
+            <div class="roi-slider-label">
+              Stai gestendo <span class="roi-slider-val" id="roi-condo-val">35</span> condomini
+            </div>
+            <input type="range" min="5" max="200" step="5" value="35" class="roi-slider" id="roi-condo-slider" aria-label="Numero condomini gestiti">
+          </div>
+
+          <div class="roi-grid">
+            <div class="roi-kpi-card">
+              <div class="roi-kpi-num" id="roi-hours-val">28 Ore</div>
+              <div class="roi-kpi-lbl">Ore risparmiate ogni mese</div>
+            </div>
+            <div class="roi-kpi-card">
+              <div class="roi-kpi-num" id="roi-report-time-val">2 Giorni</div>
+              <div class="roi-kpi-lbl">Tempo chiusura consuntivo</div>
+            </div>
+            <div class="roi-kpi-card">
+              <div class="roi-kpi-num" id="roi-savings-val">€ 4.725</div>
+              <div class="roi-kpi-lbl">Risparmio stimato all'anno</div>
+            </div>
+            <div class="roi-kpi-card">
+              <div class="roi-kpi-num" id="roi-cost-condo-val">€ 1,69</div>
+              <div class="roi-kpi-lbl">Costo/condominio al mese</div>
+            </div>
+          </div>
+        </div>
 
         <div style="text-align:center" class="reveal">
           <div class="toggle" role="group" aria-label="Fatturazione mensile o annuale">
@@ -192,63 +239,70 @@
             <p class="plan__price">Gratis</p>
             <p class="plan__period">14 giorni · nessuna carta richiesta</p>
             <ul>
-              <li>Fino a 50 condomini</li>
-              <li>500 operazioni AI/mese</li>
+              <li>Fino a 50 condomini inclusi</li>
+              <li>500 chiamate AI / mese</li>
               <li>Tutte le funzionalità del piano Studio</li>
-              <li>Import dati assistito</li>
-              <li>Supporto via email</li>
+              <li>OCR automatico Fatture &amp; Estratti Conto</li>
+              <li>Rendiconto PDF art. 1130-bis c.c.</li>
+              <li>Ricerca AI nei Verbali di Assemblea</li>
             </ul>
-            <a class="btn btn--ghost" href="http://localhost:5173/register" id="plan-trial-cta">Inizia la prova</a>
+            <a class="btn btn--ghost" href="/register" id="plan-trial-cta">Inizia la prova</a>
           </div>
 
           <div class="plan reveal" data-delay="1">
-            <h3>Base</h3>
-            <p class="plan__desc">Per chi gestisce pochi stabili e vuole dire addio a Excel.</p>
-            <p class="plan__price"><span data-monthly="€129" data-annual="€103">€129</span><small>/mese</small></p>
-            <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente (€1.236/anno)">fatturazione mensile</p>
+            <h3>Base / Starter</h3>
+            <p class="plan__desc">Per chi gestisce uno studio in avvio o di piccole dimensioni.</p>
+            <p class="plan__price"><span data-monthly="€59" data-annual="€47">€59</span><small>/mese</small></p>
+            <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente (€564/anno)">fatturazione mensile</p>
             <ul>
-              <li>Fino a 10 condomini</li>
-              <li>100 operazioni AI/mese</li>
-              <li>Rendiconto art. 1130-bis</li>
-              <li>Riconciliazione bancaria</li>
-              <li>Tabelle millesimali</li>
+              <li>Fino a 50 condomini inclusi (+3€/cond. extra)</li>
+              <li>300 chiamate AI / mese</li>
+              <li>1 Utente titolare incluso</li>
+              <li>OCR automatico Fatture &amp; Saldi</li>
+              <li>Rendiconto PDF art. 1130-bis c.c.</li>
+              <li>Scadenzario F24 e Ritenute d'Acconto</li>
               <li>Supporto via email</li>
             </ul>
-            <a class="btn btn--ghost" href="http://localhost:5173/register?plan=base" id="plan-base-cta">Scegli Base</a>
+            <a class="btn btn--ghost" href="/register?plan=base" id="plan-base-cta">Scegli Base</a>
           </div>
 
           <div class="plan plan--featured reveal" data-delay="2">
-            <span class="plan__tag">Il più scelto</span>
+            <span class="plan__tag">Più scelto</span>
             <h3>Studio</h3>
-            <p class="plan__desc">Per studi di media dimensione con portafogli in crescita.</p>
-            <p class="plan__price"><span data-monthly="€249" data-annual="€199">€249</span><small>/mese</small></p>
-            <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente (€2.388/anno)">fatturazione mensile</p>
+            <p class="plan__desc">Per studi di media dimensione con collaboratori e portafogli in crescita.</p>
+            <p class="plan__price"><span data-monthly="€169" data-annual="€135">€169</span><small>/mese</small></p>
+            <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente (€1.620/anno)">fatturazione mensile</p>
             <ul>
-              <li>Fino a 50 condomini</li>
-              <li>500 operazioni AI/mese</li>
+              <li>Fino a 100 condomini inclusi (+2,50€/cond. extra)</li>
+              <li>800 chiamate AI / mese</li>
+              <li>2 Collaboratori inclusi (+15€/m extra)</li>
               <li>Tutto il piano Base, più:</li>
-              <li>Solleciti automatici illimitati</li>
-              <li>Export PDF/XLSX avanzati</li>
-              <li>Gestione fornitori con F24</li>
-              <li>Supporto prioritario</li>
+              <li>Ricerca &amp; Analisi AI nei Verbali</li>
+              <li>Solleciti rate &amp; Comunicazioni (Resend)</li>
+              <li>Registro Anagrafe Condominiale AI</li>
+              <li>Postbox Studio &amp; Gestione Fornitori</li>
+              <li>-5€/mese con addebito SEPA</li>
             </ul>
-            <a class="btn btn--primary" href="http://localhost:5173/register?plan=studio" id="plan-studio-cta">Scegli Studio</a>
+            <a class="btn btn--primary" href="/register?plan=studio" id="plan-studio-cta">Scegli Studio</a>
           </div>
 
           <div class="plan reveal" data-delay="3">
             <h3>Professional</h3>
-            <p class="plan__desc">Per grandi studi che vogliono il massimo, senza limiti.</p>
-            <p class="plan__price"><span data-monthly="€399" data-annual="€319">€399</span><small>/mese</small></p>
-            <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente (€3.828/anno)">fatturazione mensile</p>
+            <p class="plan__desc">Per grandi studi strutturati che richiedono la massima potenza e supporto.</p>
+            <p class="plan__price"><span data-monthly="€299" data-annual="€239">€299</span><small>/mese</small></p>
+            <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente (€2.868/anno)">fatturazione mensile</p>
             <ul>
-              <li>Condomini illimitati</li>
-              <li>Operazioni AI illimitate</li>
+              <li>Fino a 200 condomini inclusi (+2€/cond. extra)</li>
+              <li>2.000 chiamate AI / mese potenziate</li>
+              <li>4 Collaboratori inclusi (+12€/m extra)</li>
               <li>Tutto il piano Studio, più:</li>
-              <li>SLA prioritario</li>
-              <li>Onboarding dedicato</li>
-              <li>Account manager</li>
+              <li>Storico illimitato ed Export Avanzati</li>
+              <li>Manager dedicato &amp; Supporto Telefonico</li>
+              <li>Open Banking PSD2 <span class="badge-soon">In Arrivo</span></li>
+              <li>Distinta CBI F24 <span class="badge-soon">In Arrivo</span></li>
+              <li>Accesso API <span class="badge-soon">In Arrivo</span></li>
             </ul>
-            <a class="btn btn--ghost" href="http://localhost:5173/register?plan=professional" id="plan-pro-cta">Scegli Professional</a>
+            <a class="btn btn--ghost" href="/register?plan=professional" id="plan-pro-cta">Scegli Professional</a>
           </div>
         </div>
       </div>
@@ -274,21 +328,28 @@
             </thead>
             <tbody>
               <tr>
-                <td>Condomini gestibili</td>
+                <td>Condomini inclusi</td>
                 <td>50</td>
-                <td>10</td>
-                <td class="featured-col">50</td>
-                <td>Illimitati</td>
+                <td>50 (+3€/cond extra)</td>
+                <td class="featured-col">100 (+2,50€/extra)</td>
+                <td>200 (+2€/extra)</td>
               </tr>
               <tr>
-                <td>Operazioni AI al mese</td>
+                <td>Chiamate AI al mese</td>
                 <td>500</td>
-                <td>100</td>
-                <td class="featured-col">500</td>
-                <td>Illimitate</td>
+                <td>300</td>
+                <td class="featured-col">800</td>
+                <td>2.000 potenziate</td>
               </tr>
               <tr>
-                <td>Lettura documenti con AI</td>
+                <td>Collaboratori inclusi</td>
+                <td>—</td>
+                <td>1 (Titolare)</td>
+                <td class="featured-col">2 inclusi (+15€/m)</td>
+                <td>4 inclusi (+12€/m)</td>
+              </tr>
+              <tr>
+                <td>OCR automatico documenti &amp; fatture</td>
                 <td class="yes">✓</td>
                 <td class="yes">✓</td>
                 <td class="featured-col yes">✓</td>
@@ -302,53 +363,67 @@
                 <td class="yes">✓</td>
               </tr>
               <tr>
-                <td>Rendiconto art. 1130-bis c.c.</td>
+                <td>Rendiconto art. 1130-bis c.c. (PDF)</td>
                 <td class="yes">✓</td>
                 <td class="yes">✓</td>
                 <td class="featured-col yes">✓</td>
                 <td class="yes">✓</td>
               </tr>
               <tr>
-                <td>Riconciliazione estratti conto</td>
+                <td>Riconciliazione bancaria estratti conto</td>
                 <td class="yes">✓</td>
                 <td class="yes">✓</td>
                 <td class="featured-col yes">✓</td>
                 <td class="yes">✓</td>
               </tr>
               <tr>
-                <td>Solleciti rata generati dall'AI</td>
+                <td>Scadenzario F24 e Ritenute d'Acconto</td>
                 <td class="yes">✓</td>
-                <td>Base</td>
-                <td class="featured-col yes">Illimitati</td>
-                <td class="yes">Illimitati</td>
+                <td class="yes">✓</td>
+                <td class="featured-col yes">✓</td>
+                <td class="yes">✓</td>
               </tr>
               <tr>
-                <td>Fornitori e ritenute F24</td>
+                <td>Solleciti rate &amp; Comunicazioni (Resend)</td>
                 <td class="yes">✓</td>
                 <td>—</td>
                 <td class="featured-col yes">✓</td>
                 <td class="yes">✓</td>
               </tr>
               <tr>
-                <td>Export PDF / XLSX avanzati</td>
+                <td>Ricerca &amp; Analisi AI nei Verbali</td>
                 <td class="yes">✓</td>
-                <td>Standard</td>
-                <td class="featured-col yes">Avanzati</td>
-                <td class="yes">Avanzati</td>
+                <td>—</td>
+                <td class="featured-col yes">✓</td>
+                <td class="yes">✓</td>
               </tr>
               <tr>
-                <td>Supporto</td>
+                <td>Postbox Studio &amp; Registro Anagrafe AI</td>
+                <td class="yes">✓</td>
+                <td>—</td>
+                <td class="featured-col yes">✓</td>
+                <td class="yes">✓</td>
+              </tr>
+              <tr>
+                <td>Storico conservazione dati</td>
+                <td>3 Anni</td>
+                <td>1 Anno</td>
+                <td class="featured-col">3 Anni</td>
+                <td class="yes">Illimitato</td>
+              </tr>
+              <tr>
+                <td>Supporto e Assistenza</td>
                 <td>Email</td>
                 <td>Email</td>
                 <td class="featured-col">Prioritario</td>
-                <td>SLA + Account manager</td>
+                <td>Dedicato + Telefono</td>
               </tr>
               <tr>
-                <td>Onboarding dedicato</td>
+                <td>Open Banking PSD2 &amp; Distinta CBI F24</td>
                 <td>—</td>
                 <td>—</td>
                 <td class="featured-col">—</td>
-                <td class="yes">✓</td>
+                <td>In arrivo</td>
               </tr>
               <tr>
                 <td>Sicurezza (RLS, cifratura, GDPR, dati EU)</td>
@@ -401,7 +476,7 @@
         <div class="cta-final reveal" style="margin-top:80px">
           <h2>Inizia dal piano gratuito</h2>
           <p>14 giorni, tutte le funzionalità, fino a 50 condomini. Il modo migliore per capire se CondoFAST fa per te è provarlo sui tuoi dati reali.</p>
-          <a class="btn btn--primary" href="http://localhost:5173/register" id="pricing-final-cta">Inizia gratis — 14 giorni</a>
+          <a class="btn btn--primary" href="/register" id="pricing-final-cta">Inizia gratis — 14 giorni</a>
         </div>
       </div>
     </section>

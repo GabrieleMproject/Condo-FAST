@@ -205,8 +205,8 @@
         </ul>
       </nav>
       <div class="nav__cta">
-        <a class="btn btn--ghost btn--sm" href="http://localhost:5173/login" id="nav-login">Accedi</a>
-        <a class="btn btn--primary btn--sm" href="http://localhost:5173/register" id="nav-trial">Inizia gratis</a>
+        <a class="btn btn--ghost btn--sm" href="/login" id="nav-login">Accedi</a>
+        <a class="btn btn--primary btn--sm" href="/register" id="nav-trial">Inizia gratis</a>
         <button class="nav__toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Apri il menu">☰</button>
       </div>
     </div>
@@ -228,7 +228,7 @@
             <h1 id="hero-title" class="reveal" data-delay="1">Il gestionale condominiale che lavora <span class="grad-text">con te</span>, non per te.</h1>
             <p class="hero__sub reveal" data-delay="2">CondoFAST automatizza la gestione contabile e documentale del condominio con l'AI — rendiconti, riconciliazioni, solleciti e tabelle millesimali in un unico posto sicuro e conforme GDPR.</p>
             <div class="hero__actions reveal" data-delay="3">
-              <a class="btn btn--primary" href="http://localhost:5173/register" id="hero-cta-trial">Inizia gratis — 14 giorni</a>
+              <a class="btn btn--primary" href="/register" id="hero-cta-trial">Inizia gratis — 14 giorni</a>
               <a class="btn btn--ghost" href="#come-funziona" id="hero-cta-demo">Scopri come funziona →</a>
             </div>
             <p class="hero__note reveal" data-delay="4"><span class="dot" aria-hidden="true">●</span> Nessuna carta di credito richiesta · Dati in EU · Disdici quando vuoi</p>
@@ -457,6 +457,130 @@
           <div class="stat reveal" data-delay="2"><b data-count="120" data-suffix="+">0</b><span>amministratori in Italia</span></div>
           <div class="stat reveal" data-delay="3"><b data-count="100" data-suffix="%">0%</b><span>dati custoditi in EU</span></div>
         </div>
+
+        <!-- DEMO INTERATTIVA AI READER -->
+        <div class="interactive-demo reveal" style="margin-top:70px">
+          <div style="text-align:center;margin-bottom:24px">
+            <span class="eyebrow">Sandbox Prova AI</span>
+            <h3 style="font-size:1.6rem;font-weight:800;margin-top:6px">Prova l'AI Reader in tempo reale</h3>
+            <p style="color:var(--muted);font-size:0.95rem">Seleziona un documento di prova e vedi come l'AI estrae e propone la contabilità al posto tuo:</p>
+          </div>
+
+          <div class="demo-tabs">
+            <button type="button" class="demo-tab-btn active" data-tab="fattura">📄 Fattura Fornitore</button>
+            <button type="button" class="demo-tab-btn" data-tab="estratto">🏦 Estratto Conto Bancario</button>
+            <button type="button" class="demo-tab-btn" data-tab="verbale">📑 Verbale di Assemblea</button>
+          </div>
+
+          <div class="demo-split">
+            <div class="demo-doc-preview" id="demo-doc-content">
+              <div style="color:#60a5fa;font-weight:700;margin-bottom:8px">📄 FATTURA ELETTRONICA N. 104/2026</div>
+              <div>Fornitore: <strong>Rossi Ascensori S.r.l.</strong> (P.IVA: 01847590123)</div>
+              <div>Destinatario: Condominio Via Manzoni 14</div>
+              <div>Data fattura: 14/07/2026</div>
+              <div>Descrizione: Manutenzione ordinaria III Trimestre + Sostituzione relè di sicurezza</div>
+              <div style="margin-top:12px;padding-top:8px;border-top:1px dashed #334155">
+                <div>Imponibile: € 1.200,00</div>
+                <div>IVA (22%): € 264,00</div>
+                <div style="color:#fff;font-weight:700;margin-top:4px">TOTALE FATTURA: € 1.464,00</div>
+              </div>
+            </div>
+
+            <div class="demo-ai-result">
+              <div class="ai-pulse-badge">
+                <span>✦ Assistente AI CondoFAST</span>
+              </div>
+              <h4 id="demo-ai-header" style="font-size:1rem;font-weight:700;color:#fff;margin-bottom:12px">✦ AI Extraction: Riconosciuta Fattura Fornitore</h4>
+              <div id="demo-ai-details">
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <div style="background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
+                    <div style="color:var(--muted);font-size:0.75rem">Fornitore estratto:</div>
+                    <div style="color:#fff;font-weight:700">Rossi Ascensori S.r.l. (P.IVA 01847590123)</div>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
+                    <div style="color:var(--muted);font-size:0.75rem">Riparto millesimale consigliato:</div>
+                    <div style="color:#34d399;font-weight:700">Tabella C — Ascensore (1.000 millesimi)</div>
+                  </div>
+                  <div style="background:rgba(239,68,68,0.1);padding:10px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.3)">
+                    <div style="color:#f87171;font-size:0.75rem">Ritenuta d'Acconto 4% (F24):</div>
+                    <div style="color:#fff;font-weight:700">€ 48,00 da versare entro il 16/08/2026</div>
+                  </div>
+                  <div style="margin-top:6px;display:flex;gap:8px">
+                    <button style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.8rem">✓ Registra Spesa</button>
+                    <button style="background:transparent;color:var(--muted);border:1px solid var(--border);padding:8px 14px;border-radius:6px;font-size:0.8rem;cursor:pointer">Modifica</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CALCOLATORE ROI INTERATTIVO -->
+        <div class="roi-calculator reveal">
+          <div style="text-align:center">
+            <span class="eyebrow">Calcolatore Risparmio</span>
+            <h3 style="font-size:1.7rem;font-weight:800;margin-top:6px">Calcola quanto risparmia il tuo Studio</h3>
+            <p style="color:var(--muted);font-size:0.95rem">Sposta lo slider con il numero di condomini gestiti per stimare il beneficio immediato:</p>
+          </div>
+
+          <div class="roi-slider-container">
+            <div class="roi-slider-label">
+              Stai gestendo <span class="roi-slider-val" id="roi-condo-val">35</span> condomini
+            </div>
+            <input type="range" min="5" max="200" step="5" value="35" class="roi-slider" id="roi-condo-slider" aria-label="Numero condomini gestiti">
+          </div>
+
+          <div class="roi-grid">
+            <div class="roi-kpi-card">
+              <div class="roi-kpi-num" id="roi-hours-val">28 Ore</div>
+              <div class="roi-kpi-lbl">Ore risparmiate ogni mese</div>
+            </div>
+            <div class="roi-kpi-card">
+              <div class="roi-kpi-num" id="roi-report-time-val">2 Giorni</div>
+              <div class="roi-kpi-lbl">Tempo chiusura consuntivo</div>
+            </div>
+            <div class="roi-kpi-card">
+              <div class="roi-kpi-num" id="roi-savings-val">€ 4.725</div>
+              <div class="roi-kpi-lbl">Risparmio stimato all'anno</div>
+            </div>
+            <div class="roi-kpi-card">
+              <div class="roi-kpi-num" id="roi-cost-condo-val">€ 1,69</div>
+              <div class="roi-kpi-lbl">Costo/condominio al mese</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BANNER ZERO FRIZIONE: MIGRAZIONE GRATUITA -->
+        <div class="zero-frizione-card reveal">
+          <div class="zero-frizione-header">
+            <div>
+              <div class="badge-zero-frizione">🛡️ Servizio Incluso · Zero Frizione</div>
+              <h3 style="font-size:1.5rem;font-weight:800;color:#fff;margin:8px 0 4px">Hai già un gestionale? Pensiamo noi alla migrazione.</h3>
+              <p style="color:var(--muted);font-size:0.95rem;margin:0;max-width:750px">
+                Non devi reinserire nulla a mano. Il nostro team e l'AI importano anagrafiche, saldi e tabelle millesimali dal tuo vecchio software gratuitamente in 48 ore.
+              </p>
+            </div>
+            <a href="/register" class="btn btn--primary" style="white-space:nowrap">Richiedi la migrazione →</a>
+          </div>
+
+          <div class="zero-frizione-steps">
+            <div class="zero-frizione-step">
+              <div class="step-num">1</div>
+              <div style="font-weight:700;color:#fff;margin-bottom:4px">Fornisci i vecchi file</div>
+              <div style="font-size:0.84rem;color:var(--muted)">Invaci i file Excel, CSV o PDF scaricati dal tuo software attuale.</div>
+            </div>
+            <div class="zero-frizione-step">
+              <div class="step-num">2</div>
+              <div style="font-weight:700;color:#fff;margin-bottom:4px">Mappatura assistita AI</div>
+              <div style="font-size:0.84rem;color:var(--muted)">L'AI riconosce proprietari, inquilini, millesimi e saldi d'apertura.</div>
+            </div>
+            <div class="zero-frizione-step">
+              <div class="step-num">3</div>
+              <div style="font-weight:700;color:#fff;margin-bottom:4px">Verifica &amp; Consegna</div>
+              <div style="font-size:0.84rem;color:var(--muted)">Controlliamo la quadratura dei saldi e ti consegniamo il tuo studio attivo in 48h.</div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -483,60 +607,60 @@
             <p class="plan__price">Gratis</p>
             <p class="plan__period">14 giorni · nessuna carta richiesta</p>
             <ul>
-              <li>Fino a 50 condomini</li>
-              <li>500 operazioni AI/mese</li>
+              <li>Fino a 50 condomini inclusi</li>
+              <li>500 chiamate AI / mese</li>
               <li>Tutte le funzionalità incluse</li>
               <li>Supporto via email</li>
             </ul>
-            <a class="btn btn--ghost" href="http://localhost:5173/register" id="plan-trial-cta">Inizia la prova</a>
+            <a class="btn btn--ghost" href="/register" id="plan-trial-cta">Inizia la prova</a>
           </div>
 
           <div class="plan reveal" data-delay="1">
-            <h3>Base</h3>
-            <p class="plan__desc">Per chi gestisce pochi stabili e vuole dire addio a Excel.</p>
-            <p class="plan__price"><span data-monthly="€129" data-annual="€103">€129</span><small>/mese</small></p>
+            <h3>Base / Starter</h3>
+            <p class="plan__desc">Per chi gestisce uno studio in avvio o di piccole dimensioni.</p>
+            <p class="plan__price"><span data-monthly="€59" data-annual="€47">€59</span><small>/mese</small></p>
             <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente">fatturazione mensile</p>
             <ul>
-              <li>Fino a 10 condomini</li>
-              <li>100 operazioni AI/mese</li>
-              <li>Rendiconto art. 1130-bis</li>
+              <li>Fino a 50 condomini (+3€/extra)</li>
+              <li>300 chiamate AI / mese</li>
+              <li>1 Utente titolare incluso</li>
+              <li>Rendiconto PDF art. 1130-bis</li>
               <li>Riconciliazione bancaria</li>
               <li>Supporto via email</li>
             </ul>
-            <a class="btn btn--ghost" href="http://localhost:5173/register?plan=base" id="plan-base-cta">Scegli Base</a>
+            <a class="btn btn--ghost" href="/register?plan=base" id="plan-base-cta">Scegli Base</a>
           </div>
 
           <div class="plan plan--featured reveal" data-delay="2">
-            <span class="plan__tag">Il più scelto</span>
+            <span class="plan__tag">Più scelto</span>
             <h3>Studio</h3>
-            <p class="plan__desc">Per studi di media dimensione con portafogli in crescita.</p>
-            <p class="plan__price"><span data-monthly="€249" data-annual="€199">€249</span><small>/mese</small></p>
+            <p class="plan__desc">Per studi di media dimensione con collaboratori e portafogli in crescita.</p>
+            <p class="plan__price"><span data-monthly="€169" data-annual="€135">€169</span><small>/mese</small></p>
             <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente">fatturazione mensile</p>
             <ul>
-              <li>Fino a 50 condomini</li>
-              <li>500 operazioni AI/mese</li>
-              <li>Tutto il piano Base, più:</li>
-              <li>Solleciti automatici illimitati</li>
-              <li>Export PDF/XLSX avanzati</li>
+              <li>Fino a 100 condomini (+2,50€/extra)</li>
+              <li>800 chiamate AI / mese</li>
+              <li>2 Collaboratori inclusi</li>
+              <li>Ricerca AI nei Verbali</li>
+              <li>Solleciti rate &amp; Postbox Studio</li>
               <li>Supporto prioritario</li>
             </ul>
-            <a class="btn btn--primary" href="http://localhost:5173/register?plan=studio" id="plan-studio-cta">Scegli Studio</a>
+            <a class="btn btn--primary" href="/register?plan=studio" id="plan-studio-cta">Scegli Studio</a>
           </div>
 
           <div class="plan reveal" data-delay="3">
             <h3>Professional</h3>
-            <p class="plan__desc">Per grandi studi che vogliono il massimo, senza limiti.</p>
-            <p class="plan__price"><span data-monthly="€399" data-annual="€319">€399</span><small>/mese</small></p>
+            <p class="plan__desc">Per grandi studi strutturati che richiedono la massima potenza e supporto.</p>
+            <p class="plan__price"><span data-monthly="€299" data-annual="€239">€299</span><small>/mese</small></p>
             <p class="plan__period" data-period data-period-monthly="fatturazione mensile" data-period-annual="fatturato annualmente">fatturazione mensile</p>
             <ul>
-              <li>Condomini illimitati</li>
-              <li>Operazioni AI illimitate</li>
-              <li>Tutto il piano Studio, più:</li>
-              <li>SLA prioritario</li>
-              <li>Onboarding dedicato</li>
-              <li>Account manager</li>
+              <li>Fino a 200 condomini (+2€/extra)</li>
+              <li>2.000 chiamate AI / mese</li>
+              <li>4 Collaboratori inclusi</li>
+              <li>Storico illimitato ed export</li>
+              <li>Supporto telefonico dedicato</li>
             </ul>
-            <a class="btn btn--ghost" href="http://localhost:5173/register?plan=professional" id="plan-pro-cta">Scegli Professional</a>
+            <a class="btn btn--ghost" href="/register?plan=professional" id="plan-pro-cta">Scegli Professional</a>
           </div>
         </div>
 
@@ -623,7 +747,7 @@
         <div class="cta-final reveal" style="margin-top:80px">
           <h2>Meno carta. Meno errori. Più condomini.</h2>
           <p>Prova CondoFAST gratis per 14 giorni. Nessuna carta di credito, nessun vincolo: solo il tuo prossimo rendiconto, chiuso in una frazione del tempo.</p>
-          <a class="btn btn--primary" href="http://localhost:5173/register" id="final-cta">Inizia gratis — 14 giorni</a>
+          <a class="btn btn--primary" href="/register" id="final-cta">Inizia gratis — 14 giorni</a>
         </div>
       </div>
     </section>

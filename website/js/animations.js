@@ -1,5 +1,5 @@
 /* ============================================================
-   CondoAI — animations.js
+   CondoFAST — animations.js
    Scroll-triggered reveals (Intersection Observer) and
    3D tilt on feature cards. No libraries.
    ============================================================ */

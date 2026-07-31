@@ -1524,6 +1524,25 @@ p { margin: 0 0 1em; }
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   padding: 12px 14px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateY(8px);
+  opacity: 0.7;
+}
+.extracted-card.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+  animation: flash-glow 0.8s ease-out;
+}
+@keyframes flash-glow {
+  0% {
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.6);
+    border-color: #38bdf8;
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 transparent;
+    transform: scale(1);
+  }
 }
 .extracted-card-title {
   color: var(--muted);
@@ -1532,6 +1551,9 @@ p { margin: 0 0 1em; }
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .extracted-card-val {
   color: #fff;

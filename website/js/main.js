@@ -212,14 +212,14 @@
       <div>Estrazione in corso da <strong>${fileName}</strong>...</div>
     </div>`;
 
-    // Pulizia o anteprima del file
+    // Pulizia o anteprima del file (Senza Emoji)
     docPreview.innerHTML = `
       <span class="console-doc-tag highlight-cyan">Documento Caricato</span>
-      <div style="color:#38bdf8;font-weight:700;font-size:0.95rem;margin-bottom:6px">📄 ${fileName}</div>
+      <div style="color:#38bdf8;font-weight:700;font-size:0.95rem;margin-bottom:6px">${fileName}</div>
       <div style="font-size:0.78rem;color:var(--muted)">Dimensione: ${fileSize} · Formato riconosciuto</div>
       <div style="margin-top:14px;padding:12px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px dashed rgba(255,255,255,0.08);font-size:0.8rem">
         <div style="color:#fff;font-weight:600;margin-bottom:4px">Stato Scansione OCR &amp; Vision:</div>
-        <div style="color:#34d399">✓ Estratte Intestazioni, C.F./P.IVA, Importi e Causale di Spesa</div>
+        <div style="color:#34d399">Estratte Intestazioni, C.F./P.IVA, Importi e Causale di Spesa</div>
       </div>
     `;
 
@@ -232,7 +232,6 @@
       const condominioExtracted = 'Condominio Via Manzoni 14 (Milano)';
       let fornitoreExtracted = 'Rossi Impianti S.r.l.';
       let pivaExtracted = 'IT 01847590123';
-      let ibanExtracted = 'IT91 X 05034 01700 000000123456';
       let totaleExtracted = 1464.00;
       let tabellaRiparto = 'Tabella C — Ascensore / Impianti (1.000/1.000)';
       let categoriaSpesa = 'Manutenzione Ordinaria Impianti';
@@ -261,12 +260,12 @@
         <div style="display:flex;flex-direction:column;gap:10px">
           <!-- 1. Condominio & Fornitore -->
           <div class="extracted-grid">
-            <div class="extracted-card">
-              <div class="extracted-card-title">🏢 Condominio Destinatario</div>
+            <div class="extracted-card" id="card-condo">
+              <div class="extracted-card-title">Condominio Destinatario</div>
               <div class="extracted-card-val" style="color:#60a5fa">${condominioExtracted}</div>
             </div>
-            <div class="extracted-card">
-              <div class="extracted-card-title">🏭 Fornitore Estratto</div>
+            <div class="extracted-card" id="card-fornitore">
+              <div class="extracted-card-title">Fornitore Estratto</div>
               <div class="extracted-card-val">${fornitoreExtracted}</div>
               <div style="font-size:0.72rem;color:var(--muted);margin-top:2px">P.IVA: ${pivaExtracted}</div>
             </div>
@@ -274,34 +273,43 @@
 
           <!-- 2. Importi e IVA -->
           <div class="extracted-grid">
-            <div class="extracted-card">
-              <div class="extracted-card-title">💶 Imponibile / IVA (22%)</div>
+            <div class="extracted-card" id="card-imponibile">
+              <div class="extracted-card-title">Imponibile / IVA (22%)</div>
               <div class="extracted-card-val">€ ${imponibile.replace('.', ',')} + IVA € ${iva.replace('.', ',')}</div>
             </div>
-            <div class="extracted-card" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25)">
+            <div class="extracted-card" id="card-totale" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25)">
               <div class="extracted-card-title" style="color:#34d399">Totale Documento</div>
               <div class="extracted-card-val" style="color:#34d399;font-size:1.05rem">€ ${totaleExtracted.toFixed(2).replace('.', ',')}</div>
             </div>
           </div>
 
           <!-- 3. Riparto Millesimale & Ritenuta F24 -->
-          <div class="extracted-card" style="border-color:rgba(192,132,252,0.3);background:rgba(192,132,252,0.06)">
-            <div class="extracted-card-title" style="color:#c084fc">⚖️ Riparto Millesimale Consigliato dall'AI</div>
+          <div class="extracted-card" id="card-riparto" style="border-color:rgba(192,132,252,0.3);background:rgba(192,132,252,0.06)">
+            <div class="extracted-card-title" style="color:#c084fc">Riparto Millesimale Consigliato dall'AI</div>
             <div class="extracted-card-val" style="color:#fff">${tabellaRiparto}</div>
             <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Categoria: <strong>${categoriaSpesa}</strong></div>
           </div>
 
-          <div class="extracted-card" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.25)">
-            <div class="extracted-card-title" style="color:#f87171">🧾 Ritenuta d'Acconto 4% (Modello F24)</div>
+          <div class="extracted-card" id="card-ritenuta" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.25)">
+            <div class="extracted-card-title" style="color:#f87171">Ritenuta d'Acconto 4% (Modello F24)</div>
             <div class="extracted-card-val" style="color:#fff">€ ${ritenuta4.replace('.', ',')} <span style="font-size:0.75rem;font-weight:normal;color:var(--muted)">(Versamento F24 entro il 16 del mese successivo)</span></div>
           </div>
 
           <div style="margin-top:8px;display:flex;gap:10px;justify-content:flex-end">
-            <button style="background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem">✓ Simula Registrazione Contabile</button>
+            <button style="background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem">Simula Registrazione Contabile</button>
           </div>
         </div>
       `;
-    }, 1200);
+
+      // Animazione sequenziale ad effetto illuminazione immediata sui risultati
+      const cardIds = ['card-condo', 'card-fornitore', 'card-imponibile', 'card-totale', 'card-riparto', 'card-ritenuta'];
+      cardIds.forEach((id, index) => {
+        setTimeout(() => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add('is-revealed');
+        }, index * 80);
+      });
+    }, 1000);
   }
 
   // Setup Event Listeners Drag & Drop e Upload File

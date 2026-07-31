@@ -290,8 +290,9 @@
     });
   });
 
-  /* ---------- Gestione Modali Pop-Up ---------- */
+  /* ---------- Gestione Modali Pop-Up (Global Event Delegation) ---------- */
   function openModal(modalId) {
+    if (!modalId) return;
     const modal = document.getElementById(modalId);
     if (modal) {
       modal.classList.add('is-open');
@@ -306,27 +307,26 @@
     }
   }
 
-  document.querySelectorAll('[data-open-modal]').forEach((trigger) => {
-    trigger.addEventListener('click', (e) => {
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('[data-open-modal]');
+    if (trigger) {
       e.preventDefault();
       const targetId = trigger.getAttribute('data-open-modal');
       openModal(targetId);
-    });
-  });
+      return;
+    }
 
-  document.querySelectorAll('.modal-close, [data-close-modal]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const modal = btn.closest('.modal-overlay');
+    const closeBtn = e.target.closest('.modal-close, [data-close-modal]');
+    if (closeBtn) {
+      e.preventDefault();
+      const modal = closeBtn.closest('.modal-overlay');
       closeModal(modal);
-    });
-  });
+      return;
+    }
 
-  document.querySelectorAll('.modal-overlay').forEach((overlay) => {
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) {
-        closeModal(overlay);
-      }
-    });
+    if (e.target.classList.contains('modal-overlay')) {
+      closeModal(e.target);
+    }
   });
 
   document.addEventListener('keydown', (e) => {

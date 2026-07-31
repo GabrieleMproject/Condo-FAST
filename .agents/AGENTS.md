@@ -152,6 +152,25 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Tabella `millesimi_unita` e `rate`**: non hanno la colonna `created_at` o ne demandano la gestione interamente al database. Lo script `sql/seed_e2e_consuntivo.sql` è stato corretto per rimuovere questi campi ed è stato eseguito con successo per il collaudo E2E.
 - **Autenticazione**: l'UUID dell'amministratore per il seed è stato validato con successo contro `auth.users`.
 
+## Storico Decisioni e Fatti Verificati della Sessione S62 (31 Luglio 2026 - Integrazione AI Demo sito vetrina, fix CORS, CSP e JSON parse, allineamento modali HTML)
+
+### 1. Integrazione Demo AI e Sicurezza (Sito Marketing)
+- **Estrattore AI Reale**: Implementato l'estrattore PDF AI per il sito marketing (frontend), sostituendo il parsing finto con una chiamata reale alla funzione proxy Supabase (`gemini-proxy`).
+- **Limiti UUID in Demo**: Risolto crash DB per limiti UUID usando una Map in-memory per gli IP nella modalità demo all'interno della funzione proxy.
+- **CSP (Content-Security-Policy)**: Aggiornata su `index.html` e `features.html` per permettere `connect-src` verso Supabase, bloccando violazioni di sicurezza.
+- **Risoluzione blocco CORS silente**: Aggiunto header `x-condofast-demo` alla whitelist `Access-Control-Allow-Headers` di `_shared/cors.ts` per risolvere l'errore "Failed to fetch".
+- **Sicurezza Proxy**: Blindata la sicurezza del proxy (`cors.ts`) limitando l'Origins a `condofast.it` e localhost per bloccare l'accesso da domini terzi.
+
+### 2. Robustezza AI e UI
+- **Robustezza Parsing AI**: Rimossa la restrizione dello schema `jsonSchema`, affidandosi al prompt testuale (`jsonMode: true`). Questo ha risolto l'errore "Unexpected end of JSON input" di Gemini che si presentava con i file PDF.
+- **Sincronizzazione Modali HTML**: Copiata e sincronizzata la modale AI (incluso il consenso privacy obbligatorio) da `index.html` a `pricing.html`.
+- **Miglioramento Diagnostica Frontend**: Estratti ed esposti i messaggi di errore veri in `main.js` (sia da `response.json().error` che in caso di `JSON.parse` fallito), per una migliore gestione e diagnostica degli errori lato client.
+
+### 3. Deploy
+- **Deploy Globale**: Deploy eseguito con successo su tutte le piattaforme.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S61 (31 Luglio 2026 - Allineamento Sito Marketing & Redesign con Calcolatore ROI e Demo AI)
 
 ### 1. Allineamento Dati e Prezzi Sito Marketing

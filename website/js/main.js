@@ -163,6 +163,8 @@
   const roiSavingsDisplay = document.getElementById('roi-savings-val');
   const roiCostPerCondoDisplay = document.getElementById('roi-cost-condo-val');
   const roiReportTimeDisplay = document.getElementById('roi-report-time-val');
+  const roiReconDisplay = document.getElementById('roi-recon-val');
+  const roiInvoicesDisplay = document.getElementById('roi-invoices-val');
 
   function updateRoiCalculator(condoCount) {
     if (!roiValDisplay) return;
@@ -172,6 +174,13 @@
     // Calcoli deterministici realistici per uno studio amministrativo
     const hoursSaved = Math.round(count * 0.8);
     const savingsYear = Math.round(count * 135);
+    
+    // Nuovi KPI:
+    // 1. Spunta estratti conto: Manuale (25 min/condominio) -> 2 min/condominio con AI (mensile)
+    const manualReconHours = Math.round((count * 25) / 60); 
+    const aiReconHours = Math.max(1, Math.round((count * 2) / 60)); 
+    // 2. Fatture inserite in automatico: stima di ~15 fatture/mese a condominio = 180 all'anno
+    const invoicesProcessedYear = count * 180;
     
     let planCost = 59;
     if (count > 100) planCost = 299;
@@ -184,6 +193,13 @@
     if (roiSavingsDisplay) roiSavingsDisplay.textContent = '€ ' + savingsYear.toLocaleString('it-IT');
     if (roiCostPerCondoDisplay) roiCostPerCondoDisplay.textContent = '€ ' + costPerCondo;
     if (roiReportTimeDisplay) roiReportTimeDisplay.textContent = reportDays;
+    
+    if (roiReconDisplay) {
+      roiReconDisplay.innerHTML = `<span style="text-decoration:line-through;opacity:0.5;font-size:1.1rem;margin-right:8px">${manualReconHours}h</span><span style="color:#22c55e">${aiReconHours}h</span>`;
+    }
+    if (roiInvoicesDisplay) {
+      roiInvoicesDisplay.textContent = invoicesProcessedYear.toLocaleString('it-IT');
+    }
   }
 
   if (roiSlider) {

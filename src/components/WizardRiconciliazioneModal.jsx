@@ -65,6 +65,7 @@ export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSucc
         }
       }
 
+      localStorage.setItem('condofast_reconciliation_settings', JSON.stringify(newSettings))
       localStorage.setItem('condosmart_reconciliation_settings', JSON.stringify(newSettings))
       toast.success('Configurazione Riconciliazione salvata con successo!')
       if (refresh) refresh()

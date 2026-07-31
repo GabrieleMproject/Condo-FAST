@@ -8,7 +8,7 @@ export default function ModelloConsuntivoModal({ isOpen, onClose, fileNome, stru
   const dati = struttura.dati || struttura
   const etichette = dati.etichette_categorie || {}
   const etichetteCount = Object.keys(etichette).length
-  const motivazione = dati.motivazione_condosmart || 'Garantisce piena conformità all\'art. 1130-bis c.c. con rendiconto economico, riparto, situazione di cassa e registro fatture/F24.'
+  const motivazione = dati.motivazione_condofast || dati.motivazione_condosmart || 'Garantisce piena conformità all\'art. 1130-bis c.c. con rendiconto economico, riparto, situazione di cassa e registro fatture/F24.'
 
   return (
     <div style={st.overlay}>
@@ -130,7 +130,7 @@ export default function ModelloConsuntivoModal({ isOpen, onClose, fileNome, stru
 
             <button
               style={st.btnPrimary}
-              onClick={() => onConfirm('condosmart', dati)}
+              onClick={() => onConfirm('condofast', dati)}
               disabled={loading}
             >
               {loading ? 'Applicazione...' : 'Applica Modello CondoFAST'}

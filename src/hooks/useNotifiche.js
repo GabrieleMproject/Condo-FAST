@@ -9,7 +9,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePlan } from './usePlan'
 import { calcolaNotifiche } from '../lib/notificheEngine'
 
-const LS_KEY_PREFIX = 'condosmart_notifiche_lette_'
+const LS_KEY_PREFIX = 'condofast_notifiche_lette_'
+const LS_KEY_PREFIX_OLD = 'condosmart_notifiche_lette_'
 
 function getLetteKey(userId) {
   return `${LS_KEY_PREFIX}${userId}`
@@ -17,7 +18,7 @@ function getLetteKey(userId) {
 
 function caricaLette(userId) {
   try {
-    const raw = localStorage.getItem(getLetteKey(userId))
+    const raw = localStorage.getItem(getLetteKey(userId)) || localStorage.getItem(`${LS_KEY_PREFIX_OLD}${userId}`)
     return raw ? JSON.parse(raw) : []
   } catch {
     return []

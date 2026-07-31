@@ -5,10 +5,11 @@ const ThemeContext = createContext(null)
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('condosmart-theme') || 'dark'
+    return localStorage.getItem('condofast-theme') || localStorage.getItem('condosmart-theme') || 'dark'
   })
 
   useEffect(() => {
+    localStorage.setItem('condofast-theme', theme)
     localStorage.setItem('condosmart-theme', theme)
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])

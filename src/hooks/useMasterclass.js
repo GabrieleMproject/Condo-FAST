@@ -107,7 +107,7 @@ export function useMasterclass() {
   useEffect(() => {
     if (!user) return
 
-    const localSaved = localStorage.getItem(`condosmart_masterclass_${user.id}`)
+    const localSaved = localStorage.getItem(`condofast_masterclass_${user.id}`) || localStorage.getItem(`condosmart_masterclass_${user.id}`)
     if (localSaved) {
       try {
         const parsed = JSON.parse(localSaved)
@@ -156,6 +156,7 @@ export function useMasterclass() {
     }
 
     // Salva in localStorage per reattività istantanea
+    localStorage.setItem(`condofast_masterclass_${user.id}`, JSON.stringify(payload))
     localStorage.setItem(`condosmart_masterclass_${user.id}`, JSON.stringify(payload))
 
     // Salva su Supabase DB in background

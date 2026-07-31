@@ -13,9 +13,10 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const currentSessionId = (() => {
-      let sid = sessionStorage.getItem('condosmart_session_id')
+      let sid = sessionStorage.getItem('condofast_session_id') || sessionStorage.getItem('condosmart_session_id')
       if (!sid) {
         sid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2)
+        sessionStorage.setItem('condofast_session_id', sid)
         sessionStorage.setItem('condosmart_session_id', sid)
       }
       return sid

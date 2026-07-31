@@ -17,7 +17,7 @@ export function BrandIcon({ size = 32, className = '' }) {
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`condosmart-icon ${className}`}
+      className={`condofast-icon ${className}`}
       style={{
         display: 'inline-block',
         verticalAlign: 'middle',
@@ -187,7 +187,7 @@ export default function BrandLogo({
 
   return (
     <div
-      className={`condosmart-logo-container ${interactive ? 'interactive' : ''} ${className}`}
+      className={`condofast-logo-container ${interactive ? 'interactive' : ''} ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -203,7 +203,7 @@ export default function BrandLogo({
       
       {showText && (
         <span
-          className="condosmart-logo-text"
+          className="condofast-logo-text"
           style={{
             fontSize: textFontSize,
             fontWeight: 800,

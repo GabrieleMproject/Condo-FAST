@@ -635,7 +635,7 @@ Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
 
   return pulisciEdEstraiJson(risposta, false);
 }// ── Estrae il PROFILO/struttura del modello consuntivo dell'amministratore ──
-// Ritorna { etichette_categorie, ordine_categorie, sezioni:{...flags}, note, motivazione_condosmart }.
+// Ritorna { etichette_categorie, ordine_categorie, sezioni:{...flags}, note, motivazione_condofast }.
 // NB: estrae la PRESENTAZIONE (ordine/etichette/sezioni presenti), NON i numeri.
 export async function estraiStrutturaConsuntivo(file) {
   if (!validaMimeType(file)) return null;
@@ -646,7 +646,7 @@ export async function estraiStrutturaConsuntivo(file) {
 Devi estrarre SOLO la presentazione, NON i numeri.
 Mappa le voci di spesa del documento alle categorie canoniche: assicurazione, amministrazione, utenze, manutenzione, straordinaria, altro.
 Imposta "attiva": true per ogni sezione effettivamente presente nel modello, false se assente. La nota sintetica è obbligatoria: tienila true.
-Fornisci anche una breve motivazione "motivazione_condosmart" che spiega perché il modello standard CondoFAST (con 5 sezioni A->E ex art. 1130-bis) aggiunga o completi la struttura del documento caricato.`
+Fornisci anche una breve motivazione "motivazione_condofast" che spiega perché il modello standard CondoFAST (con 5 sezioni A->E ex art. 1130-bis) aggiunga o completi la struttura del documento caricato.`
 
   const jsonSchema = {
     type: "OBJECT",
@@ -669,7 +669,7 @@ Fornisci anche una breve motivazione "motivazione_condosmart" che spiega perché
               nota_sintetica: { type: "OBJECT", properties: { attiva: { type: "BOOLEAN" } } }
             }
           },
-          motivazione_condosmart: { type: "STRING", description: "Breve frase sui vantaggi dello standard CondoFAST rispetto al file caricato." },
+          motivazione_condofast: { type: "STRING", description: "Breve frase sui vantaggi dello standard CondoFAST rispetto al file caricato." },
           note: { type: "STRING", nullable: true }
         }
       }

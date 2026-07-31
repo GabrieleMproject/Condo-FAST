@@ -135,7 +135,7 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
       })
       if (e1) throw e1
 
-      setTplMsg(`Modello ${tipoModello === 'condosmart' ? 'Proposto da CondoSmart' : 'Identico'} applicato con successo!`)
+      setTplMsg(`Modello ${(tipoModello === 'condofast' || tipoModello === 'condosmart') ? 'Proposto da CondoFAST' : 'Identico'} applicato con successo!`)
       setIsModalOpen(false)
       await fetch()
       setTimeout(() => setTplMsg(''), 4000)
@@ -255,13 +255,13 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Banner template */}
           <div style={st.tplBanner}>
-            {template?.tipo_modello === 'condosmart' ? (
+            {(template?.tipo_modello === 'condofast' || template?.tipo_modello === 'condosmart') ? (
               <Sparkles size={15} color="#60a5fa" />
             ) : (
               <FileText size={15} color="#60a5fa" />
             )}
             <span>
-              Modello attivo: <b>{template?.tipo_modello === 'condosmart' ? 'Modello Proposto da CondoFAST (Standard Art. 1130-bis c.c.)' : (template?.nome ? `Modello Identico (da ${template.nome})` : 'Standard CondoFAST')}</b> · presenta le sezioni ed etichette contabili selezionate.
+              Modello attivo: <b>{(template?.tipo_modello === 'condofast' || template?.tipo_modello === 'condosmart') ? 'Modello Proposto da CondoFAST (Standard Art. 1130-bis c.c.)' : (template?.nome ? `Modello Identico (da ${template.nome})` : 'Standard CondoFAST')}</b> · presenta le sezioni ed etichette contabili selezionate.
             </span>
           </div>
 

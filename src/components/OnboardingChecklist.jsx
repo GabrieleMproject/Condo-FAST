@@ -11,7 +11,7 @@ export default function OnboardingChecklist({
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [dismissed, setDismissed] = useState(() => {
-    return localStorage.getItem('condosmart_onboarding_dismissed') === 'true'
+    return localStorage.getItem('condofast_onboarding_dismissed') === 'true' || localStorage.getItem('condosmart_onboarding_dismissed') === 'true'
   })
   const navigate = useNavigate()
 
@@ -65,6 +65,7 @@ export default function OnboardingChecklist({
   const progressPercent = Math.round((completedCount / stepsList.length) * 100)
 
   const handleDismiss = () => {
+    localStorage.setItem('condofast_onboarding_dismissed', 'true')
     localStorage.setItem('condosmart_onboarding_dismissed', 'true')
     setDismissed(true)
   }

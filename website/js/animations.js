@@ -9,9 +9,10 @@
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- Windows Mockup Bar (Default layout) ---------- */
-  const isMacExplicit = window.location.search.includes('os=mac');
-  if (isMacExplicit) {
+  /* ---------- OS Detection: mostra i controlli finestra nativi del visitatore ---------- */
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const isMac = /macintosh|mac os x|mac_powerpc/i.test(ua) || (/iphone|ipad/i.test(ua));
+  if (isMac) {
     document.documentElement.classList.add('os-mac');
   } else {
     document.documentElement.classList.add('os-windows');

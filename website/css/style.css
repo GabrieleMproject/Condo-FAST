@@ -324,9 +324,9 @@ p { margin: 0 0 1em; }
 .mockup__controls--mac span:nth-child(2) { background: #F59E0B; opacity: 0.85; }
 .mockup__controls--mac span:nth-child(3) { background: #22C55E; opacity: 0.85; }
 
-/* Controlli Windows (Ridimensionamento / Chiusura top-right - PREDEFINITI) */
+/* Controlli Windows (nascosti di default, attivati da JS) */
 .mockup__controls--win {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 2px;
   margin-left: auto;
@@ -367,11 +367,17 @@ p { margin: 0 0 1em; }
   max-width: 100%;
 }
 
-/* Modalità Mac esplicita */
+/* Attivazione controlli in base all'OS rilevato da JS */
 .os-mac .mockup__controls--mac {
   display: flex;
 }
 .os-mac .mockup__controls--win {
+  display: none;
+}
+.os-windows .mockup__controls--win {
+  display: flex;
+}
+.os-windows .mockup__controls--mac {
   display: none;
 }
 .mockup__body {

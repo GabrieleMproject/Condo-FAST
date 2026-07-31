@@ -287,90 +287,208 @@ p { margin: 0 0 1em; }
 }
 .hero__note .dot { color: var(--success); }
 
-/* ---------- Product mockup (CSS-built) ---------- */
+/* ---------- Product mockup (CSS-built) ----------/* ---------- Product mockup (CSS-built) ---------- */
 .mockup {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 18px;
-  box-shadow: var(--shadow), 0 0 80px rgba(79, 142, 247, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 80px rgba(79, 142, 247, 0.15);
   overflow: hidden;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+.mockup:hover {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5), 0 0 100px rgba(79, 142, 247, 0.25);
 }
 .mockup__bar {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   background: var(--surface-2);
   border-bottom: 1px solid var(--border);
 }
-.mockup__bar span { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); }
-.mockup__bar span:nth-child(1) { background: #EF4444aa; }
-.mockup__bar span:nth-child(2) { background: #F59E0Baa; }
-.mockup__bar span:nth-child(3) { background: #22C55Eaa; }
+.mockup__bar span { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.mockup__bar span:nth-child(1) { background: #EF4444; opacity: 0.85; }
+.mockup__bar span:nth-child(2) { background: #F59E0B; opacity: 0.85; }
+.mockup__bar span:nth-child(3) { background: #22C55E; opacity: 0.85; }
 .mockup__url {
   margin-left: 10px;
   color: var(--muted);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 6px;
   padding: 3px 12px;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
-.mockup__body { display: grid; grid-template-columns: 130px 1fr; min-height: 340px; }
+.mockup__body {
+  display: flex;
+  min-height: 320px;
+  overflow: hidden;
+}
 .mockup__side {
+  width: 140px;
+  flex-shrink: 0;
   border-right: 1px solid var(--border);
-  padding: 14px 10px;
+  padding: 14px 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: rgba(255,255,255,0.015);
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.4);
 }
 .mockup__side div {
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-radius: 7px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.mockup__side div.active { background: rgba(79,142,247,0.14); color: var(--text); }
-.mockup__main { padding: 16px; }
-.mockup__title { font-weight: 700; font-size: 0.85rem; margin-bottom: 12px; }
-.mockup__cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.mockup__side div.active {
+  background: rgba(79, 142, 247, 0.18);
+  color: #fff;
+  font-weight: 600;
+  border: 1px solid rgba(79, 142, 247, 0.3);
+}
+.mockup__main {
+  flex: 1;
+  min-width: 0;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--surface);
+}
+.mockup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.mockup__title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mockup__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(34,197,94,0.12);
+  color: var(--success);
+  border: 1px solid rgba(34,197,94,0.3);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.64rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mockup__cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
 .mockup__stat {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 9px 10px;
-}
-.mockup__stat b { display: block; font-size: 0.95rem; color: var(--text); }
-.mockup__stat span { color: var(--muted); font-size: 0.62rem; }
-.mockup__ai {
-  border: 1px solid rgba(79,142,247,0.35);
-  background: linear-gradient(135deg, rgba(79,142,247,0.08), rgba(124,58,237,0.08));
   border-radius: 10px;
-  padding: 11px 12px;
+  padding: 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.mockup__stat b {
+  display: block;
+  font-size: 0.95rem;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mockup__stat span {
+  color: var(--muted);
+  font-size: 0.62rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mockup__ai {
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(124, 58, 237, 0.12));
+  border-radius: 12px;
+  padding: 14px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .mockup__ai .tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: var(--gradient);
   color: #fff;
-  border-radius: 5px;
-  padding: 2px 7px;
-  font-size: 0.6rem;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-.mockup__ai p { margin: 0 0 8px; color: var(--muted); }
-.mockup__ai .row { display: flex; gap: 6px; }
-.mockup__ai .row span {
   border-radius: 6px;
-  padding: 4px 10px;
-  font-weight: 600;
-  font-size: 0.62rem;
+  padding: 3px 8px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  width: fit-content;
 }
-.mockup__ai .ok { background: rgba(34,197,94,0.16); color: var(--success); border: 1px solid rgba(34,197,94,0.35); }
-.mockup__ai .no { background: rgba(255,255,255,0.04); color: var(--muted); border: 1px solid var(--border); }
+.mockup__ai p {
+  margin: 0;
+  color: var(--text-secondary, #cbd5e1);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+.mockup__ai .row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.mockup__ai .row span {
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-weight: 600;
+  font-size: 0.66rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mockup__ai .ok {
+  background: rgba(34,197,94,0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34,197,94,0.4);
+}
+.mockup__ai .ok:hover {
+  background: rgba(34,197,94,0.3);
+}
+.mockup__ai .no {
+  background: rgba(255,255,255,0.06);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.mockup__ai .no:hover {
+  background: rgba(255,255,255,0.12);
+  color: var(--text);
+}
 
 /* ---------- Social proof strip ---------- */
 .proof {

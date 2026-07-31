@@ -1455,6 +1455,83 @@ p { margin: 0 0 1em; }
 }
 
 /* ============================================================
+   DROPZONE DRAG & DROP & SCANNER AI FATTURE
+   ============================================================ */
+.demo-dropzone {
+  border: 2px dashed rgba(79, 142, 247, 0.4);
+  background: rgba(13, 18, 30, 0.6);
+  border-radius: 14px;
+  padding: 26px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.demo-dropzone:hover, .demo-dropzone.is-dragover {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);
+}
+.dropzone-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: rgba(79, 142, 247, 0.15);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 10px;
+  font-size: 1.3rem;
+  border: 1px solid rgba(79, 142, 247, 0.3);
+}
+.scanner-line {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #c084fc, transparent);
+  box-shadow: 0 0 15px #38bdf8;
+  opacity: 0;
+  z-index: 5;
+}
+.scanner-line.is-scanning {
+  opacity: 1;
+  animation: scan-laser 1.4s infinite ease-in-out;
+}
+@keyframes scan-laser {
+  0% { top: 0%; }
+  50% { top: 96%; }
+  100% { top: 0%; }
+}
+.extracted-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+@media (max-width: 600px) {
+  .extracted-grid { grid-template-columns: 1fr; }
+}
+.extracted-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.extracted-card-title {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+.extracted-card-val {
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+/* ============================================================
    REDESIGN SANDBOX AI READER (SAAS CONSOLE 2 COLONNE)
    ============================================================ */
 .console-split {

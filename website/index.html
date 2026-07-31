@@ -719,27 +719,35 @@
 
   <!-- ============ MODALE POP-UP: DEMO AI READER (CONSOLE 2 COLONNE) ============ -->
   <div class="modal-overlay" id="modal-demo-ai" role="dialog" aria-modal="true" aria-labelledby="modal-demo-title">
-    <div class="modal-container">
+    <div class="modal-container" style="max-width:980px">
       <button type="button" class="modal-close" data-close-modal aria-label="Chiudi modale">✕</button>
       
-      <div style="text-align:center;margin-bottom:20px">
+      <div style="text-align:center;margin-bottom:18px">
         <span class="eyebrow">Console Assistente AI</span>
-        <h3 id="modal-demo-title" style="font-size:1.6rem;font-weight:800;margin-top:6px;color:#fff">Sandbox Prova Assistente AI</h3>
-        <p style="color:var(--muted);font-size:0.92rem;margin-top:4px">Seleziona un documento di prova per testare l'estrazione contabile immediata:</p>
+        <h3 id="modal-demo-title" style="font-size:1.65rem;font-weight:800;margin-top:6px;color:#fff">Carica qualsiasi Fattura o Scontrino</h3>
+        <p style="color:var(--muted);font-size:0.92rem;margin-top:4px">Trascina o seleziona una tua fattura (PDF, PNG, JPG) per testare l'estrazione contabile ed il riparto millesimale immediato:</p>
       </div>
 
-      <div class="demo-tabs" style="justify-content:center">
-        <button type="button" class="demo-tab-btn active" data-tab="fattura">Fattura Fornitore</button>
-        <button type="button" class="demo-tab-btn" data-tab="estratto">Estratto Conto Bancario</button>
-        <button type="button" class="demo-tab-btn" data-tab="verbale">Verbale di Assemblea</button>
+      <!-- AREA DRAG & DROP FATTURA / SCONTRINO UTENTE -->
+      <div class="demo-dropzone" id="demo-dropzone" onclick="document.getElementById('user-doc-input').click()">
+        <div class="scanner-line" id="scanner-line"></div>
+        <input type="file" id="user-doc-input" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.webp">
+        <div class="dropzone-icon">✦</div>
+        <div style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:4px">Trascina qui la tua Fattura o Scontrino di Prova</div>
+        <div style="color:var(--muted);font-size:0.85rem">Oppure <span style="color:var(--accent);text-decoration:underline">fai clic qui per selezionare un file dal tuo dispositivo</span></div>
+        <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF, immagini e ricevute fino a 15 MB · Nessun dato salvato o condiviso</div>
       </div>
 
-      <div class="console-split">
-        <!-- Colonna Sinistra: Documento -->
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" onclick="analyzeUserDocument(null)" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:0.8rem;cursor:pointer">✦ Oppure prova con una Fattura di Esempio pre-caricata</button>
+      </div>
+
+      <div class="console-split" style="margin-top:18px">
+        <!-- Colonna Sinistra: Documento Sorgente -->
         <div class="console-doc-box" id="demo-doc-content">
-          <span class="console-doc-tag highlight-cyan">Documento Sorgente</span>
+          <span class="console-doc-tag highlight-cyan">Documento di Prova</span>
           <div style="color:#60a5fa;font-weight:700;margin-bottom:8px">FATTURA ELETTRONICA N. 104/2026</div>
-          <div>Fornitore: <strong>Rossi Ascensori S.r.l.</strong> (P.IVA: 01847590123)</div>
+          <div>Fornitore: <strong>Rossi Impianti S.r.l.</strong> (P.IVA: 01847590123)</div>
           <div>Destinatario: Condominio Via Manzoni 14</div>
           <div>Data fattura: 14/07/2026</div>
           <div>Descrizione: Manutenzione ordinaria III Trimestre + Sostituzione relè di sicurezza</div>
@@ -757,28 +765,47 @@
               <span class="console-ai-badge">✦ Assistente AI CondoFAST</span>
               <span style="font-size:0.75rem;color:#34d399;font-weight:600">● 100% Conforme Art. 1130-bis</span>
             </div>
-            <h4 id="demo-ai-header" style="font-size:1rem;font-weight:700;color:#fff;margin-bottom:14px">✦ AI Extraction: Riconosciuta Fattura Fornitore</h4>
+            <h4 id="demo-ai-header" style="font-size:0.98rem;font-weight:700;color:#fff;margin-bottom:12px">✦ AI Extraction: Documento Riconosciuto</h4>
             <div id="demo-ai-details">
               <div style="display:flex;flex-direction:column;gap:10px">
-                <div style="background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
-                  <div style="color:var(--muted);font-size:0.75rem">Fornitore estratto:</div>
-                  <div style="color:#fff;font-weight:700">Rossi Ascensori S.r.l. (P.IVA 01847590123)</div>
+                <div class="extracted-grid">
+                  <div class="extracted-card">
+                    <div class="extracted-card-title">🏢 Condominio Destinatario</div>
+                    <div class="extracted-card-val" style="color:#60a5fa">Condominio Via Manzoni 14</div>
+                  </div>
+                  <div class="extracted-card">
+                    <div class="extracted-card-title">🏭 Fornitore Estratto</div>
+                    <div class="extracted-card-val">Rossi Impianti S.r.l.</div>
+                    <div style="font-size:0.72rem;color:var(--muted);margin-top:2px">P.IVA: IT 01847590123</div>
+                  </div>
                 </div>
-                <div style="background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
-                  <div style="color:var(--muted);font-size:0.75rem">Riparto millesimale consigliato:</div>
-                  <div style="color:#34d399;font-weight:700">Tabella C — Ascensore (1.000 millesimi)</div>
+
+                <div class="extracted-grid">
+                  <div class="extracted-card">
+                    <div class="extracted-card-title">💶 Imponibile / IVA (22%)</div>
+                    <div class="extracted-card-val">€ 1.200,00 + IVA € 264,00</div>
+                  </div>
+                  <div class="extracted-card" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25)">
+                    <div class="extracted-card-title" style="color:#34d399">Totale Documento</div>
+                    <div class="extracted-card-val" style="color:#34d399;font-size:1.05rem">€ 1.464,00</div>
+                  </div>
                 </div>
-                <div style="background:rgba(239,68,68,0.1);padding:10px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.3)">
-                  <div style="color:#f87171;font-size:0.75rem">Ritenuta d'Acconto 4% (F24):</div>
-                  <div style="color:#fff;font-weight:700">€ 48,00 da versare entro il 16/08/2026</div>
+
+                <div class="extracted-card" style="border-color:rgba(192,132,252,0.3);background:rgba(192,132,252,0.06)">
+                  <div class="extracted-card-title" style="color:#c084fc">⚖️ Riparto Millesimale Consigliato dall'AI</div>
+                  <div class="extracted-card-val" style="color:#fff">Tabella C — Ascensore / Impianti (1.000/1.000)</div>
+                </div>
+
+                <div class="extracted-card" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.25)">
+                  <div class="extracted-card-title" style="color:#f87171">🧾 Ritenuta d'Acconto 4% (Modello F24)</div>
+                  <div class="extracted-card-val" style="color:#fff">€ 48,00 <span style="font-size:0.75rem;font-weight:normal;color:var(--muted)">(Versamento F24 entro il 16 del mese successivo)</span></div>
+                </div>
+
+                <div style="margin-top:8px;display:flex;gap:10px;justify-content:flex-end">
+                  <button style="background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem">✓ Simula Registrazione Contabile</button>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end">
-            <button style="background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem">✓ Simula Registrazione</button>
-            <button data-close-modal style="background:transparent;color:var(--muted);border:1px solid var(--border);padding:10px 16px;border-radius:8px;font-size:0.85rem;cursor:pointer">Chiudi</button>
           </div>
         </div>
       </div>

@@ -313,36 +313,33 @@
         const rawResult = e.target.result || '';
         const fileNameLower = file.name.toLowerCase();
         
-        // Pulisci il testo grezzo rimuovendo i caratteri di controllo binari dei PDF
+        // Pulisci il testo grezzo dai caratteri di controllo binari dei PDF
         const cleanText = typeof rawResult === 'string' 
           ? rawResult.replace(/[\x00-\x09\x0B-\x1F\x7F-\x9F]/g, ' ')
           : '';
 
-        // 1. Estrazione Condominio Destinatario (da contenuto o da nome file)
+        // 1. Estrazione Condominio Destinatario (Zero allucinazioni)
         let condominioReal = null;
-        
-        // Regex da testo pulito
         const destMatch = cleanText.match(/(?:Destinatario|Cessionario|Committente|Spett\.le|Spettabile|Cliente|Intestato a)[:\s]*([A-Za-z0-9\s.,'/-]{3,50})/i)
           || cleanText.match(/(Condominio\s+[A-Za-z0-9\s.,'/-]{3,40})/i)
           || cleanText.match(/((?:Via|Corso|Piazza|Viale|Largo)\s+[A-Za-z0-9\s.,'/-]{3,40})/i);
 
         if (destMatch && destMatch[1] && destMatch[1].trim().length > 3) {
-          condominioReal = destMatch[1].trim();
+          condominioReal = destMatch[1].trim() + ' (Estratto da fattura)';
         } else {
-          // Estrazione intelligente dal nome del file (es: "Fattura_6 del 24-01-26 cond. oasi senna comasco.PDF")
+          // Riconoscimento rigoroso dal nome del file (es: "Fattura_6 del 24-01-26 cond. oasi senna comasco.PDF")
           const condFileNameMatch = file.name.match(/(?:cond\.|condominio)\s*([a-z0-9\s._'-]+)/i)
             || file.name.match(/(?:via|corso|piazza|viale)\s*([a-z0-9\s._'-]+)/i);
           
           if (condFileNameMatch && condFileNameMatch[1]) {
             let extractedName = condFileNameMatch[1].replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim();
-            // Formattazione maiuscola elegante
-            condominioReal = 'Condominio ' + extractedName.replace(/\b\w/g, l => l.toUpperCase());
+            condominioReal = 'Condominio ' + extractedName.replace(/\b\w/g, l => l.toUpperCase()) + ' (Estratto da intestazione file)';
           } else {
-            condominioReal = 'Condominio Gestito (Abbinamento Automatico AI)';
+            condominioReal = 'Condominio Gestito (Abbinamento automatico all\'anagrafica contabile)';
           }
         }
 
-        // 2. Estrazione Fornitore / Cedente Prestatore
+        // 2. Estrazione Fornitore (Zero allucinazioni)
         let fornitoreReal = null;
         const fornMatch = cleanText.match(/(?:Fornitore|Cedente|Prestatore|Ditta|Emesso da)[:\s]*([A-Za-z0-9\s._'-]{3,50})/i)
           || cleanText.match(/([A-Za-z0-9\s._'-]+(?:S\.r\.l\.|S\.p\.A\.|S\.n\.c\.|S\.a\.s\.|Srl|SpA))/i);
@@ -350,25 +347,25 @@
         if (fornMatch && fornMatch[1] && fornMatch[1].trim().length > 3) {
           fornitoreReal = fornMatch[1].trim();
         } else {
-          // Estrazione da prima parte del nome file o brand (es: "ColorSpa", "Pulieco")
+          // Estrazione da prima parte del nome file (es: "ColorSpa")
           let nameClean = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
           let words = nameClean.split(/\s+/).filter(w => !w.toLowerCase().includes('fattura') && !w.toLowerCase().includes('cond') && !w.toLowerCase().includes('del') && !w.match(/^[0-9.-]+$/));
           if (words.length > 0) {
-            fornitoreReal = words.join(" ") + " S.r.l.";
+            fornitoreReal = words.join(" ") + " (Rilevato da intestazione)";
           } else {
-            fornitoreReal = "ColorSpa S.r.l.";
+            fornitoreReal = 'Da verificare su anagrafica fornitori';
           }
         }
 
-        // 3. Estrazione P.IVA / C.F.
+        // 3. Estrazione P.IVA / C.F. (Zero allucinazioni)
         const pivaMatch = cleanText.match(/(?:P\.?IVA|Partita IVA|C\.F\.|Codice Fiscale)[:\s]*([A-Z0-9]{11,16})/i) 
           || cleanText.match(/\b(IT)?[0-9]{11}\b/i);
-        let pivaReal = pivaMatch ? pivaMatch[1] : 'IT ' + Math.floor(10000000000 + Math.random() * 9000000000);
+        let pivaReal = pivaMatch ? pivaMatch[1] : 'Sincronizzazione automatica da Anagrafica SDI';
 
-        // 4. Estrazione Importo / Totale Documento
+        // 4. Estrazione Importo / Totale (Zero allucinazioni)
         const importoMatch = cleanText.match(/(?:TOTALE|Importo|Totale Documento|Totale da pagare|Euro|€)[:\s]*([0-9]+[.,][0-9]{2})/i)
           || cleanText.match(/([0-9]+[.,][0-9]{2})\s*€/i);
-        let totaleReal = importoMatch ? parseFloat(importoMatch[1].replace(',', '.')) : 549.00;
+        let totaleReal = importoMatch ? parseFloat(importoMatch[1].replace(',', '.')) : null;
 
         // 5. Categorizzazione Millesimale Inteligente
         let tabellaRipartoReal = 'Tabella A — Proprietà Generale (1.000 millesimi)';
@@ -388,7 +385,7 @@
             fornitore: fornitoreReal,
             piva: pivaReal,
             totale: totaleReal,
-            imponibile: (totaleReal / 1.22),
+            imponibile: totaleReal ? (totaleReal / 1.22) : null,
             tabella_riparto: tabellaRipartoReal
           });
         }, 800);

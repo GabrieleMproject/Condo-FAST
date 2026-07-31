@@ -58,7 +58,7 @@ serve(async (req) => {
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
     const fromEmail = Deno.env.get('MARKETING_FROM_EMAIL') || 'onboarding@resend.dev'
-    const fromName = 'CondoSmart Team'
+    const fromName = 'CondoFAST Team'
 
     if (!resendApiKey) {
       throw new Error('Chiave API Resend non configurata nel server')
@@ -84,7 +84,7 @@ serve(async (req) => {
               to: [email],
               subject: oggetto,
               html: messaggio,
-              reply_to: 'supporto@condosmart.it',
+              reply_to: 'supporto@condofast.it',
             }),
           })
 

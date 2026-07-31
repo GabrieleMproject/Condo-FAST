@@ -655,7 +655,7 @@ export default function SpeseGlobalPage() {
                   Trascina qui le fatture
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  Carica manualmente o inoltra alla tua email CondoSmart
+                  Carica manualmente o inoltra alla tua email CondoFAST
                 </div>
               </>
             )}

@@ -111,6 +111,8 @@ serve(async (req) => {
             // Fix H3: Validazione redirectUrl contro whitelist domini autorizzati
             const allowedRedirectDomains = [
               'localhost',
+              'condofast.it',
+              'www.condofast.it',
               'condosmart.it',
               'www.condosmart.it'
             ]

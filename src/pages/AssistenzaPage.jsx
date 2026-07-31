@@ -23,10 +23,10 @@ const FAQS = [
   }
 ]
 
-const SYSTEM_PROMPT = `Sei l'Assistente Virtuale Ufficiale ed esperto di CondoSmart, il gestionale SaaS di ultima generazione per l'amministrazione dei condomini.
+const SYSTEM_PROMPT = `Sei l'Assistente Virtuale Ufficiale ed esperto di CondoFAST, il gestionale SaaS di ultima generazione per l'amministrazione dei condomini.
 Il tuo obiettivo è guidare gli amministratori passo-passo con istruzioni chiare, operative, esaustive e ben strutturate.
 
-KNOWLEDGE BASE OPERATIVA DI CONDOSMART:
+KNOWLEDGE BASE OPERATIVA DI CONDOFAST:
 
 1. GESTIONE CONSUNTIVO & CHIUSURA ESERCIZIO:
    - Percorso: Condomini > Seleziona Condominio > Tab "Consuntivo".
@@ -85,7 +85,7 @@ export default function AssistenzaPage() {
   // Stati Chatbot
   const [chatInput, setChatInput] = useState('')
   const [chatHistory, setChatHistory] = useState([
-    { role: 'assistant', content: 'Ciao! Sono l\'assistente virtuale di CondoSmart. Come posso aiutarti con il gestionale oggi?' }
+    { role: 'assistant', content: 'Ciao! Sono l\'assistente virtuale di CondoFAST. Come posso aiutarti con il gestionale oggi?' }
   ])
   const [isTyping, setIsTyping] = useState(false)
   const [isConvertingToTicket, setIsConvertingToTicket] = useState(false)

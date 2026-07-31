@@ -33,7 +33,7 @@ export default function GuidaRapidaModal({ isOpen, onClose }) {
         'L\'IA compila in automatico: Fornitore, Importo Totale, Data Spesa e Ritenuta d\'Acconto (se presente).',
         'Seleziona la tabella millesimale (es. Proprietà generale o Ascensore) per ripartire la spesa in quota per ciascuna unità.'
       ],
-      tip: 'Se una fattura contiene la ritenuta del 4% (F24), CondoSmart calcola automaticamente il netto a pagare e registra la scadenza F24 per il 16 del mese successivo.'
+      tip: 'Se una fattura contiene la ritenuta del 4% (F24), CondoFAST calcola automaticamente il netto a pagare e registra la scadenza F24 per il 16 del mese successivo.'
     },
     {
       id: 'banca',

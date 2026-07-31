@@ -658,7 +658,7 @@ export default function ModuloFiscalePage() {
                         Esegui il controllo
                       </h3>
                       <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 16, lineHeight: '1.5' }}>
-                        Apri il Desktop Telematico, vai in <b>Applicazioni {'>'} Controlla file</b>. Seleziona i file `.txt` generati da CondoSmart al passaggio precedente. Assicurati che non ci siano errori bloccanti.
+                        Apri il Desktop Telematico, vai in <b>Applicazioni {'>'} Controlla file</b>. Seleziona i file `.txt` generati da CondoFAST al passaggio precedente. Assicurati che non ci siano errori bloccanti.
                       </p>
                       <div style={{ background: '#10b98115', border: '1px dashed #10b98150', padding: 12, borderRadius: 8, color: '#10b981', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <ShieldCheck size={18} /> L'esito deve essere "Elaborato senza errori".

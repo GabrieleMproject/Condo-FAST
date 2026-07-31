@@ -773,7 +773,7 @@ export default function MillesimiEditor({ condominioId: propId }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'Modello_Standard_Millesimi_CondoSmart.csv');
+    link.setAttribute('download', 'Modello_Standard_Millesimi_CondoFAST.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

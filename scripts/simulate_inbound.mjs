@@ -26,7 +26,7 @@ async function runSimulation() {
 
   const admin = profiles[0]
   console.log(`Amministratore target: ${admin.studio_nome || 'Senza Nome'} (ID: ${admin.id})`)
-  console.log(`Prefisso email attivo: ${admin.inbound_email_prefix}@inbox.condosmart.it`)
+  console.log(`Prefisso email attivo: ${admin.inbound_email_prefix}@inbox.condofast.it`)
 
   // 2. Recupera il primo condominio associato all'amministratore
   const { data: condomini, error: cErr } = await supabase

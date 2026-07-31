@@ -17,7 +17,7 @@ export function applyWatermark(doc, enabled) {
     
     // Scritta in diagonale al centro della pagina
     doc.text(
-      'CondoSmart - Versione Gratuita',
+      'CondoFAST - Versione Gratuita',
       pageWidth / 2,
       pageHeight / 2,
       {

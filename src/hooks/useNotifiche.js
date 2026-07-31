@@ -1,5 +1,5 @@
 // src/hooks/useNotifiche.js
-// Hook React per il sistema di promemoria temporali di CondoSmart.
+// Hook React per il sistema di promemoria temporali di CondoFAST.
 // Carica i dati necessari dal DB, li passa al motore di calcolo,
 // e gestisce lo stato "letto" tramite localStorage.
 

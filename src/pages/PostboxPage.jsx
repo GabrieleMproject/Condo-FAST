@@ -433,7 +433,7 @@ function GuidaPostboxModal({ isOpen, onClose, postboxEmail }) {
                 </h4>
                 <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                   <li>Apri Outlook web o l'app desktop e vai in <strong>Impostazioni → Posta → Regole</strong>.</li>
-                  <li>Aggiungi una nuova regola nominata ad es. <em>"Inoltro CondoSmart Postbox"</em>.</li>
+                  <li>Aggiungi una nuova regola nominata ad es. <em>"Inoltro CondoFAST Postbox"</em>.</li>
                   <li>Aggiungi la condizione: <em>"Ha un allegato"</em> oppure <em>"Oggetto o corpo include: fattura"</em>.</li>
                   <li>Imposta l'azione: <em>"Inoltra a"</em> e specifica <code style={{ color: '#a78bfa' }}>{postboxEmail}</code>.</li>
                 </ol>
@@ -556,7 +556,7 @@ function EditPrefixModal({ isOpen, onClose, currentPrefix, onSave }) {
                 required
               />
               <span style={{ padding: '10px 12px', background: 'var(--border-color)', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, borderLeft: '1px solid var(--border-color)' }}>
-                @inbox.condosmart.it
+                @inbox.condofast.it
               </span>
             </div>
           </div>
@@ -564,7 +564,7 @@ function EditPrefixModal({ isOpen, onClose, currentPrefix, onSave }) {
           <div style={{ background: 'rgba(124, 58, 237, 0.08)', border: '1px solid rgba(124, 58, 237, 0.2)', borderRadius: 8, padding: 12 }}>
             <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, marginBottom: 2 }}>ANTEPRIMA INDIRIZZO COMPLETO:</div>
             <code style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 700 }}>
-              {prefixInput.trim() ? prefixInput.trim().toLowerCase() : 'tuoprefisso'}@inbox.condosmart.it
+              {prefixInput.trim() ? prefixInput.trim().toLowerCase() : 'tuoprefisso'}@inbox.condofast.it
             </code>
           </div>
 
@@ -639,7 +639,7 @@ export default function PostboxPage() {
   const [showEditPrefixModal, setShowEditPrefixModal] = useState(false)
 
   const postboxPrefix = profile?.inbound_email_prefix || (user?.id ? user.id.substring(0, 8) : 'studio')
-  const postboxEmail = `${postboxPrefix}@inbox.condosmart.it`
+  const postboxEmail = `${postboxPrefix}@inbox.condofast.it`
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(postboxEmail)

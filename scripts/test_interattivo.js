@@ -114,17 +114,30 @@ async function main() {
   // ─── 1. Login/Registrazione incrementale ───
   const currentPath = await page.evaluate(() => window.location.pathname);
   if (currentPath.includes('/login') || currentPath.includes('/register') || !condoId) {
-    console.log('🔑 Utente non autenticato o nessun condominio rilevato. Avvio del flusso di login/registrazione...');
     
-    if (!page.url().includes('/register')) {
-      await page.goto(`${BASE_URL}/register`, { waitUntil: 'networkidle2' });
-      await sleep(1500);
+   // Controlliamo prima se l'utente è già su CondoFAST in qualche scheda
+  const pages = await browser.pages();
+  for (const p of pages) {
+    const url = p.url();
+    if (url.includes('localhost:5173') || url.includes('condofast.it')) {
+      page = p;
+      break;
     }
+  }
 
-    // Registrazione Amministratore fittizio
-    console.log('📝 Compilazione form di registrazione con dati fittizi...');
+  if (!page) {
+    page = await browser.newPage();
+    await page.goto(BASE_URL, { waitUntil: 'networkidle2' });
+  }
+
+  console.log('🔗 Connesso alla pagina!');
+
+  // 3. Verifichiamo se siamo già loggati o dobbiamo registrarci/loggarci
+  const isLoginPage = await page.$('input[type="email"]');
+  if (isLoginPage) {
+    console.log('🔑 Pagina di login/registrazione rilevata.');
     const rand = Math.floor(Math.random() * 10000);
-    const emailTest = `gabriele.test.${rand}@condosmart.it`;
+    const emailTest = `gabriele.test.${rand}@condofast.it`;
     const passwordTest = 'Password123!';
 
     await typeSlowly(page, 'input[name="nome"]', 'Gabriele E2E');

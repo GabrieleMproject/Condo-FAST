@@ -926,7 +926,7 @@ export default function SinistriTab({ condominioId }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>{spesa.descrizione}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                        Data: {formattaData(spesa.data_spesa)} · Categoria: {spesa.criterio || 'altro'}
+                        Data: {formattaData(spesa.data_spesa)} · Categoria: {spesa.categoria || 'altro'}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -973,7 +973,7 @@ export default function SinistriTab({ condominioId }) {
             <h4 style={{ margin: '0 0 12px', color: 'var(--text-primary)' }}>Elimina Documento</h4>
             <p style={{ color: 'var(--text-muted)', margin: '0 0 20px', fontSize: 13, lineHeight: 1.5 }}>
               Sei sicuro di voler eliminare "<strong style={{ color: 'var(--text-primary)' }}>{confirmDeleteDoc.nome}</strong>"?
-              Il file verrà rimosso definitivamente dallo storage di CondoSmart.
+              Il file verrà rimosso definitivamente dallo storage di CondoFAST.
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setConfirmDeleteDoc(null)} style={S.btnSecondary}>Annulla</button>

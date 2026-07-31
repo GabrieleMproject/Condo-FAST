@@ -1,5 +1,5 @@
 /**
- * Gestore universale di log e monitoraggio eccezioni per CondoSmart.
+ * Gestore universale di log e monitoraggio eccezioni per CondoFAST.
  * Minimizza l'esposizione di dati sensibili nei log (GDPR compliant).
  */
 

@@ -31,7 +31,7 @@ function disegnaIntestazione(doc, condominio, esercizio, titoloDoc) {
   doc.setDrawColor(...BLU); doc.setLineWidth(0.5); doc.line(10, 42, W - 10, 42);
 
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...BLU);
-  doc.text('CONDOSMART', 12, 12);
+  doc.text('CONDOFAST', 12, 12);
   doc.setFontSize(15); doc.setTextColor(...DARK);
   doc.text(condominio?.nome || 'Condominio', 12, 23);
   
@@ -64,7 +64,7 @@ function aggiungiFooter(doc) {
     // Footer chiaro: disegnamo una linea sottile grigia orizzontale anziché un rettangolo pieno.
     doc.setDrawColor(...LINEA_BORDO); doc.setLineWidth(0.3); doc.line(10, H - 12, W - 10, H - 12);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
-    doc.text('CondoSmart — Gestionale Condominiale', 10, H - 5);
+    doc.text('CondoFAST — Gestionale Condominiale', 10, H - 5);
     doc.text(`Pagina ${i} di ${pageCount}`, W - 10, H - 5, { align: 'right' });
   }
 }
@@ -126,7 +126,7 @@ export async function exportRipartizionePdf({ condominio, esercizio, spese, unit
 
   aggiungiFooter(doc);
   applyWatermark(doc, withWatermark);
-  doc.save(`CondoSmart_Ripartizione_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
+  doc.save(`CondoFAST_Ripartizione_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
 }
 
 // ─── Export Rate (modello rate_unita) ─────────────────────────────────
@@ -170,7 +170,7 @@ export async function exportRatePdf({ condominio, esercizio, rate, cells, unita,
 
   aggiungiFooter(doc);
   applyWatermark(doc, withWatermark);
-  doc.save(`CondoSmart_Rate_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
+  doc.save(`CondoFAST_Rate_${condominio?.nome?.replace(/\s+/g, '_') || ''}_${esercizio?.anno || ''}.pdf`);
 }
 
 // ─── Export Anagrafica ─────────────────────────────────────────────────
@@ -398,7 +398,7 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
   doc.setDrawColor(...BLU); doc.setLineWidth(0.5); doc.line(10, 36, W - 10, 36);
 
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...BLU);
-  doc.text('CONDOSMART', 12, 10);
+  doc.text('CONDOFAST', 12, 10);
   doc.setFontSize(14); doc.setTextColor(...DARK);
   doc.text(condominio?.nome || 'Condominio', 12, 19);
   
@@ -478,7 +478,7 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
     doc.setDrawColor(...LINEA_BORDO); doc.setLineWidth(0.3); doc.line(10, H - 12, W - 10, H - 12);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
     doc.text(`Pagina ${i} di ${pageCount}`, W - 12, H - 5, { align: 'right' });
-    doc.text('Generato automaticamente da CondoSmart', 12, H - 5);
+    doc.text('Generato automaticamente da CondoFAST', 12, H - 5);
   }
 
   doc.save(`Registro_Anagrafe_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
@@ -493,7 +493,7 @@ export function exportModuloAutocertificazionePdf({ condominio, unita, occupante
   doc.setDrawColor(...BLU); doc.setLineWidth(0.5); doc.line(10, 36, W - 10, 36);
 
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...BLU);
-  doc.text('CONDOSMART', 12, 12);
+  doc.text('CONDOFAST', 12, 12);
   
   // Dati dell'amministratore / studio
   const studioNome = profilo?.ragione_sociale || profilo?.studio_nome || 'Studio Amministrazione';

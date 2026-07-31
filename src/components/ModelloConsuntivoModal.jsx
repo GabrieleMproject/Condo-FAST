@@ -73,7 +73,7 @@ export default function ModelloConsuntivoModal({ isOpen, onClose, fileNome, stru
               </li>
               <li style={st.featureItem}>
                 <CheckCircle2 size={14} color="#10b981" />
-                <span>Design pulito in stile CondoSmart</span>
+                <span>Design pulito in stile CondoFAST</span>
               </li>
             </ul>
 
@@ -86,7 +86,7 @@ export default function ModelloConsuntivoModal({ isOpen, onClose, fileNome, stru
             </button>
           </div>
 
-          {/* Card 2: Modello CondoSmart */}
+          {/* Card 2: Modello CondoFAST */}
           <div style={{ ...st.card, ...st.cardRecommended }}>
             <div style={st.recBadge}>
               <ShieldCheck size={13} /> RACCOMANDATO
@@ -97,7 +97,7 @@ export default function ModelloConsuntivoModal({ isOpen, onClose, fileNome, stru
                 <Sparkles size={18} color="#3b82f6" />
                 <span style={st.cardBadgeBlue}>Standard Art. 1130-bis c.c.</span>
               </div>
-              <h4 style={st.cardTitle}>Modello CondoSmart</h4>
+              <h4 style={st.cardTitle}>Modello CondoFAST</h4>
             </div>
 
             <p style={st.cardDesc}>
@@ -106,7 +106,7 @@ export default function ModelloConsuntivoModal({ isOpen, onClose, fileNome, stru
 
             <div style={st.aiBox}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#60a5fa', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                <LayoutList size={13} /> Suggerimento CondoSmart AI:
+                <LayoutList size={13} /> Suggerimento CondoFAST AI:
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
                 {motivazione}
@@ -133,7 +133,7 @@ export default function ModelloConsuntivoModal({ isOpen, onClose, fileNome, stru
               onClick={() => onConfirm('condosmart', dati)}
               disabled={loading}
             >
-              {loading ? 'Applicazione...' : 'Applica Modello CondoSmart'}
+              {loading ? 'Applicazione...' : 'Applica Modello CondoFAST'}
               <ArrowRight size={14} />
             </button>
           </div>

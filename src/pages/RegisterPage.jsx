@@ -92,7 +92,7 @@ export default function RegisterPage() {
         <div className="auth-form-wrapper" style={{ maxWidth: 460 }}>
           <div className="form-header">
             <h2>Crea il tuo account</h2>
-            <p>Prova CondoSmart gratis e semplifica il tuo studio</p>
+            <p>Prova CondoFAST gratis e semplifica il tuo studio</p>
           </div>
 
           {error && (
@@ -256,7 +256,7 @@ export default function RegisterPage() {
                   <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
                     Privacy Policy
                   </a>
-                  {' '}di CondoSmart.
+                  {' '}di CondoFAST.
                 </span>
               </label>
             </div>

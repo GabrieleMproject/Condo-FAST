@@ -146,7 +146,7 @@ export function useConsuntivo(condominioId, esercizioId) {
       }
 
       // 10) template attivo dell'amministratore titolare
-      let tmpl = { ...DEFAULT_TEMPLATE, tipo_modello: 'condosmart', nome: 'Modello Standard CondoSmart' }
+      let tmpl = { ...DEFAULT_TEMPLATE, tipo_modello: 'condosmart', nome: 'Modello Standard CondoFAST' }
       if (titolareId) {
         const { data: ct } = await supabase
           .from('consuntivo_template')
@@ -161,7 +161,7 @@ export function useConsuntivo(condominioId, esercizioId) {
             tmpl = {
               ...DEFAULT_TEMPLATE,
               id: ct.id,
-              nome: 'Modello Standard CondoSmart',
+              nome: 'Modello Standard CondoFAST',
               tipo_modello: 'condosmart',
               file_origine: ct.nome || null,
             }

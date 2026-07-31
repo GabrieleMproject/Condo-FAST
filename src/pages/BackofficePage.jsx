@@ -284,7 +284,7 @@ export default function BackofficePage() {
       // 2. Genera articolo Knowledge Base con l'AI se richiesto
       if (generaKB) {
         try {
-          const promptSintesi = `Analizza questo ticket di assistenza di CondoSmart e la relativa risoluzione.
+          const promptSintesi = `Analizza questo ticket di assistenza di CondoFAST e la relativa risoluzione.
 Genera un articolo per la nostra Knowledge Base in formato JSON con le seguenti chiavi:
 - "argomento": il tema principale (max 4 parole, es. "Importazione anagrafica Excel" o "Calcolo ripartizione millesimale")
 - "domanda_sintesi": la domanda riassuntiva che un utente potrebbe fare per riscontrare questo problema (max 15 parole, es. "Come posso importare i condòmini da un file Excel?")
@@ -348,7 +348,7 @@ Rispondi esplicitamente in formato JSON valido.`
     setGenerandoKbDaChatId(chatLog.id)
     const loadToast = toast.loading("Analisi trascrizione chat ed estrazione articolo KB...")
     try {
-      const prompt = `Analizza la seguente trascrizione di una conversazione tra un amministratore di condominio e l'assistente virtuale AI di CondoSmart.
+      const prompt = `Analizza la seguente trascrizione di una conversazione tra un amministratore di condominio e l'assistente virtuale AI di CondoFAST.
 Estrai i punti chiave e crea un articolo per la Knowledge Base in formato JSON con le chiavi:
 - "argomento": (max 4 parole)
 - "domanda_sintesi": la domanda tipo che sintetizza il dubbio dell'utente (max 15 parole)
@@ -810,9 +810,9 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
     setGenerandoTestoAI(true)
     const loadToast = toast.loading("L'AI sta redigendo il testo promozionale...")
     try {
-      const prompt = `Sei l'AI Copywriter di CondoSmart, un software SaaS premium per amministratori di condominio in Italia.
+      const prompt = `Sei l'AI Copywriter di CondoFAST, un software SaaS premium per amministratori di condominio in Italia.
 Scrivi una email promozionale/newsletter accattivante basandoti su questo spunto: "${spunto}".
-Usa uno stile professionale ma persuasivo. Spiega i benefici di CondoSmart (risparmio di tempo, automazione AI di fatture e anagrafiche, collaboratori illimitati).
+Usa uno stile professionale ma persuasivo. Spiega i benefici di CondoFAST (risparmio di tempo, automazione AI di fatture e anagrafiche, collaboratori illimitati).
 Struttura la risposta in formato JSON con le seguenti chiavi:
 - "oggetto": l'oggetto accattivante della mail
 - "corpo": il testo dell'email formattato in HTML pulito e moderno (usa tag <p>, <ul>, <li>, <strong>, e se vuoi dei bottoni usa link stilizzati con colori adatti, ma NON includere layout <html> o <body> completi, solo il contenuto interno).
@@ -1757,7 +1757,7 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                           type="text"
                           value={marketingForm.oggetto}
                           onChange={e => setMarketingForm(prev => ({ ...prev, oggetto: e.target.value }))}
-                          placeholder="es. Offerta Fondatori: 3 mesi gratis su CondoSmart!"
+                          placeholder="es. Offerta Fondatori: 3 mesi gratis su CondoFAST!"
                           style={styles.input}
                           required
                         />

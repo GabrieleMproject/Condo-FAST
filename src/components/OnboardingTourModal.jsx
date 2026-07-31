@@ -8,7 +8,7 @@ export default function OnboardingTourModal({ isOpen, onClose }) {
 
   const tourSteps = [
     {
-      title: 'Benvenuto in CondoSmart!',
+      title: 'Benvenuto in CondoFAST!',
       subtitle: 'Il gestionale condominiale potenziato dall\'Intelligenza Artificiale.',
       desc: 'In questo breve tour di 60 secondi ti mostreremo dove trovare i comandi principali per semplificare e velocizzare la gestione del tuo studio.',
       badge: 'PROVA GRATUITA',
@@ -124,7 +124,7 @@ export default function OnboardingTourModal({ isOpen, onClose }) {
           <button onClick={handleNext} style={styles.btnPrimary}>
             {isLast ? (
               <>
-                <span>Inizia a Usare CondoSmart</span>
+                <span>Inizia a Usare CondoFAST</span>
                 <CheckCircle size={16} style={{ marginLeft: 6 }} />
               </>
             ) : (

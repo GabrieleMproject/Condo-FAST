@@ -512,7 +512,7 @@ L'Amministratore`;
             await inviaComunicazione({
               condominioId,
               destinatari: [{ 
-                email: dest.email || 'cartaceo@condosmart.local',
+                email: dest.email || 'cartaceo@condofast.local',
                 nome: nomeDest,
                 indirizzo: dest.indirizzo || '',
                 citta: dest.citta || '',
@@ -542,7 +542,7 @@ L'Amministratore`;
             await supabase.from('comunicazioni').insert({
               condominio_id: condominioId,
               amministratore_id: userData?.user?.id,
-              destinatario_email: dest.email || 'cartaceo@condosmart.local',
+              destinatario_email: dest.email || 'cartaceo@condofast.local',
               destinatario_nome: nomeDest,
               oggetto: oggettoRisolto,
               messaggio: testoRisolto,

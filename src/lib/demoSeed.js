@@ -79,10 +79,10 @@ export async function generaCondominioDemo(userId) {
 
   // 6. Persone e Occupanti
   const personePayload = [
-    { nome: 'Alessandro', cognome: 'Rossi', email: 'alessandro.rossi.demo@condosmart.it', telefono: '3351234567', user_id: userId },
-    { nome: 'Elena', cognome: 'Moretti', email: 'elena.moretti.demo@condosmart.it', telefono: '3389876543', user_id: userId },
-    { nome: 'Roberto', cognome: 'Galli', email: 'roberto.galli.demo@condosmart.it', telefono: '3471122334', user_id: userId },
-    { nome: 'Chiara', cognome: 'Conti', email: 'chiara.conti.demo@condosmart.it', telefono: '3495566778', user_id: userId }
+    { nome: 'Alessandro', cognome: 'Rossi', email: 'alessandro.rossi.demo@condofast.it', telefono: '3351234567', user_id: userId },
+    { nome: 'Elena', cognome: 'Moretti', email: 'elena.moretti.demo@condofast.it', telefono: '3389876543', user_id: userId },
+    { nome: 'Roberto', cognome: 'Galli', email: 'roberto.galli.demo@condofast.it', telefono: '3471122334', user_id: userId },
+    { nome: 'Chiara', cognome: 'Conti', email: 'chiara.conti.demo@condofast.it', telefono: '3495566778', user_id: userId }
   ]
 
   const { data: personeList, error: personeErr } = await supabase

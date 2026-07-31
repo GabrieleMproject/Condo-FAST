@@ -18,7 +18,7 @@ export function scaricaFatturaPdfDemo() {
   // Stile Intestazione Fornitore
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
-  doc.setTextColor(37, 99, 235) // Blu CondoSmart
+  doc.setTextColor(37, 99, 235) // Blu CondoFAST
   doc.text('LA BRILLANTE SRL', 14, 20)
 
   doc.setFont('helvetica', 'normal')
@@ -91,7 +91,7 @@ export function scaricaFatturaPdfDemo() {
   doc.setFont('helvetica', 'italic')
   doc.setFontSize(8)
   doc.setTextColor(148, 163, 184)
-  doc.text('Documento di prova generato automaticamente per la Masterclass Onboarding CondoSmart.', 14, 120)
+  doc.text('Documento di prova generato automaticamente per la Masterclass Onboarding CondoFAST.', 14, 120)
 
   // Trigger Download
   doc.save('Fattura_Di_Prova_Pulizie_LaBrillante.pdf')

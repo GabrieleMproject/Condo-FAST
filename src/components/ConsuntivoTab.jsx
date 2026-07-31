@@ -261,7 +261,7 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
               <FileText size={15} color="#60a5fa" />
             )}
             <span>
-              Modello attivo: <b>{template?.tipo_modello === 'condosmart' ? 'Modello Proposto da CondoSmart (Standard Art. 1130-bis c.c.)' : (template?.nome ? `Modello Identico (da ${template.nome})` : 'Standard CondoSmart')}</b> · presenta le sezioni ed etichette contabili selezionate.
+              Modello attivo: <b>{template?.tipo_modello === 'condosmart' ? 'Modello Proposto da CondoFAST (Standard Art. 1130-bis c.c.)' : (template?.nome ? `Modello Identico (da ${template.nome})` : 'Standard CondoFAST')}</b> · presenta le sezioni ed etichette contabili selezionate.
             </span>
           </div>
 

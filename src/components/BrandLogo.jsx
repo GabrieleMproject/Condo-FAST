@@ -214,7 +214,7 @@ export default function BrandLogo({
           }}
         >
           <span style={{ color: 'var(--logo-text-prefix)' }} className="text-prefix">Condo</span>
-          <span style={{ color: 'var(--logo-text-suffix)', marginLeft: '0.05em' }} className="text-suffix">Smart</span>
+          <span style={{ color: 'var(--logo-text-suffix)', marginLeft: '0.05em' }} className="text-suffix">FAST</span>
         </span>
       )}
     </div>

@@ -252,7 +252,7 @@ function footer(doc) {
   const n = doc.internal.getNumberOfPages()
   for (let i = 1; i <= n; i++) {
     doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(120, 120, 120)
-    doc.text('Generato con CondoSmart — documento di sintesi, ex art. 1130-bis c.c.', 14, H - 8)
+    doc.text('Generato con CondoFAST — documento di sintesi, ex art. 1130-bis c.c.', 14, H - 8)
     doc.text(`Pagina ${i} di ${n}`, W - 14, H - 8, { align: 'right' })
   }
 }

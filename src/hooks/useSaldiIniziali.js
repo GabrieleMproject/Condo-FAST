@@ -78,30 +78,60 @@ export function useSaldiIniziali(condominioId) {
 
   // ── Auto-riporto: saldo finale per unità dell'esercizio precedente ─────────
   // saldo_finale = saldo_iniziale(prec) + versato − dovuto
-  //   dovuto  = Σ rate_unita.importo        (piano)
+  //   dovuto  = Σ ripartizioni (consuntivo) se presenti, altrimenti Σ rate_unita.importo (preventivo)
   //   versato = Σ rate_unita.importo_pagato (incassato)
   // Segno coerente con la convenzione DB: >0 credito condòmino, <0 debito.
   const calcolaDaEsercizio = useCallback(async (esercizioPrecId) => {
-    const [{ data: rate, error: e1 }, { data: siPrec, error: e2 }] = await Promise.all([
+    const [{ data: rate, error: e1 }, { data: siPrec, error: e2 }, { data: spesePrec, error: e3 }] = await Promise.all([
       supabase.from('rate')
         .select('id, rate_unita(unita_id, importo, importo_pagato)')
         .eq('esercizio_id', esercizioPrecId),
       supabase.from('saldi_iniziali_unita')
         .select('unita_id, saldo')
         .eq('esercizio_id', esercizioPrecId),
+      supabase.from('spese')
+        .select('id, importo, ripartizioni(unita_id, importo, importo_override, override_manuale)')
+        .eq('esercizio_id', esercizioPrecId),
     ])
     if (e1) throw e1
     if (e2) throw e2
+    if (e3) throw e3
 
+    const impRip = (r) => (r.override_manuale ? (r.importo_override ?? r.importo) : r.importo)
     const acc = {} // unita_id → { dovuto, versato }
+
+    // 1. Versato da rate_unita (incassi effettivi)
     ;(rate || []).forEach(r => {
       ;(r.rate_unita || []).forEach(cell => {
         const a = acc[cell.unita_id] || { dovuto: 0, versato: 0 }
-        a.dovuto  += parseFloat(cell.importo || 0)
         a.versato += parseFloat(cell.importo_pagato || 0)
         acc[cell.unita_id] = a
       })
     })
+
+    // 2. Dovuto da ripartizioni consuntivo
+    let haRipartizioniConsuntivo = false
+    ;(spesePrec || []).forEach(s => {
+      ;(s.ripartizioni || []).forEach(r => {
+        if (!r.unita_id) return
+        haRipartizioniConsuntivo = true
+        const a = acc[r.unita_id] || { dovuto: 0, versato: 0 }
+        a.dovuto += parseFloat(impRip(r) || 0)
+        acc[r.unita_id] = a
+      })
+    })
+
+    // 3. Fallback a dovuto preventivo (rate_unita.importo) se non vi sono spese/ripartizioni a consuntivo
+    if (!haRipartizioniConsuntivo) {
+      ;(rate || []).forEach(r => {
+        ;(r.rate_unita || []).forEach(cell => {
+          const a = acc[cell.unita_id] || { dovuto: 0, versato: 0 }
+          a.dovuto += parseFloat(cell.importo || 0)
+          acc[cell.unita_id] = a
+        })
+      })
+    }
+
     const iniz = {}
     ;(siPrec || []).forEach(s => { iniz[s.unita_id] = parseFloat(s.saldo || 0) })
 

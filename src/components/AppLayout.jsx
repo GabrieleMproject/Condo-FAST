@@ -39,7 +39,8 @@ import {
   Sparkles,
   Search,
   Trash2,
-  ArrowRight
+  ArrowRight,
+  FileText
 } from 'lucide-react';
 
 
@@ -110,7 +111,7 @@ function AiBanner() {
     }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <Bot size={16} style={{ color: 'var(--accent, #2563eb)', flexShrink: 0 }} />
-        <span><strong style={{ color: 'var(--text-primary)' }}>CondoSmart utilizza intelligenza artificiale</strong> (Google Gemini) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689.</span>
+        <span><strong style={{ color: 'var(--text-primary)' }}>CondoFAST utilizza intelligenza artificiale</strong> (Google Gemini) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689.</span>
       </span>
       <button
         onClick={() => setDismissed(true)}
@@ -134,12 +135,14 @@ function HeaderSearchBar({ navigate }) {
     documenti: []
   });
 
+  const getSearchStorageKey = () => localStorage.getItem('condofast_search_history') ? 'condofast_search_history' : (localStorage.getItem('condosmart_search_history') ? 'condosmart_search_history' : 'condofast_search_history');
+
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('condosmart_search_history');
+      const saved = localStorage.getItem(getSearchStorageKey());
       if (saved) setHistory(JSON.parse(saved));
     } catch (e) {
       console.error(e);
@@ -177,7 +180,7 @@ function HeaderSearchBar({ navigate }) {
       const filtered = prev.filter((item) => item.term.toLowerCase() !== trimmed.toLowerCase());
       const updated = [{ id: Date.now(), term: trimmed, timestamp: new Date().toISOString() }, ...filtered].slice(0, 15);
       try {
-        localStorage.setItem('condosmart_search_history', JSON.stringify(updated));
+        localStorage.setItem(getSearchStorageKey(), JSON.stringify(updated));
       } catch (e) {
         console.error(e);
       }
@@ -186,6 +189,7 @@ function HeaderSearchBar({ navigate }) {
   };
 
   useEffect(() => {
+    let active = true;
     const term = query.trim();
     if (term.length < 2) {
       setResults({ condomini: [], persone: [], spese: [], documenti: [] });
@@ -204,20 +208,25 @@ function HeaderSearchBar({ navigate }) {
           supabase.from('documenti_condominio').select('id, nome, note, tipo, condominio_id, condomini(id, nome)').or(`nome.ilike.${pattern},note.ilike.${pattern}`).order('created_at', { ascending: false }).limit(3)
         ]);
 
-        setResults({
-          condomini: resC.data || [],
-          persone: resP.data || [],
-          spese: resS.data || [],
-          documenti: resD.data || []
-        });
+        if (active) {
+          setResults({
+            condomini: resC.data || [],
+            persone: resP.data || [],
+            spese: resS.data || [],
+            documenti: resD.data || []
+          });
+        }
       } catch (e) {
         console.error(e);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [query]);
 
   const handleSubmit = (e) => {
@@ -888,7 +897,7 @@ export default function AppLayout() {
               <Menu size={22} />
             </button>
             <div style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500 }}>
-              {NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.label ?? 'CondoSmart'}
+              {NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.label ?? 'CondoFAST'}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

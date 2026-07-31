@@ -153,7 +153,7 @@ export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSucc
                   Passo 1: Come vuoi ricevere i movimenti bancari?
                 </h3>
                 <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  CondoSmart supporta sia il collegamento diretto in sola lettura via Open Banking (PSD2) sia il caricamento periodico dei file Estratto Conto.
+                  CondoFAST supporta sia il collegamento diretto in sola lettura via Open Banking (PSD2) sia il caricamento periodico dei file Estratto Conto.
                 </p>
               </div>
 
@@ -341,7 +341,7 @@ export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSucc
                 <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: 12, padding: 16, display: 'flex', gap: 12 }}>
                   <ShieldCheck size={20} style={{ color: '#60a5fa', flexShrink: 0, marginTop: 2 }} />
                   <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    <strong style={{ color: 'var(--text-primary)' }}>Riconoscimento Fuzzy dei Nomi:</strong> CondoSmart confronta i nomi presenti nell'anagrafica del condominio con il campo ordinante del bonifico bancario (es: <em>"MARIO ROSSI"</em> viene associato all'unità A/1 anche in caso di formattazioni diverse o codici IBAN corrispondenti).
+                    <strong style={{ color: 'var(--text-primary)' }}>Riconoscimento Fuzzy dei Nomi:</strong> CondoFAST confronta i nomi presenti nell'anagrafica del condominio con il campo ordinante del bonifico bancario (es: <em>"MARIO ROSSI"</em> viene associato all'unità A/1 anche in caso di formattazioni diverse o codici IBAN corrispondenti).
                   </div>
                 </div>
               </div>
@@ -435,7 +435,7 @@ export default function WizardRiconciliazioneModal({ isOpen, onClose, onSaveSucc
         isOpen={showProPaywall}
         onClose={() => setShowProPaywall(false)}
         title="Sincronizzazione Automatica Open Banking (PSD2)"
-        description="Con la sincronizzazione automatica, CondoSmart si collega in sola lettura e in totale sicurezza alla banca del condominio (via GoCardless), scaricando ogni notte i movimenti. Zero file PDF da scaricare o caricare!"
+        description="Con la sincronizzazione automatica, CondoFAST si collega in sola lettura e in totale sicurezza alla banca del condominio (via GoCardless), scaricando ogni notte i movimenti. Zero file PDF da scaricare o caricare!"
         pianoRichiesto="professional"
         badgeText="ESCLUSIVO PROFESSIONAL"
         features={[

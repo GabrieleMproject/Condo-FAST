@@ -78,7 +78,7 @@ export default function OnboardingChecklist({
           </div>
           <div>
             <div style={styles.titleRow}>
-              <h3 style={styles.title}>Benvenuto in CondoSmart — Prova Gratuita</h3>
+              <h3 style={styles.title}>Benvenuto in CondoFAST — Prova Gratuita</h3>
               <span style={styles.percentBadge}>{progressPercent}% Completato</span>
             </div>
             <p style={styles.subtitle}>

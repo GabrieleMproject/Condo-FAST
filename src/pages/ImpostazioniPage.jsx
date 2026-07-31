@@ -614,7 +614,7 @@ export default function ImpostazioniPage() {
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>Porta un amico</h2>
           <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
-            Invita un collega ad iscriversi a CondoSmart. Ricevi uno sconto sulla tua prossima fatturazione per ogni amico abbonato.
+            Invita un collega ad iscriversi a CondoFAST. Ricevi uno sconto sulla tua prossima fatturazione per ogni amico abbonato.
           </p>
 
           <div style={styles.brandingCard}>
@@ -744,7 +744,7 @@ export default function ImpostazioniPage() {
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>Aspetto &amp; Tema</h2>
           <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
-            Personalizza l'interfaccia grafica di CondoSmart scegliendo tra il tema chiaro e il tema scuro.
+            Personalizza l'interfaccia grafica di CondoFAST scegliendo tra il tema chiaro e il tema scuro.
           </p>
 
           <div style={styles.brandingCard}>
@@ -949,7 +949,7 @@ export default function ImpostazioniPage() {
                   value={emailConfig.mail_invio_tipo}
                   onChange={e => setEmailConfig(c => ({ ...c, mail_invio_tipo: e.target.value }))}
                 >
-                  <option value="sistema">Sistema CondoSmart (Default, onboarding@resend.dev)</option>
+                  <option value="sistema">Sistema CondoFAST (Default, onboarding@resend.dev)</option>
                   <option value="smtp">SMTP Personalizzato (Consigliato per caselle proprie)</option>
                   <option value="resend_custom">Resend Personalizzato (Richiede API Key & Dominio proprio)</option>
                 </select>
@@ -1400,7 +1400,7 @@ export default function ImpostazioniPage() {
                 Un unico canone trasparente. Zero costi nascosti per il tuo studio.
               </h3>
               <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: '0 0 20px', lineHeight: 1.5, maxWidth: 850 }}>
-                A differenza dei gestionali tradizionali che applicano costi accessori a consumo per ogni condominio o per adempimento telematico, CondoSmart include tutti i moduli essenziali e la Fatturazione Elettronica SDI in un unico canone flat chiaro e prevedibile.
+                A differenza dei gestionali tradizionali che applicano costi accessori a consumo per ogni condominio o per adempimento telematico, CondoFAST include tutti i moduli essenziali e la Fatturazione Elettronica SDI in un unico canone flat chiaro e prevedibile.
               </p>
 
               {/* Griglia a 3 Pillole di Garanzia */}

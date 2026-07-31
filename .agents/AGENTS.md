@@ -1,4 +1,4 @@
-# Regole Progetto CondoSmart
+# Regole Progetto CondoFAST
 
 ## Lingua
 - **Comunicare sempre in italiano** con l'utente (Gabriele).
@@ -151,6 +151,17 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Tabella `occupanti_unita`**: non ha `tipo` né `data_inizio` (usa `ruolo` come testo, `attivo` come boolean, e `persona_id`).
 - **Tabella `millesimi_unita` e `rate`**: non hanno la colonna `created_at` o ne demandano la gestione interamente al database. Lo script `sql/seed_e2e_consuntivo.sql` è stato corretto per rimuovere questi campi ed è stato eseguito con successo per il collaudo E2E.
 - **Autenticazione**: l'UUID dell'amministratore per il seed è stato validato con successo contro `auth.users`.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S60 (31 Luglio 2026 - Rebranding Completo in CondoFAST)
+
+### 1. Rebranding in CondoFAST
+- **Rebranding Completo**: Modificato il nome del prodotto e dell'applicazione da "CondoSmart" a **"CondoFAST"** (con la parola **FAST** integralmente in maiuscolo) su tutto il sistema (UI, componenti React, esportazioni PDF, fogli Excel, template email, documentazione legale e prompt dell'AI).
+- **Brand Strategy**: La scelta di "FAST" sottolinea la velocità di esecuzione, l'automatizzazione delle fatture e delle riconciliazioni e l'efficienza operativa per gli amministratori di condominio.
+- **Logo e UI**: Aggiornato `BrandLogo.jsx` per mostrare "CondoFAST", mantenendo le animazioni 3D e il tema cromatico. Aggiornato l'HTML Title (`index.html`) e le varie intestazioni/footer di pagina.
+- **Esportazioni e Documenti**: Aggiornati i generatori PDF/Excel (`exportPdf.js`, `exportConsuntivo.js`, `exportXlsx.js`, `cbiGenerator.js`, `exportDatiGdpr.js`, `exportPassaggioConsegne.js`, `watermark.js`) per generare report con l'intestazione e i metadati **CondoFAST**.
+- **Retrocompatibilità LocalStorage**: Implementata la compatibilità morbida per le chiavi di `localStorage` (`condofast-theme` / `condosmart-theme`, `condofast_search_history` / `condosmart_search_history`).
 
 ---
 

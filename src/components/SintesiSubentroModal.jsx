@@ -111,7 +111,7 @@ export default function SintesiSubentroModal({ unita, ruolo, nuovoCondomino, exC
   useEffect(() => {
     if (!nuovoCondomino || !condoInfo || loadingConti) return
     
-    setEmailOgg(`Benvenuto in CondoSmart - Situazione contabile Unità ${unita.numero} [${condoInfo.nome}]`)
+    setEmailOgg(`Benvenuto in CondoFAST - Situazione contabile Unità ${unita.numero} [${condoInfo.nome}]`)
     
     const dettaglioRateText = rateRows.map(r => 
       `- ${r.nome} (Scadenza: ${formattaData(r.scadenza)}): Dovuto ${eur(r.importo)} | Pagato ${eur(r.importo_pagato)} | Residuo ${eur(r.importo - r.importo_pagato)}`

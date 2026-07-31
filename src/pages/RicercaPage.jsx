@@ -20,7 +20,7 @@ import {
   Tag
 } from 'lucide-react';
 
-const STORAGE_KEY = 'condosmart_search_history';
+const STORAGE_KEY = localStorage.getItem('condofast_search_history') ? 'condofast_search_history' : (localStorage.getItem('condosmart_search_history') ? 'condosmart_search_history' : 'condofast_search_history');
 const MAX_HISTORY = 15;
 
 export default function RicercaPage() {

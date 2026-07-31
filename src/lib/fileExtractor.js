@@ -646,7 +646,7 @@ export async function estraiStrutturaConsuntivo(file) {
 Devi estrarre SOLO la presentazione, NON i numeri.
 Mappa le voci di spesa del documento alle categorie canoniche: assicurazione, amministrazione, utenze, manutenzione, straordinaria, altro.
 Imposta "attiva": true per ogni sezione effettivamente presente nel modello, false se assente. La nota sintetica è obbligatoria: tienila true.
-Fornisci anche una breve motivazione "motivazione_condosmart" che spiega perché il modello standard CondoSmart (con 5 sezioni A->E ex art. 1130-bis) aggiunga o completi la struttura del documento caricato.`
+Fornisci anche una breve motivazione "motivazione_condosmart" che spiega perché il modello standard CondoFAST (con 5 sezioni A->E ex art. 1130-bis) aggiunga o completi la struttura del documento caricato.`
 
   const jsonSchema = {
     type: "OBJECT",
@@ -669,7 +669,7 @@ Fornisci anche una breve motivazione "motivazione_condosmart" che spiega perché
               nota_sintetica: { type: "OBJECT", properties: { attiva: { type: "BOOLEAN" } } }
             }
           },
-          motivazione_condosmart: { type: "STRING", description: "Breve frase sui vantaggi dello standard CondoSmart rispetto al file caricato." },
+          motivazione_condosmart: { type: "STRING", description: "Breve frase sui vantaggi dello standard CondoFAST rispetto al file caricato." },
           note: { type: "STRING", nullable: true }
         }
       }

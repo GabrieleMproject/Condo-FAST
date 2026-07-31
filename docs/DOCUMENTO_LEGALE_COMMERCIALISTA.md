@@ -1,12 +1,12 @@
 # DOCUMENTO DI VALIDAZIONE LEGALE E FISCALE PER COMMERCIALISTA / LEGALE
-**Progetto**: CondoSmart — Gestionale SaaS per l'Amministrazione Condominiale  
+**Progetto**: CondoFAST — Gestionale SaaS per l'Amministrazione Condominiale  
 **Data Documento**: 29 Luglio 2026  
 **Stato**: Bozza pronta per la validazione formale del Commercialista / Legale dello Studio  
 
 ---
 
 > **NOTA PER IL COMMERCIALISTA / CONSULENTE FISCALE**  
-> Il presente documento raccoglie le condizioni contrattuali (**Termini di Servizio**) e l'accordo sul trattamento dei dati personali (**Data Processing Agreement — DPA ex art. 28 GDPR**) che regolano l'utilizzo della piattaforma SaaS **CondoSmart** da parte degli amministratori di condominio (Utenti B2B).  
+> Il presente documento raccoglie le condizioni contrattuali (**Termini di Servizio**) e l'accordo sul trattamento dei dati personali (**Data Processing Agreement — DPA ex art. 28 GDPR**) che regolano l'utilizzo della piattaforma SaaS **CondoFAST** da parte degli amministratori di condominio (Utenti B2B).  
 > 
 > Si richiede la verifica e validazione in particolare dei punti riguardanti:  
 > 1. **Esclusione della conservazione sostitutiva tributaria a norma di legge** (il software non è un conservatore AgID; le FE risiedono nel cassetto fiscale dell'Agenzia delle Entrate).  
@@ -19,7 +19,7 @@
 # PARTE 1: TERMINI E CONDIZIONI DI SERVIZIO (T&C)
 
 ### Art. 1 — Oggetto e Destinatari del Servizio (B2B)
-1.1 Il presente contratto regola la concessione in licenza d'uso non esclusiva e non trasferibile del software gestionale SaaS **CondoSmart** (di seguito "Piattaforma" o "Servizio") accessibile via browser web.  
+1.1 Il presente contratto regola la concessione in licenza d'uso non esclusiva e non trasferibile del software gestionale SaaS **CondoFAST** (di seguito "Piattaforma" o "Servizio") accessibile via browser web.  
 1.2 Il Servizio è destinato esclusivamente a soggetti che agiscono nell'esercizio della propria attività professionale o d'impresa (Amministratori di condominio, Studi professionali, Società di gestione immobiliare). Non si applica pertanto la disciplina a tutela dei consumatori di cui al D.Lgs. 206/2005 ("Codice del Consumo").  
 
 ---
@@ -83,7 +83,7 @@
 
 ### 1. Qualificazione delle Parti
 - **Titolare del Trattamento**: L'Amministratore di Condominio / Studio Professional (Utente), che stabilisce le finalità ed i mezzi del trattamento dei dati personali dei condòmini, inquilini, fornitore e collaboratori.  
-- **Responsabile del Trattamento**: CondoSmart (Fornitore), che tratta i dati personali unicamente per conto del Titolare al fine di erogare il servizio SaaS.  
+- **Responsabile del Trattamento**: CondoFAST (Fornitore), che tratta i dati personali unicamente per conto del Titolare al fine di erogare il servizio SaaS.  
 
 ### 2. Misure di Sicurezza Applicate (Allegato A)
 - **Isolamento Multi-Tenant**: Row-Level Security (RLS) attiva nativamente sul database a livello di riga su ogni tabella del condominio.  

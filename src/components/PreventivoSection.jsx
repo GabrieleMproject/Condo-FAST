@@ -56,7 +56,7 @@ export default function PreventivoSection({ condominioId, esercizioId: esercizio
   const [mapping, setMapping] = useState(null) // { righe:[{numero,nominativo,saldo,unita_id}], cassa }
   const fileRef = useRef()
 
-  // Esercizio precedente in CondoSmart (anno − 1)
+  // Esercizio precedente in CondoFAST (anno − 1)
   const esercizioPrec = useMemo(() => {
     if (!esercizio) return null
     return esercizi.find(e => e.anno === (esercizio.anno - 1)) || null

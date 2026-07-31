@@ -27,7 +27,7 @@ export function generaCbiF24(deleghe, profile) {
   // Pos 13-18: Data Invio (GGMMAA)
   // Pos 19-38: Nome Supporto (Amministratore o Studio) - 20 char
   // Pos 39-120: Spazi
-  let rec10 = "10" + SIA + ABI_MITTENTE + dataInvio + padLeftOrRight(profile?.ragione_sociale || 'CONDOSMART DISTINTA', 20, ' ', false);
+  let rec10 = "10" + SIA + ABI_MITTENTE + dataInvio + padLeftOrRight(profile?.ragione_sociale || 'CONDOFAST DISTINTA', 20, ' ', false);
   rec10 = rec10.padEnd(120, ' ');
   righe.push(rec10);
   recordCount++;

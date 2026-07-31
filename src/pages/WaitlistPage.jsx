@@ -81,7 +81,7 @@ export default function WaitlistPage() {
         </h1>
         
         <p style={{ color: 'var(--text-2)', lineHeight: 1.6, marginBottom: '32px' }}>
-          Attualmente CondoSmart è in fase di testing
+          Attualmente CondoFAST è in fase di testing
           limitata ai Beta Tester. Il tuo account è stato
           registrato ed inserito nella lista d'attesa. Ti
           contatteremo non appena l'accesso sarà abilitato

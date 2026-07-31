@@ -47,21 +47,21 @@ def create_tos_docx():
 
     # Avviso iniziale
     p_intro = doc.add_paragraph()
-    run_intro = p_intro.add_run("Il presente documento costituisce un contratto giuridicamente vincolante tra M PROJECT S.R.L. ed il Cliente/Utente. Si prega di leggerlo attentamente prima di completare la registrazione o di utilizzare la piattaforma CondoSmart.")
+    run_intro = p_intro.add_run("Il presente documento costituisce un contratto giuridicamente vincolante tra M PROJECT S.R.L. ed il Cliente/Utente. Si prega di leggerlo attentamente prima di completare la registrazione o di utilizzare la piattaforma CondoFAST.")
     run_intro.font.name = 'Arial'
     run_intro.font.size = Pt(10.5)
     run_intro.font.italic = True
 
     sections_content = [
         ("1. DEFINIZIONI ED IDENTIFICAZIONE DEI CONTRAENTI", [
-            ("Fornitore del Servizio: ", "M PROJECT S.R.L. (di seguito indicata come \"M PROJECT SRL\", \"CondoSmart\" o \"Fornitore\"), con sede legale in [INSERIRE SEDE LEGALE], P.IVA / C.F. [INSERIRE P.IVA / CF], PEC: [INSERIRE EMAIL PEC], Email Assistenza: supporto@condosmart.it."),
+            ("Fornitore del Servizio: ", "M PROJECT S.R.L. (di seguito indicata come \"M PROJECT SRL\", \"CondoFAST\" o \"Fornitore\"), con sede legale in [INSERIRE SEDE LEGALE], P.IVA / C.F. [INSERIRE P.IVA / CF], PEC: [INSERIRE EMAIL PEC], Email Assistenza: supporto@condosmart.it."),
             ("Cliente / Utente: ", "L’Amministratore di Condominio (persona fisica o società di amministrazione condominiale) o lo Studio Professionale registrato sulla Piattaforma che utilizza il Servizio nell'esercizio della propria attività professionale o imprenditoriale (Trattamento B2B)."),
             ("Condominio: ", "L'ente di gestione o fabbricato amministrato dal Cliente ed inserito sulla Piattaforma."),
-            ("Piattaforma / Servizio: ", "Il software gestionale in modalità Software-as-a-Service (SaaS) accessibile all'indirizzo web di CondoSmart, inclusivo delle funzionalità di gestione contabile, ripartizione millesimale, lettura documentale tramite Intelligenza Artificiale (OCR), estrazione dati, riconciliazione bancaria, generazione documenti PDF ed email marketing."),
+            ("Piattaforma / Servizio: ", "Il software gestionale in modalità Software-as-a-Service (SaaS) accessibile all'indirizzo web di CondoFAST, inclusivo delle funzionalità di gestione contabile, ripartizione millesimale, lettura documentale tramite Intelligenza Artificiale (OCR), estrazione dati, riconciliazione bancaria, generazione documenti PDF ed email marketing."),
             ("Funzionalità AI: ", "I moduli informatici basati su algoritmi di machine learning e modelli linguistici di grandi dimensioni (LLM) forniti da terze parti (es. Google Gemini, Anthropic Claude) integrati nel Servizio per l'estrazione automatica di dati da fatture, estratti conto o verbali.")
         ]),
         ("2. OGGETTO DEL CONTRATTO E AMBITO B2B", [
-            ("", "1. M PROJECT SRL concede al Cliente una licenza d'uso temporanea, non esclusiva, non trasferibile e revocabile per l'accesso e l'utilizzo della Piattaforma CondoSmart via web."),
+            ("", "1. M PROJECT SRL concede al Cliente una licenza d'uso temporanea, non esclusiva, non trasferibile e revocabile per l'accesso e l'utilizzo della Piattaforma CondoFAST via web."),
             ("", "2. Il presente contratto si applica esclusivamente a rapporti B2B (Business-to-Business). Il Cliente dichiara e garantisce di agire nell'ambito della propria attività professionale (Art. 71-bis disp. att. c.c.) e che non si applicano le disposizioni del Codice del Consumo (D.Lgs. 206/2005).")
         ]),
         ("3. NATURA DELLE FUNZIONALITÀ AI E CLAUSOLA DI MANLEVA CONTABILE E CIVILE", [

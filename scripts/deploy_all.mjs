@@ -19,7 +19,7 @@ function run(cmd, desc, allowFail = false) {
 }
 
 console.log('=============================================================')
-console.log('   🏢 CONDOSMART — SCRIPT UNIFICATO AGGIORNAMENTO & DEPLOY   ')
+console.log('   🏢 CONDOFAST — SCRIPT UNIFICATO AGGIORNAMENTO & DEPLOY   ')
 console.log('=============================================================')
 
 const commitMsg = process.argv[2] || 'S61: Aggiornamento rilasciato in produzione'

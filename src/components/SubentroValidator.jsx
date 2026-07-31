@@ -255,7 +255,7 @@ Lo Studio Amministrativo`
         await inviaComunicazione({
           condominioId,
           destinatari: [{ email: email.trim(), nome: `${nome} ${cognome}`.trim() }],
-          oggetto: `Benvenuto in Condominio & Richiesta Dati - ${condominio?.nome || 'CondoSmart'}`,
+          oggetto: `Benvenuto in Condominio & Richiesta Dati - ${condominio?.nome || 'CondoFAST'}`,
           messaggio,
           tipo: 'avviso',
           skipFetch: true

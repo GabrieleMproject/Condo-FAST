@@ -305,7 +305,7 @@ export default function VerbaliAssembleaTab({ condominioId }) {
       const { verbaliFiltrati, metodo, risparmioPercentuale } = optimized;
 
       // 3. Prepara il prompt per Gemini
-      const systemPrompt = `Sei un assistente virtuale esperto di gestione condominiale CondoSmart. Rispondi alle domande dell'amministratore basandoti ESCLUSIVAMENTE sui verbali delle assemblee forniti.
+      const systemPrompt = `Sei un assistente virtuale esperto di gestione condominiale CondoFAST. Rispondi alle domande dell'amministratore basandoti ESCLUSIVAMENTE sui verbali delle assemblee forniti.
 
 Domanda dell'amministratore:
 "${query}"

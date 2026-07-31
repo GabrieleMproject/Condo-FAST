@@ -309,7 +309,7 @@ p { margin: 0 0 1em; }
   border-bottom: 1px solid var(--border);
 }
 .mockup__controls--mac {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 6px;
 }
@@ -324,11 +324,12 @@ p { margin: 0 0 1em; }
 .mockup__controls--mac span:nth-child(2) { background: #F59E0B; opacity: 0.85; }
 .mockup__controls--mac span:nth-child(3) { background: #22C55E; opacity: 0.85; }
 
-/* Controlli Windows (Ridimensionamento / Chiusura top-right) */
+/* Controlli Windows (Ridimensionamento / Chiusura top-right - PREDEFINITI) */
 .mockup__controls--win {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 2px;
+  margin-left: auto;
 }
 .mockup__controls--win .win-btn {
   display: inline-flex;
@@ -366,12 +367,12 @@ p { margin: 0 0 1em; }
   max-width: 100%;
 }
 
-/* Modalità Windows attiva */
-.os-windows .mockup__controls--mac {
-  display: none;
-}
-.os-windows .mockup__controls--win {
+/* Modalità Mac esplicita */
+.os-mac .mockup__controls--mac {
   display: flex;
+}
+.os-mac .mockup__controls--win {
+  display: none;
 }
 .mockup__body {
   display: flex;

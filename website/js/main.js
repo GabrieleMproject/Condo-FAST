@@ -301,6 +301,11 @@
         </div>
       `;
 
+      // Auto-scroll morbido ed immediato sui risultati dell'estrazione per impatto zero-attesa
+      if (aiHeader) {
+        aiHeader.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
       // Animazione sequenziale ad effetto illuminazione immediata sui risultati
       const cardIds = ['card-condo', 'card-fornitore', 'card-imponibile', 'card-totale', 'card-riparto', 'card-ritenuta'];
       cardIds.forEach((id, index) => {

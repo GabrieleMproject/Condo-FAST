@@ -1428,20 +1428,20 @@ p { margin: 0 0 1em; }
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6), 0 0 40px rgba(79, 142, 247, 0.15);
   transform: scale(0.92) translateY(20px);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  padding: 36px 32px;
+  padding: 26px 24px;
 }
 .modal-overlay.is-open .modal-container {
   transform: scale(1) translateY(0);
 }
 .modal-close {
   position: absolute;
-  top: 20px; right: 20px;
-  width: 36px; height: 36px;
+  top: 16px; right: 16px;
+  width: 34px; height: 34px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border);
   color: var(--muted);
-  font-size: 1.1rem;
+  font-size: 1rem;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -1460,8 +1460,8 @@ p { margin: 0 0 1em; }
 .demo-dropzone {
   border: 2px dashed rgba(79, 142, 247, 0.4);
   background: rgba(13, 18, 30, 0.6);
-  border-radius: 14px;
-  padding: 26px 20px;
+  border-radius: 12px;
+  padding: 16px 14px;
   text-align: center;
   cursor: pointer;
   transition: all 0.25s ease;

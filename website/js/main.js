@@ -301,18 +301,22 @@
         </div>
       `;
 
-      // Auto-scroll morbido ed immediato sui risultati dell'estrazione per impatto zero-attesa
-      if (aiHeader) {
-        aiHeader.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // Scorrimento contestuale del pop-up in parallelo alla generazione dei dati
+      const modalContainer = aiHeader.closest('.modal-container');
+      if (modalContainer) {
+        const targetScroll = aiHeader.offsetTop - 20;
+        modalContainer.scrollTo({ top: targetScroll, behavior: 'smooth' });
+      } else if (aiHeader) {
+        aiHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
-      // Animazione sequenziale ad effetto illuminazione immediata sui risultati
+      // Animazione sequenziale sintonizzata con lo scorrimento
       const cardIds = ['card-condo', 'card-fornitore', 'card-imponibile', 'card-totale', 'card-riparto', 'card-ritenuta'];
       cardIds.forEach((id, index) => {
         setTimeout(() => {
           const el = document.getElementById(id);
           if (el) el.classList.add('is-revealed');
-        }, index * 80);
+        }, index * 70);
       });
     }, 1000);
   }

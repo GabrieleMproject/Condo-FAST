@@ -131,6 +131,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S63 (2 Agosto 2026 - Marketplace Fornitori Partner & Auto-Matching AI)
+
+### 1. Decisioni Architetturali e di Business
+- **Modello Commerciale Fornitori Partner**: Scelta del modello basato su **Quota Fissa Annuale (Listing Fee)** + **Provvigione % (Success Fee)** sui lavori effettuati tramite l'auto-matching delle fatture lette dall'AI di CondoFAST.
+- **Pioneer Partner (Esclusiva Territoriale 12 Mesi)**: Implementato il contratto a durata determinata di 12 mesi senza rinnovo automatico per consentire la rinegoziazione dei canoni e delle provvigioni al rinnovo basandosi sul ROI reale calcolato dal sistema.
+- **Conformità GDPR e Riservatezza**: Le fatture dei concorrenti e i prezzi riservati non vengono mai mostrati a terzi. Le richieste di preventivo inoltrate dagli amministratori contengono unicamente la descrizione del lavoro e la provincia.
+
+### 2. Sviluppi Tecnici e Piattaforma
+- **Schema DB (`sql/s63_fornitori_partner_marketplace.sql`)**: Create tabelle `fornitori_partner`, `partner_match_log`, `richieste_preventivo` e funzione RPC `check_invoice_partner_match()`.
+- **Pannello Backoffice SuperAdmin (`BackofficePage.jsx`)**: Introdotta la nuova sezione dedicata **"Fornitori Partner & Marketplace"** articolata in 4 sotto-schede: *Gestione Partner & Contratti*, *Rendicontazione Match AI*, *Richieste Preventivo*, *Report ROI & Negoziazione Rinnovo*.
+- **Modulo Preventivi Amministratore (`ModalRichiestaPreventivo.jsx`)**: Aggiunto il pulsante per richiedere preventivi ai fornitori convenzionati di zona direttamente dalla gestione fatture del condominio.
+- **Auto-Matching Fatture AI (`FattureFornitoriPage.jsx` & `partnerEngine.js`)**: Collegato il check automatico di riscontro P.IVA al caricamento delle fatture per il calcolo trasparente delle provvigioni.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S63 (31 Luglio 2026 - Onboarding Interattivo e Bivio Migrazione)
 
 ### 1. Decisioni sul Flusso Iniziale per Nuovi Utenti

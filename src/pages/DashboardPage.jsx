@@ -5,10 +5,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCondomini } from '../hooks/useCondomini'
 import { usePlan } from '../hooks/usePlan'
 import { supabase } from '../lib/supabaseClient'
-import { generaCondominioDemo } from '../lib/demoSeed'
 import OnboardingChecklist from '../components/OnboardingChecklist'
 import GuidaRapidaModal from '../components/GuidaRapidaModal'
 import OnboardingTourModal from '../components/OnboardingTourModal'
+import InteractiveOnboarding from '../components/InteractiveOnboarding'
 import ScadenzarioWidget from '../components/ScadenzarioWidget'
 import {
   Building2,
@@ -62,23 +62,6 @@ export default function DashboardPage() {
   const [showTourModal, setShowTourModal] = useState(false)
   const [showGuidaModal, setShowGuidaModal] = useState(false)
 
-  // Auto-creazione Condominio Demo per Trial se l'utente ha 0 condomini
-  useEffect(() => {
-    async function checkAndSeedDemo() {
-      if (!loadingCondo && user && (piano === 'trial' || isTrialActive) && condomini.length === 0 && !generatingDemoRef.current) {
-        generatingDemoRef.current = true
-        try {
-          await generaCondominioDemo(user.id)
-          if (refetch) await refetch()
-        } catch (err) {
-          console.error("Errore auto-creazione demo:", err)
-        } finally {
-          generatingDemoRef.current = false
-        }
-      }
-    }
-    checkAndSeedDemo()
-  }, [loadingCondo, condomini.length, user, piano, isTrialActive])
   const [stats, setStats] = useState({
     insolutiTotali: 0,
     rateScaduteCount: 0,
@@ -375,6 +358,10 @@ export default function DashboardPage() {
         Caricamento dashboard studio in corso...
       </div>
     )
+  }
+
+  if (condomini.length === 0) {
+    return <InteractiveOnboarding onComplete={() => refetch?.()} />
   }
 
   return (

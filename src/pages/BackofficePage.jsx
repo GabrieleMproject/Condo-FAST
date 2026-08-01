@@ -5,10 +5,18 @@ import {
   Users, Ticket, Search, Save, MessageSquare, Send, Gift, Plus, 
   Building2, Sparkles, Activity, ShieldCheck, DollarSign, Cpu, Eye, 
   FileText, ToggleLeft, ToggleRight, CheckCircle2, AlertTriangle, RefreshCw, 
-  Layers, Zap, X, ChevronRight, HelpCircle, BookOpen, Bot
+  Layers, Zap, X, ChevronRight, HelpCircle, BookOpen, Bot,
+  Store, Star, Award, Phone, Mail, MapPin, TrendingUp, Clock, FileSpreadsheet, Check
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { callGemini } from '../lib/geminiClient'
+import { 
+  fetchFornitoriPartner, 
+  fetchPartnerMatchLogs, 
+  fetchRichiestePreventivo, 
+  saveFornitorePartner, 
+  updateStatoCommissione 
+} from '../lib/partnerEngine'
 
 export default function BackofficePage() {
   const [activeTab, setActiveTab] = useState('utenti')
@@ -64,6 +72,33 @@ export default function BackofficePage() {
   const [generandoTestoAI, setGenerandoTestoAI] = useState(false)
   const [inviandoEmail, setInviandoEmail] = useState(false)
   const [criticalError, setCriticalError] = useState(null)
+
+  // Stati Fornitori Partner & Marketplace
+  const [partnerList, setPartnerList] = useState([])
+  const [partnerMatchLogs, setPartnerMatchLogs] = useState([])
+  const [richiestePreventivoList, setRichiestePreventivoList] = useState([])
+  const [partnerSubTab, setPartnerSubTab] = useState('gestione') // 'gestione' | 'match_logs' | 'richieste' | 'report'
+  const [partnerSearch, setPartnerSearch] = useState('')
+  const [modalPartnerOpen, setModalPartnerOpen] = useState(false)
+  const [savingPartner, setSavingPartner] = useState(false)
+  const [partnerForm, setPartnerForm] = useState({
+    id: null,
+    ragione_sociale: '',
+    partita_iva: '',
+    codice_fiscale: '',
+    email: '',
+    telefono: '',
+    referente_nome: '',
+    categoria: 'manutenzione',
+    provincia_esclusiva: 'MI',
+    tipo_contratto: 'pioneer_esclusivo',
+    data_inizio_contratto: new Date().toISOString().split('T')[0],
+    data_fine_contratto: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+    quota_fissa_annuale: 290.00,
+    percentuale_commissione: 5.00,
+    note_contrattuali: '',
+    attivo: true
+  })
 
   useEffect(() => {
     fetchData()
@@ -157,6 +192,18 @@ export default function BackofficePage() {
         setAiLogs(aiCallData)
       }
 
+      // 9. Fornitori Partner, Match Logs e Richieste Preventivo
+      try {
+        const pList = await fetchFornitoriPartner()
+        setPartnerList(pList)
+        const mLogs = await fetchPartnerMatchLogs()
+        setPartnerMatchLogs(mLogs)
+        const rList = await fetchRichiestePreventivo()
+        setRichiestePreventivoList(rList)
+      } catch (pErr) {
+        console.warn("Dati partner non ancora presenti o schema in inizializzazione:", pErr.message)
+      }
+
     } catch (err) {
       toast.error('Errore caricamento dati: ' + err.message)
     } finally {
@@ -165,6 +212,80 @@ export default function BackofficePage() {
   }
 
   // ── Azioni Scheda Utente 360° (Fase 1) ─────────────────────────────────────
+  const openNewPartnerModal = () => {
+    setPartnerForm({
+      id: null,
+      ragione_sociale: '',
+      partita_iva: '',
+      codice_fiscale: '',
+      email: '',
+      telefono: '',
+      referente_nome: '',
+      categoria: 'manutenzione',
+      provincia_esclusiva: 'MI',
+      tipo_contratto: 'pioneer_esclusivo',
+      data_inizio_contratto: new Date().toISOString().split('T')[0],
+      data_fine_contratto: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      quota_fissa_annuale: 290.00,
+      percentuale_commissione: 5.00,
+      note_contrattuali: '',
+      attivo: true
+    })
+    setModalPartnerOpen(true)
+  }
+
+  const openEditPartnerModal = (p) => {
+    setPartnerForm({
+      id: p.id,
+      ragione_sociale: p.ragione_sociale || '',
+      partita_iva: p.partita_iva || '',
+      codice_fiscale: p.codice_fiscale || '',
+      email: p.email || '',
+      telefono: p.telefono || '',
+      referente_nome: p.referente_nome || '',
+      categoria: p.categoria || 'manutenzione',
+      provincia_esclusiva: p.provincia_esclusiva || 'MI',
+      tipo_contratto: p.tipo_contratto || 'pioneer_esclusivo',
+      data_inizio_contratto: p.data_inizio_contratto || new Date().toISOString().split('T')[0],
+      data_fine_contratto: p.data_fine_contratto || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      quota_fissa_annuale: p.quota_fissa_annuale || 290.00,
+      percentuale_commissione: p.percentuale_commissione || 5.00,
+      note_contrattuali: p.note_contrattuali || '',
+      attivo: p.attivo !== false
+    })
+    setModalPartnerOpen(true)
+  }
+
+  const handleSavePartnerSubmit = async (e) => {
+    e.preventDefault()
+    if (!partnerForm.ragione_sociale || !partnerForm.partita_iva || !partnerForm.provincia_esclusiva) {
+      toast.error("Compilare Ragione Sociale, P.IVA e Provincia Esclusiva.")
+      return
+    }
+    setSavingPartner(true)
+    try {
+      await saveFornitorePartner(partnerForm)
+      toast.success(partnerForm.id ? "Partner aggiornato con successo!" : "Nuovo Partner registrato con successo!")
+      setModalPartnerOpen(false)
+      fetchData()
+    } catch (err) {
+      toast.error("Errore salvataggio partner: " + err.message)
+    } finally {
+      setSavingPartner(false)
+    }
+  }
+
+  const handleToggleStatoCommissione = async (logId, currentStato) => {
+    const prossimoStato = currentStato === 'da_fatturare' ? 'fatturato' : (currentStato === 'fatturato' ? 'saldato' : 'da_fatturare')
+    try {
+      await updateStatoCommissione(logId, prossimoStato)
+      toast.success(`Stato commissione aggiornato in '${prossimoStato}'`)
+      fetchData()
+    } catch (err) {
+      toast.error("Errore aggiornamento stato: " + err.message)
+    }
+  }
+
   const openUser360Modal = (user) => {
     setSelectedUser360(user)
     setUser360Tab('panoramica')
@@ -960,6 +1081,12 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
           onClick={() => setActiveTab('financials')}
         >
           <DollarSign size={16} /> MRR & Costi API LLM
+        </button>
+        <button
+          style={{ ...styles.tabButton, ...(activeTab === 'fornitori' ? styles.tabActive : {}) }}
+          onClick={() => setActiveTab('fornitori')}
+        >
+          <Store size={16} /> Fornitori Partner ({partnerList.filter(p => p.attivo).length})
         </button>
       </div>
 
@@ -1992,6 +2119,359 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                 </div>
               </div>
             )}
+
+            {/* TAB FORNITORI PARTNER & MARKETPLACE (Dedicato) */}
+            {activeTab === 'fornitori' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                
+                {/* KPI Header Marketplace */}
+                <div style={styles.kpiContainer}>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Partner Convenzionati Attivi</div>
+                    <div style={{ ...styles.kpiValue, color: '#3b82f6' }}>
+                      {partnerList.filter(p => p.attivo).length}
+                    </div>
+                    <div style={styles.kpiSub}>Fornitori registrati nella rete</div>
+                  </div>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Province Coperte in Esclusiva</div>
+                    <div style={{ ...styles.kpiValue, color: '#8b5cf6' }}>
+                      {[...new Set(partnerList.filter(p => p.attivo).map(p => p.provincia_esclusiva))].length}
+                    </div>
+                    <div style={styles.kpiSub}>Sigle provinciali attive</div>
+                  </div>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Lavori Rilevati (Match AI)</div>
+                    <div style={{ ...styles.kpiValue, color: '#10b981' }}>
+                      €{partnerMatchLogs.reduce((sum, m) => sum + (Number(m.importo_fattura) || 0), 0).toLocaleString()}
+                    </div>
+                    <div style={styles.kpiSub}>Totale fatturato nei condomini</div>
+                  </div>
+                  <div style={styles.kpiCard}>
+                    <div style={styles.kpiTitle}>Provvigioni Maturate CondoFAST</div>
+                    <div style={{ ...styles.kpiValue, color: '#f59e0b' }}>
+                      €{partnerMatchLogs.reduce((sum, m) => sum + (Number(m.importo_commissione) || 0), 0).toFixed(2)}
+                    </div>
+                    <div style={styles.kpiSub}>Da fatturare ai fornitori</div>
+                  </div>
+                </div>
+
+                {/* Sub-Navigazione Sezione Fornitori */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: 12 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => setPartnerSubTab('gestione')}
+                      style={{ ...styles.subTabBtn, ...(partnerSubTab === 'gestione' ? styles.subTabActive : {}) }}
+                    >
+                      <Store size={14} /> Gestione Partner & Contratti
+                    </button>
+                    <button
+                      onClick={() => setPartnerSubTab('match_logs')}
+                      style={{ ...styles.subTabBtn, ...(partnerSubTab === 'match_logs' ? styles.subTabActive : {}) }}
+                    >
+                      <FileSpreadsheet size={14} /> Rendicontazione Match AI ({partnerMatchLogs.length})
+                    </button>
+                    <button
+                      onClick={() => setPartnerSubTab('richieste')}
+                      style={{ ...styles.subTabBtn, ...(partnerSubTab === 'richieste' ? styles.subTabActive : {}) }}
+                    >
+                      <MessageSquare size={14} /> Richieste Preventivo ({richiestePreventivoList.length})
+                    </button>
+                    <button
+                      onClick={() => setPartnerSubTab('report')}
+                      style={{ ...styles.subTabBtn, ...(partnerSubTab === 'report' ? styles.subTabActive : {}) }}
+                    >
+                      <TrendingUp size={14} /> Report ROI & Negoziazione
+                    </button>
+                  </div>
+                  {partnerSubTab === 'gestione' && (
+                    <button onClick={openNewPartnerModal} style={{ ...styles.btnSubmit, flex: 'none', padding: '8px 14px' }}>
+                      <Plus size={16} /> Nuovo Partner Convenzionato
+                    </button>
+                  )}
+                </div>
+
+                {/* 1. SUB-TAB GESTIONE PARTNER */}
+                {partnerSubTab === 'gestione' && (
+                  <div style={styles.card}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+                      <div style={{ position: 'relative', flex: 1, maxWidth: 400 }}>
+                        <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                        <input
+                          type="text"
+                          placeholder="Cerca partner per Ragione Sociale, P.IVA o Provincia..."
+                          value={partnerSearch}
+                          onChange={e => setPartnerSearch(e.target.value)}
+                          style={{ ...styles.input, paddingLeft: 38 }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={styles.table}>
+                        <thead>
+                          <tr>
+                            <th style={styles.th}>Partner / Ragione Sociale</th>
+                            <th style={styles.th}>P.IVA / CF</th>
+                            <th style={styles.th}>Provincia & Categoria</th>
+                            <th style={styles.th}>Tipo Contratto</th>
+                            <th style={styles.th}>Scadenza 12 Mesi</th>
+                            <th style={styles.th}>Quota Annua</th>
+                            <th style={styles.th}>Provvigione %</th>
+                            <th style={styles.th}>Azioni</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {partnerList
+                            .filter(p => {
+                              if (!partnerSearch) return true
+                              const q = partnerSearch.toLowerCase()
+                              return (
+                                p.ragione_sociale?.toLowerCase().includes(q) ||
+                                p.partita_iva?.includes(q) ||
+                                p.provincia_esclusiva?.toLowerCase().includes(q)
+                              )
+                            })
+                            .map(p => {
+                              const dataFine = new Date(p.data_fine_contratto)
+                              const oggi = new Date()
+                              const giorniRimanenti = Math.ceil((dataFine - oggi) / (1000 * 60 * 60 * 24))
+                              return (
+                                <tr key={p.id} style={styles.tr}>
+                                  <td style={styles.td}>
+                                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{p.ragione_sociale}</div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                      {p.referente_nome ? `Ref: ${p.referente_nome} • ` : ''}{p.email || p.telefono || ''}
+                                    </div>
+                                  </td>
+                                  <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 12 }}>
+                                    {p.partita_iva}
+                                  </td>
+                                  <td style={styles.td}>
+                                    <span style={{ padding: '2px 8px', borderRadius: 6, background: '#2563eb15', color: '#3b82f6', fontWeight: 700, fontSize: 11, marginRight: 6 }}>
+                                      {p.provincia_esclusiva}
+                                    </span>
+                                    <span style={{ fontSize: 12, textTransform: 'capitalize', color: 'var(--text-secondary)' }}>
+                                      {p.categoria}
+                                    </span>
+                                  </td>
+                                  <td style={styles.td}>
+                                    <span style={{ padding: '2px 6px', borderRadius: 4, background: p.tipo_contratto === 'pioneer_esclusivo' ? 'rgba(16, 185, 129, 0.15)' : 'var(--accent-glow)', color: p.tipo_contratto === 'pioneer_esclusivo' ? '#10b981' : 'var(--accent)', fontSize: 11, fontWeight: 700 }}>
+                                      {p.tipo_contratto === 'pioneer_esclusivo' ? 'Pioneer Esclusivo' : 'Multi-Vendor'}
+                                    </span>
+                                  </td>
+                                  <td style={styles.td}>
+                                    <div style={{ fontSize: 12, fontWeight: 600 }}>{p.data_fine_contratto}</div>
+                                    <div style={{ fontSize: 11, color: giorniRimanenti < 30 ? '#ef4444' : 'var(--text-muted)' }}>
+                                      {giorniRimanenti > 0 ? `${giorniRimanenti} giorni alla scadenza` : 'Contratto Scaduto'}
+                                    </div>
+                                  </td>
+                                  <td style={{ ...styles.td, fontWeight: 600 }}>€{Number(p.quota_fissa_annuale || 0).toFixed(2)}</td>
+                                  <td style={{ ...styles.td, fontWeight: 700, color: '#f59e0b' }}>{p.percentuale_commissione}%</td>
+                                  <td style={styles.td}>
+                                    <button onClick={() => openEditPartnerModal(p)} style={{ ...styles.btnSecondary, padding: '4px 8px', fontSize: 11 }}>
+                                      <Eye size={13} /> Modifica
+                                    </button>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          {partnerList.length === 0 && (
+                            <tr>
+                              <td colSpan="8" style={{ ...styles.td, textAlign: 'center', color: 'var(--text-muted)', padding: 30 }}>
+                                Nessun fornitore partner registrato. Clicca su <strong>"Nuovo Partner Convenzionato"</strong> per aggiungerne uno.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. SUB-TAB RENDICONTAZIONE MATCH AI */}
+                {partnerSubTab === 'match_logs' && (
+                  <div style={styles.card}>
+                    <h2 style={styles.cardTitle}>Rendicontazione Automatica Match AI Fatture nei Condomini</h2>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+                      Tutte le fatture lette dall'AI di CondoFAST le cui Partite IVA corrispondono ai partner convenzionati attivi.
+                    </p>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={styles.table}>
+                        <thead>
+                          <tr>
+                            <th style={styles.th}>Data Fattura</th>
+                            <th style={styles.th}>Partner Convenzionato</th>
+                            <th style={styles.th}>Condominio / Amministratore</th>
+                            <th style={styles.th}>Importo Fattura</th>
+                            <th style={styles.th}>Provvigione %</th>
+                            <th style={styles.th}>Spettante CondoFAST</th>
+                            <th style={styles.th}>Stato Provvigione</th>
+                            <th style={styles.th}>Azioni</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {partnerMatchLogs.map(m => (
+                            <tr key={m.id} style={styles.tr}>
+                              <td style={{ ...styles.td, fontSize: 12 }}>{m.data_fattura || new Date(m.created_at).toLocaleDateString()}</td>
+                              <td style={styles.td}>
+                                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{m.partner?.ragione_sociale || 'Partner Sconosciuto'}</div>
+                                <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)' }}>P.IVA: {m.partita_iva_rilevata}</div>
+                              </td>
+                              <td style={styles.td}>
+                                <div style={{ fontWeight: 600 }}>{m.condominio?.nome || 'Condominio'}</div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                  Admin: {m.amministratore?.nome ? `${m.amministratore.nome} ${m.amministratore.cognome || ''}` : (m.amministratore?.email || '—')}
+                                </div>
+                              </td>
+                              <td style={{ ...styles.td, fontWeight: 700 }}>€{Number(m.importo_fattura || 0).toLocaleString()}</td>
+                              <td style={{ ...styles.td, color: '#f59e0b', fontWeight: 700 }}>{m.percentuale_applicata}%</td>
+                              <td style={{ ...styles.td, fontWeight: 700, color: '#10b981', fontSize: 14 }}>
+                                €{Number(m.importo_commissione || 0).toFixed(2)}
+                              </td>
+                              <td style={styles.td}>
+                                <span style={{
+                                  padding: '3px 8px',
+                                  borderRadius: 4,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  background: m.stato_commissione === 'saldato' ? 'rgba(16, 185, 129, 0.15)' : (m.stato_commissione === 'fatturato' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)'),
+                                  color: m.stato_commissione === 'saldato' ? '#10b981' : (m.stato_commissione === 'fatturato' ? '#3b82f6' : '#f59e0b')
+                                }}>
+                                  {m.stato_commissione === 'saldato' ? 'SALDATO' : (m.stato_commissione === 'fatturato' ? 'FATTURATO' : 'DA FATTURARE')}
+                                </span>
+                              </td>
+                              <td style={styles.td}>
+                                <button
+                                  onClick={() => handleToggleStatoCommissione(m.id, m.stato_commissione)}
+                                  style={{ ...styles.btnSecondary, padding: '4px 8px', fontSize: 11 }}
+                                >
+                                  Cambia Stato
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {partnerMatchLogs.length === 0 && (
+                            <tr>
+                              <td colSpan="8" style={{ ...styles.td, textAlign: 'center', color: 'var(--text-muted)', padding: 30 }}>
+                                Nessun match di fatture rilevato al momento. Non appena un amministratore carica una fattura con la P.IVA di un partner convenzionato, apparirà qui!
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. SUB-TAB RICHIESTE PREVENTIVO */}
+                {partnerSubTab === 'richieste' && (
+                  <div style={styles.card}>
+                    <h2 style={styles.cardTitle}>Registro Richieste Preventivo dagli Amministratori</h2>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={styles.table}>
+                        <thead>
+                          <tr>
+                            <th style={styles.th}>Data</th>
+                            <th style={styles.th}>Amministratore & Condominio</th>
+                            <th style={styles.th}>Categoria & Provincia</th>
+                            <th style={styles.th}>Titolo & Dettaglio</th>
+                            <th style={styles.th}>Partner Assegnato</th>
+                            <th style={styles.th}>Stato</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {richiestePreventivoList.map(r => (
+                            <tr key={r.id} style={styles.tr}>
+                              <td style={{ ...styles.td, fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString()}</td>
+                              <td style={styles.td}>
+                                <div style={{ fontWeight: 600 }}>{r.amministratore?.nome ? `${r.amministratore.nome} ${r.amministratore.cognome || ''}` : (r.amministratore?.email || '—')}</div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.condominio?.nome || 'Condominio'}</div>
+                              </td>
+                              <td style={styles.td}>
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: '#2563eb15', color: '#3b82f6', fontWeight: 700, fontSize: 11 }}>
+                                  {r.provincia}
+                                </span>
+                                <span style={{ marginLeft: 6, fontSize: 12, textTransform: 'capitalize' }}>{r.categoria}</span>
+                              </td>
+                              <td style={styles.td}>
+                                <div style={{ fontWeight: 600 }}>{r.titolo}</div>
+                                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{r.descrizione}</div>
+                              </td>
+                              <td style={styles.td}>
+                                <div style={{ fontWeight: 600 }}>{r.partner?.ragione_sociale || 'Partner provinciale'}</div>
+                              </td>
+                              <td style={styles.td}>
+                                <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--accent-glow)', color: 'var(--accent)', fontSize: 11, fontWeight: 700 }}>
+                                  {r.stato}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                          {richiestePreventivoList.length === 0 && (
+                            <tr>
+                              <td colSpan="6" style={{ ...styles.td, textAlign: 'center', color: 'var(--text-muted)', padding: 30 }}>
+                                Nessuna richiesta di preventivo inoltrata al momento.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. SUB-TAB REPORT ROI & NEGOZIAZIONE RINNOVO */}
+                {partnerSubTab === 'report' && (
+                  <div style={styles.card}>
+                    <h2 style={styles.cardTitle}>Report ROI Fornitori per Negoziazione Rinnovo (Fine 12 Mesi)</h2>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>
+                      Dati aggregati di fatturato procurato al fornitore tramite CondoFAST per giustificare gli aumenti di quota fisso o commissione al rinnovo annuale.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+                      {partnerList.map(p => {
+                        const logsPartner = partnerMatchLogs.filter(m => m.partner_id === p.id)
+                        const totaleFatturatoProcurato = logsPartner.reduce((sum, m) => sum + (Number(m.importo_fattura) || 0), 0)
+                        const totaleCommissioniMaturate = logsPartner.reduce((sum, m) => sum + (Number(m.importo_commissione) || 0), 0)
+                        const roiFornitore = p.quota_fissa_annuale > 0 ? (totaleFatturatoProcurato / p.quota_fissa_annuale).toFixed(1) : '∞'
+
+                        return (
+                          <div key={p.id} style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 18 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                              <div>
+                                <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>{p.ragione_sociale}</h3>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                                  {p.provincia_esclusiva} • P.IVA: {p.partita_iva}
+                                </div>
+                              </div>
+                              <span style={{ padding: '2px 6px', borderRadius: 4, background: '#10b98115', color: '#10b981', fontWeight: 700, fontSize: 11 }}>
+                                ROI: {roiFornitore}x
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
+                              <div style={styles.infoBox}>
+                                <div style={styles.infoLabel}>Fatturato Procurato</div>
+                                <div style={{ ...styles.infoValue, color: '#10b981', fontSize: 16 }}>€{totaleFatturatoProcurato.toLocaleString()}</div>
+                              </div>
+                              <div style={styles.infoBox}>
+                                <div style={styles.infoLabel}>Spettante CondoFAST</div>
+                                <div style={{ ...styles.infoValue, color: '#f59e0b', fontSize: 16 }}>€{totaleCommissioniMaturate.toFixed(2)}</div>
+                              </div>
+                            </div>
+
+                            <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--border-color)', fontSize: 12, color: 'var(--text-secondary)' }}>
+                              Contratto: <strong>{p.data_inizio_contratto} → {p.data_fine_contratto}</strong>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )}
           </>
         )}
       </div>
@@ -2206,6 +2686,190 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODALE REGISTRAZIONE / MODIFICA FORNITORE PARTNER */}
+      {modalPartnerOpen && (
+        <div style={styles.modalBackdrop} onClick={() => setModalPartnerOpen(false)}>
+          <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: 16, marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 18, color: 'var(--text-primary)' }}>
+                {partnerForm.id ? 'Modifica Partner Convenzionato' : 'Registra Nuovo Partner Convenzionato'}
+              </h2>
+              <button onClick={() => setModalPartnerOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePartnerSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Ragione Sociale *</label>
+                  <input
+                    type="text"
+                    required
+                    value={partnerForm.ragione_sociale}
+                    onChange={e => setPartnerForm({ ...partnerForm, ragione_sociale: e.target.value })}
+                    placeholder="Es. Mario Rossi Termoidraulica SRL"
+                    style={styles.input}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Partita IVA *</label>
+                  <input
+                    type="text"
+                    required
+                    value={partnerForm.partita_iva}
+                    onChange={e => setPartnerForm({ ...partnerForm, partita_iva: e.target.value })}
+                    placeholder="Es. 01234567890"
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Provincia Esclusiva *</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength="5"
+                    value={partnerForm.provincia_esclusiva}
+                    onChange={e => setPartnerForm({ ...partnerForm, provincia_esclusiva: e.target.value.toUpperCase() })}
+                    placeholder="Es. MI, BG, RM"
+                    style={styles.input}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Categoria Servizio</label>
+                  <select
+                    value={partnerForm.categoria}
+                    onChange={e => setPartnerForm({ ...partnerForm, categoria: e.target.value })}
+                    style={styles.selectInput}
+                  >
+                    <option value="manutenzione">Manutenzione Generale</option>
+                    <option value="idraulico">Idraulico & Termoidraulica</option>
+                    <option value="elettricista">Elettricista & Impianti</option>
+                    <option value="spurghi">Spurghi & Fognature</option>
+                    <option value="ascensori">Ascensori & Elevatori</option>
+                    <option value="pulizie">Pulizie & Giardinaggio</option>
+                    <option value="assicurazioni">Polizze Assicurative Fabbricato</option>
+                    <option value="energia">Forniture Luce & Gas</option>
+                    <option value="altro">Altro</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Tipo Contratto</label>
+                  <select
+                    value={partnerForm.tipo_contratto}
+                    onChange={e => setPartnerForm({ ...partnerForm, tipo_contratto: e.target.value })}
+                    style={styles.selectInput}
+                  >
+                    <option value="pioneer_esclusivo">Pioneer Esclusivo (12 mesi)</option>
+                    <option value="multi_vendor">Multi-Vendor Convenzionato</option>
+                    <option value="sospeso">Sospeso / Inattivo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Email Contatti</label>
+                  <input
+                    type="email"
+                    value={partnerForm.email}
+                    onChange={e => setPartnerForm({ ...partnerForm, email: e.target.value })}
+                    placeholder="fornitore@azienda.it"
+                    style={styles.input}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Telefono / Reperibilità</label>
+                  <input
+                    type="text"
+                    value={partnerForm.telefono}
+                    onChange={e => setPartnerForm({ ...partnerForm, telefono: e.target.value })}
+                    placeholder="+39 333 1234567"
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Inizio Contratto</label>
+                  <input
+                    type="date"
+                    value={partnerForm.data_inizio_contratto}
+                    onChange={e => setPartnerForm({ ...partnerForm, data_inizio_contratto: e.target.value })}
+                    style={styles.input}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Scadenza (12 Mesi)</label>
+                  <input
+                    type="date"
+                    value={partnerForm.data_fine_contratto}
+                    onChange={e => setPartnerForm({ ...partnerForm, data_fine_contratto: e.target.value })}
+                    style={styles.input}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Quota Annua (€)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={partnerForm.quota_fissa_annuale}
+                    onChange={e => setPartnerForm({ ...partnerForm, quota_fissa_annuale: parseFloat(e.target.value) || 0 })}
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Provvigione % sui Lavori</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={partnerForm.percentuale_commissione}
+                    onChange={e => setPartnerForm({ ...partnerForm, percentuale_commissione: parseFloat(e.target.value) || 0 })}
+                    style={styles.input}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Nome Referente</label>
+                  <input
+                    type="text"
+                    value={partnerForm.referente_nome}
+                    onChange={e => setPartnerForm({ ...partnerForm, referente_nome: e.target.value })}
+                    placeholder="Mario Rossi (Titolare)"
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Note Contrattuali & Accordi Speciali</label>
+                <textarea
+                  value={partnerForm.note_contrattuali}
+                  onChange={e => setPartnerForm({ ...partnerForm, note_contrattuali: e.target.value })}
+                  placeholder="Es. Esclusiva valida per i comuni della provincia di Milano. Primo anno promozione lancio."
+                  style={{ ...styles.textarea, minHeight: 80 }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 10 }}>
+                <button type="button" onClick={() => setModalPartnerOpen(false)} style={styles.btnSecondary}>
+                  Annulla
+                </button>
+                <button type="submit" disabled={savingPartner} style={{ ...styles.btnSubmit, flex: 'none', padding: '10px 24px' }}>
+                  <Save size={16} /> {savingPartner ? 'Salvataggio...' : 'Salva Contratto Partner'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

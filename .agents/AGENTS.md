@@ -131,6 +131,19 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S63 (31 Luglio 2026 - Onboarding Interattivo e Bivio Migrazione)
+
+### 1. Decisioni sul Flusso Iniziale per Nuovi Utenti
+- **Disabilitazione Auto-generazione Demo**: Rimossa l'invocazione invisibile di `generaCondominioDemo` all'accesso dei nuovi utenti (trial con 0 condomini).
+- **Interactive Onboarding (Wizard)**: Creato un componente a schermo intero (`InteractiveOnboarding.jsx`) che copre la dashboard vuota e guida l'utente a configurare il software compiendo le prime tre azioni chiave.
+- **Bivio Migrazione vs Partenza da zero**: Il wizard esordisce chiedendo all'utente se sta migrando da un vecchio gestionale o se sta partendo da zero. Se migra, viene reindirizzato alla pagina di importazione guidata (`/migrazione`).
+- **Learning by Doing (3 Step Core)**: Il flusso "partenza da zero" si divide in:
+  1. *Crea il tuo primo condominio* (vengono generate silenziosamente 3 unità immobiliari e la tabella millesimale per abilitare le rate).
+  2. *Carica fattura con AI* (dimostrazione WOW dell'estrazione dati automatica dal PDF/Immagine della bolletta tramite `estraiFattura`).
+  3. *Generazione Preventivo e Rate* (dimostrazione di calcolo delle quote ripartite sui 3 finti condomini e generazione di 2 rate).
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S10 (30 Giugno 2026)
 
 ### 1. Decisioni sul Workflow Agentico

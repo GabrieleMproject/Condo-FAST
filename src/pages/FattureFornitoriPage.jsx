@@ -7,7 +7,9 @@ import { calcolaFileHash } from '../lib/fileHash';
 import { useFornitori } from '../hooks/useFornitori';
 import { usePlan } from '../hooks/usePlan';
 import ModalWarningPertinenza from '../components/ModalWarningPertinenza';
-import { Edit3, Trash2, AlertTriangle, Upload, Paperclip, Loader2, Receipt, Calendar, Clock, Link2, FileText } from 'lucide-react';
+import ModalRichiestaPreventivo from '../components/ModalRichiestaPreventivo';
+import { checkInvoiceMatch } from '../lib/partnerEngine';
+import { Edit3, Trash2, AlertTriangle, Upload, Paperclip, Loader2, Receipt, Calendar, Clock, Link2, FileText, Store } from 'lucide-react';
 
 const STATI = {
   attesa:     { label: 'In attesa',  color: '#f59e0b', bg: '#f59e0b20' },
@@ -37,6 +39,7 @@ export default function FattureFornitoriPage() {
   const [condominio, setCondominio]       = useState(null);
   const [warningModal, setWarningModal]   = useState(null);
   const [pendingFile, setPendingFile]     = useState(null);
+  const [showPreventivoModal, setShowPreventivoModal] = useState(false);
 
   const [fatture, setFatture]             = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -286,6 +289,19 @@ export default function FattureFornitoriPage() {
         }
       }
 
+      // Auto-match fornitore partner per provvigioni
+      if (datiAI.partita_iva_fornitore && insertedRow?.id) {
+        checkInvoiceMatch(
+          insertedRow.id,
+          datiAI.partita_iva_fornitore,
+          datiAI.importo_totale,
+          datiAI.data_fattura,
+          datiAI.numero_fattura,
+          condominioId,
+          user.id
+        ).catch(err => console.warn("Auto match partner warning:", err));
+      }
+
       setTimeout(() => setUploadProgress(''), 3000);
     } catch (e) {
       setErroreUpload('Errore: ' + e.message);
@@ -442,11 +458,29 @@ export default function FattureFornitoriPage() {
         style={{ display: 'none' }} onChange={onF24Selected}
       />
 
-      <div style={styles.header}>
+      <div style={{ ...styles.header, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={styles.title}>Fatture Fornitori</h1>
           <p style={styles.subtitle}>Carica fatture e collega alle spese condominiali</p>
         </div>
+        <button
+          onClick={() => setShowPreventivoModal(true)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'var(--card-bg)',
+            border: '1px solid var(--border-color)',
+            color: '#3b82f6',
+            borderRadius: 8,
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          <Store size={16} /> Richiedi Preventivo Convenzionato
+        </button>
       </div>
 
       {/* KPI */}
@@ -682,6 +716,14 @@ export default function FattureFornitoriPage() {
           }
         }}
       />
+
+      {/* Modale Richiesta Preventivo Convenzionato */}
+      {showPreventivoModal && (
+        <ModalRichiestaPreventivo
+          condominio={condominio}
+          onClose={() => setShowPreventivoModal(false)}
+        />
+      )}
 
     </div>
   );

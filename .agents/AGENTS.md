@@ -142,6 +142,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Schema DB (`sql/s63_fornitori_partner_marketplace.sql`)**: Create tabelle `fornitori_partner`, `partner_match_log`, `richieste_preventivo` e funzione RPC `check_invoice_partner_match()`.
 - **Pannello Backoffice SuperAdmin (`BackofficePage.jsx`)**: Introdotta la nuova sezione dedicata **"Fornitori Partner & Marketplace"** articolata in 4 sotto-schede: *Gestione Partner & Contratti*, *Rendicontazione Match AI*, *Richieste Preventivo*, *Report ROI & Negoziazione Rinnovo*.
 - **Modulo Preventivi Amministratore (`ModalRichiestaPreventivo.jsx`)**: Aggiunto il pulsante per richiedere preventivi ai fornitori convenzionati di zona direttamente dalla gestione fatture del condominio.
+- **Sezione Pronto Intervento H24 (`ProntoInterventoPage.jsx` & `AppLayout.jsx`)**: Aggiunto il pulsante visibile `H24` nella Sidebar e la pagina dedicata ai contatti telefonici e WhatsApp dei fornitori d'emergenza suddivisi per provincia ed urgenza.
 - **Auto-Matching Fatture AI (`FattureFornitoriPage.jsx` & `partnerEngine.js`)**: Collegato il check automatico di riscontro P.IVA al caricamento delle fatture per il calcolo trasparente delle provvigioni.
 
 ---

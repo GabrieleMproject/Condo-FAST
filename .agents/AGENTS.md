@@ -143,6 +143,7 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Pannello Backoffice SuperAdmin (`BackofficePage.jsx`)**: Introdotta la nuova sezione dedicata **"Fornitori Partner & Marketplace"** articolata in 4 sotto-schede: *Gestione Partner & Contratti*, *Rendicontazione Match AI*, *Richieste Preventivo*, *Report ROI & Negoziazione Rinnovo*.
 - **Modulo Preventivi Amministratore (`ModalRichiestaPreventivo.jsx`)**: Aggiunto il pulsante per richiedere preventivi ai fornitori convenzionati di zona direttamente dalla gestione fatture del condominio.
 - **Sezione Pronto Intervento H24 (`ProntoInterventoPage.jsx` & `AppLayout.jsx`)**: Aggiunto il pulsante visibile `H24` nella Sidebar e la pagina dedicata ai contatti telefonici e WhatsApp dei fornitori d'emergenza suddivisi per provincia ed urgenza.
+- **Salvaguardia Clienti Preesistenti**: La funzione SQL `check_invoice_partner_match()` controlla se il condominio possedeva già fatture antecedenti la data d'inizio della partnership con quel fornitore. In tal caso, il match viene registrato come `cliente_preesistente` a **commissione 0,00€** (nessun addebito al partner per i suoi clienti storici).
 - **Auto-Matching Fatture AI (`FattureFornitoriPage.jsx` & `partnerEngine.js`)**: Collegato il check automatico di riscontro P.IVA al caricamento delle fatture per il calcolo trasparente delle provvigioni.
 
 ---

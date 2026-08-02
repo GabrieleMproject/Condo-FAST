@@ -64,6 +64,66 @@ export function useDocumenti(condominioId) {
     }
   }, [condominioId, precacheSignedUrls])
 
+  const upload = useCallback(async (file, tipo, nome, note = '', dataDocumento = null, sinistroId = null) => {
+    setLoading(true)
+    setError(null)
+    try {
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Il file supera il limite massimo consentito di 10MB.')
+      }
+
+      // Prevenzione SVG/HTML Upload (Stored XSS)
+      const invalidTypes = ['image/svg+xml', 'text/html', 'application/xhtml+xml', 'text/xml']
+      if (invalidTypes.includes(file.type) || file.name.match(/\.(svg|html|htm|xml)$/i)) {
+        throw new Error('Formato file non consentito per motivi di sicurezza.')
+      }
+
+      // Applica compressione se è un'immagine
+      const compressedFile = await comprimiImmagine(file)
+
+      // 1. Upload file su Storage
+      const ext = compressedFile.name.split('.').pop().toLowerCase()
+      const path = `${condominioId}/${Date.now()}_${compressedFile.name}`
+      const { error: uploadError } = await supabase.storage
+          .from(BUCKET)
+          .upload(path, compressedFile, { upsert: false })
+      if (uploadError) throw uploadError
+
+      // 2. Estrai testo se PDF o DOCX
+      let testo_estratto = null
+      if (ext === 'pdf') {
+        testo_estratto = await estraiTestoPDF(compressedFile, condominioId)
+      } else if (ext === 'docx') {
+        try { testo_estratto = await docxToText(compressedFile) } catch (e) { console.error(e) }
+      }
+
+      // 3. Salva record su DB
+      const { data, error: dbError } = await supabase
+          .from('documenti_condominio')
+          .insert({
+            condominio_id: condominioId,
+            tipo,
+            nome: nome || compressedFile.name,
+            url_storage: path,
+            testo_estratto,
+            note,
+            data_documento: dataDocumento,
+            sinistro_id: sinistroId,
+          })
+          .select()
+          .single()
+      if (dbError) throw dbError
+
+      setDocumenti(prev => [data, ...prev])
+      return data
+    } catch (e) {
+      setError(e.message)
+      throw e
+    } finally {
+      setLoading(false)
+    }
+  }, [condominioId])
+
   const getSignedUrl = useCallback(async (urlStorage) => {
     if (!urlStorage) return null
     const now = Date.now()

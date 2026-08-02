@@ -20,9 +20,10 @@ import {
   ArrowLeft, Receipt, Users,
   CheckCircle2,
   ChevronRight, Building2,
-  Mail, FileSignature, ShieldAlert,
+  Mail, FileSignature, ShieldAlert, ShieldCheck
 } from 'lucide-react'
 import VerbaliAssembleaTab from '../components/VerbaliAssembleaTab'
+import ModaleServiziTelematici from '../components/ModaleServiziTelematici'
 import { eseguiDiagnosiConformitaFiscale } from '../lib/diagnosiFiscaleEngine'
 import DiagnosiFiscaleModal from '../components/DiagnosiFiscaleModal'
 import { Activity } from 'lucide-react'
@@ -168,6 +169,8 @@ export default function CondominiDetailPage() {
   const [modalDiagnosiOpen, setModalDiagnosiOpen] = useState(false)
   const [diagnosiResult, setDiagnosiResult] = useState(null)
   const [diagnosiBusy, setDiagnosiBusy] = useState(false)
+  
+  const [modalPrivacyOpen, setModalPrivacyOpen] = useState(false)
 
   const handleAvviaDiagnosiFiscale = async () => {
     if (!c) return
@@ -456,6 +459,24 @@ export default function CondominiDetailPage() {
               </div>
             )}
 
+            <div style={S.section}>
+              <p style={S.sectionTitle}>Servizi Aggiuntivi</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', border: '1px solid var(--border-color)', borderRadius: 10, background: 'var(--app-bg)', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ padding: 10, borderRadius: 8, background: 'rgba(16, 185, 129, 0.1)' }}>
+                    <ShieldCheck size={24} color="#10b981" />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>Conservazione Fiscale & Privacy GDPR</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Adempimento documentale Art. 1130 c.c.</div>
+                  </div>
+                </div>
+                <button style={{ ...S.btnSuccess, background: '#10b981' }} onClick={() => setModalPrivacyOpen(true)}>
+                  <ShieldCheck size={16} style={{ marginRight: 6 }} /> Gestisci Servizio
+                </button>
+              </div>
+            </div>
+
             <PassaggioConsegneSection condominioId={c.id} condominio={c} />
           </>
         )}
@@ -485,6 +506,12 @@ export default function CondominiDetailPage() {
         onClose={() => setModalDiagnosiOpen(false)}
         condominioNome={c?.nome}
         diagnosiResult={diagnosiResult}
+      />
+
+      <ModaleServiziTelematici
+        isOpen={modalPrivacyOpen}
+        onClose={() => setModalPrivacyOpen(false)}
+        condominio={c}
       />
     </div>
   )

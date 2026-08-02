@@ -143,6 +143,7 @@ export function PlanProvider({ children }) {
   const [isCollaboratore, setIsCollaboratore] = useState(false)
   const [titolareId, setTitolareId]         = useState(null)
   const [loadedUserId, setLoadedUserId]     = useState(null)
+  const [condominiServizioAttivo, setCondominiServizioAttivo] = useState(0)
 
   // ── Carica profilo + conteggi ─────────────────────────────────────────
   const loadPlan = useCallback(async () => {
@@ -198,6 +199,15 @@ export function PlanProvider({ children }) {
         .eq('amministratore_id', targetUserId)
 
       setCondominiCount(condCount || 0)
+
+      // Fetch numero di condomini con servizio telematico attivo per gamification e sconto
+      const { count: countTelematici } = await supabase
+        .from('condominio_servizi_telematici')
+        .select('id, condomini!inner(amministratore_id)', { count: 'exact', head: true })
+        .eq('attivo', true)
+        .eq('condomini.amministratore_id', targetUserId)
+
+      setCondominiServizioAttivo(countTelematici || 0)
 
       // Conteggio AI calls mese corrente (in UTC)
       const ora = new Date()
@@ -290,6 +300,10 @@ export function PlanProvider({ children }) {
       ? condominiCount < condominiInclusi
       : true // nei piani pagati Stripe gestisce la quota extra
 
+  // ── Sconto Modulo Telematici ──────────────────────────────────────────
+  const scontoTelematiciMensile = Math.min(condominiServizioAttivo * 1.00, limiti.canone * 0.50)
+  const prezzoSaaSFinale = Math.max(0, limiti.canone - scontoTelematiciMensile)
+
   // ── canUse(feature) ───────────────────────────────────────────────────
   const canUse = useCallback((feature) => {
     const pianiAbilitati = FEATURE_GATES[feature]
@@ -334,6 +348,10 @@ export function PlanProvider({ children }) {
     condominiExtra,
     costoExtraMese,
     puoAggiungereCondominio,
+
+    condominiServizioAttivo,
+    scontoTelematiciMensile,
+    prezzoSaaSFinale,
 
     aiCallsCount,
     aiCallsLimit: limiti.ai_calls_mese,

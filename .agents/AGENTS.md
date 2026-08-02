@@ -1640,3 +1640,18 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Rimozione Fallback Fittizi**: Rimossi tutti i messaggi placeholder e fallback automatici (es: 'Sincronizzazione da anagrafica', 'Proposta abbinamento'). L'estrazione ora mostra unicamente i dati contenuti effettivamente nel file caricato dall'utente, stampando 'Dato non rilevato nel documento' se mancante.
 - **Aggiunta Campo Data**: Integrata l'estrazione e visualizzazione del campo Data Fattura nella UI della demo Sandbox.
 - **Supporto Multi-Formato**: Migliorato il parser javascript per supportare sia l'estrazione rigorosa da file XML (Fattura Elettronica P7M/XML con i relativi tag , , ) che l'estrazione da testo grezzo/PDF tramite Regex estese e ottimizzate per qualsiasi layout.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S64 (2 Agosto 2026 - Modulo Add-on "Conservazione Fiscale & GDPR")
+
+### 1. Decisioni Architetturali e di Business
+- **Modello Economico Add-on**: Definito il canone di 36€/anno addebitato al condominio per il servizio di Conservazione 10 Anni e Portale Telematico.
+- **Sconto Partner Amministratore**: Definito cashback per lo studio di 1€/mese (12€/anno) per ogni condominio con servizio attivo, con CAP limite al 50% del valore del piano SaaS.
+
+### 2. Implementazione Tecnica e Database
+- **Tabelle e RLS**: Creata tabella `condominio_servizi_telematici` per tracciare l'attivazione e la data del servizio per ogni condominio, protetta da RLS per amministratore.
+- **Logica Sconto (usePlan.js)**: Aggiornato l'hook di stato globale per calcolare il numero di servizi attivi e applicare dinamicamente lo sconto cumulativo al piano, gestendo il cap 50%.
+- **Gamification e UI**: Creato e integrato in Dashboard/Impostazioni il `RisparmioStudioWidget` per visualizzare in tempo reale lo sconto maturato. Aggiunta la modale dedicata per attivazione servizi nella scheda Condominio.
+- **Generatori PDF**: Creati i moduli JS `deliberaPrivacyGenerator.js` e `certificatoGdprGenerator.js` usando jsPDF per la produzione di report formali standardizzati (watermark CondoFAST).
+- **Auto-contabilizzazione (SpeseForm.jsx)**: Inserito bottone di "Aggiunta Rapida" (fast-add) per precompilare automaticamente la spesa di Conservazione Sostitutiva (36.00€) per il condominio, facilitandone il reintegro economico da parte dell'amministratore.

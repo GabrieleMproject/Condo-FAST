@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast'
 import { generaExportGDPR } from '../lib/exportDatiGdpr'
 import { Settings, Check, Trash2, AlertTriangle, CreditCard, Lock, Bell, Gift, Copy, ExternalLink, Sun, Moon, Building2, Download, X, ShieldCheck, CheckCircle2, FileCheck, Zap, Sparkles } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
+import RisparmioStudioWidget from '../components/RisparmioStudioWidget'
 
 // ── Stripe Checkout ───────────────────────────────────────────────────────
 async function avviaCheckout({ piano, userId, userEmail }) {
@@ -505,6 +506,7 @@ export default function ImpostazioniPage() {
 
         {!isCollaboratore && (
           <>
+            <RisparmioStudioWidget />
             {/* ── PIANO ATTIVO ─────────────────────────────────────────── */}
             <section style={styles.section}>
               <h2 style={styles.sectionTitle}>Piano attivo</h2>

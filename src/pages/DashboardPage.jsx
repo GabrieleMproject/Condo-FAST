@@ -10,6 +10,7 @@ import GuidaRapidaModal from '../components/GuidaRapidaModal'
 import OnboardingTourModal from '../components/OnboardingTourModal'
 import InteractiveOnboarding from '../components/InteractiveOnboarding'
 import ScadenzarioWidget from '../components/ScadenzarioWidget'
+import RisparmioStudioWidget from '../components/RisparmioStudioWidget'
 import {
   Building2,
   CheckCircle2,
@@ -392,6 +393,9 @@ export default function DashboardPage() {
           onOpenGuida={() => setShowGuidaModal(true)}
         />
       )}
+
+      {/* Risparmio Studio Gamification */}
+      <RisparmioStudioWidget compact={true} />
 
       {/* Postbox Alert Banner */}
       {canUse('postbox_studio') && (

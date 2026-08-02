@@ -4,7 +4,7 @@ import { estraiFattura, fileToBase64, comprimiImmagine, getTipoFile } from '../l
 import { parseFatturaXmlP7m } from '../lib/xmlFatturaParser'
 import { usePlan } from '../hooks/usePlan'
 import { supabase } from '../lib/supabaseClient'
-import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet, Trash2, ChevronDown, ChevronUp, Layers, FileText } from 'lucide-react'
+import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet, Trash2, ChevronDown, ChevronUp, Layers, FileText, ShieldCheck } from 'lucide-react'
 
 const CATEGORIE = [
   { value: 'ordinaria', label: 'Ordinaria' },
@@ -617,6 +617,18 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     }
   }
 
+  const autoCompilaConservazione = () => {
+    setForm(f => ({
+      ...f,
+      fornitore: 'CondoFAST (Canone Piattaforma)',
+      descrizione: 'Servizio Conservazione Sostitutiva 10 Anni e Portale GDPR',
+      importo: '36.00',
+      categoria: 'ordinaria',
+      tipo_lavoro: 'ordinario',
+      criterio: 'quota_fissa'
+    }))
+  }
+
   const handleDrop = (e) => {
     e.preventDefault()
     setDragOver(false)
@@ -1222,6 +1234,29 @@ Formato JSON:
             <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
             <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>oppure compila manualmente</span>
             <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+            <button
+              type="button"
+              onClick={autoCompilaConservazione}
+              style={{
+                background: 'rgba(16, 185, 129, 0.1)',
+                color: '#10b981',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: 8,
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontFamily: 'Sora, sans-serif'
+              }}
+            >
+              <ShieldCheck size={16} /> Aggiungi Spesa Conservazione Fiscale (36€)
+            </button>
           </div>
         </div>
       )}

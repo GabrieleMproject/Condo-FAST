@@ -96,6 +96,8 @@ export default function BackofficePage() {
     data_fine_contratto: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
     quota_fissa_annuale: 290.00,
     percentuale_commissione: 5.00,
+    data_scadenza_durc: '',
+    durc_verificato: true,
     note_contrattuali: '',
     attivo: true
   })
@@ -228,6 +230,8 @@ export default function BackofficePage() {
       data_fine_contratto: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
       quota_fissa_annuale: 290.00,
       percentuale_commissione: 5.00,
+      data_scadenza_durc: '',
+      durc_verificato: true,
       note_contrattuali: '',
       attivo: true
     })
@@ -250,6 +254,8 @@ export default function BackofficePage() {
       data_fine_contratto: p.data_fine_contratto || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
       quota_fissa_annuale: p.quota_fissa_annuale || 290.00,
       percentuale_commissione: p.percentuale_commissione || 5.00,
+      data_scadenza_durc: p.data_scadenza_durc || '',
+      durc_verificato: p.durc_verificato !== false,
       note_contrattuali: p.note_contrattuali || '',
       attivo: p.attivo !== false
     })
@@ -2156,6 +2162,32 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                   </div>
                 </div>
 
+                {/* Alert Banner Scadenza DURC SuperAdmin */}
+                {(() => {
+                  const partnerDurcInScadenza = partnerList.filter(p => {
+                    if (!p.data_scadenza_durc) return false
+                    const diffDays = Math.ceil((new Date(p.data_scadenza_durc) - new Date()) / (1000 * 60 * 60 * 24))
+                    return diffDays <= 30
+                  })
+                  if (partnerDurcInScadenza.length === 0) return null
+                  return (
+                    <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <AlertTriangle size={22} color="#ef4444" />
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: '#ef4444' }}>
+                            🚨 Avviso SuperAdmin: {partnerDurcInScadenza.length} Partner con DURC in Scadenza o Scaduto!
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                            Richiedere l'invio del DURC aggiornato entro la data limite per mantenere attiva l'esclusiva ed il badge H24:{' '}
+                            <strong>{partnerDurcInScadenza.map(p => `${p.ragione_sociale} (Scad: ${p.data_scadenza_durc || 'N/D'})`).join(', ')}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 {/* Sub-Navigazione Sezione Fornitori */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: 12 }}>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -2848,6 +2880,30 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                     placeholder="Mario Rossi (Titolare)"
                     style={styles.input}
                   />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Scadenza DURC (Data Limit)</label>
+                  <input
+                    type="date"
+                    value={partnerForm.data_scadenza_durc}
+                    onChange={e => setPartnerForm({ ...partnerForm, data_scadenza_durc: e.target.value })}
+                    style={styles.input}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 20 }}>
+                  <input
+                    type="checkbox"
+                    id="durc_verificato"
+                    checked={partnerForm.durc_verificato}
+                    onChange={e => setPartnerForm({ ...partnerForm, durc_verificato: e.target.checked })}
+                    style={{ width: 18, height: 18, cursor: 'pointer' }}
+                  />
+                  <label htmlFor="durc_verificato" style={{ fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    DURC in Regola (Verificato)
+                  </label>
                 </div>
               </div>
 

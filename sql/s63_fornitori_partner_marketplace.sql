@@ -22,10 +22,15 @@ CREATE TABLE IF NOT EXISTS public.fornitori_partner (
     rating_soddisfazione NUMERIC(3,2) NOT NULL DEFAULT 5.00,
     numero_recensioni INTEGER NOT NULL DEFAULT 0,
     note_contrattuali TEXT,
+    data_scadenza_durc DATE,
+    durc_verificato BOOLEAN NOT NULL DEFAULT true,
     attivo BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE public.fornitori_partner ADD COLUMN IF NOT EXISTS data_scadenza_durc DATE;
+ALTER TABLE public.fornitori_partner ADD COLUMN IF NOT EXISTS durc_verificato BOOLEAN NOT NULL DEFAULT true;
 
 -- Indici per ricerche rapide per P.IVA, Provincia e Categoria
 CREATE INDEX IF NOT EXISTS idx_fornitori_partner_piva ON public.fornitori_partner(partita_iva);

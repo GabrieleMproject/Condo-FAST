@@ -141,7 +141,8 @@ BEGIN
         RETURN jsonb_build_object('matched', false, 'reason', 'partner_non_trovato');
     END IF;
 
-    -- Controllo se il condominio era già cliente del fornitore prima dell'inizio del contratto partner
+    -- Controllo se il condominio era cliente ATTIVO negli ultimi 12 mesi prima del contratto partner
+    -- Se l'ultima fattura risale a oltre 12 mesi fa, il cliente viene considerato EX-CLIENTE RICONQUISTATO tramite CondoFAST (commissione dovuta).
     IF p_condominio_id IS NOT NULL AND EXISTS (
         SELECT 1 
         FROM public.fatture_fornitori f
@@ -152,6 +153,7 @@ BEGIN
             OR f.fornitore ILIKE '%' || v_partner.ragione_sociale || '%'
           )
           AND f.data_fattura < v_partner.data_inizio_contratto
+          AND f.data_fattura >= (v_partner.data_inizio_contratto - INTERVAL '12 months')
     ) THEN
         v_is_preesistente := true;
         v_commissione := 0.00;

@@ -106,7 +106,7 @@ CREATE POLICY admin_manage_richieste_preventivo ON public.richieste_preventivo
     USING (amministratore_id = auth.uid() OR public.is_superadmin(auth.uid()))
     WITH CHECK (amministratore_id = auth.uid() OR public.is_superadmin(auth.uid()));
 
--- 5. Funzione RPC per match automatico fattura
+    -- 5. Funzione RPC per match automatico fattura
 CREATE OR REPLACE FUNCTION public.check_invoice_partner_match(
     p_fattura_id UUID,
     p_piva TEXT,
@@ -120,7 +120,9 @@ DECLARE
     v_partner RECORD;
     v_piva_clean TEXT;
     v_commissione NUMERIC(10,2);
+    v_stato_comm TEXT;
     v_match_id UUID;
+    v_is_preesistente BOOLEAN := false;
 BEGIN
     v_piva_clean := REGEXP_REPLACE(p_piva, '\s+', '', 'g');
     IF v_piva_clean IS NULL OR v_piva_clean = '' THEN
@@ -139,8 +141,25 @@ BEGIN
         RETURN jsonb_build_object('matched', false, 'reason', 'partner_non_trovato');
     END IF;
 
-    -- Calcola provvigione
-    v_commissione := ROUND((p_importo * v_partner.percentuale_commissione) / 100.0, 2);
+    -- Controllo se il condominio era già cliente del fornitore prima dell'inizio del contratto partner
+    IF p_condominio_id IS NOT NULL AND EXISTS (
+        SELECT 1 
+        FROM public.fatture_fornitori f
+        WHERE f.condominio_id = p_condominio_id
+          AND f.id <> p_fattura_id
+          AND (
+            REGEXP_REPLACE(COALESCE(f.ai_dati_estratti->>'partita_iva_fornitore', ''), '\s+', '', 'g') = v_piva_clean
+            OR f.fornitore ILIKE '%' || v_partner.ragione_sociale || '%'
+          )
+          AND f.data_fattura < v_partner.data_inizio_contratto
+    ) THEN
+        v_is_preesistente := true;
+        v_commissione := 0.00;
+        v_stato_comm := 'cliente_preesistente';
+    ELSE
+        v_commissione := ROUND((p_importo * v_partner.percentuale_commissione) / 100.0, 2);
+        v_stato_comm := 'da_fatturare';
+    END IF;
 
     -- Inserisci o aggiorna match log
     INSERT INTO public.partner_match_log (
@@ -154,7 +173,8 @@ BEGIN
         importo_fattura,
         percentuale_applicata,
         importo_commissione,
-        stato_commissione
+        stato_commissione,
+        note
     ) VALUES (
         v_partner.id,
         p_fattura_id,
@@ -166,7 +186,8 @@ BEGIN
         p_importo,
         v_partner.percentuale_commissione,
         v_commissione,
-        'da_fatturare'
+        v_stato_comm,
+        CASE WHEN v_is_preesistente THEN 'Cliente preesistente (Fattura antecedente a data contratto partner)' ELSE NULL END
     )
     ON CONFLICT DO NOTHING
     RETURNING id INTO v_match_id;
@@ -176,7 +197,8 @@ BEGIN
         'partner_id', v_partner.id,
         'ragione_sociale', v_partner.ragione_sociale,
         'commissione', v_commissione,
-        'percentuale', v_partner.percentuale_commissione
+        'percentuale', v_partner.percentuale_commissione,
+        'is_preesistente', v_is_preesistente
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

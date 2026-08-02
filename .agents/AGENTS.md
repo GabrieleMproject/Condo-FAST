@@ -131,6 +131,19 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S67 (2 Agosto 2026 - Collaudo Generale, Bug Triaging e Fix Double Save)
+
+### 1. Collaudo e Analisi Stabilità (Bug Triaging)
+- **Verifica Caricamenti Infiniti:** Il Bug Triager ha analizzato tutti i flussi asincroni di interfaccia. È stato verificato che non esistono bug architetturali o loop nei caricamenti (es. `isLoading` o spinner bloccati). Tutte le fetch API implementano robusti blocchi `finally {}` che ripristinano l'UI anche a fronte di eccezioni o errori Supabase (es. violazioni RLS).
+
+### 2. Bug Risolti
+- **Double Save in CondominiPage:** Risolto un bug architetturale minore in `CondominiPage.jsx` che causava la duplicazione della query di salvataggio del condominio verso il database. Precedentemente il salvataggio veniva eseguito dal componente genitore sebbene fosse già stato processato con successo dal componente figlio `CondominiForm`. Il genitore ora governa solamente la chiusura della modale e il Toast di successo, rendendo i consumi di rete efficienti.
+
+### 3. Deploy
+- **Deploy Globale Unificato:** Eseguito `npm run deploy:all` con successo.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S66 (2 Agosto 2026 - Revenue Share sul Markup & Modulo Privacy)
 
 ### 1. Decisioni Architetturali e Monetizzazione

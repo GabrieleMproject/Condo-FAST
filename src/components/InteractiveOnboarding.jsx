@@ -45,6 +45,11 @@ export default function InteractiveOnboarding({ onComplete }) {
           nome: condoName,
           indirizzo: 'Via di Prova 1',
           citta: 'Roma',
+          civico: '1',
+          cap: '00100',
+          provincia: 'RM',
+          num_unita: 3,
+          num_scale: 1,
           amministratore_id: user.id
         }])
         .select()

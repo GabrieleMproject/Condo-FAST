@@ -68,9 +68,13 @@ export function useSpese(condominioId, esercizioId) {
         })
       } catch (_) { /* ignora se non disponibile */ }
 
+      const payloadSpesa = { ...payload }
+      delete payloadSpesa.ripartizioni
+      delete payloadSpesa.tabelle_millesimali
+
       const { data: spesa, error: spesaError } = await supabase
         .from('spese')
-        .insert({ ...payload, condominio_id: condominioId })
+        .insert({ ...payloadSpesa, condominio_id: condominioId })
         .select()
         .single()
       if (spesaError) throw spesaError
@@ -94,9 +98,13 @@ export function useSpese(condominioId, esercizioId) {
   const aggiorna = useCallback(async (id, payload, ripartizioniCalcolate) => {
     setLoading(true)
     try {
+      const payloadSpesa = { ...payload }
+      delete payloadSpesa.ripartizioni
+      delete payloadSpesa.tabelle_millesimali
+
       const { data, error } = await supabase
         .from('spese')
-        .update(payload)
+        .update(payloadSpesa)
         .eq('id', id)
         .select()
         .single()

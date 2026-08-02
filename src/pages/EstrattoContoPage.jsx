@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiMovimentiBancari, getTipoFile } from '../lib/fileExtractor';
+import { calcolaFileHash } from '../lib/fileHash';
 import { useDocumenti } from '../hooks/useDocumenti';
 import PlanGate from '../components/PlanGate';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';

@@ -36,14 +36,10 @@ export default function CondominiPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleSave = async (data) => {
-    try {
-      if (editItem) await updateCondominio(editItem.id, data)
-      else await createCondominio(data)
-      setShowForm(false)
-      setEditItem(null)
-      showToast(editItem ? 'Condominio aggiornato' : 'Condominio creato')
-    } catch (err) { showToast(err.message, 'error') }
+  const handleSave = () => {
+    setShowForm(false)
+    setEditItem(null)
+    showToast(editItem ? 'Condominio aggiornato' : 'Condominio creato')
   }
 
   const handleDelete = async (id) => {

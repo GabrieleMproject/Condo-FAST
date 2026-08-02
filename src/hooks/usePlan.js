@@ -129,7 +129,7 @@ const FEATURE_GATES = {
   api_access:          ['professional'],             // futuro
   open_banking:        ['professional'],             // S51
   distinta_cbi_f24:    ['professional'],             // Distinta CBI F24 riservata a Professional
-  fatturazione_xml_sdi:['studio', 'professional'],   // Importazione nativa XML/p7m a 0 token per Studio e Professional
+  fatturazione_xml_sdi:['base', 'studio', 'professional'],   // Importazione nativa XML/p7m a 0 token per Base, Studio e Professional
 }
 
 const PlanContext = createContext(null)

@@ -13,7 +13,7 @@ export default function RisparmioStudioWidget({ compact = false }) {
   const maxSconto = canoneSaaS * 0.5;
   const percSconto = Math.min(100, Math.round((scontoTelematiciMensile / maxSconto) * 100));
 
-  const formatEuro = (val) => `€ ${parseFloat(val).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatEuro = (val) => `€ ${parseFloat(val || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   if (compact) {
     return (

@@ -131,6 +131,19 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S66 (2 Agosto 2026 - Revenue Share sul Markup & Modulo Privacy)
+
+### 1. Decisioni Architetturali e Monetizzazione
+- **Revenue Share sul Markup (Profit Split / Platform Fee)**: Introdotto il modello di profit split (platform fee) per il Modulo Privacy. L'amministratore ha la facoltà di impostare un prezzo di rivendita personalizzato per condominio.
+- **Calcolo del Margine Netto**: La fee di piattaforma (30% di default sul markup) viene applicata unicamente sulla quota di profitto eccedente il costo base del servizio (36€ di default). Formula: `Netto Amministratore = Prezzo Rivendita - Base (36€) - (Markup * 30%)`.
+
+### 2. Sviluppi Tecnici e Piattaforma
+- **Schema DB (`condominio_servizi_telematici`)**: Aggiunti i campi `prezzo_rivendita` (numeric, default 36.00) e `platform_fee_percent` (numeric, default 30.00) per la gestione granulare dei listini e della platform fee per condominio.
+- **Interfaccia Gestione (`ModaleServiziTelematici.jsx`)**: L'amministratore può impostare il prezzo di rivendita. Inserito un calcolatore di profitto trasparente con dinamica di gamification che mostra il guadagno netto calcolato istantaneamente (36€ base + X markup - 30% fee = netto).
+- **Generatore Documenti (`deliberaPrivacyGenerator.js`)**: Aggiornato per formattare e stampare il `prezzo_rivendita` configurato all'interno dei verbali e delle delibere privacy.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S63 (2 Agosto 2026 - Marketplace Fornitori Partner & Auto-Matching AI)
 
 ### 1. Decisioni Architetturali e di Business

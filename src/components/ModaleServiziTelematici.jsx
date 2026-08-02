@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { ShieldCheck, FileText, Check, X, ShieldAlert, Loader2, FileCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { generaDeliberaPrivacy } from '../lib/deliberaPrivacyGenerator';
 import { generaCertificatoGdpr } from '../lib/certificatoGdprGenerator';
 import { usePlan } from '../hooks/usePlan';
+import { useDocumenti } from '../hooks/useDocumenti';
 
 export default function ModaleServiziTelematici({ isOpen, onClose, condominio }) {
   const { profile, refresh } = usePlan();
@@ -13,6 +14,9 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
   const [servizio, setServizio] = useState(null);
   const [saving, setSaving] = useState(false);
   const [generandoPdf, setGenerandoPdf] = useState(false);
+  const [prezzoRivendita, setPrezzoRivendita] = useState(36);
+  const platformFeePercent = 30; // 30% platform fee
+
   
   // Stati per la gestione del verbale
   const [selectedVerbaleId, setSelectedVerbaleId] = useState('');
@@ -39,6 +43,7 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
       
       if (error) throw error;
       setServizio(data || { attivo: false });
+      setPrezzoRivendita(data?.prezzo_rivendita || 36);
     } catch (err) {
       toast.error('Errore caricamento stato servizio');
       console.error(err);
@@ -81,6 +86,8 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
         condominio_id: condominio.id,
         attivo: nuovoStato,
         data_attivazione: nuovoStato ? new Date().toISOString() : null,
+        prezzo_rivendita: prezzoRivendita,
+        platform_fee_percent: platformFeePercent
       };
 
       if (nuovoStato && finalVerbaleId) {
@@ -114,7 +121,11 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
   const handleGeneraDelibera = async () => {
     setGenerandoPdf(true);
     try {
-      await generaDeliberaPrivacy(condominio, profile);
+      // Autosave prezzo_rivendita if service is already active, otherwise it gets saved on toggle
+      if (servizio?.id) {
+        await supabase.from('condominio_servizi_telematici').update({ prezzo_rivendita: prezzoRivendita }).eq('id', servizio.id);
+      }
+      await generaDeliberaPrivacy(condominio, profile, prezzoRivendita);
       toast.success('Delibera generata!');
     } catch (err) {
       toast.error('Errore generazione delibera');
@@ -163,12 +174,43 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
               <li>Portale telematico accessibile ai condòmini H24.</li>
               <li>Registro del trattamento e conformità GDPR.</li>
             </ul>
-            <div style={{ marginTop: 16, padding: '10px 14px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#065f46' }}>Costo per il Condominio:</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#059669' }}>36,00 € + IVA / anno</span>
-            </div>
-            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>
-              Attivando questo servizio, come partner CondoFAST, riceverai uno <strong>sconto di 1,00 €/mese</strong> sulla tua licenza software.
+            <div style={{ marginTop: 16, padding: '16px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Prezzo da esporre in Delibera (€/anno):</span>
+                <input 
+                  type="number" 
+                  value={prezzoRivendita} 
+                  onChange={(e) => setPrezzoRivendita(e.target.value)}
+                  onBlur={(e) => setPrezzoRivendita(Math.max(36, Number(e.target.value)))}
+                  min="36"
+                  style={{ width: 100, padding: '8px 12px', borderRadius: 8, border: '1px solid #10b981', background: 'var(--app-bg)', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, textAlign: 'right', outline: 'none' }}
+                />
+              </div>
+              
+              {prezzoRivendita >= 36 && (
+                <div style={{ background: 'var(--app-bg)', borderRadius: 8, padding: 12, border: '1px dashed var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                    <span>Costo Base CondoFAST:</span>
+                    <span>36,00 €</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                    <span>Tuo Ricarico (Markup):</span>
+                    <span>{(prezzoRivendita - 36).toFixed(2)} €</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#ef4444', marginBottom: 12 }}>
+                    <span>Platform Fee ({platformFeePercent}% sul Ricarico):</span>
+                    <span>-{((prezzoRivendita - 36) * (platformFeePercent / 100)).toFixed(2)} €</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Tuo Profitto Netto Annuo:</span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#10b981' }}>+ {((prezzoRivendita - 36) * (1 - platformFeePercent / 100)).toFixed(2)} €</span>
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
+                * Attivando questo servizio riceverai anche uno <strong>sconto di 1,00 €/mese</strong> sul canone del tuo gestionale.
+              </div>
             </div>
           </div>
 

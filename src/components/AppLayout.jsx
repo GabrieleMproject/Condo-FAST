@@ -40,55 +40,23 @@ import {
   Search,
   Trash2,
   ArrowRight,
-  FileText
+  FileText,
+  PhoneCall
 } from 'lucide-react';
 
-
-// ── Logo → data-URL PNG ridimensionato (max 400px) ────────────────────────
-function fileToResizedDataUrl(file, maxW = 400) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const img = new Image()
-      img.onload = () => {
-        const scale = Math.min(1, maxW / img.width)
-        const w = Math.round(img.width * scale)
-        const h = Math.round(img.height * scale)
-        const canvas = document.createElement('canvas')
-        canvas.width = w; canvas.height = h
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-        resolve(canvas.toDataURL('image/png'))
-      }
-      img.onerror = reject
-      img.src = reader.result
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
-// ── Stripe Customer Portal ────────────────────────────────────────────────
-async function apriPortaleStripe(customerId) {
-  const { data, error } = await supabase.functions.invoke('stripe-portal', {
-    body: { customerId, returnUrl: window.location.href },
-  })
-  if (error) throw new Error(error.message || 'Errore apertura portale')
-  if (data?.url) window.location.href = data.url
-  else throw new Error(data?.error || 'Errore apertura portale')
-}
-
 const NAV_ITEMS = [
-  { path: '/dashboard',    label: 'Dashboard',            icon: LayoutDashboard },
-  { path: '/ricerca',      label: 'Ricerca Rapida',       icon: Search },
-  { path: '/condomini',    label: 'Condomini',             icon: Building2 },
-  { path: '/anagrafica',   label: 'Anagrafica',            icon: Users },
-  { path: '/postbox',      label: 'Postbox Studio',        icon: Inbox, badge: 'STUDIO' },
-  { path: '/comunicazioni', label: 'Comunicazioni',        icon: Send },
-  { path: '/fiscale',      label: 'Certificazioni',        icon: Landmark },
-  { path: '/archivio',     label: 'Storico operazioni',    icon: Archive }, // rinominato
-  { path: '/migrazione',   label: 'Migra gestionale',      icon: ArrowLeftRight, badge: 'NEW' },
-  { path: '/assistenza',   label: 'Assistenza',            icon: LifeBuoy },
-  { path: '/impostazioni', label: 'Impostazioni',          icon: Settings },
+  { path: '/dashboard',          label: 'Dashboard',            icon: LayoutDashboard },
+  { path: '/ricerca',            label: 'Ricerca Rapida',       icon: Search },
+  { path: '/condomini',          label: 'Condomini',             icon: Building2 },
+  { path: '/anagrafica',         label: 'Anagrafica',            icon: Users },
+  { path: '/pronto-intervento',  label: 'Pronto Intervento',     icon: PhoneCall, badge: 'H24' },
+  { path: '/postbox',            label: 'Postbox Studio',        icon: Inbox, badge: 'STUDIO' },
+  { path: '/comunicazioni',       label: 'Comunicazioni',        icon: Send },
+  { path: '/fiscale',            label: 'Certificazioni',        icon: Landmark },
+  { path: '/archivio',           label: 'Storico operazioni',    icon: Archive },
+  { path: '/migrazione',         label: 'Migra gestionale',      icon: ArrowLeftRight, badge: 'NEW' },
+  { path: '/assistenza',         label: 'Assistenza',            icon: LifeBuoy },
+  { path: '/impostazioni',       label: 'Impostazioni',          icon: Settings },
 ];
 
 

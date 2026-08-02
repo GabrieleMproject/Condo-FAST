@@ -33,6 +33,7 @@ import MigrazionePage from './pages/MigrazionePage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import WaitlistPage from './pages/WaitlistPage'
 import RicercaPage from './pages/RicercaPage'
+import ProntoInterventoPage from './pages/ProntoInterventoPage'
 import { ThemeProvider } from './contexts/ThemeContext'
 
 export default function App() {
@@ -55,6 +56,7 @@ export default function App() {
                 <Route path="/ricerca" element={<RicercaPage />} />
                 <Route path="/condomini" element={<CondominiPage />} />
                 <Route path="/anagrafica" element={<AnagraficaPage />} />
+                <Route path="/pronto-intervento" element={<ProntoInterventoPage />} />
                 <Route path="/condomini/:id" element={<CondominiDetailPage />} />
                 <Route path="/condomini/:condominioId/anagrafica" element={<AnagraficaPage />} />
                 <Route path="/condomini/:condominioId/spese" element={<SpesePage />} />

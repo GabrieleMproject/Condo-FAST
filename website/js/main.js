@@ -117,7 +117,7 @@
        Loaded ONLY after explicit consent.
     const s = document.createElement('script');
     s.defer = true;
-    s.dataset.domain = 'condoai.it';
+    s.dataset.domain = 'condofast.it';
     s.src = 'https://plausible.io/js/script.js';
     document.head.appendChild(s);
     */

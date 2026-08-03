@@ -137,6 +137,9 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Verifica Caricamenti Infiniti:** Il Bug Triager ha analizzato tutti i flussi asincroni di interfaccia. È stato verificato che non esistono bug architetturali o loop nei caricamenti (es. `isLoading` o spinner bloccati). Tutte le fetch API implementano robusti blocchi `finally {}` che ripristinano l'UI anche a fronte di eccezioni o errori Supabase (es. violazioni RLS).
 
 ### 2. Bug Risolti
+- **Errore 400 Interactive Onboarding:** Fix del wizard iniziale inserendo dati fittizi di default (civico, cap, etc.) per evitare le constraint NOT NULL di Supabase.
+- **Crash Modifica Spesa:** Rimosse le chiavi relazionali (`ripartizioni` e `tabelle_millesimali`) dal payload generato da `useSpese.js` prima del salvataggio/update, prevenendo errori di schema non trovato.
+- **Crash Upload Estratto Conto:** Ripristinato l'import mancante per `calcolaFileHash` in `EstrattoContoPage.jsx` bloccante al check anti-duplicato.
 - **Double Save in CondominiPage:** Risolto un bug architetturale minore in `CondominiPage.jsx` che causava la duplicazione della query di salvataggio del condominio verso il database. Precedentemente il salvataggio veniva eseguito dal componente genitore sebbene fosse già stato processato con successo dal componente figlio `CondominiForm`. Il genitore ora governa solamente la chiusura della modale e il Toast di successo, rendendo i consumi di rete efficienti.
 
 ### 3. Deploy

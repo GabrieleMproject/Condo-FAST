@@ -1,5 +1,5 @@
 /* ============================================================
-   CondoSmart — Global stylesheet
+   CondoFAST — Global stylesheet
    Design system: dark, glassmorphism, Sora, blue→violet gradient
    ============================================================ */
 
@@ -1244,7 +1244,7 @@ p { margin: 0 0 1em; }
    Logo CondoFAST - Animato & Dinamico
    ============================================================ */
 .condofast-logo-container,
-.condosmart-logo-container {
+.condofast-logo-container {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1260,8 +1260,8 @@ p { margin: 0 0 1em; }
 }
 
 .condofast-logo-container .condofast-icon,
-.condofast-logo-container .condosmart-icon,
-.condosmart-logo-container .condosmart-icon {
+.condofast-logo-container .condofast-icon,
+.condofast-logo-container .condofast-icon {
   display: inline-block;
   vertical-align: middle;
   transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1275,15 +1275,15 @@ p { margin: 0 0 1em; }
 
 /* Effetto 3D isometrico sui condomini - sempre attivo */
 .condofast-logo-container .tower-left,
-.condosmart-logo-container .tower-left {
+.condofast-logo-container .tower-left {
   animation: tower-float-left 3s ease-in-out infinite;
 }
 .condofast-logo-container .tower-center,
-.condosmart-logo-container .tower-center {
+.condofast-logo-container .tower-center {
   animation: tower-float-center 3s ease-in-out infinite 0.15s;
 }
 .condofast-logo-container .tower-right,
-.condosmart-logo-container .tower-right {
+.condofast-logo-container .tower-right {
   animation: tower-float-right 3s ease-in-out infinite 0.3s;
 }
 
@@ -1300,22 +1300,22 @@ p { margin: 0 0 1em; }
   50% { transform: translateY(-4.5px) translateX(1.5px); }
 }
 .condofast-logo-container.interactive .smart-flow-line,
-.condosmart-logo-container.interactive .smart-flow-line {
+.condofast-logo-container.interactive .smart-flow-line {
   filter: drop-shadow(0 0 5px rgba(236, 72, 153, 0.8));
   stroke-width: 5.5px;
 }
 
 /* Animazione Fogli Volanti - sempre attiva */
 .condofast-logo-container.interactive .sheet-1,
-.condosmart-logo-container.interactive .sheet-1 {
+.condofast-logo-container.interactive .sheet-1 {
   animation: fly-sheet-1 2.4s infinite ease-in-out;
 }
 .condofast-logo-container.interactive .sheet-2,
-.condosmart-logo-container.interactive .sheet-2 {
+.condofast-logo-container.interactive .sheet-2 {
   animation: fly-sheet-2 2.4s infinite ease-in-out 0.4s;
 }
 .condofast-logo-container.interactive .sheet-3,
-.condosmart-logo-container.interactive .sheet-3 {
+.condofast-logo-container.interactive .sheet-3 {
   animation: fly-sheet-3 2.4s infinite ease-in-out 0.8s;
 }
 
@@ -1350,10 +1350,10 @@ p { margin: 0 0 1em; }
 }
 
 /* Animazione della scritta al ricevimento dei documenti */
-.condosmart-logo-container.interactive .text-prefix {
+.condofast-logo-container.interactive .text-prefix {
   animation: receive-docs-prefix 2.4s infinite ease-in-out;
 }
-.condosmart-logo-container.interactive .text-suffix {
+.condofast-logo-container.interactive .text-suffix {
   animation: receive-docs-suffix 2.4s infinite ease-in-out;
 }
 
@@ -1372,7 +1372,7 @@ p { margin: 0 0 1em; }
   90% { color: var(--logo-text-suffix); text-shadow: 0 0 8px rgba(96, 165, 250, 0.2); transform: translateY(0) scale(1); }
 }
 
-.condosmart-logo-text {
+.condofast-logo-text {
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.03em;

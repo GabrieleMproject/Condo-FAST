@@ -87,14 +87,14 @@
   <!-- ============ NAVBAR ============ -->
   <header class="nav" id="site-nav">
     <div class="nav__inner">
-      <a class="nav__logo condosmart-logo-container interactive" href="index.html" aria-label="CondoFAST — Home" style="--logo-size: 32px;">
+      <a class="nav__logo condofast-logo-container interactive" href="index.html" aria-label="CondoFAST — Home" style="--logo-size: 32px;">
         <svg
           width="32"
           height="32"
           viewBox="0 0 100 100"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          class="condosmart-icon"
+          class="condofast-icon"
           style="overflow: visible;"
         >
           <defs>
@@ -193,7 +193,7 @@
             <line x1="56" y1="40.5" x2="59" y2="40.5" stroke="#94a3b8" stroke-width="0.4" />
           </g>
         </svg>
-        <span class="condosmart-logo-text">
+        <span class="condofast-logo-text">
           <span class="text-prefix">Condo</span><span class="text-suffix">FAST</span>
         </span>
       </a>
@@ -378,7 +378,7 @@
         <div class="section-head reveal">
           <span class="eyebrow">Funzionalità</span>
           <h2 id="funzionalita-title">Tutto il ciclo di gestione annuale, in un unico posto</h2>
-          <p class="lead">Sei moduli integrati che coprono l'intero anno contabile del condominio.</p>
+          <p class="lead">Nove moduli integrati che coprono l'intero ciclo di gestione annuale del condominio.</p>
         </div>
         <div class="grid-3">
           <article class="card tilt reveal">
@@ -422,6 +422,27 @@
             </div>
             <h3>Sicurezza bancaria</h3>
             <p>Row-Level Security, dati cifrati, infrastruttura in EU e piena conformità GDPR. <a href="sicurezza.html">Scopri come proteggiamo i dati →</a></p>
+          </article>
+          <article class="card tilt reveal" data-delay="4">
+            <div class="card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-inbox"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+            </div>
+            <h3>Postbox Studio</h3>
+            <p>Le email in arrivo allo studio — fatture, segnalazioni, subentri — elaborate automaticamente dall'AI. Classifica, estrae e prepara tutto per la tua conferma.</p>
+          </article>
+          <article class="card tilt reveal" data-delay="5">
+            <div class="card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bell"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </div>
+            <h3>Notifiche intelligenti</h3>
+            <p>Promemoria automatici per ritenute F24, rate scadute, esercizi in chiusura e movimenti bancari da riconciliare. Configurabili per ogni tipologia.</p>
+          </article>
+          <article class="card tilt reveal" data-delay="6">
+            <div class="card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h3>Sinistri e passaggio consegne</h3>
+            <p>Registro sinistri assicurativi con stato pratiche e perizie. Verbale di passaggio consegne generato automaticamente per il subentrante.</p>
           </article>
         </div>
       </div>
@@ -467,7 +488,7 @@
               <div class="badge-zero-frizione">Servizio Incluso · Zero Frizione</div>
               <h3 style="font-size:1.5rem;font-weight:800;color:#fff;margin:8px 0 4px">Hai già un gestionale? Pensiamo noi alla migrazione.</h3>
               <p style="color:var(--muted);font-size:0.95rem;margin:0;max-width:750px">
-                Non devi reinserire nulla a mano. Il nostro team e l'AI importano anagrafiche, saldi e tabelle millesimali dal tuo vecchio software gratuitamente in 48 ore.
+                Non devi reinserire nulla a mano. Il wizard guidato dall'AI importa anagrafiche, millesimi, saldi e spese dal tuo vecchio software (Danea Domustudio, PIGC, Condominio Facile e altri) in 48 ore.
               </p>
             </div>
             <a href="/register" class="btn btn--primary" style="white-space:nowrap">Richiedi la migrazione →</a>
@@ -477,12 +498,12 @@
             <div class="zero-frizione-step">
               <div class="step-num">1</div>
               <div style="font-weight:700;color:#fff;margin-bottom:4px">Fornisci i vecchi file</div>
-              <div style="font-size:0.84rem;color:var(--muted)">Invaci i file Excel, CSV o PDF scaricati dal tuo software attuale.</div>
+              <div style="font-size:0.84rem;color:var(--muted)">Inviaci i file Excel, CSV, PDF o ZIP scaricati dal tuo vecchio gestionale.</div>
             </div>
             <div class="zero-frizione-step">
               <div class="step-num">2</div>
               <div style="font-weight:700;color:#fff;margin-bottom:4px">Mappatura assistita AI</div>
-              <div style="font-size:0.84rem;color:var(--muted)">L'AI riconosce proprietari, inquilini, millesimi e saldi d'apertura.</div>
+              <div style="font-size:0.84rem;color:var(--muted)">Il wizard AI in 5 step riconosce e classifica proprietari, inquilini, millesimi, spese e saldi d'apertura.</div>
             </div>
             <div class="zero-frizione-step">
               <div class="step-num">3</div>
@@ -533,9 +554,11 @@
             <ul>
               <li>Fino a 50 condomini (+3€/extra)</li>
               <li>300 chiamate AI / mese</li>
-              <li>1 Utente titolare incluso</li>
+              <li>OCR Fatture &amp; Estratti Conto</li>
               <li>Rendiconto PDF art. 1130-bis</li>
               <li>Riconciliazione bancaria</li>
+              <li>Scadenzario F24 e Ritenute</li>
+              <li>1 Utente titolare incluso</li>
               <li>Supporto via email</li>
             </ul>
             <a class="btn btn--ghost" href="/register?plan=base" id="plan-base-cta">Scegli Base</a>
@@ -550,9 +573,14 @@
             <ul>
               <li>Fino a 100 condomini (+2,50€/extra)</li>
               <li>800 chiamate AI / mese</li>
-              <li>2 Collaboratori inclusi</li>
+              <li>OCR Fatture &amp; Estratti Conto</li>
+              <li>Rendiconto PDF art. 1130-bis</li>
+              <li>Riconciliazione bancaria</li>
+              <li>Scadenzario F24 e Ritenute</li>
+              <li>2 Collaboratori inclusi (+15€/m)</li>
               <li>Ricerca AI nei Verbali</li>
-              <li>Solleciti rate &amp; Postbox Studio</li>
+              <li>Solleciti, Comunicazioni &amp; Postbox</li>
+              <li>Registro Anagrafe Condominiale AI</li>
               <li>Supporto prioritario</li>
             </ul>
             <a class="btn btn--primary" href="/register?plan=studio" id="plan-studio-cta">Scegli Studio</a>
@@ -566,9 +594,15 @@
             <ul>
               <li>Fino a 200 condomini (+2€/extra)</li>
               <li>2.000 chiamate AI / mese</li>
-              <li>4 Collaboratori inclusi</li>
-              <li>Storico illimitato ed export</li>
-              <li>Supporto telefonico dedicato</li>
+              <li>OCR Fatture &amp; Estratti Conto</li>
+              <li>Rendiconto PDF art. 1130-bis</li>
+              <li>Riconciliazione bancaria</li>
+              <li>Scadenzario F24 e Ritenute</li>
+              <li>Ricerca AI, Solleciti &amp; Postbox</li>
+              <li>4 Collaboratori inclusi (+12€/m)</li>
+              <li>Storico illimitato ed Export Avanzati</li>
+              <li>Distinta CBI F24 per Home Banking</li>
+              <li>Manager dedicato &amp; Telefono</li>
             </ul>
             <a class="btn btn--ghost" href="/register?plan=professional" id="plan-pro-cta">Scegli Professional</a>
           </div>

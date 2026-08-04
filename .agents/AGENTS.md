@@ -131,6 +131,28 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S69 (4 Agosto 2026 - Privacy Policy Ufficiale e Collegamento Dominio)
+
+### 1. Documentazione Legale (Lexdo.it)
+- **Privacy Policy**: Sostituita la bozza strutturale in `website/privacy.html` con il documento ufficiale generato su Lexdo.it per la società **M PROJECT S.R.L.** (P.IVA 04314510134).
+- **Scelte Privacy / GDPR**:
+  - *Finalità spuntate*: Gestione account, Statistiche anonime, Fatturazione (Stripe), Log tecnici.
+  - *Finalità omesse*: Nessuna profilazione occulta, nessuna vendita di dati a terzi (marketing terzi), nessun tracciamento GPS.
+  - *DPO*: Non nominato (nessun obbligo per questa tipologia e volume di startup in fase iniziale).
+  - *Trasferimento Extra-UE*: Accettato esplicitamente (necessario per l'uso di Supabase CDN, Vercel, Stripe, Anthropic), regolato tramite Standard Contractual Clauses (SCC) e Data Privacy Framework EU-US.
+
+### 2. Produzione e Setup Dominio
+- **Dominio**: Collegato `condofast.it` e `www.condofast.it` a Vercel tramite configurazione DNS su **Register.it** (Record A verso `76.76.21.21` e CNAME verso `cname.vercel-dns.com`).
+- **Salvaguardia Email**: Modificati unicamente i record A/CNAME lasciando inalterati i nameserver originali e i record MX/TXT, per garantire il funzionamento ininterrotto della posta Google Workspace e della PEC.
+- **Supabase**: 
+  - Aggiunti i domini `condofast.it` e `www.condofast.it` nella whitelist CORS delle Edge Functions (`_shared/cors.ts`).
+  - Aggiornati *Site URL* e *Redirect URLs* nell'Authentication di Supabase per far funzionare correttamente il login e le email di convalida in produzione.
+
+### 3. Deploy
+- Eseguito `npm run deploy:all` su `main`. Frontend pubblicato su Vercel, Edge Functions ri-deployate su Supabase.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S68 (4 Agosto 2026 - Riallineamento Sito Marketing con Gestionale)
 
 ### 1. Obiettivo

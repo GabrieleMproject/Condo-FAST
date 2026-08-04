@@ -131,7 +131,50 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S68 (4 Agosto 2026 - Riallineamento Sito Marketing con Gestionale)
+
+### 1. Obiettivo
+Riallineamento completo del sito marketing (`website/`) con lo stato attuale del gestionale CondoFAST: 9 funzionalità implementate non ancora pubblicizzate + 2 bug tecnici corretti + pulizia branding residuo.
+
+### 2. Modifiche al Sito Marketing
+
+#### features.html
+- **Fix bug critico**: ID checkbox privacy corretto da `privacy-consent` a `privacy-consent-checkbox` — sblocca la demo AI dropzone.
+- **Modulo 7 — Postbox Studio**: Aggiunto modulo con workflow AI email→classificazione→conferma.
+- **Modulo 8 — Sinistri & Passaggio Consegne**: Aggiunto modulo con workflow generazione verbale.
+- **Modulo 9 — Notifiche Intelligenti**: Aggiunto modulo con 4 tipologie di alert configurabili.
+- **Sezione Add-on & Marketplace**: Aggiunta (Conservazione Fiscale 10 anni + Fornitori H24) — posizionata qui su indicazione di Gabriele anziché in pricing.html.
+
+#### index.html
+- **Griglia feature**: Espansa da 6 a 9 card (Postbox, Notifiche, Sinistri).
+- **Testo**: "Sei moduli" → "Nove moduli integrati".
+- **Zero Frizione**: Aggiunta menzione wizard AI 5-step + gestionali supportati (Danea Domustudio, PIGC, Condominio Facile). Fix typo "Invaci" → "Inviaci".
+- **Liste piani**: Riordinate con feature comuni in cima (scalari: Base 8 righe, Studio 11, Professional 11). OCR e Scadenzario F24 aggiunti al Base (mancavano).
+
+#### pricing.html
+- **Liste piani**: Riordinate con feature comuni esplicitamente in cima — rimossi i "Tutto il piano X, più:" — ora ogni piano elenca tutto esplicitamente (scalari: Trial 4, Base 8, Studio 13, Professional 14 righe). L'effetto visivo permette di percepire immediatamente cosa si guadagna salendo di piano.
+- **Tabella confronto**: Aggiunta riga "Notifiche & Promemoria Intelligenti" (tutti ✓) e "Sinistri & Passaggio Consegne" (tutti ✓). Separata la riga "Open Banking PSD2 & Distinta CBI F24" in due righe distinte: "Distinta CBI F24 per Home Banking" (Professional ✓) e "Open Banking PSD2 & Accesso API" (In arrivo).
+- **Piano Professional**: Rimosso badge "In Arrivo" dalla Distinta CBI F24 (ora implementata).
+- **Sezione Add-on**: Rimossa (spostata in features.html).
+
+### 3. Pulizia Branding
+- **7 file HTML + 2 CSS + 1 JS**: Tutte le classi `condosmart-*` rinominate in `condofast-*`. Zero residui.
+- **main.js**: Dominio analytics `condoai.it` → `condofast.it`.
+
+### 4. Incongruenze Corrette
+- OCR e Riconciliazione bancaria mancanti nel piano Base di index.html → corretti.
+- Registro Anagrafe AI mancante nel piano Studio di index.html → corretto.
+- Distinta CBI F24 era accoppiata a Open Banking nella tabella confronto (entrambi "In arrivo") → separati, CBI ora attiva.
+
+### 5. Deploy
+- **Commit**: `S68 step1: riallineamento sito marketing con gestionale, aggiunta moduli Postbox/Sinistri/Notifiche, riordino piani e pulizia branding condosmart`
+- **11 file modificati**, 258 inserzioni, 59 eliminazioni.
+- **Deploy globale**: Build ✅ → GitHub/Vercel ✅ → 8 Edge Functions ✅ → Smoke test ✅ (proxy OK 4139ms)
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S67 (2 Agosto 2026 - Collaudo Generale, Bug Triaging e Fix Double Save)
+
 
 ### 1. Collaudo e Analisi Stabilità (Bug Triaging)
 - **Verifica Caricamenti Infiniti:** Il Bug Triager ha analizzato tutti i flussi asincroni di interfaccia. È stato verificato che non esistono bug architetturali o loop nei caricamenti (es. `isLoading` o spinner bloccati). Tutte le fetch API implementano robusti blocchi `finally {}` che ripristinano l'UI anche a fronte di eccezioni o errori Supabase (es. violazioni RLS).

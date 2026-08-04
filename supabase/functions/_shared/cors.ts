@@ -2,7 +2,7 @@
 
 export function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || '';
-  const allowedOrigins = ['https://condofast.it', 'http://localhost:8080', 'http://localhost:5173'];
+  const allowedOrigins = ['https://condofast.it', 'https://www.condofast.it', 'http://localhost:8080', 'http://localhost:5173'];
   const isAllowed = allowedOrigins.includes(origin);
   
   return {

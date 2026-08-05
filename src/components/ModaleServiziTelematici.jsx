@@ -109,23 +109,28 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
         });
 
         if (fnError) {
+          let customErrorMessage = null;
           if (fnError.context && typeof fnError.context.text === 'function') {
             try {
-              // Estraiamo il testo grezzo della risposta (che sia JSON o Testo generico di Supabase)
               const errText = await fnError.context.text();
               let parsedMsg = errText;
               try {
                  const errBody = JSON.parse(errText);
                  parsedMsg = errBody.error || errText;
               } catch (parseErr) {
-                 // Non è JSON, teniamo errText
+                 // Non è JSON
               }
-              throw new Error(`Edge Function Error: ${parsedMsg}`);
+              customErrorMessage = `Edge Function Error: ${parsedMsg}`;
             } catch (e) {
-               throw fnError;
+              // se context.text() fallisce, andiamo avanti col throw originale
             }
           }
-          throw fnError;
+          
+          if (customErrorMessage) {
+            throw new Error(customErrorMessage);
+          } else {
+            throw fnError;
+          }
         }
         if (!fnData?.url) throw new Error("URL di checkout non ricevuto. Verifica la configurazione di Stripe.");
 

@@ -2,15 +2,8 @@ import { getCorsHeaders } from '../_shared/cors.ts'
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2024-06-20',
-  httpClient: Stripe.createFetchHttpClient(),
-})
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-)
+// Variabili globali rimosse per evitare crash del worker in fase di boot
+// se le chiavi segrete non sono ancora disponibili.
 
 function getPacchettoConfig(pacchetto: string) {
   const map: Record<string, { priceId: string; scontoAdmin: number }> = {
@@ -75,6 +68,24 @@ Deno.serve(async (req) => {
         { status: 400, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } }
       )
     }
+
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeSecretKey) {
+      return new Response(
+        JSON.stringify({ error: `Chiave segreta STRIPE_SECRET_KEY mancante nel server` }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } }
+      )
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2024-06-20',
+      httpClient: Stripe.createFetchHttpClient(),
+    })
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
 
     // Fetch nome condominio per la creazione del Customer Stripe
     const { data: condominio } = await supabase

@@ -113,6 +113,8 @@ serve(async (req) => {
               'localhost',
               'condofast.it',
               'www.condofast.it',
+              'condofast.app',
+              'www.condofast.app',
               'condosmart.it',
               'www.condosmart.it'
             ]

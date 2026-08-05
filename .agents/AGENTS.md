@@ -131,15 +131,13 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
-## Storico Decisioni e Fatti Verificati della Sessione S69 (4 Agosto 2026 - Privacy Policy Ufficiale e Collegamento Dominio)
+## Storico Decisioni e Fatti Verificati della Sessione S69 (4 Agosto 2026 - Privacy Policy, Termini e Condizioni e DPA Ufficiale)
 
-### 1. Documentazione Legale (Lexdo.it)
-- **Privacy Policy**: Sostituita la bozza strutturale in `website/privacy.html` con il documento ufficiale generato su Lexdo.it per la società **M PROJECT S.R.L.** (P.IVA 04314510134).
-- **Scelte Privacy / GDPR**:
-  - *Finalità spuntate*: Gestione account, Statistiche anonime, Fatturazione (Stripe), Log tecnici.
-  - *Finalità omesse*: Nessuna profilazione occulta, nessuna vendita di dati a terzi (marketing terzi), nessun tracciamento GPS.
-  - *DPO*: Non nominato (nessun obbligo per questa tipologia e volume di startup in fase iniziale).
-  - *Trasferimento Extra-UE*: Accettato esplicitamente (necessario per l'uso di Supabase CDN, Vercel, Stripe, Anthropic), regolato tramite Standard Contractual Clauses (SCC) e Data Privacy Framework EU-US.
+### 1. Documentazione Legale e Privacy
+- **Privacy Policy**: Sostituita la bozza strutturale in `website/privacy.html` con il documento ufficiale generato su Lexdo.it per la società **M PROJECT S.R.L.** (P.IVA 04314510134). Trasferimenti Extra-UE accettati esplicitamente per l'uso di Supabase CDN, Vercel, Stripe, Anthropic.
+- **Termini e Condizioni**: Generato e importato in `website/termini.html` il contratto ufficiale B2B da Lexdo.it. Integrata a mano una sezione 19 intitolata *"Condizioni Integrative CondoFAST (Appendice Tecnica)"* per preservare le clausole di salvaguardia essenziali del prodotto: responsabilità per i suggerimenti AI, limitazioni sulla conservazione sostitutiva a norma di legge e regole sull'ottimizzazione e compressione cloud delle foto/fatture caricate.
+- **Data Processing Agreement (DPA)**: Validata e completata la bozza pre-impostata in `website/dpa.html`, inserendo i dati definitivi della società M PROJECT S.R.L. ed eliminando i placeholder, confermando l'infrastruttura Sub-processor (Supabase, Vercel, Gemini AI, Stripe, Resend).
+- **Cookie Banner**: Verificata la presenza e validità legale del cookie banner proprietario, nativo (HTML/JS) su `condofast.it`, che dispensa l'utilizzo di plugin di terze parti a pagamento come Iubenda (gestisce solo cookie tecnici ed analitici anonimi nel pieno rispetto del GDPR).
 
 ### 2. Produzione e Setup Dominio
 - **Dominio**: Collegato `condofast.it` e `www.condofast.it` a Vercel tramite configurazione DNS su **Register.it** (Record A verso `76.76.21.21` e CNAME verso `cname.vercel-dns.com`).
@@ -148,8 +146,8 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
   - Aggiunti i domini `condofast.it` e `www.condofast.it` nella whitelist CORS delle Edge Functions (`_shared/cors.ts`).
   - Aggiornati *Site URL* e *Redirect URLs* nell'Authentication di Supabase per far funzionare correttamente il login e le email di convalida in produzione.
 
-### 3. Deploy
-- Eseguito `npm run deploy:all` su `main`. Frontend pubblicato su Vercel, Edge Functions ri-deployate su Supabase.
+### 3. Deploy Unificato
+- Eseguiti due deploy in sequenza (`S69 step1` e `S69 step2`) tramite `npm run deploy:all` su `main` e superato lo Smoke Test (3448ms). Frontend aggiornato su Vercel e tutte le Edge Functions ri-deployate su Supabase.
 
 ---
 

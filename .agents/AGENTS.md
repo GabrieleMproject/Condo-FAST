@@ -1784,3 +1784,13 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **Gamification e UI**: Creato e integrato in Dashboard/Impostazioni il `RisparmioStudioWidget` per visualizzare in tempo reale lo sconto maturato. Aggiunta la modale dedicata per attivazione servizi nella scheda Condominio.
 - **Generatori PDF**: Creati i moduli JS `deliberaPrivacyGenerator.js` e `certificatoGdprGenerator.js` usando jsPDF per la produzione di report formali standardizzati (watermark CondoFAST).
 - **Auto-contabilizzazione (SpeseForm.jsx)**: Inserito bottone di "Aggiunta Rapida" (fast-add) per precompilare automaticamente la spesa di Conservazione Sostitutiva (36.00€) per il condominio, facilitandone il reintegro economico da parte dell'amministratore.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S72 (5 Agosto 2026 - Sicurezza UX Registrazione)
+
+### 1. Prevenzione Errori Mail Registrazione
+- **Aggiunta Conferma Email (`RegisterPage.jsx`)**: Inserito un campo extra per confermare l'email in fase di registrazione.
+- **Motivazione UX**: Sebbene aggiunga un piccolo step di attrito, previene errori di battitura della mail da parte degli amministratori (che porterebbero ad account inaccessibili o mancate comunicazioni di sistema) — un trade-off ampiamente giustificato nel contesto B2B della piattaforma.
+- **Validazione**: Se le email non combaciano, il form blocca il submit e mostra un avviso chiaro in pagina.
+- **Deploy Unificato**: Eseguito `npm run deploy:all` su Vercel e Supabase per riflettere le modifiche in produzione.

@@ -25,7 +25,7 @@ export default function RegisterPage() {
       setError('Devi accettare i Termini, la Privacy e il DPA per continuare.');
       return;
     }
-    if (form.email !== form.confermaEmail) {
+    if (form.email.trim().toLowerCase() !== form.confermaEmail.trim().toLowerCase()) {
       setError('Gli indirizzi email non corrispondono.');
       return;
     }

@@ -91,6 +91,10 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
         admin_disclaimer_accepted: nuovoStato ? adminDisclaimerAccepted : false
       };
 
+      if (servizio?.id) {
+        payload.id = servizio.id;
+      }
+
       if (nuovoStato && finalVerbaleId) {
          payload.verbale_approvazione_id = finalVerbaleId;
       } else if (!nuovoStato) {

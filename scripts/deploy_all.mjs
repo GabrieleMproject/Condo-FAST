@@ -40,6 +40,8 @@ const functions = [
   'gocardless-proxy',
   'sync-bank-transactions',
   'stripe-checkout',
+  'stripe-checkout-telematici',
+  'stripe-webhook',
   'invia-comunicazione',
   'invia-email-marketing',
   'delete-account'

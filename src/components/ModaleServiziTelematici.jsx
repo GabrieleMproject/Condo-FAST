@@ -85,7 +85,7 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
 
       const payload = {
         condominio_id: condominio.id,
-        attivo: nuovoStato,
+        attivo: nuovoStato, // Attivazione fiduciaria immediata
         data_attivazione: nuovoStato ? new Date().toISOString() : null,
         pacchetto: nuovoStato ? pacchetto : 'nessuno',
         admin_disclaimer_accepted: nuovoStato ? adminDisclaimerAccepted : false
@@ -94,12 +94,10 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
       if (nuovoStato && finalVerbaleId) {
          payload.verbale_approvazione_id = finalVerbaleId;
       } else if (!nuovoStato) {
-         // Se stiamo disattivando, non eliminiamo l'id per lo storico, oppure lo facciamo null? 
-         // Meglio mantenerlo per storico, o lasciarlo inalterato. Non lo passiamo nell'upsert in caso di disattivazione se vogliamo mantenerlo, oppure passiamolo come null.
-         // Passiamo null per resettarlo.
          payload.verbale_approvazione_id = null;
       }
 
+      // Upsert nel DB
       const { data, error } = await supabase
         .from('condominio_servizi_telematici')
         .upsert(payload)
@@ -108,11 +106,28 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
       
       if (error) throw error;
       setServizio(data);
-      toast.success(nuovoStato ? 'Servizio attivato con successo!' : 'Servizio disattivato.');
+
+      if (nuovoStato) {
+        toast.loading('Generazione link di pagamento in corso...', { id: 'checkout-toast' });
+        // Invoca la Edge Function per ottenere il link Stripe
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('stripe-checkout-telematici', {
+          body: { condominio_id: condominio.id, pacchetto }
+        });
+
+        if (fnError) throw fnError;
+        if (!fnData?.url) throw new Error("URL di checkout non ricevuto");
+
+        toast.success('Reindirizzamento...', { id: 'checkout-toast' });
+        window.location.href = fnData.url;
+        return; // Fermiamo l'esecuzione, la pagina cambierà
+      } else {
+        toast.success('Servizio disattivato.');
+      }
+      
       await refresh(); // Aggiorna il piano per il calcolo sconti
       setFileCaricato(null);
     } catch (err) {
-      toast.error(err.message || 'Errore durante il salvataggio');
+      toast.error(err.message || 'Errore durante il salvataggio', { id: 'checkout-toast' });
       console.error(err);
     } finally {
       setSaving(false);

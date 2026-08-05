@@ -174,6 +174,76 @@ Deno.serve(async (req) => {
         const userId = session.metadata?.user_id
         if (!userId) break
 
+        // Gestione Checkout Pacchetti Telematici (Condomini)
+        const isTelematici = session.metadata?.is_telematici === 'true'
+        if (isTelematici) {
+          const condominioId = session.metadata?.condominio_id
+          const scontoAdminStr = session.metadata?.sconto_admin
+          if (!condominioId) break
+
+          // Conferma l'attivazione fiduciaria nel DB (e aggiorna stripe_subscription_id)
+          await supabase
+            .from('condominio_servizi_telematici')
+            .update({ 
+              attivo: true,
+              stripe_subscription_id: session.subscription as string
+            })
+            .eq('condominio_id', condominioId)
+
+          // Gestione Wallet Admin (Cap 75%)
+          if (scontoAdminStr) {
+            const scontoAdmin = Number(scontoAdminStr)
+            
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('stripe_customer_id, piano')
+              .eq('id', userId)
+              .single()
+
+            if (profile?.stripe_customer_id) {
+              let maxScontoAnnuoCents = 0
+              if (profile.piano === 'base') maxScontoAnnuoCents = 32400 // 75% di 432€
+              if (profile.piano === 'studio') maxScontoAnnuoCents = 53100 // 75% di 708€
+              if (profile.piano === 'professional') maxScontoAnnuoCents = 80100 // 75% di 1068€
+
+              if (maxScontoAnnuoCents > 0) {
+                 const customerStripe = await stripe.customers.retrieve(profile.stripe_customer_id) as Stripe.Customer
+                 const currentBalanceCents = customerStripe.balance || 0 
+                 const requestedCreditCents = Math.round(scontoAdmin * 100)
+
+                 let actualCreditToApply = requestedCreditCents;
+                 const futureBalanceCents = currentBalanceCents - requestedCreditCents; 
+                 
+                 if (futureBalanceCents < -maxScontoAnnuoCents) {
+                     const availableCreditCents = maxScontoAnnuoCents + currentBalanceCents; 
+                     if (availableCreditCents > 0) {
+                         actualCreditToApply = availableCreditCents;
+                     } else {
+                         actualCreditToApply = 0; 
+                     }
+                 }
+
+                 if (actualCreditToApply > 0) {
+                    try {
+                      await stripe.customers.createBalanceTransaction(profile.stripe_customer_id, {
+                        amount: -actualCreditToApply, // Negativo per accreditare
+                        currency: 'eur',
+                        description: `Credito cliente applicato (Pacchetti Telematici Condominio: ${condominioId})`,
+                      })
+                      console.log(`Credito di ${actualCreditToApply/100}€ applicato all'admin ${userId}`)
+                    } catch (e) {
+                      console.error("Errore balance transaction:", e)
+                    }
+                 } else {
+                    console.log(`Cap 75% raggiunto per admin ${userId}. Nessun credito extra applicato.`)
+                 }
+              }
+            }
+          }
+          break; // Fine gestione telematici, evitiamo di aggiornare l'abbonamento gestionale!
+        }
+
+
         const subscriptionId = session.subscription as string
         const customerId = session.customer as string
 
@@ -287,13 +357,39 @@ Deno.serve(async (req) => {
         const invoice = event.data.object as Stripe.Invoice
         const customerId = invoice.customer as string
         const userId = await userIdFromCustomer(customerId)
-        if (!userId) break
+        if (!userId) {
+          console.log(`Fattura pagata per customer ${customerId} (possibile Condominio/Pacchetto Telematico)`)
+          break
+        }
 
         await aggiornaProfile(userId, {
           stripe_status: 'active',
         })
 
         console.log(`Fattura pagata per user ${userId}`)
+        break
+      }
+
+      // ── Fattura fallita (es. SDD stornato) → disattiva telematici / avvisa admin
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice
+        const subscriptionId = invoice.subscription as string
+        if (subscriptionId) {
+           const { data: condominiData } = await supabase
+              .from('condominio_servizi_telematici')
+              .select('id, condominio_id')
+              .eq('stripe_subscription_id', subscriptionId)
+              .maybeSingle()
+           
+           if (condominiData) {
+              await supabase
+                .from('condominio_servizi_telematici')
+                .update({ attivo: false })
+                .eq('id', condominiData.id)
+              
+              console.log(`Pagamento fallito per il Condominio ID ${condominiData.condominio_id}. Servizio disattivato.`)
+           }
+        }
         break
       }
 

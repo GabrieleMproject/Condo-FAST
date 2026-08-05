@@ -139,15 +139,17 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 - **Data Processing Agreement (DPA)**: Validata e completata la bozza pre-impostata in `website/dpa.html`, inserendo i dati definitivi della società M PROJECT S.R.L. ed eliminando i placeholder, confermando l'infrastruttura Sub-processor (Supabase, Vercel, Gemini AI, Stripe, Resend).
 - **Cookie Banner**: Verificata la presenza e validità legale del cookie banner proprietario, nativo (HTML/JS) su `condofast.it`, che dispensa l'utilizzo di plugin di terze parti a pagamento come Iubenda (gestisce solo cookie tecnici ed analitici anonimi nel pieno rispetto del GDPR).
 
-### 2. Produzione e Setup Dominio
-- **Dominio**: Collegato `condofast.it` e `www.condofast.it` a Vercel tramite configurazione DNS su **Register.it** (Record A verso `76.76.21.21` e CNAME verso `cname.vercel-dns.com`).
-- **Salvaguardia Email**: Modificati unicamente i record A/CNAME lasciando inalterati i nameserver originali e i record MX/TXT, per garantire il funzionamento ininterrotto della posta Google Workspace e della PEC.
-- **Supabase**: 
-  - Aggiunti i domini `condofast.it` e `www.condofast.it` nella whitelist CORS delle Edge Functions (`_shared/cors.ts`).
-  - Aggiornati *Site URL* e *Redirect URLs* nell'Authentication di Supabase per far funzionare correttamente il login e le email di convalida in produzione.
+### 2. Produzione e Architettura Domini (Separazione App e Sito)
+- **Architettura Enterprise**: Separato il sito vetrina marketing dall'app gestionale creando due progetti Vercel distinti ma collegati allo stesso repository monorepo.
+- **Dominio Sito Vetrina (`condofast.it`)**: Il dominio principale (e il `www`) punta al nuovo progetto Vercel `condofast-website` configurato con Root Directory `website/`.
+- **Dominio App Gestionale (`condofast.app`)**: Acquistato e collegato il nuovo dominio al progetto Vercel originale (`Condoai`) che fa build dell'app React (Vite).
+- **DNS e Record**: Configurato il Record A su Register.it per `condofast.app` verso Vercel e aggiunto il CNAME per il sottodominio `www`.
+- **Sicurezza e Supabase**: 
+  - Aggiunti i domini `https://condofast.app` e `https://www.condofast.app` (insieme ai .it) nella whitelist CORS delle Edge Functions (`_shared/cors.ts` e whitelist `gocardless-proxy`).
+  - L'amministratore ha aggiornato manualmente *Site URL* e *Redirect URLs* nell'Authentication di Supabase per far funzionare correttamente il login da `condofast.app`.
 
 ### 3. Deploy Unificato
-- Eseguiti due deploy in sequenza (`S69 step1` e `S69 step2`) tramite `npm run deploy:all` su `main` e superato lo Smoke Test (3448ms). Frontend aggiornato su Vercel e tutte le Edge Functions ri-deployate su Supabase.
+- Eseguiti 3 deploy sequenziali (fino allo `S69 step3`) tramite `npm run deploy:all` su `main` e superato lo Smoke Test (3428ms). Il codice aggiornato per le policies CORS è ora attivo su Supabase.
 
 ---
 

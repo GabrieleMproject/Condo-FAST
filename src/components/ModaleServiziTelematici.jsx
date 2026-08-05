@@ -108,7 +108,18 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
           body: { condominio_id: condominio.id, pacchetto }
         });
 
-        if (fnError) throw fnError;
+        if (fnError) {
+          // Se è un errore HTTP (es. 400), tentiamo di estrarre il body JSON
+          if (fnError.context && typeof fnError.context.json === 'function') {
+            try {
+              const errBody = await fnError.context.json();
+              throw new Error(errBody.error || "Errore sconosciuto dall'Edge Function");
+            } catch (e) {
+               throw fnError;
+            }
+          }
+          throw fnError;
+        }
         if (!fnData?.url) throw new Error("URL di checkout non ricevuto. Verifica la configurazione di Stripe.");
 
         // Se Stripe ha generato il link con successo, salviamo l'Attivazione Fiduciaria

@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } })
     }
 
     const supabaseAuthClient = createClient(
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseAuthClient.auth.getUser()
     
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Token non valido o utente non autenticato' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ error: 'Token non valido o utente non autenticato' }), { status: 401, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } })
     }
 
     const { condominio_id, pacchetto } = await req.json()
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     if (!condominio_id || !pacchetto) {
       return new Response(
         JSON.stringify({ error: 'Parametri mancanti: condominio_id, pacchetto' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } }
       )
     }
 
@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     if (!config || !config.priceId) {
       return new Response(
         JSON.stringify({ error: `Pacchetto non valido o price_id non configurato: ${pacchetto}` }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } }
       )
     }
 

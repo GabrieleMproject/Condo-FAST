@@ -14,8 +14,8 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
   const [servizio, setServizio] = useState(null);
   const [saving, setSaving] = useState(false);
   const [generandoPdf, setGenerandoPdf] = useState(false);
-  const [prezzoRivendita, setPrezzoRivendita] = useState(36);
-  const platformFeePercent = 30; // 30% platform fee
+  const [pacchetto, setPacchetto] = useState('app_full_150');
+  const [adminDisclaimerAccepted, setAdminDisclaimerAccepted] = useState(false);
 
   
   // Stati per la gestione del verbale
@@ -43,7 +43,8 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
       
       if (error) throw error;
       setServizio(data || { attivo: false });
-      setPrezzoRivendita(data?.prezzo_rivendita || 36);
+      setPacchetto(data?.pacchetto && data.pacchetto !== 'nessuno' ? data.pacchetto : 'app_full_150');
+      setAdminDisclaimerAccepted(data?.admin_disclaimer_accepted || false);
     } catch (err) {
       toast.error('Errore caricamento stato servizio');
       console.error(err);
@@ -86,8 +87,8 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
         condominio_id: condominio.id,
         attivo: nuovoStato,
         data_attivazione: nuovoStato ? new Date().toISOString() : null,
-        prezzo_rivendita: prezzoRivendita,
-        platform_fee_percent: platformFeePercent
+        pacchetto: nuovoStato ? pacchetto : 'nessuno',
+        admin_disclaimer_accepted: nuovoStato ? adminDisclaimerAccepted : false
       };
 
       if (nuovoStato && finalVerbaleId) {
@@ -121,11 +122,11 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
   const handleGeneraDelibera = async () => {
     setGenerandoPdf(true);
     try {
-      // Autosave prezzo_rivendita if service is already active, otherwise it gets saved on toggle
+      // Autosave pacchetto if service is already active, otherwise it gets saved on toggle
       if (servizio?.id) {
-        await supabase.from('condominio_servizi_telematici').update({ prezzo_rivendita: prezzoRivendita }).eq('id', servizio.id);
+        await supabase.from('condominio_servizi_telematici').update({ pacchetto }).eq('id', servizio.id);
       }
-      await generaDeliberaPrivacy(condominio, profile, prezzoRivendita);
+      await generaDeliberaPrivacy(condominio, profile, pacchetto);
       toast.success('Delibera generata!');
     } catch (err) {
       toast.error('Errore generazione delibera');
@@ -151,7 +152,7 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
   if (!isOpen) return null;
 
   // Calcola se l'attivazione è consentita
-  const canActivate = !servizio?.attivo && (selectedVerbaleId !== '' || fileCaricato !== null);
+  const canActivate = !servizio?.attivo && (selectedVerbaleId !== '' || fileCaricato !== null) && adminDisclaimerAccepted;
 
   return (
     <div style={styles.overlay} onClick={onClose}>
@@ -174,43 +175,50 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
               <li>Portale telematico accessibile ai condòmini H24.</li>
               <li>Registro del trattamento e conformità GDPR.</li>
             </ul>
-            <div style={{ marginTop: 16, padding: '16px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Prezzo da esporre in Delibera (€/anno):</span>
-                <input 
-                  type="number" 
-                  value={prezzoRivendita} 
-                  onChange={(e) => setPrezzoRivendita(e.target.value)}
-                  onBlur={(e) => setPrezzoRivendita(Math.max(36, Number(e.target.value)))}
-                  min="36"
-                  style={{ width: 100, padding: '8px 12px', borderRadius: 8, border: '1px solid #10b981', background: 'var(--app-bg)', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, textAlign: 'right', outline: 'none' }}
-                />
-              </div>
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>Scegli il Pacchetto da proporre in Assemblea:</h3>
               
-              {prezzoRivendita >= 36 && (
-                <div style={{ background: 'var(--app-bg)', borderRadius: 8, padding: 12, border: '1px dashed var(--border-color)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
-                    <span>Costo Base CondoFAST:</span>
-                    <span>36,00 €</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
-                    <span>Tuo Ricarico (Markup):</span>
-                    <span>{(prezzoRivendita - 36).toFixed(2)} €</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#ef4444', marginBottom: 12 }}>
-                    <span>Platform Fee ({platformFeePercent}% sul Ricarico):</span>
-                    <span>-{((prezzoRivendita - 36) * (platformFeePercent / 100)).toFixed(2)} €</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Tuo Profitto Netto Annuo:</span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: '#10b981' }}>+ {((prezzoRivendita - 36) * (1 - platformFeePercent / 100)).toFixed(2)} €</span>
-                  </div>
+              <div 
+                onClick={() => !servizio?.attivo && setPacchetto('base_36')}
+                style={{ ...styles.cardPacchetto, borderColor: pacchetto === 'base_36' ? '#10b981' : 'var(--border-color)', background: pacchetto === 'base_36' ? '#10b98111' : 'var(--app-bg)', cursor: servizio?.attivo ? 'default' : 'pointer' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Standard (Solo Conservazione GDPR)</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>36 € / anno</div>
                 </div>
-              )}
-              
-              <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
-                * Attivando questo servizio riceverai anche uno <strong>sconto di 1,00 €/mese</strong> sul canone del tuo gestionale.
+                <div style={{ fontSize: 12, color: '#10b981', marginTop: 4, fontWeight: 600 }}>Sconto tuo gestionale: +12 € / anno</div>
               </div>
+
+              <div 
+                onClick={() => !servizio?.attivo && setPacchetto('app_limitata_100')}
+                style={{ ...styles.cardPacchetto, borderColor: pacchetto === 'app_limitata_100' ? '#10b981' : 'var(--border-color)', background: pacchetto === 'app_limitata_100' ? '#10b98111' : 'var(--app-bg)', cursor: servizio?.attivo ? 'default' : 'pointer' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>App Condòmini (Versione Limitata)</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>100 € / anno</div>
+                </div>
+                <div style={{ fontSize: 12, color: '#10b981', marginTop: 4, fontWeight: 600 }}>Sconto tuo gestionale: +30 € / anno</div>
+              </div>
+
+              <div 
+                onClick={() => !servizio?.attivo && setPacchetto('app_full_150')}
+                style={{ ...styles.cardPacchetto, borderColor: pacchetto === 'app_full_150' ? '#10b981' : 'var(--border-color)', background: pacchetto === 'app_full_150' ? '#10b98111' : 'var(--app-bg)', cursor: servizio?.attivo ? 'default' : 'pointer' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>App Condòmini Full Option</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>150 € / anno</div>
+                </div>
+                <div style={{ fontSize: 12, color: '#10b981', marginTop: 4, fontWeight: 600 }}>Sconto tuo gestionale: +50 € / anno</div>
+              </div>
+
+              {!servizio?.attivo && (
+                <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, cursor: 'pointer', background: 'var(--card-bg)', padding: 12, borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                  <input type="checkbox" checked={adminDisclaimerAccepted} onChange={(e) => setAdminDisclaimerAccepted(e.target.checked)} style={{ marginTop: 2 }} />
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    Dichiaro di agire come Referral Partner di CondoFAST e mi impegno a comunicare all'Assemblea l'eventuale agevolazione sul mio canone, in conformità all'art. 1129 c.c.
+                  </span>
+                </label>
+              )}
             </div>
           </div>
 
@@ -303,10 +311,12 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
                     background: (!servizio?.attivo && !canActivate) ? '#6b7280' : (servizio?.attivo ? 'var(--app-bg)' : '#10b981'),
                     color: servizio?.attivo ? '#ef4444' : '#fff',
                     border: servizio?.attivo ? '1px solid #ef4444' : 'none',
-                    cursor: (!servizio?.attivo && !canActivate) ? 'not-allowed' : 'pointer'
+                    cursor: (!servizio?.attivo && !canActivate) ? 'not-allowed' : 'pointer',
+                    flex: 1,
+                    justifyContent: 'center'
                   }}
                 >
-                  {saving ? <Loader2 size={16} className="spin" /> : (servizio?.attivo ? 'Disattiva Servizio' : 'Attiva Servizio')}
+                  {saving ? <Loader2 size={16} className="spin" /> : (servizio?.attivo ? 'Disattiva Servizio' : 'Richiedi Link Pagamento e Attiva')}
                 </button>
               </div>
 
@@ -422,5 +432,11 @@ const styles = {
     transition: 'all 0.2s',
     color: 'var(--text-primary)',
     boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+  },
+  cardPacchetto: {
+    padding: 12,
+    borderRadius: 8,
+    border: '1px solid var(--border-color)',
+    transition: 'all 0.2s'
   }
 };

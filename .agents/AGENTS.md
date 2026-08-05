@@ -131,6 +131,23 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S71 (5 Agosto 2026 - Pacchetti Telematici, Sconto 75% e Fatturazione Diretta)
+
+### 1. Architettura Commerciale (Modello a Pacchetti)
+- **Fatturazione Diretta**: Abbandonato il modello a ricarico libero (markup manuale). Si passa a una fatturazione diretta (B2B/B2C) tramite **Pacchetti Ufficiali (Tiered Pricing)**: Standard 36€, App Limitata 100€, App Full 150€.
+- **Sconto per l'Amministratore**: L'amministratore agisce come Referral Partner e riceve uno sconto sul proprio abbonamento gestionale in base al pacchetto venduto (12€, 30€, 50€/anno).
+- **Cap allo Sconto**: Lo sconto per l'amministratore è *cappato* al **75% del canone del gestionale**, garantendo a M PROJECT un floor di entrata minima (il 25%) per coprire i costi server di base. 
+
+### 2. Implementazione Tecnica
+- **Database**: Creata la migrazione `sql/s71_servizi_telematici_pacchetti.sql` che sostituisce le colonne di markup con `pacchetto`, `admin_disclaimer_accepted` (manleva legale) e `stripe_subscription_id`.
+- **UI & Frontend**: Sostituito l'input manuale in `ModaleServiziTelematici.jsx` con 3 Card interattive e una checkbox obbligatoria in cui l'amministratore dichiara di essere Referral Partner e di informare l'Assemblea ai sensi dell'art. 1129 c.c.
+- **Generatore Delibera**: Aggiornato `deliberaPrivacyGenerator.js` per includere il nome ufficiale del pacchetto, il costo di listino e la clausola esplicita di trasparenza sul ruolo tecnico e sul referral dell'Amministratore.
+
+### 3. Gestione Conservazione 10 Anni
+- La conservazione sostitutiva a 10 anni si applica in modo proattivo e retroattivo sull'anno fiscale in corso al momento dell'attivazione. In caso di modulo *non attivo*, i documenti restano sul Cloud solo per l'operatività corrente e saranno soggetti in futuro a cancellazione ciclica (es. > 2 anni) per ottimizzare lo spazio.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S70 (5 Agosto 2026 - Nascondimento Sezioni Dati Mancanti in Sito Marketing)
 
 ### 1. Sito Marketing

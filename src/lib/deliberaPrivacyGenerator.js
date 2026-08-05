@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import { applyWatermark } from './watermark';
 
-export async function generaDeliberaPrivacy(condominio, profile, prezzoRivendita = 36) {
+export async function generaDeliberaPrivacy(condominio, profile, pacchetto = 'base_36') {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   let y = 20;
@@ -34,17 +34,23 @@ export async function generaDeliberaPrivacy(condominio, profile, prezzoRivendita
   doc.text(objLines, 14, y);
   y += objLines.length * 6 + 6;
 
-  // Formatta prezzoRivendita (es. 136 -> "136,00")
-  const prezzoFormattato = parseFloat(prezzoRivendita).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Formatta prezzo
+  const pacchettiInfo = {
+    'base_36': { nome: 'Standard (Solo Conservazione GDPR)', prezzo: 36 },
+    'app_limitata_100': { nome: 'App Condòmini (Versione Limitata)', prezzo: 100 },
+    'app_full_150': { nome: 'App Condòmini Full Option', prezzo: 150 }
+  };
+  const info = pacchettiInfo[pacchetto] || pacchettiInfo['base_36'];
+  const prezzoFormattato = parseFloat(info.prezzo).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Corpo
   doc.setFont('helvetica', 'normal');
   const bodyText = `L'Assemblea dei Condòmini, regolarmente costituita e validamente atta a deliberare, esaminata la proposta presentata dall'Amministratore in merito alla necessità di adempiere agli obblighi previsti dall'Art. 1130 c.c. e dal Regolamento Europeo 2016/679 (GDPR), delibera quanto segue:
 
-1. Di approvare l'attivazione del modulo "Conservazione Fiscale Sostitutiva 10 Anni e Portale Telematico GDPR" offerto tramite la piattaforma gestionale CondoFAST.
-2. Di autorizzare l'Amministratore ad addebitare al Condominio il canone annuale per tale servizio, pari a ${prezzoFormattato} € + IVA.
-3. Di prendere atto che il servizio garantisce la conservazione a norma delle fatture, dei rendiconti e delle pezze giustificative per la durata di 10 anni, nonché la predisposizione del Registro dei Trattamenti e l'accesso H24 da parte dei condòmini ai propri documenti.
-4. Di nominare l'Amministratore pro-tempore quale Responsabile del Trattamento (Data Processor) autorizzandolo all'uso della piattaforma in cloud per la gestione dei dati personali del Condominio.`;
+1. Di approvare l'attivazione del Pacchetto Ufficiale CondoFAST denominato "${info.nome}".
+2. Di autorizzare la spesa annuale per tale servizio, pari a ${prezzoFormattato} € + IVA, che verrà fatturata direttamente al Condominio da M PROJECT S.r.l.
+3. Di prendere atto che il servizio garantisce la conservazione a norma delle fatture, dei rendiconti e delle pezze giustificative per la durata di 10 anni, nonché l'eventuale accesso telematico in base al piano scelto.
+4. Di nominare l'Amministratore pro-tempore quale Responsabile del Trattamento (Data Processor) autorizzandolo all'uso della piattaforma in cloud.`;
 
   const lines = doc.splitTextToSize(bodyText, W - 28);
   doc.text(lines, 14, y);

@@ -300,6 +300,12 @@ export default function CondominiDetailPage() {
             <h1 style={S.title}>{c.nome}</h1>
             <p style={S.addr}>{c.indirizzo} {c.civico}, {c.cap} {c.citta} ({c.provincia})</p>
             {c.codice_fiscale && <p style={S.cf}>CF: {c.codice_fiscale}</p>}
+            {c.codice_app && (
+              <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', background: 'rgba(37, 99, 235, 0.1)', padding: '4px 10px', borderRadius: 6 }}>
+                <span style={{ fontSize: 12, color: '#2563eb', fontWeight: 600, marginRight: 6 }}>PIN App Condòmini:</span>
+                <span style={{ fontSize: 14, color: '#1e40af', fontWeight: 800, letterSpacing: 1 }}>{c.codice_app}</span>
+              </div>
+            )}
           </div>
         </div>
         <div style={S.headerActions}>

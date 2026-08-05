@@ -148,6 +148,20 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S75 (Creazione App Condòmini - Architettura & Auto-Matching)
+
+### 1. Decisione Architetturale (Doppio Frontend)
+- **Separazione App**: Creata una nuova cartella nel monorepo `condomini-app/` contenente un progetto Vite+React indipendente per l'App Condòmini. Questo garantisce isolamento del codice (sicurezza), UX mobile-first (PWA) e deploy indipendente, senza influire sul gestionale CondoFAST.
+
+### 2. Auto-Matching e Sicurezza Login
+- **Doppia Chiave di Accesso**: Il condòmino si registra sull'App inserendo il proprio **Codice Fiscale** e il **PIN App Condòmini** (un codice di 6 caratteri generato in automatico dal gestionale).
+- **Integrazione DB**: Creato lo script `sql/s75_condomini_app_auth.sql` che aggiunge la colonna `codice_app` a `condomini` e la funzione RPC `match_condomino_cf()`. La funzione incrocia il PIN col CF e associa in totale sicurezza il nuovo utente `auth.users` alla tabella anagrafica `persone`.
+
+### 3. Modifiche al Gestionale Amministratore
+- **Visualizzazione PIN**: Inserito un badge azzurro in `CondominiDetailPage.jsx` che mostra il "PIN App Condòmini" in chiaro, per permettere all'amministratore di stamparlo sui riparti o di comunicarlo facilmente ai residenti.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S71 (Continuazione): Debug e Fix Checkout Stripe
 
 ### 1. Fix e Sicurezza Checkout
@@ -1849,3 +1863,19 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **Linter Installato**: Aggiunto **ESLint (v8)** specifico per React/Vite (`eslint-plugin-react`, `eslint-plugin-react-hooks`). Questo colma una lacuna critica nel tooling di base del progetto.
 - **Script Aggiunti**: Configurati i comandi `"lint"` e `"lint:fix"` in `package.json`.
 - **Rivelazione Bug Nascosti**: L'analisi dell'intera codebase ha portato alla luce 725 warning/errori principalmente legati alla regola `react-hooks/exhaustive-deps` e a `set-state-in-effect`. Data l'imponenza (es. `SpeseForm.jsx`), è stata concordata la strategia di refactoring chirurgico scaglionato nelle sessioni successive, evitando auto-fix massivi non testabili.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S76 (Wiring App Condòmini - Dati Reali & RLS)
+
+### 1. Sicurezza e RLS
+- **Script SQL per App Condòmini**: Creato `sql/s76_condomini_app_rls.sql`. È stato appurato che gli utenti dell'App si registrano su `auth.users` e il loro ID è associato alla tabella `persone` (`user_id = auth.uid()`). Da qui, possono leggere solo i condomini collegati alle proprie unità immobiliari (`occupanti_unita`). Le policy consentono un accesso strettamente segregato in sola lettura (`SELECT`) a rate, assemblee, e anagrafica per prevenire violazioni GDPR tra vicini di casa.
+
+### 2. Architettura Dati Frontend (Custom Hook)
+- **Centralizzazione Chiamate**: Creato `useCondominoDati.js` all'interno dell'App React per isolare la logica Supabase dai componenti di UI. L'hook estrae con un'unica sottoscrizione centralizzata i dati su `persona`, `condominio`, `unita`, `rate`, `assemblee` e `documenti_condominio`. Se non è presente una sessione, l'hook ritorna uno stato neutro, permettendo ai componenti di fornire un fallback in assenza di backend collegato.
+
+### 3. Modifiche UI ed Integrazione Dati
+- **Rimozione Mock**: Su `HomePage.jsx`, `PagamentiPage.jsx`, `AssembleePage.jsx` e `DocumentiPage.jsx` sono stati rimossi i mock statici.
+- **Formattazione Dati Al Volo**: Invece di richiedere pesanti viste SQL, la formattazione dei dati per l'utente (ad es. generazione della "Causale" con cognome, o nome unificato della rata) avviene in `PagamentiPage.jsx` per alleggerire il carico del DB.
+- **Visualizzatore PDF Nativo**: In `DocumentiPage.jsx` l'apertura del file ora richiama dinamicamente una `createSignedUrl` di Supabase della durata di 1 ora, che poi viene caricata in un `<iframe>` sovrapposto, garantendo privacy senza lasciare i documenti liberamente accessibili via link pubblico. Rimosso l'obbligo di download.
+- **Pagamento Cumulativo ("Saldo Globale Posizione")**: Implementata la generazione automatica di un record virtuale "Saldo Globale" se il condomino ha più rate in ritardo. Questa logica viene elaborata nativamente nella `PagamentiPage.jsx` sommandone gli importi.

@@ -136,6 +136,7 @@ Abbina i BONIFICI IN ENTRATA alle CELLE RATA aperte (singola unità × rata) bas
 3. Scadenza: di norma si salda prima la rata con scadenza più vicina ancora aperta.
 
 Regole sull'importo:
+- Se la causale contiene la dicitura "Saldo globale posizione" o indica l'intenzione di saldare tutto, spalma l'intero importo del bonifico a cascata su tutte le rate aperte del pagante, partendo da quella con scadenza più vecchia, fino ad esaurimento dell'importo in entrata.
 - "importo_assegnato" è la quota del bonifico attribuita a quella cella.
 - La somma degli "importo_assegnato" di uno stesso movimento NON deve superare l'importo del bonifico.
 - Se un bonifico copre più rate della stessa unità, genera più abbinamenti (stesso movimento_id, rata_unita_id diversi).

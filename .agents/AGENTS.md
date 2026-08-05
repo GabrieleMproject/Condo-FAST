@@ -131,6 +131,14 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S70 (5 Agosto 2026 - Nascondimento Sezioni Dati Mancanti in Sito Marketing)
+
+### 1. Sito Marketing
+- **Sospensione Temporanea Sezioni Dati**: Nel file `website/index.html` sono state commentate (tramite HTML `<!-- SPENTO TEMPORANEAMENTE ... -->`) le tre sezioni che facevano affermazioni quantitative: "Social Proof" (loghi e +120 amministratori), "Statistiche" (70% tempo, 12.000 documenti, etc.) e "Testimonianze". Questo permette di non mostrare dati inesatti all'utente, mantenendo il codice pronto per essere ripristinato non appena i dati saranno disponibili.
+- **Deploy**: Eseguito deploy unificato per applicare la modifica live.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S69 (4 Agosto 2026 - Privacy Policy, Termini e Condizioni e DPA Ufficiale)
 
 ### 1. Documentazione Legale e Privacy

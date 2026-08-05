@@ -1794,3 +1794,21 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **Motivazione UX**: Sebbene aggiunga un piccolo step di attrito, previene errori di battitura della mail da parte degli amministratori (che porterebbero ad account inaccessibili o mancate comunicazioni di sistema) — un trade-off ampiamente giustificato nel contesto B2B della piattaforma.
 - **Validazione**: Se le email non combaciano, il form blocca il submit e mostra un avviso chiaro in pagina.
 - **Deploy Unificato**: Eseguito `npm run deploy:all` su Vercel e Supabase per riflettere le modifiche in produzione.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S73 (5 Agosto 2026 - Assemblee e Votazioni Real-Time)
+
+### 1. Architettura Modulo Assemblee
+- **Database e Realtime**: Creata la migrazione `sql/s72_assemblee.sql` con le tabelle `assemblee`, `assemblee_odg`, `assemblee_presenze`, e `assemblee_voti`. Abilitato Supabase Realtime per queste tabelle per supportare l'aggiornamento in diretta dei voti (predisposizione per futura App Condòmini).
+- **Millesimi e Deleghe**: Supporto per l'assegnazione di una specifica tabella millesimale (`tabella_millesimale_id`) a ciascun punto all'Ordine del Giorno, e tracciamento nativo delle deleghe in `assemblee_presenze`.
+
+### 2. Sviluppi Tecnici e UX
+- **Nuovo Hub Assemblee (`AssembleeTab.jsx`)**: Sostituito il vecchio tab "Verbali" con un componente contenitore. 
+- **Preservazione AI**: Il vecchio componente di ricerca AI e archiviazione PDF è stato rinominato in `ArchivioVerbaliTab.jsx` e inserito nel nuovo Hub, mantenendo inalterate le logiche di ricerca intelligente.
+- **Gestione e Regia Live**: Creato `GestioneAssembleeView.jsx` per la programmazione e `AssembleaLiveConsole.jsx` per la Regia Live. L'amministratore può avviare un punto OdG, raccogliere voti simulati (in sala) e vedere i risultati aggiornarsi in tempo reale grazie all'hook `useAssembleaLive.js`.
+
+### 3. Bug Fixing Pre-Commit (Bug Triager)
+- Corretto anti-pattern di mutazione diretta in `GestioneAssembleeView.jsx`.
+- Corretto anti-pattern in `useAssembleaLive.js` sostituendo la lettura dello stato con un `useRef` all'interno del callback WebSocket, evitando state-setter innestati.
+- Ripristinata importazione mancante di `Zap` da `lucide-react` in `ArchivioVerbaliTab.jsx` che avrebbe causato crash durante il fallback dell'AI.

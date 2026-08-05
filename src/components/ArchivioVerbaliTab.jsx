@@ -6,7 +6,7 @@ import { callGemini } from '../lib/geminiClient'
 import { 
   FileSignature, Search, Sparkles, Paperclip, CheckCircle2, 
   AlertTriangle, Trash2, Calendar, FileText, Loader2, X, Plus,
-  Lock, Clock, ShieldCheck, ArrowRight
+  Lock, Clock, ShieldCheck, ArrowRight, Zap
 } from 'lucide-react'
 
 // Elenco di stop words italiane comuni per l'estrazione delle parole chiave
@@ -118,7 +118,7 @@ const formattaDataAi = (d) => {
   return !isNaN(parsed.getTime()) ? parsed.toLocaleDateString('it-IT') : d;
 };
 
-export default function VerbaliAssembleaTab({ condominioId }) {
+export default function ArchivioVerbaliTab({ condominioId }) {
   const { canUse } = usePlan();
   const [showStudioPaywall, setShowStudioPaywall] = useState(false);
   const { documenti, loading, error, fetch, upload, remove, getSignedUrl } = useDocumenti(condominioId);

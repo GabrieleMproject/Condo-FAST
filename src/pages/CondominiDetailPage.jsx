@@ -22,7 +22,7 @@ import {
   ChevronRight, Building2,
   Mail, FileSignature, ShieldAlert, ShieldCheck
 } from 'lucide-react'
-import VerbaliAssembleaTab from '../components/VerbaliAssembleaTab'
+import AssembleeTab from '../components/AssembleeTab'
 import ModaleServiziTelematici from '../components/ModaleServiziTelematici'
 import { eseguiDiagnosiConformitaFiscale } from '../lib/diagnosiFiscaleEngine'
 import DiagnosiFiscaleModal from '../components/DiagnosiFiscaleModal'
@@ -488,7 +488,7 @@ export default function CondominiDetailPage() {
 
         {activeTab === 'comunicazioni' && <ComunicazioniTab condominioId={c.id} />}
 
-        {activeTab === 'verbali' && <VerbaliAssembleaTab condominioId={c.id} />}
+        {activeTab === 'verbali' && <AssembleeTab condominioId={c.id} />}
 
         {activeTab === 'sinistri' && <SinistriTab condominioId={c.id} />}
 

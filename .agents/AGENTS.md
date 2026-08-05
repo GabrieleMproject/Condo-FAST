@@ -1879,3 +1879,13 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **Formattazione Dati Al Volo**: Invece di richiedere pesanti viste SQL, la formattazione dei dati per l'utente (ad es. generazione della "Causale" con cognome, o nome unificato della rata) avviene in `PagamentiPage.jsx` per alleggerire il carico del DB.
 - **Visualizzatore PDF Nativo**: In `DocumentiPage.jsx` l'apertura del file ora richiama dinamicamente una `createSignedUrl` di Supabase della durata di 1 ora, che poi viene caricata in un `<iframe>` sovrapposto, garantendo privacy senza lasciare i documenti liberamente accessibili via link pubblico. Rimosso l'obbligo di download.
 - **Pagamento Cumulativo ("Saldo Globale Posizione")**: Implementata la generazione automatica di un record virtuale "Saldo Globale" se il condomino ha più rate in ritardo. Questa logica viene elaborata nativamente nella `PagamentiPage.jsx` sommandone gli importi.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S76 (6 Agosto 2026 - Ottimizzazione Mobile Sito Marketing)
+
+### 1. Ottimizzazione Layout Smartphone
+- **CSS Responsivo Dedicato**: Aggiunta una nuova query CSS `@media (max-width: 480px)` al file `website/css/style.css` per ottimizzare specificamente l'esperienza utente sugli schermi degli smartphone (es. iPhone SE o dispositivi Android ristretti).
+- **Adeguamenti Implementati**: Espansione dei pulsanti Call to Action (CTA) al 100% della larghezza per migliorare i *touch target* (accessibilità tattile col pollice). Riduzione dei padding verticali e dei margini orizzontali in `.container` e `.section` per massimizzare l'area di lettura. Adattamento della tipografia, in particolare dei titoli `h1` e della spaziatura nelle griglie.
+- **Isolamento dell'Ambito**: Le modifiche CSS non alterano in alcun modo l'aspetto del sito su schermi desktop (PC) o tablet, essendo confinate strettamente alla risoluzione mobile.
+- **Deploy**: Eseguito con successo un `npm run deploy:all` completo (build + commit + Vercel + Edge Functions).

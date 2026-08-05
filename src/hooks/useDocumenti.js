@@ -98,18 +98,23 @@ export function useDocumenti(condominioId) {
       }
 
       // 3. Salva record su DB
+      const payload = {
+        condominio_id: condominioId,
+        tipo,
+        nome: nome || compressedFile.name,
+        url_storage: path,
+        testo_estratto,
+        note,
+        data_documento: dataDocumento,
+      }
+      
+      if (sinistroId) {
+        payload.sinistro_id = sinistroId;
+      }
+
       const { data, error: dbError } = await supabase
           .from('documenti_condominio')
-          .insert({
-            condominio_id: condominioId,
-            tipo,
-            nome: nome || compressedFile.name,
-            url_storage: path,
-            testo_estratto,
-            note,
-            data_documento: dataDocumento,
-            sinistro_id: sinistroId,
-          })
+          .insert(payload)
           .select()
           .single()
       if (dbError) throw dbError

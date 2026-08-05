@@ -1830,3 +1830,22 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **Integrazione Regia Admin**: 
   - La `AssembleaLiveConsole` integra in tempo reale (sidebar sinistra) i condomini che richiedono accesso, permettendo all'admin di premere "Ammetti" o "Rifiuta".
   - Il QR code per l'app viene generato in locale grazie alla libreria `qrcode.react`.
+
+### 3. Bug Fixing Pre-Commit (Bug Triager)
+- **Race Condition in Regia**: Risolto bug per cui l'ammissione in Sala d'Attesa avveniva prima che la spunta di presenza venisse scritta su DB, causando fallimento del client. Aggiunto `await togglePresenza`.
+- **StrictMode UUID Bug**: Corretta l'inizializzazione di `crypto.randomUUID()` nell'app condomino, passando da `useEffect` a inizializzazione lazy in `useState` per prevenire rigenerazioni multiple.
+- **Sicurezza RLS**: Aggiunte policy SQL mancanti per la lettura anonima pubblica del token d'accesso e l'inserimento/modifica dei voti pubblici (`Public read token`, `Public insert/update voti`).
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S72 (5 Agosto 2026 - Analisi Sicurezza, Ottimizzazione e Integrazione Linter)
+
+### 1. Audit di Sicurezza e GDPR (Passed)
+- Verificata la conformità della gestione RLS Supabase: l'ancoraggio a `user_owns_condominio` e `auth.uid()` è applicato sistematicamente.
+- Appurata la sanificazione nativa dei log sensibili (nessun leak di PII nei `console.log` grazie al `logger.js` centralizzato).
+- Validata l'infrastruttura del proxy AI (`gemini-proxy/index.ts`): rate limiting fail-closed, mask delle chiavi e cap di sicurezza (max 100k chars) funzionanti a dovere.
+
+### 2. Integrazione Tooling per Qualità del Codice
+- **Linter Installato**: Aggiunto **ESLint (v8)** specifico per React/Vite (`eslint-plugin-react`, `eslint-plugin-react-hooks`). Questo colma una lacuna critica nel tooling di base del progetto.
+- **Script Aggiunti**: Configurati i comandi `"lint"` e `"lint:fix"` in `package.json`.
+- **Rivelazione Bug Nascosti**: L'analisi dell'intera codebase ha portato alla luce 725 warning/errori principalmente legati alla regola `react-hooks/exhaustive-deps` e a `set-state-in-effect`. Data l'imponenza (es. `SpeseForm.jsx`), è stata concordata la strategia di refactoring chirurgico scaglionato nelle sessioni successive, evitando auto-fix massivi non testabili.

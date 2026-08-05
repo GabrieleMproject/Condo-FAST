@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "smoke": "node scripts/smoke.mjs",
     "serve-site": "python3 -m http.server --directory website 8080",
-    "deploy:all": "node scripts/deploy_all.mjs"
+    "deploy:all": "node scripts/deploy_all.mjs",
+    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint src --ext js,jsx --fix"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",
@@ -32,6 +34,10 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^6.0.2",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
     "vite": "^8.0.14"
   }
 }

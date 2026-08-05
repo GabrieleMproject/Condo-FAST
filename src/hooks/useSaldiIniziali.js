@@ -102,7 +102,7 @@ export function useSaldiIniziali(condominioId) {
 
     // 1. Versato da rate_unita (incassi effettivi)
     ;(rate || []).forEach(r => {
-      ;(r.rate_unita || []).forEach(cell => {
+      (r.rate_unita || []).forEach(cell => {
         const a = acc[cell.unita_id] || { dovuto: 0, versato: 0 }
         a.versato += parseFloat(cell.importo_pagato || 0)
         acc[cell.unita_id] = a
@@ -112,7 +112,7 @@ export function useSaldiIniziali(condominioId) {
     // 2. Dovuto da ripartizioni consuntivo
     let haRipartizioniConsuntivo = false
     ;(spesePrec || []).forEach(s => {
-      ;(s.ripartizioni || []).forEach(r => {
+      (s.ripartizioni || []).forEach(r => {
         if (!r.unita_id) return
         haRipartizioniConsuntivo = true
         const a = acc[r.unita_id] || { dovuto: 0, versato: 0 }
@@ -123,8 +123,8 @@ export function useSaldiIniziali(condominioId) {
 
     // 3. Fallback a dovuto preventivo (rate_unita.importo) se non vi sono spese/ripartizioni a consuntivo
     if (!haRipartizioniConsuntivo) {
-      ;(rate || []).forEach(r => {
-        ;(r.rate_unita || []).forEach(cell => {
+      (rate || []).forEach(r => {
+        (r.rate_unita || []).forEach(cell => {
           const a = acc[cell.unita_id] || { dovuto: 0, versato: 0 }
           a.dovuto += parseFloat(cell.importo || 0)
           acc[cell.unita_id] = a

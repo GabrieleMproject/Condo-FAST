@@ -148,6 +148,16 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S71 (Continuazione): Debug e Fix Checkout Stripe
+
+### 1. Fix e Sicurezza Checkout
+- **Fix CORS Policy**: Aggiornata la policy CORS in `_shared/cors.ts` includendo l'origine `*.vercel.app`, bloccato originariamente dagli url generati per le Vercel Preview.
+- **Risoluzione Crash API Gateway**: Risolto crash critico `500` API Gateway Deno spostando l'inizializzazione del client Stripe (`new Stripe(..)`) all'interno dell'handler della richiesta `Deno.serve` su `stripe-checkout-telematici`.
+- **Parsing Errori Dettagliato**: Aggiunto il parsing completo di errori HTML/JSON per restituire sempre il messaggio di errore grezzo nel frontend.
+- **Sanitizzazione Runtime**: Inserita sanitizzazione runtime (trim + replace) dei Price ID e STRIPE_SECRET_KEY nell'Edge Function. Questo assicura la rimozione di spazi e virgolette errate che potrebbero essere introdotte con il copia/incolla nel pannello Edge Secrets di Supabase.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S70 (5 Agosto 2026 - Nascondimento Sezioni Dati Mancanti in Sito Marketing)
 
 ### 1. Sito Marketing

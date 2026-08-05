@@ -6,17 +6,20 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // se le chiavi segrete non sono ancora disponibili.
 
 function getPacchettoConfig(pacchetto: string) {
+  // Funzione di utilità per pulire i secret (rimuove spazi, accapo e virgolette)
+  const sanitize = (val: string | undefined) => (val || '').replace(/[\n"']/g, '').trim();
+
   const map: Record<string, { priceId: string; scontoAdmin: number }> = {
     'base_36': {
-      priceId: Deno.env.get('STRIPE_PRICE_TELEMATICI_BASE') ?? '',
+      priceId: sanitize(Deno.env.get('STRIPE_PRICE_TELEMATICI_BASE')),
       scontoAdmin: 12,
     },
     'app_limitata_100': {
-      priceId: Deno.env.get('STRIPE_PRICE_TELEMATICI_100') ?? '',
+      priceId: sanitize(Deno.env.get('STRIPE_PRICE_TELEMATICI_100')),
       scontoAdmin: 30,
     },
     'app_full_150': {
-      priceId: Deno.env.get('STRIPE_PRICE_TELEMATICI_150') ?? '',
+      priceId: sanitize(Deno.env.get('STRIPE_PRICE_TELEMATICI_150')),
       scontoAdmin: 50,
     },
   }
@@ -77,7 +80,9 @@ Deno.serve(async (req) => {
       )
     }
 
-    const stripe = new Stripe(stripeSecretKey, {
+    const cleanStripeKey = stripeSecretKey.replace(/[\n"']/g, '').trim();
+
+    const stripe = new Stripe(cleanStripeKey, {
       apiVersion: '2024-06-20',
       httpClient: Stripe.createFetchHttpClient(),
     })

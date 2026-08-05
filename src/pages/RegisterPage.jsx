@@ -9,7 +9,7 @@ export default function RegisterPage() {
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ nome: '', cognome: '', email: '', password: '' });
+  const [form, setForm] = useState({ nome: '', cognome: '', email: '', confermaEmail: '', password: '' });
   const [dpaAccepted, setDpaAccepted] = useState(false);
   const [tosAccepted, setTosAccepted] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
@@ -23,6 +23,10 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!tosAccepted || !dpaAccepted) {
       setError('Devi accettare i Termini, la Privacy e il DPA per continuare.');
+      return;
+    }
+    if (form.email !== form.confermaEmail) {
+      setError('Gli indirizzi email non corrispondono.');
       return;
     }
     setError('');
@@ -163,6 +167,23 @@ export default function RegisterPage() {
                   type="email"
                   placeholder="mario.rossi@studio.it"
                   value={form.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Conferma Email */}
+            <div className="field-group">
+              <label htmlFor="confermaEmail">Conferma Email</label>
+              <div className="input-wrapper">
+                <Mail size={16} className="input-icon" />
+                <input
+                  id="confermaEmail"
+                  name="confermaEmail"
+                  type="email"
+                  placeholder="Conferma la tua email"
+                  value={form.confermaEmail}
                   onChange={handleChange}
                   required
                 />

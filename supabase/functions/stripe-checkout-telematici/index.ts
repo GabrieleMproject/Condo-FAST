@@ -140,10 +140,10 @@ Deno.serve(async (req) => {
         },
       }
     )
-  } catch (err) {
+  } catch (err: any) {
     console.error('Errore stripe-checkout-telematici:', err)
     return new Response(
-      JSON.stringify({ error: 'Errore interno. Riprova o contatta il supporto.' }),
+      JSON.stringify({ error: err.message || 'Errore interno. Riprova o contatta il supporto.' }),
       {
         status: 500,
         headers: {

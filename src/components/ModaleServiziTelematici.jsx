@@ -109,11 +109,18 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
         });
 
         if (fnError) {
-          // Se è un errore HTTP (es. 400), tentiamo di estrarre il body JSON
-          if (fnError.context && typeof fnError.context.json === 'function') {
+          if (fnError.context && typeof fnError.context.text === 'function') {
             try {
-              const errBody = await fnError.context.json();
-              throw new Error(errBody.error || "Errore sconosciuto dall'Edge Function");
+              // Estraiamo il testo grezzo della risposta (che sia JSON o Testo generico di Supabase)
+              const errText = await fnError.context.text();
+              let parsedMsg = errText;
+              try {
+                 const errBody = JSON.parse(errText);
+                 parsedMsg = errBody.error || errText;
+              } catch (parseErr) {
+                 // Non è JSON, teniamo errText
+              }
+              throw new Error(`Edge Function Error: ${parsedMsg}`);
             } catch (e) {
                throw fnError;
             }

@@ -12,12 +12,7 @@ export default function LiveVoteJoinPage() {
   
   const [status, setStatus] = useState('start') // 'start' | 'waiting' | 'admitted' | 'rejected'
   const [personaId, setPersonaId] = useState(null)
-  const [sessionId, setSessionId] = useState('')
-
-  useEffect(() => {
-    // Generiamo un session ID univoco per questo dispositivo alla prima apertura
-    setSessionId(crypto.randomUUID())
-  }, [])
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
 
   useEffect(() => {
     if (status !== 'waiting') return

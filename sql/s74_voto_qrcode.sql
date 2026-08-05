@@ -27,6 +27,10 @@ CREATE POLICY "Admin full access token" ON public.assemblee_token_accesso
         )
     );
 
+CREATE POLICY "Public read token" ON public.assemblee_token_accesso
+    FOR SELECT
+    USING (true);
+
 -- ============================================================================
 -- 2. Tabella della "Sala d'Attesa" (per l'Accesso con QR Generico + CF)
 -- ============================================================================
@@ -87,6 +91,18 @@ CREATE POLICY "Public read sala attesa via session" ON public.assemblee_sala_att
 -- POLICY SU Voti Pubblici: 
 -- In una vera app B2C, si creerebbe una funzione Security Definer per inviare il voto.
 -- Per questo MVP, abilitiamo INSERT anonimo sui voti se il token è valido.
+
+CREATE POLICY "Public insert voti" ON public.assemblee_voti
+    FOR INSERT
+    WITH CHECK (
+        auth.role() = 'anon' OR auth.role() = 'authenticated'
+    );
+
+CREATE POLICY "Public update voti" ON public.assemblee_voti
+    FOR UPDATE
+    USING (
+        auth.role() = 'anon' OR auth.role() = 'authenticated'
+    );
 
 -- ============================================================================
 -- 4. RPC per Verifica Codice Fiscale (Security Definer)

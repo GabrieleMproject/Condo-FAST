@@ -1812,3 +1812,21 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - Corretto anti-pattern di mutazione diretta in `GestioneAssembleeView.jsx`.
 - Corretto anti-pattern in `useAssembleaLive.js` sostituendo la lettura dello stato con un `useRef` all'interno del callback WebSocket, evitando state-setter innestati.
 - Ripristinata importazione mancante di `Zap` da `lucide-react` in `ArchivioVerbaliTab.jsx` che avrebbe causato crash durante il fallback dell'AI.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S74 (5 Agosto 2026 - Accesso App Voto con QR Code e Sala Attesa)
+
+### 1. Architettura Accesso "Ibrido" per Condòmini
+- **Accesso VIP (Lettera)**: Tramite token pregenerato univoco che identifica direttamente utente e assemblea (per futuri PDF convocazioni).
+- **Accesso App (In Sala)**: Accesso generico all'assemblea tramite QR code pubblico (stampato o proiettato in sala) combinato all'inserimento del **Codice Fiscale** sullo smartphone. Questo non richiede credenziali ma inserisce l'utente nella "Sala d'Attesa".
+
+### 2. Sviluppi Tecnici e UX
+- **Schema DB (`s74_voto_qrcode.sql`)**: Tabelle `assemblee_token_accesso` e `assemblee_sala_attesa`.
+- **Security Definer RPC (`check_cf_assemblea`)**: Funzione protetta per verificare che un CF esista all'interno di un condominio prima di autorizzare l'inserimento in sala d'attesa, senza permettere la lettura dell'anagrafica da parte di utenti anonimi.
+- **Rotte Pubbliche**: 
+  - `/voto/join/:assembleaId`: Interfaccia di convalida Codice Fiscale e Sala d'Attesa, che si aggiorna in real-time tramite WebSockets per sbloccarsi non appena l'admin accetta.
+  - `/voto/live/:token`: Interfaccia reale di voto in cui il condomino vede le votazioni aprirsi in tempo reale ed esprime la sua scelta.
+- **Integrazione Regia Admin**: 
+  - La `AssembleaLiveConsole` integra in tempo reale (sidebar sinistra) i condomini che richiedono accesso, permettendo all'admin di premere "Ammetti" o "Rifiuta".
+  - Il QR code per l'app viene generato in locale grazie alla libreria `qrcode.react`.

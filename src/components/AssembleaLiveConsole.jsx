@@ -41,16 +41,13 @@ export default function AssembleaLiveConsole({ assembleaId, onClose }) {
   }, [assembleaId])
 
   const gestisciAttesa = async (req, nuovoStato) => {
-    await supabase.from('assemblee_sala_attesa').update({ stato: nuovoStato }).eq('id', req.id)
     if (nuovoStato === 'ammesso') {
-      // Inseriamo/aggiorniamo anche in assemblee_presenze per fargli avere la spunta
-      // Serve un'unita_id, prendiamo la prima associata alla persona nel DB.
-      // (Per semplicità MVP, prendiamo l'unità principale del condomino)
       const { data: unitaPersona } = await supabase.from('unita_persone').select('unita_id').eq('persona_id', req.persona_id).limit(1).single()
       if (unitaPersona) {
-        togglePresenza(unitaPersona.unita_id, req.persona_id, true)
+        await togglePresenza(unitaPersona.unita_id, req.persona_id, true)
       }
     }
+    await supabase.from('assemblee_sala_attesa').update({ stato: nuovoStato }).eq('id', req.id)
   }
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}><Loader2 size={24} className="spin" /></div>

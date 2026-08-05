@@ -97,31 +97,38 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
          payload.verbale_approvazione_id = null;
       }
 
-      // Upsert nel DB
-      const { data, error } = await supabase
-        .from('condominio_servizi_telematici')
-        .upsert(payload)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      setServizio(data);
-
       if (nuovoStato) {
         toast.loading('Generazione link di pagamento in corso...', { id: 'checkout-toast' });
-        // Invoca la Edge Function per ottenere il link Stripe
+        // Invoca la Edge Function per ottenere il link Stripe PRIMA di salvare nel DB
         const { data: fnData, error: fnError } = await supabase.functions.invoke('stripe-checkout-telematici', {
           body: { condominio_id: condominio.id, pacchetto }
         });
 
         if (fnError) throw fnError;
-        if (!fnData?.url) throw new Error("URL di checkout non ricevuto");
+        if (!fnData?.url) throw new Error("URL di checkout non ricevuto. Verifica la configurazione di Stripe.");
 
-        toast.success('Reindirizzamento...', { id: 'checkout-toast' });
+        // Se Stripe ha generato il link con successo, salviamo l'Attivazione Fiduciaria
+        const { data, error } = await supabase
+          .from('condominio_servizi_telematici')
+          .upsert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        setServizio(data);
+
+        toast.success('Reindirizzamento a Stripe...', { id: 'checkout-toast' });
         window.location.href = fnData.url;
-        return; // Fermiamo l'esecuzione, la pagina cambierà
+        return; // Fermiamo l'esecuzione
       } else {
-        toast.success('Servizio disattivato.');
+        // Disattivazione
+        const { data, error } = await supabase
+          .from('condominio_servizi_telematici')
+          .upsert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        setServizio(data);
+        toast.success('Servizio disattivato.', { id: 'checkout-toast' });
       }
       
       await refresh(); // Aggiorna il piano per il calcolo sconti

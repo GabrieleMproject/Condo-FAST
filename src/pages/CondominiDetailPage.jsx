@@ -234,7 +234,9 @@ export default function CondominiDetailPage() {
             saldoDaDoc = Number(parsed.saldo_finale)
             dataSaldoDaDoc = parsed.data_saldo_finale || parsed.al
           }
-        } catch {}
+        } catch (err) {
+          console.warn('Errore parsing note JSON in estratto_conto:', err)
+        }
       }
 
       // 2. Movimenti estratto conto

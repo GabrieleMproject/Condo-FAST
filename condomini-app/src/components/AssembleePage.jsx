@@ -8,6 +8,7 @@ export default function AssembleePage() {
   const { assemblee, persona, unita, loading, error } = useCondominoDati();
   const [votoInviato, setVotoInviato] = useState(false);
   const [expandedOdg, setExpandedOdg] = useState(null);
+  const [isVoting, setIsVoting] = useState(false);
 
   if (loading) {
     return <div className="min-h-full bg-gray-50 flex items-center justify-center p-8 text-indigo-600 font-bold">Caricamento assemblea...</div>;
@@ -23,6 +24,7 @@ export default function AssembleePage() {
   const handleVota = async (odgId, voto) => {
     // In produzione: update del voto sul database
     if (!persona || unita.length === 0) return;
+    setIsVoting(true);
     try {
       await supabase.from('assemblee_voti').insert({
         odg_id: odgId,
@@ -34,6 +36,9 @@ export default function AssembleePage() {
       setTimeout(() => setVotoInviato(null), 2000);
     } catch(err) {
       console.error(err);
+      alert('Si è verificato un errore durante l\\'invio del voto. Riprova.');
+    } finally {
+      setIsVoting(false);
     }
   };
 
@@ -70,21 +75,24 @@ export default function AssembleePage() {
             <div className="grid grid-cols-3 gap-2">
               <button 
                 onClick={() => handleVota('favorevole')}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:scale-95 transition-all border border-emerald-100"
+                disabled={isVoting}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:scale-95 transition-all border border-emerald-100 ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Check size={20} className="mb-1" />
                 <span className="text-xs font-bold">A favore</span>
               </button>
               <button 
                 onClick={() => handleVota('contrario')}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 active:scale-95 transition-all border border-red-100"
+                disabled={isVoting}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 active:scale-95 transition-all border border-red-100 ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <X size={20} className="mb-1" />
                 <span className="text-xs font-bold">Contrario</span>
               </button>
               <button 
                 onClick={() => handleVota('astenuto')}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all border border-gray-200"
+                disabled={isVoting}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all border border-gray-200 ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Minus size={20} className="mb-1" />
                 <span className="text-xs font-bold">Astenuto</span>

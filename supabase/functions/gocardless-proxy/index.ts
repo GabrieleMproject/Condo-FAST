@@ -171,8 +171,12 @@ serve(async (req) => {
             }
             break;
             
-        case 'sync_transactions':
+        case 'sync_transactions': {
             // Sincronizza i movimenti di una connessione
+            const syncAdmin = createClient(
+                Deno.env.get('SUPABASE_URL') ?? '',
+                Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            )
             const connRes = await supabaseClient.from('bank_connections')
                 .select('*, condomini(amministratore_id)')
                 .eq('id', payload.connectionId)
@@ -202,7 +206,7 @@ serve(async (req) => {
                       ? rawIban.slice(0, 2) + '**' + '*'.repeat(Math.max(0, rawIban.length - 6)) + rawIban.slice(-4)
                       : null
 
-                    await supabaseAdmin.from('bank_connections').update({
+                    await syncAdmin.from('bank_connections').update({
                         account_id: accountId,
                         iban: maskedIban,
                         status: 'LINKED'
@@ -219,11 +223,8 @@ serve(async (req) => {
             let insertedCount = 0
             if (transData.transactions && transData.transactions.booked) {
                 const booked = transData.transactions.booked
-                const supabaseAdmin = createClient(
-                    Deno.env.get('SUPABASE_URL') ?? '',
-                    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-                )
                 
+
                 const movimentiDaInserire = booked.map(t => {
                     const importoNum = parseFloat(t.transactionAmount.amount)
                     const parts = []
@@ -246,7 +247,7 @@ serve(async (req) => {
                 });
                 
                 if (movimentiDaInserire.length > 0) {
-                    const { data, error: insertErr } = await supabaseAdmin.from('estratto_conto')
+                    const { data, error: insertErr } = await syncAdmin.from('estratto_conto')
                         .upsert(movimentiDaInserire, { onConflict: 'bank_transaction_id', ignoreDuplicates: true })
                         .select('id');
                     if (insertErr) throw new Error('Errore inserimento in DB: ' + insertErr.message)
@@ -256,6 +257,7 @@ serve(async (req) => {
             
             result = { success: true, newTransactions: insertedCount }
             break;
+        }
             
         default:
             throw new Error('Azione non supportata')

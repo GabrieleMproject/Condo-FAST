@@ -59,6 +59,7 @@ export default function DocumentiPage() {
   const handleDownload = async (e, doc) => {
     e.stopPropagation(); // Prevenire apertura visualizzatore
     if (!doc.pdf_url) return;
+    setLoadingPdf(true);
     try {
       const { data, error } = await supabase.storage.from('documenti').download(doc.pdf_url);
       if (error) throw error;
@@ -73,6 +74,9 @@ export default function DocumentiPage() {
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error('Errore durante il download del PDF', err);
+      alert('Errore durante il download del documento. Riprova.');
+    } finally {
+      setLoadingPdf(false);
     }
   };
 
@@ -152,7 +156,7 @@ export default function DocumentiPage() {
         <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex justify-center items-center">
           <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center">
             <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-            <p className="font-bold text-gray-900">Apertura documento...</p>
+            <p className="font-bold text-gray-900">Caricamento documento...</p>
           </div>
         </div>
       )}

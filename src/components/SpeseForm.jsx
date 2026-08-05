@@ -5,6 +5,7 @@ import { parseFatturaXmlP7m } from '../lib/xmlFatturaParser'
 import { usePlan } from '../hooks/usePlan'
 import { supabase } from '../lib/supabaseClient'
 import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet, Trash2, ChevronDown, ChevronUp, Layers, FileText, ShieldCheck } from 'lucide-react'
+import AiBadge from './AiBadge'
 
 const CATEGORIE = [
   { value: 'ordinaria', label: 'Ordinaria' },
@@ -1293,7 +1294,9 @@ Formato JSON:
         </div>
 
         <div>
-          <label style={labelStyle}>Importo (€) *</label>
+          <label style={labelStyle}>
+            Importo (€) * {fatturaImportata && <AiBadge />}
+          </label>
           <input
             type="number" step="0.01" min="0"
             style={{ ...inputStyle, borderColor: errors.importo ? '#ef4444' : 'var(--border-color)' }}
@@ -1409,13 +1412,17 @@ Formato JSON:
         )}
 
         <div>
-          <label style={labelStyle}>Fornitore</label>
+          <label style={labelStyle}>
+            Fornitore {fatturaImportata && <AiBadge />}
+          </label>
           <input style={inputStyle} placeholder="Es. Rossi Ascensori Srl"
             value={form.fornitore} onChange={e => setField('fornitore', e.target.value)} />
         </div>
 
         <div>
-          <label style={labelStyle}>N. Fattura</label>
+          <label style={labelStyle}>
+            N. Fattura {fatturaImportata && <AiBadge />}
+          </label>
           <input style={inputStyle} placeholder="Es. 2024/0042"
             value={form.numero_fattura} onChange={e => setField('numero_fattura', e.target.value)} />
         </div>

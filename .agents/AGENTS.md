@@ -1889,3 +1889,13 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **Adeguamenti Implementati**: Espansione dei pulsanti Call to Action (CTA) al 100% della larghezza per migliorare i *touch target* (accessibilità tattile col pollice). Riduzione dei padding verticali e dei margini orizzontali in `.container` e `.section` per massimizzare l'area di lettura. Adattamento della tipografia, in particolare dei titoli `h1` e della spaziatura nelle griglie.
 - **Isolamento dell'Ambito**: Le modifiche CSS non alterano in alcun modo l'aspetto del sito su schermi desktop (PC) o tablet, essendo confinate strettamente alla risoluzione mobile.
 - **Deploy**: Eseguito con successo un `npm run deploy:all` completo (build + commit + Vercel + Edge Functions).
+
+### 2. Audit di Sicurezza e Risoluzione Vulnerabilità Backend
+- **CORS Wildcard Bypass (`_shared/cors.ts`)**: Rimossa la policy eccessivamente permissiva `origin.endsWith('.vercel.app')` per scongiurare rischi di richieste cross-origin non autorizzate da altre app Vercel. Ripristinata la strict allowlist sui domini ufficiali.
+- **ReferenceError Critico Open Banking (`gocardless-proxy`)**: Corretto un bug bloccante (variabile `supabaseAdmin` invocata prima dell'inizializzazione) che avrebbe causato un crash (HTTP 500) della funzione Serverless al primo inserimento dei movimenti bancari (linea 205).
+- **Prompt Injection in AI Proxy (`gemini-proxy`)**: Mitigata la vulnerabilità di injection in `body.system`. Applicata una tecnica di *Sandwich Defense* e stripping dei comandi nocivi ("ignora le istruzioni") per vincolare saldamente Gemini al ruolo di assistente contabile.
+
+### 3. Usabilità e UX Frontend (App Condòmini)
+- **Feedback Voto Assemblee**: Inserito uno stato di `isVoting` (pulsanti disabilitati) e blocco `finally` nella funzione `handleVota` in `AssembleePage.jsx` per prevenire errori silenti in caso di caduta di connettività.
+- **Feedback Download PDF**: Implementato indicatore di caricamento e try/catch/finally in `DocumentiPage.jsx` per informare l'utente dell'attività asincrona ed emettere un alert esplicito su errore di scaricamento.
+- **Gestione Errori JSON**: Prevenuto catch vuoto su parsing note JSON in `CondominiDetailPage.jsx` inserendo un log di avviso, per non nascondere potenziali deviazioni dello schema dati.

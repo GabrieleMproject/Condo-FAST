@@ -12,6 +12,7 @@ import GuidaRapidaModal from './GuidaRapidaModal';
 import OnboardingTourModal from './OnboardingTourModal';
 import MasterclassBar from './MasterclassBar';
 import SpotlightHighlight from './SpotlightHighlight';
+import AiComplianceModal from './AiComplianceModal';
 import { useMasterclass } from '../hooks/useMasterclass';
 import { supabase } from '../lib/supabaseClient';
 import { useTheme } from '../contexts/ThemeContext';
@@ -63,30 +64,34 @@ const NAV_ITEMS = [
 // ── Banner AI Act ────────────────────────────────────────────────────────────
 function AiBanner() {
   const [dismissed, setDismissed] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   if (dismissed) return null;
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '9px 24px',
-      background: 'rgba(37, 99, 235, 0.08)',
-      borderBottom: '1px solid rgba(37, 99, 235, 0.2)',
-      color: 'var(--text-primary)',
-      fontSize: 12,
-      lineHeight: 1.5,
-      flexShrink: 0,
-    }}>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Bot size={16} style={{ color: 'var(--accent, #2563eb)', flexShrink: 0 }} />
-        <span><strong style={{ color: 'var(--text-primary)' }}>CondoFAST utilizza intelligenza artificiale</strong> (Google Gemini) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689.</span>
-      </span>
-      <button
-        onClick={() => setDismissed(true)}
-        style={{ marginLeft: 16, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 4, borderRadius: 4 }}
-        aria-label="Chiudi banner"
-      ><X size={16} /></button>
-    </div>
+    <>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '9px 24px',
+        background: 'rgba(37, 99, 235, 0.08)',
+        borderBottom: '1px solid rgba(37, 99, 235, 0.2)',
+        color: 'var(--text-primary)',
+        fontSize: 12,
+        lineHeight: 1.5,
+        flexShrink: 0,
+      }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Bot size={16} style={{ color: 'var(--accent, #2563eb)', flexShrink: 0 }} />
+          <span><strong style={{ color: 'var(--text-primary)' }}>CondoFAST utilizza intelligenza artificiale</strong> (Google Gemini) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689. <button onClick={() => setShowModal(true)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: 'inherit' }}>Scopri di più</button></span>
+        </span>
+        <button
+          onClick={() => setDismissed(true)}
+          style={{ marginLeft: 16, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 4, borderRadius: 4 }}
+          aria-label="Chiudi banner"
+        ><X size={16} /></button>
+      </div>
+      {showModal && <AiComplianceModal onClose={() => setShowModal(false)} />}
+    </>
   );
 }
 

@@ -11,6 +11,7 @@ export default function AuthForm() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [accettaAI, setAccettaAI] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -160,6 +161,20 @@ export default function AuthForm() {
                   maxLength={6}
                 />
               </div>
+            </div>
+
+            <div className="flex items-start space-x-3 mt-4">
+              <input
+                type="checkbox"
+                required
+                id="accettaAI"
+                checked={accettaAI}
+                onChange={(e) => setAccettaAI(e.target.checked)}
+                className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="accettaAI" className="text-sm text-gray-600 leading-tight">
+                Ho compreso che l'amministratore potrebbe utilizzare sistemi di <strong>Intelligenza Artificiale</strong> (conformi all'AI Act UE 2024/1689) per elaborare i documenti e le richieste in modo automatizzato.
+              </label>
             </div>
           </>
         )}

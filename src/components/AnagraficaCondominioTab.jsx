@@ -5,6 +5,7 @@ import {
   Search, UserCog, Edit, X, Mail, Phone, Home, Download, 
   FileText, Upload, Plus, RefreshCw, Building2, Check, AlertTriangle, Pencil, UserPlus 
 } from 'lucide-react'
+import AiBadge from './AiBadge'
 import { exportAnagraficaXlsx } from '../lib/exportXlsx'
 import { exportAnagraficaPdf } from '../lib/exportPdf'
 import { exportRegistroAnagrafePdf, exportModuloAutocertificazionePdf } from '../lib/exportPdf'
@@ -1100,7 +1101,9 @@ Lo Studio Amministrativo`
                   
                   {/* Sezione Catasto */}
                   <div style={{ gridColumn: 'span 2', padding: 12, background: 'var(--app-bg)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
-                    <h4 style={{ margin: '0 0 10px', color: '#3b82f6', fontSize: 13, fontWeight: 700, textTransform: 'uppercase' }}>Dati Catastali Unità</h4>
+                    <h4 style={{ margin: '0 0 10px', color: '#3b82f6', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      Dati Catastali Unità <AiBadge />
+                    </h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, fontSize: 13 }}>
                       <div>
                         <span style={styles.lbl}>Foglio</span>
@@ -1127,7 +1130,9 @@ Lo Studio Amministrativo`
 
                   {/* Sezione Persona / Residenza */}
                   <div style={{ gridColumn: 'span 2', padding: 12, background: 'var(--app-bg)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
-                    <h4 style={{ margin: '0 0 10px', color: '#10b981', fontSize: 13, fontWeight: 700, textTransform: 'uppercase' }}>Dati Occupante ({ocrData.ruolo || 'proprietario'})</h4>
+                    <h4 style={{ margin: '0 0 10px', color: '#10b981', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      Dati Occupante ({ocrData.ruolo || 'proprietario'}) <AiBadge />
+                    </h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
                       <div>
                         <span style={styles.lbl}>Cognome e Nome</span>

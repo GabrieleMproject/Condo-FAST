@@ -34,6 +34,8 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import WaitlistPage from './pages/WaitlistPage'
 import RicercaPage from './pages/RicercaPage'
 import ProntoInterventoPage from './pages/ProntoInterventoPage'
+import LiveVoteJoinPage from './pages/LiveVoteApp/LiveVoteJoinPage'
+import LiveVoteAppPage from './pages/LiveVoteApp/LiveVoteAppPage'
 import { ThemeProvider } from './contexts/ThemeContext'
 
 export default function App() {
@@ -50,6 +52,8 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/waitlist" element={<WaitlistPage />} />
+            <Route path="/voto/join/:assembleaId" element={<LiveVoteJoinPage />} />
+            <Route path="/voto/live/:token" element={<LiveVoteAppPage />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />

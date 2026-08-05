@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
 import { useAssembleaLive } from '../hooks/useAssembleaLive'
-import { ArrowLeft, Users, Loader2, CheckCircle2, Circle, Check, X, Minus } from 'lucide-react'
+import { ArrowLeft, Users, Loader2, CheckCircle2, Circle, Check, X, Minus, Bell, UserPlus } from 'lucide-react'
 
 export default function AssembleaLiveConsole({ assembleaId, onClose }) {
   const { odg, presenze, voti, loading, error, togglePresenza, registraVoto, cambiaStatoOdg } = useAssembleaLive(assembleaId)
@@ -10,6 +11,47 @@ export default function AssembleaLiveConsole({ assembleaId, onClose }) {
   // elencare tutti e spuntare i presenti. 
   
   const [activeOdgTab, setActiveOdgTab] = useState(null)
+  const [salaAttesa, setSalaAttesa] = useState([])
+
+  useEffect(() => {
+    if (!assembleaId) return
+    const loadAttesa = async () => {
+      const { data } = await supabase
+        .from('assemblee_sala_attesa')
+        .select('*, persona:persona_id(nome, cognome)')
+        .eq('assemblea_id', assembleaId)
+        .eq('stato', 'in_attesa')
+      setSalaAttesa(data || [])
+    }
+    loadAttesa()
+
+    const channel = supabase.channel(`attesa_admin_${assembleaId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assemblee_sala_attesa', filter: `assemblea_id=eq.${assembleaId}` }, async (payload) => {
+        if (payload.eventType === 'INSERT' && payload.new.stato === 'in_attesa') {
+          const { data } = await supabase.from('persone').select('nome, cognome').eq('id', payload.new.persona_id).single()
+          setSalaAttesa(p => [...p, { ...payload.new, persona: data }])
+        } else if (payload.eventType === 'UPDATE') {
+          if (payload.new.stato !== 'in_attesa') {
+            setSalaAttesa(p => p.filter(r => r.id !== payload.new.id))
+          }
+        }
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [assembleaId])
+
+  const gestisciAttesa = async (req, nuovoStato) => {
+    await supabase.from('assemblee_sala_attesa').update({ stato: nuovoStato }).eq('id', req.id)
+    if (nuovoStato === 'ammesso') {
+      // Inseriamo/aggiorniamo anche in assemblee_presenze per fargli avere la spunta
+      // Serve un'unita_id, prendiamo la prima associata alla persona nel DB.
+      // (Per semplicità MVP, prendiamo l'unità principale del condomino)
+      const { data: unitaPersona } = await supabase.from('unita_persone').select('unita_id').eq('persona_id', req.persona_id).limit(1).single()
+      if (unitaPersona) {
+        togglePresenza(unitaPersona.unita_id, req.persona_id, true)
+      }
+    }
+  }
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}><Loader2 size={24} className="spin" /></div>
   if (error) return <div style={{ color: '#ef4444' }}>Errore: {error}</div>
@@ -43,12 +85,41 @@ export default function AssembleaLiveConsole({ assembleaId, onClose }) {
               <strong>{totaliPresenti}</strong> <span style={{ color: '#94a3b8' }}>Presenti</span>
             </span>
           </div>
+          {salaAttesa.length > 0 && (
+            <div style={{ background: 'rgba(239,68,68,0.1)', padding: '6px 16px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 8, border: '1px solid rgba(239,68,68,0.2)' }}>
+              <Bell size={16} color="#ef4444" className="pulse-animation" />
+              <span style={{ fontSize: 14, color: '#fca5a5' }}>
+                <strong>{salaAttesa.length}</strong> in attesa
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       <div style={{ display: 'flex', flex: 1 }}>
-        {/* Sidebar OdG */}
-        <div style={{ width: 300, borderRight: '1px solid var(--border-color)', background: 'var(--app-bg)', padding: 16, overflowY: 'auto' }}>
+        {/* Sidebar OdG & Sala Attesa */}
+        <div style={{ width: 300, borderRight: '1px solid var(--border-color)', background: 'var(--app-bg)', padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          
+          {salaAttesa.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <h4 style={{ margin: '0 0 12px', color: '#ef4444', fontSize: 13, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <UserPlus size={14} /> Sala d'Attesa App
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {salaAttesa.map(req => (
+                  <div key={req.id} style={{ background: '#fff', border: '1px solid #fecaca', borderRadius: 8, padding: 12, boxShadow: '0 2px 8px rgba(239,68,68,0.1)' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>{req.persona?.nome} {req.persona?.cognome}</div>
+                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>CF: {req.codice_fiscale_richiedente}</div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => gestisciAttesa(req, 'ammesso')} style={{ flex: 1, background: '#10b981', color: '#fff', border: 'none', borderRadius: 4, padding: '6px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Ammetti</button>
+                      <button onClick={() => gestisciAttesa(req, 'rifiutato')} style={{ flex: 1, background: '#f8fafc', color: '#ef4444', border: '1px solid #e2e8f0', borderRadius: 4, padding: '6px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Rifiuta</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <h4 style={{ margin: '0 0 16px', color: 'var(--text-secondary)', fontSize: 13, textTransform: 'uppercase' }}>Ordine del Giorno</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {odg.map((item) => {

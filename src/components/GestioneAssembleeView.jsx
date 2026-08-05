@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAssemblee } from '../hooks/useAssemblee'
 import AssembleaLiveConsole from './AssembleaLiveConsole'
-import { CalendarRange, Plus, Video, MapPin, Loader2, ArrowRight } from 'lucide-react'
+import { CalendarRange, Plus, Video, MapPin, Loader2, ArrowRight, QrCode } from 'lucide-react'
+import { QRCodeCanvas } from 'qrcode.react'
 
 export default function GestioneAssembleeView({ condominioId }) {
   const { assemblee, loading, error, fetch, crea } = useAssemblee(condominioId)
@@ -12,6 +13,7 @@ export default function GestioneAssembleeView({ condominioId }) {
   const [form, setForm] = useState({ titolo: '', tipo: 'ordinaria', data_inizio: '', luogo: '', link_video: '', note: '' })
   const [odgList, setOdgList] = useState([{ titolo: '', descrizione: '' }])
   const [creating, setCreating] = useState(false)
+  const [showQrGenerico, setShowQrGenerico] = useState(null)
 
   useEffect(() => {
     fetch()
@@ -95,12 +97,20 @@ export default function GestioneAssembleeView({ condominioId }) {
                     {ass.link_video && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Video size={12}/> Teleassemblea</span>}
                   </div>
                 </div>
-                <button 
-                  onClick={() => setActiveAssembleaId(ass.id)}
-                  style={S.btnAction}
-                >
-                  Entra nella Regia <ArrowRight size={14} />
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                  <button 
+                    onClick={() => setActiveAssembleaId(ass.id)}
+                    style={S.btnAction}
+                  >
+                    Entra nella Regia <ArrowRight size={14} />
+                  </button>
+                  <button 
+                    onClick={() => setShowQrGenerico(ass.id)}
+                    style={{ ...S.btnAction, background: 'var(--app-bg)', color: 'var(--text-secondary)' }}
+                  >
+                    <QrCode size={14} /> QR Sala (App)
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -171,6 +181,31 @@ export default function GestioneAssembleeView({ condominioId }) {
                 <button type="submit" disabled={creating} style={S.btnPrimary}>{creating ? 'Salvataggio...' : 'Crea Assemblea'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal QR Code Generico */}
+      {showQrGenerico && (
+        <div style={S.overlay} onClick={() => setShowQrGenerico(null)}>
+          <div style={{ ...S.modalCard, width: 400, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 8px', color: 'var(--text-primary)' }}>Accesso App (Sala)</h3>
+            <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--text-secondary)' }}>
+              Proietta o stampa questo QR. I condòmini potranno inquadrarlo per registrarsi e votare in sala.
+            </p>
+            <div style={{ background: '#fff', padding: 24, borderRadius: 16, display: 'inline-block', border: '1px solid #e2e8f0', marginBottom: 24 }}>
+              <QRCodeCanvas 
+                value={`${window.location.origin}/voto/join/${showQrGenerico}`}
+                size={256}
+                level="H"
+                includeMargin={true}
+              />
+            </div>
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--text-muted)' }}>
+              Link manuale:<br/>
+              <strong style={{ userSelect: 'all' }}>{window.location.origin}/voto/join/{showQrGenerico}</strong>
+            </p>
+            <button onClick={() => setShowQrGenerico(null)} style={{ ...S.btnSecondary, width: '100%' }}>Chiudi</button>
           </div>
         </div>
       )}

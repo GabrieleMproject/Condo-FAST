@@ -1945,3 +1945,16 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **View Transitions API**: Aggiunto il meta tag `<meta name="view-transition" content="same-origin">` in tutti i file HTML per abilitare il routing fluido e sfumato (app-like) nei browser supportati, eliminando i classici "scatti" tra le pagine.
 - **Header Glassmorphism**: Migliorata la classe `.nav.is-scrolled` con un pesante `backdrop-filter: blur(24px)`, sfondo parzialmente trasparente e un'ombra delicata per creare un vero e proprio effetto "vetro smerigliato" tipico di macOS.
 - **Hover 3D Dinamico**: Inserita una transizione elastica su `.workflow` che attiva un `translateY` negativo, un `scale` e un elegante bagliore (glow) violaceo al passaggio del mouse, per massimizzare l'interattività e il senso tattile dell'interfaccia.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S79 (6 Agosto 2026 - Completamento Open Banking PSD2)
+
+### 1. Interfaccia e Scelta Banca (PSD2)
+- **Modale Sicura GoCardless**: Sviluppato e integrato il componente `SelezionaBancaModal.jsx` all'interno della dashboard finanziaria dell'amministratore. La modale si connette all'Edge Function `gocardless-proxy` per esporre in tempo reale l'elenco delle banche italiane supportate con barra di ricerca e rendering nativo dei loghi bancari.
+- **Compliance e Sola Lettura**: Aggiunti alert chiari per l'utente, che specificano come CondoFAST agisca in qualità di AISP (sola lettura senza possibilità dispositiva). Aggiunta checkbox obbligatoria di assunzione di responsabilità per garantire che l'amministratore confermi di possedere il mandato formale sul conto prima di procedere al collegamento.
+
+### 2. Flusso Auto-Sync e UX Bancaria
+- **Callback Intelligente (Zero-Click)**: Modificato radicalmente il flusso di rientro dopo l'autenticazione bancaria su `EstrattoContoPage.jsx`. L'app intercetta il ritorno (via query parameter `gocardless_ref`), pulisce l'URL (per prevenire ricaricamenti anomali via History API) ed avvia **automaticamente** la transizione di stato della connessione bancaria da `CREATED` a `LINKED`. Contemporaneamente esegue la prima `sync_transactions` in background.
+- **Abbandono Hardcoding**: Rimosso definitivamente il bypass statico a "Sandbox Finance" (SFIN0000) e cablato il redirect dinamico per il vero ambiente di produzione (pur potendo ancora selezionare Sandbox dal form di ricerca se necessario).
+- **Validazione Triager**: L'architettura asincrona e le mitigazioni dei loop nei ricaricamenti sono state verificate dal sub-agent Bug Triager.

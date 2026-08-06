@@ -7,6 +7,7 @@ import { useDocumenti } from '../hooks/useDocumenti';
 import PlanGate from '../components/PlanGate';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
 import ModalWarningPertinenza from '../components/ModalWarningPertinenza';
+import SelezionaBancaModal from '../components/SelezionaBancaModal';
 import { Trash2, Building2, User, Check, AlertTriangle, Settings, Sliders, Bot, Calendar, Download, RefreshCw, Loader2, UploadCloud, CheckCircle2, X } from 'lucide-react';
 
 const TIPI_ACCETTATI = '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png';
@@ -32,6 +33,7 @@ export default function EstrattoContoPage() {
   const [bankingStatus, setBankingStatus] = useState(null);
   const [syncingBank, setSyncingBank] = useState(false);
   const [showWizardModal, setShowWizardModal] = useState(false);
+  const [showBancaModal, setShowBancaModal] = useState(false);
 
   const docEstratto = documenti.find(d => d.tipo === 'estratto_conto');
 
@@ -99,6 +101,35 @@ export default function EstrattoContoPage() {
       .limit(1)
       .maybeSingle();
     setBankingStatus(data);
+    
+    // Auto-sync callback PSD2
+    if (data?.status === 'CREATED') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('gocardless_ref') === condominioId) {
+        // Pulisce l'URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        eseguiSyncBancaria(data.id);
+      }
+    }
+  }
+
+  async function eseguiSyncBancaria(connectionId) {
+     setSyncingBank(true);
+     try {
+        const { data, error } = await supabase.functions.invoke('gocardless-proxy', {
+          body: { action: 'sync_transactions', payload: { connectionId } }
+        });
+        if (error) throw error;
+        if (data?.newTransactions > 0) {
+           alert(`Sincronizzazione completata. ${data.newTransactions} nuovi movimenti importati.`);
+        }
+        await loadBankingStatus();
+        await loadMovimenti();
+     } catch(err) {
+        alert("Errore sincronizzazione bancaria: " + err.message);
+     } finally {
+        setSyncingBank(false);
+     }
   }
 
   async function loadMovimenti() {
@@ -437,25 +468,11 @@ export default function EstrattoContoPage() {
               {bankingStatus?.status === 'LINKED' ? `Sincronizzazione automatica attiva. Conto: ${bankingStatus.iban || bankingStatus.account_id || 'Autenticato'}` : 'Collega il conto bancario per scaricare i movimenti in tempo reale e azzerare i caricamenti PDF.'}
             </div>
           </div>
-          <div style={{display: 'flex', gap: 10}}>
+           <div style={{display: 'flex', gap: 10}}>
              {bankingStatus?.status === 'LINKED' && (
                 <button 
                   style={{...styles.tBtn, background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)'}}
-                  onClick={async () => {
-                     setSyncingBank(true);
-                     try {
-                        const { data, error } = await supabase.functions.invoke('gocardless-proxy', {
-                          body: { action: 'sync_transactions', payload: { connectionId: bankingStatus.id } }
-                        });
-                        if (error) throw error;
-                        alert(`Sincronizzazione completata. ${data?.newTransactions || 0} nuovi movimenti importati.`);
-                        loadMovimenti();
-                     } catch(err) {
-                        alert(err.message);
-                     } finally {
-                        setSyncingBank(false);
-                     }
-                  }}
+                  onClick={() => eseguiSyncBancaria(bankingStatus.id)}
                   disabled={syncingBank}
                 >
                   {syncingBank ? (
@@ -472,28 +489,7 @@ export default function EstrattoContoPage() {
              {!bankingStatus && (
                 <button 
                   style={{...styles.docOpenBtn, background: '#2563eb'}} 
-                  onClick={async () => {
-                     try {
-                        const { data, error } = await supabase.functions.invoke('gocardless-proxy', {
-                          body: { action: 'create_requisition', payload: { 
-                              condominioId: condominioId,
-                              institutionId: 'SANDBOXFINANCE_SFIN0000',
-                              institutionName: 'Sandbox Finance',
-                              redirectUrl: window.location.href 
-                          }}
-                        });
-                        if (error) throw error;
-                        if (data?.link) {
-                            window.location.href = data.link; // Redirect to bank
-                        } else {
-                            // Fallback se non c'è la key
-                            alert('Simulazione connessione bancaria avviata in dev.');
-                            loadBankingStatus();
-                        }
-                     } catch(err) {
-                        alert('Configura le API Key GoCardless nel backend prima di procedere.');
-                     }
-                  }}
+                  onClick={() => setShowBancaModal(true)}
                 >
                   Collega Banca
                 </button>
@@ -501,21 +497,7 @@ export default function EstrattoContoPage() {
              {bankingStatus?.status === 'CREATED' && (
                 <button 
                   style={{...styles.docOpenBtn, background: '#f59e0b'}} 
-                  onClick={async () => {
-                     setSyncingBank(true);
-                     try {
-                        const { error } = await supabase.functions.invoke('gocardless-proxy', {
-                          body: { action: 'sync_transactions', payload: { connectionId: bankingStatus.id } }
-                        });
-                        if (error) throw error;
-                        loadBankingStatus();
-                        loadMovimenti();
-                     } catch(err) {
-                        alert(err.message);
-                     } finally {
-                        setSyncingBank(false);
-                     }
-                  }}
+                  onClick={() => eseguiSyncBancaria(bankingStatus.id)}
                   disabled={syncingBank}
                 >
                   {syncingBank ? (
@@ -673,6 +655,17 @@ export default function EstrattoContoPage() {
           } else {
             navigate(`/condomini/${condominioId}`);
           }
+        }}
+      />
+
+      {/* Modale Selezione Banca PSD2 */}
+      <SelezionaBancaModal 
+        isOpen={showBancaModal}
+        onClose={() => setShowBancaModal(false)}
+        condominioId={condominioId}
+        onLinkSuccess={() => {
+          setShowBancaModal(false);
+          loadBankingStatus();
         }}
       />
     </div>

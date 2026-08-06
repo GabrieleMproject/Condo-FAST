@@ -55,7 +55,7 @@ BEGIN
         SELECT 1 
         FROM public.fatture_fornitori f
         WHERE f.condominio_id = p_condominio_id
-          AND f.id <> p_fattura_id
+          AND (p_fattura_id IS NULL OR f.id <> p_fattura_id)
           AND (
             REGEXP_REPLACE(COALESCE(f.ai_dati_estratti->>'partita_iva_fornitore', ''), '\s+', '', 'g') = v_piva_clean
             OR f.fornitore ILIKE '%' || v_partner.ragione_sociale || '%'

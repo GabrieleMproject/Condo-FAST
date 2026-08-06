@@ -488,41 +488,49 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
 
   // Controllo slot Pioneer Marketplace per il fornitore estratto dall'AI
   useEffect(() => {
+    let isMounted = true;
+
     const checkPartnerSlot = async (piva, categoria, provincia) => {
       if (!piva || !categoria || !provincia) return
       try {
+        const safePiva = String(piva).replace(/\s+/g, '')
+        const safeCategoria = String(categoria).toLowerCase()
+        const safeProvincia = String(provincia).toUpperCase()
+
         // 1. Il fornitore è già partner?
-        const { data: existing } = await supabase
+        const { data: existing, error: err1 } = await supabase
           .from('fornitori_partner')
           .select('id')
-          .eq('partita_iva', piva.replace(/\s+/g, ''))
+          .eq('partita_iva', safePiva)
           .maybeSingle()
         
-        if (existing) {
-          setPartnerSlotFree(false)
+        if (err1 || existing) {
+          if (isMounted) setPartnerSlotFree(false)
           return
         }
 
         // 2. Se non lo è, lo slot territoriale per la sua categoria è già occupato da un altro Pioneer?
-        const { data: slotOccupato } = await supabase
+        const { data: slotOccupato, error: err2 } = await supabase
           .from('fornitori_partner')
           .select('id')
-          .eq('categoria', categoria.toLowerCase())
-          .eq('provincia_esclusiva', provincia.toUpperCase())
+          .eq('categoria', safeCategoria)
+          .eq('provincia_esclusiva', safeProvincia)
           .eq('attivo', true)
           .maybeSingle()
 
-        if (!slotOccupato) {
-          setPartnerPiva(piva)
-          setPartnerCategoria(categoria)
-          setPartnerProvincia(provincia.toUpperCase())
-          setPartnerSlotFree(true)
-        } else {
-          setPartnerSlotFree(false) // Slot occupato, esclusiva non disponibile
+        if (isMounted) {
+          if (err2 || slotOccupato) {
+            setPartnerSlotFree(false) // Slot occupato, esclusiva non disponibile o errore DB
+          } else {
+            setPartnerPiva(safePiva)
+            setPartnerCategoria(safeCategoria)
+            setPartnerProvincia(safeProvincia)
+            setPartnerSlotFree(true)
+          }
         }
       } catch (err) {
         console.error("Errore controllo partner:", err)
-        setPartnerSlotFree(false)
+        if (isMounted) setPartnerSlotFree(false)
       }
     }
 
@@ -531,6 +539,8 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     } else {
       setPartnerSlotFree(false)
     }
+
+    return () => { isMounted = false }
   }, [aiDatiEstratti])
 
   const handleInvitaMarketplace = async () => {

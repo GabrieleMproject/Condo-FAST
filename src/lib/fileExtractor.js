@@ -455,6 +455,8 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
 1. FORNITORE E PARTITA IVA / CF:
    - Estrai la Ragione Sociale completa del fornitore o professionista emittente (solitamente presente nell'intestazione in alto o nel piè di pagina).
    - Estrai la Partita IVA (11 cifre) o il Codice Fiscale del fornitore.
+   - Dedici la "categoria_fornitore" (es. idraulico, elettricista, edile, spurghi, ascensorista, giardiniere, pulizie, energia) basandoti sulla ragione sociale o sulla descrizione dei lavori.
+   - Estrai la "provincia_fornitore" (sigla 2 lettere, es. MI, RM) dall'indirizzo della sede legale o operativa del fornitore.
 2. IMPORTI E TOTALE DOCUMENTO (Tolleranza sinonimi):
    - "importo_totale": Cerca "Totale Documento", "Totale da Pagare", "Importo Complessivo", "Netto a Pagare", "Somma Dovuta", "Totale Euro". Se ci sono più righe o pagine, estrai il totale generale finale.
    - "importo_netto": Imponibile prima dell'IVA (pari all'importo totale se esente IVA o utenza).

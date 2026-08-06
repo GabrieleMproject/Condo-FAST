@@ -131,6 +131,21 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S77 (7 Agosto 2026 - Marketplace Fornitori: Logica Sponsor ed Esclusiva Pioneer)
+
+### 1. Modello Commerciale Pioneer e Sponsor
+- **Sponsorizzazione (Fee 0%)**: È stata introdotta la logica "Sponsor" nel Marketplace Fornitori B2B. L'amministratore che invita un fornitore sulla piattaforma tramite il nuovo tasto di invito in `SpeseForm.jsx` diventa il suo Sponsor e gode di commissioni allo 0% su tutti i lavori futuri con quel fornitore.
+- **Esclusiva Territoriale (Pioneer Partner)**: Per proteggere i fornitori che entrano nella piattaforma pagando la fee iniziale di 100€, l'invito a nuovi fornitori è vincolato all'assenza di concorrenti. Se uno slot (Es. "Idraulico" a "Milano") è già occupato da un fornitore pagante attivo, l'amministratore non vedrà il banner di invito.
+
+### 2. Sviluppi Tecnici e Piattaforma
+- **Motore AI Potenziato**: L'estrattore di fatture AI (`src/lib/fileExtractor.js`) è stato aggiornato per estrarre non solo la Partita IVA ma anche la `categoria_fornitore` (es. idraulico, elettricista) e la `provincia_fornitore` direttamente dalla fattura PDF caricata, in un'unica chiamata ottimizzata ai LLM.
+- **Interfaccia (`SpeseForm.jsx`)**: Introdotto un banner intelligente azzurro "Slot Pioneer Libero" visibile sotto il campo del Fornitore, che esegue un controllo real-time nel DB Supabase sui campi categoria e provincia appena estratti dall'AI. L'azione di invito sfrutta l'Edge Function preesistente `invia-comunicazione` inviando una mail transazionale con il referral code (`?sponsor_id=...`).
+- **Database (`sql/s77_marketplace_sponsor.sql`)**: 
+  - Aggiunta colonna `invited_by` nella tabella `fornitori_partner`.
+  - Aggiornata la RPC `check_invoice_partner_match` per bypassare il calcolo della commissione se `invited_by` corrisponde all'amministratore loggato.
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S76 (6 Agosto 2026 - Conformità AI Act UE 2024/1689)
 
 ### 1. Conformità Normativa (AI Act)

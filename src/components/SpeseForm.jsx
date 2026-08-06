@@ -260,6 +260,13 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [forceSave, setForceSave] = useState(false)
   const [checkingDuplicate, setCheckingDuplicate] = useState(false)
 
+  // Marketplace Pioneer Invite
+  const [partnerSlotFree, setPartnerSlotFree] = useState(false)
+  const [partnerPiva, setPartnerPiva] = useState(null)
+  const [partnerCategoria, setPartnerCategoria] = useState(null)
+  const [partnerProvincia, setPartnerProvincia] = useState(null)
+  const [isSendingInvite, setIsSendingInvite] = useState(false)
+
   // Stato import fattura singola
   const [loadingFattura, setLoadingFattura] = useState(false)
   const [fatturaImportata, setFatturaImportata] = useState(!!initialAiDatiEstratti)
@@ -478,6 +485,107 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     const timer = setTimeout(checkDuplicate, 600)
     return () => clearTimeout(timer)
   }, [condominioId, form.importo, form.numero_fattura, form.fornitore, form.data_spesa, spesaInEdit])
+
+  // Controllo slot Pioneer Marketplace per il fornitore estratto dall'AI
+  useEffect(() => {
+    const checkPartnerSlot = async (piva, categoria, provincia) => {
+      if (!piva || !categoria || !provincia) return
+      try {
+        // 1. Il fornitore è già partner?
+        const { data: existing } = await supabase
+          .from('fornitori_partner')
+          .select('id')
+          .eq('partita_iva', piva.replace(/\s+/g, ''))
+          .maybeSingle()
+        
+        if (existing) {
+          setPartnerSlotFree(false)
+          return
+        }
+
+        // 2. Se non lo è, lo slot territoriale per la sua categoria è già occupato da un altro Pioneer?
+        const { data: slotOccupato } = await supabase
+          .from('fornitori_partner')
+          .select('id')
+          .eq('categoria', categoria.toLowerCase())
+          .eq('provincia_esclusiva', provincia.toUpperCase())
+          .eq('attivo', true)
+          .maybeSingle()
+
+        if (!slotOccupato) {
+          setPartnerPiva(piva)
+          setPartnerCategoria(categoria)
+          setPartnerProvincia(provincia.toUpperCase())
+          setPartnerSlotFree(true)
+        } else {
+          setPartnerSlotFree(false) // Slot occupato, esclusiva non disponibile
+        }
+      } catch (err) {
+        console.error("Errore controllo partner:", err)
+        setPartnerSlotFree(false)
+      }
+    }
+
+    if (aiDatiEstratti?.partita_iva_fornitore && aiDatiEstratti?.categoria_fornitore && aiDatiEstratti?.provincia_fornitore) {
+      checkPartnerSlot(aiDatiEstratti.partita_iva_fornitore, aiDatiEstratti.categoria_fornitore, aiDatiEstratti.provincia_fornitore)
+    } else {
+      setPartnerSlotFree(false)
+    }
+  }, [aiDatiEstratti])
+
+  const handleInvitaMarketplace = async () => {
+    const email = prompt(`Inserisci l'email o PEC di ${form.fornitore} per inviare l'invito Pioneer esclusivo:`)
+    if (!email || !email.includes('@')) return
+
+    setIsSendingInvite(true)
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token
+      const { data: userData } = await supabase.auth.getUser()
+      
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invia-comunicazione`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          condominio_id: condominioId,
+          destinatari: [{ email, nome: form.fornitore }],
+          oggetto: `Invito Esclusivo Marketplace CondoFAST - ${partnerCategoria.toUpperCase()} a ${partnerProvincia}`,
+          messaggio: `
+            <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h3 style="color: #1e3a8a;">Ciao ${form.fornitore},</h3>
+              <p>Il tuo amministratore di fiducia ti ha invitato su <strong>CondoFAST</strong>, il gestionale in cloud per amministratori condominiali.</p>
+              <p>Entrando ora puoi diventare il <strong>Pioneer Partner Esclusivo</strong> per la categoria <em>${partnerCategoria.toUpperCase()}</em> nella provincia di <em>${partnerProvincia}</em>.</p>
+              <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin-top: 0;"><strong>Vantaggi dell'esclusiva Pioneer:</strong></p>
+                <ul style="margin-bottom: 0;">
+                  <li>Non pagherai <strong>NESSUNA COMMISSIONE (0%)</strong> sui lavori affidati dall'amministratore che ti ha invitato.</li>
+                  <li>Avrai l'esclusiva sulla tua provincia per ottenere nuovi clienti da altri amministratori.</li>
+                </ul>
+              </div>
+              <p style="text-align: center; margin: 30px 0;">
+                <a href="https://condofast.it/fornitori/registrati?sponsor_id=${userData.user?.id}&piva=${partnerPiva}&cat=${partnerCategoria}&prov=${partnerProvincia}" style="background:#7c3aed;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:bold;">Accetta l'Invito Pioneer</a>
+              </p>
+              <p style="font-size: 12px; color: #666; margin-top: 40px; text-align: center;">Questo è un invito automatico generato su richiesta dell'Amministratore tramite CondoFAST.</p>
+            </div>
+          `,
+          tipo: 'invito_marketplace'
+        })
+      })
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.error || "Errore sconosciuto")
+      }
+      alert(`Invito inviato con successo a ${email}!`)
+      setPartnerSlotFree(false) // Nascondi il banner dopo aver invitato
+    } catch (err) {
+      alert("Errore durante l'invio dell'invito: " + err.message)
+    } finally {
+      setIsSendingInvite(false)
+    }
+  }
 
   useEffect(() => {
     if (form.criterio === 'manuale') { calcolaManuale(); return }
@@ -1417,6 +1525,33 @@ Formato JSON:
           </label>
           <input style={inputStyle} placeholder="Es. Rossi Ascensori Srl"
             value={form.fornitore} onChange={e => setField('fornitore', e.target.value)} />
+            
+          {partnerSlotFree && (
+            <div style={{
+              marginTop: 8, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 12px',
+              display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, color: '#1e3a8a', fontFamily: 'Sora, sans-serif'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                <Sparkles size={16} style={{ color: '#3b82f6' }} /> Slot Pioneer Libero a {partnerProvincia}!
+              </div>
+              <div style={{ fontSize: 12, lineHeight: 1.4 }}>
+                La ditta non è ancora partner CondoFAST. Nessun <strong>{partnerCategoria}</strong> ha ancora preso l'esclusiva nella provincia di <strong>{partnerProvincia}</strong>.
+              </div>
+              <button
+                type="button"
+                onClick={handleInvitaMarketplace}
+                disabled={isSendingInvite}
+                style={{
+                  background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px',
+                  fontSize: 12, fontWeight: 600, cursor: isSendingInvite ? 'not-allowed' : 'pointer', alignSelf: 'flex-start',
+                  display: 'flex', alignItems: 'center', gap: 6
+                }}
+              >
+                {isSendingInvite ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Bot size={12} />}
+                {isSendingInvite ? 'Invio in corso...' : 'Invita nel Marketplace (Commissioni 0%)'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div>

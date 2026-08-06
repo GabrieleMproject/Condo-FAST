@@ -497,6 +497,8 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
         properties: {
           fornitore: { type: "STRING", description: "Ragione sociale del fornitore" },
           partita_iva_fornitore: { type: "STRING", nullable: true },
+          categoria_fornitore: { type: "STRING", nullable: true, description: "La categoria lavorativa dell'artigiano/ditta. Scegli tra: idraulico, elettricista, edile, spurghi, ascensorista, giardiniere, pulizie, energia, assicurazioni, professionista, altro" },
+          provincia_fornitore: { type: "STRING", nullable: true, description: "La sigla della provincia di sede del fornitore (es. MI, RM, NA) estratta dall'indirizzo" },
           numero_fattura: { type: "STRING", nullable: true },
           data_fattura: { type: "STRING", description: "YYYY-MM-DD" },
           data_scadenza: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },

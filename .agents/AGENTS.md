@@ -1940,3 +1940,8 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **Sintesi Descrittiva**: Sostituiti i "muri di testo" dei moduli in `features.html`. Ogni feature è ora spiegata con una frase corta d'impatto e 3 bullet-point super sintetici.
 - **Ridisegno Liste**: Aggiunta la classe `.feature-list-short` in `style.css` che formatta gli elenchi rimuovendo il pallino standard, iniettando tramite pseudo-elementi (`::before`) una spunta colorata `✓` moderna e aumentando il whitespace per massimizzare la leggibilità.
 - **De-Enfatizzazione "AI"**: Per evitare che l'uso eccessivo dell'acronimo "AI" diventasse un generico *buzzword*, sono state apportate mirate sostituzioni testuali (es: "L'AI abbina" → "Il sistema abbina", "L'AI prepara" → "Il gestionale prepara", "Console Assistente AI" → "Console Assistente Intelligente") rendendo la lettura più funzionale e autorevole.
+
+### 5. Micro-Interazioni e UI Avanzata (Effetto WOW)
+- **View Transitions API**: Aggiunto il meta tag `<meta name="view-transition" content="same-origin">` in tutti i file HTML per abilitare il routing fluido e sfumato (app-like) nei browser supportati, eliminando i classici "scatti" tra le pagine.
+- **Header Glassmorphism**: Migliorata la classe `.nav.is-scrolled` con un pesante `backdrop-filter: blur(24px)`, sfondo parzialmente trasparente e un'ombra delicata per creare un vero e proprio effetto "vetro smerigliato" tipico di macOS.
+- **Hover 3D Dinamico**: Inserita una transizione elastica su `.workflow` che attiva un `translateY` negativo, un `scale` e un elegante bagliore (glow) violaceo al passaggio del mouse, per massimizzare l'interattività e il senso tattile dell'interfaccia.

@@ -1778,3 +1778,564 @@ p { margin: 0 0 1em; }
 .demo-dropzone-wrapper.disabled-privacy .demo-dropzone-overlay {
   display: block;
 }
+
+/* ============================================================
+   MOBILE OPTIMIZATIONS — max-width 768px e inferiori
+   Queste regole si applicano SOLO su smartphone.
+   Il layout desktop (≥769px) rimane completamente invariato.
+   ============================================================ */
+
+/* ---------- Tablet / Large phone (max 768px) ---------- */
+@media (max-width: 768px) {
+  /* Hamburger: touch target minimo WCAG 44×44px */
+  .nav__toggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Disabilita animazioni pesanti orb su mobile (risparmio GPU) */
+  .orb--1, .orb--2, .orb--3 {
+    display: none;
+  }
+
+  /* Disabilita 3D tilt (inutile su touch, spreca GPU) */
+  .tilt {
+    transform: none !important;
+  }
+
+  /* Page-hero subpagine: riduce padding top eccessivo */
+  .page-hero {
+    padding: calc(var(--nav-h) + 48px) 0 28px;
+  }
+  .page-hero .lead {
+    font-size: 1rem;
+    padding: 0 8px;
+  }
+
+  /* Flip cards: su touch si attivano con click (classe .is-flipped via JS) */
+  .flip__inner {
+    transition: transform 0.55s cubic-bezier(0.4, 0.1, 0.2, 1);
+  }
+  .flip:hover .flip__inner {
+    transform: none; /* disabilita hover, lascia il lavoro al JS */
+  }
+  .flip.is-flipped .flip__inner {
+    transform: rotateY(180deg);
+  }
+
+  /* Suggerimento "tocca" visibile invece di "passa il mouse" */
+  .flip__hint {
+    display: block;
+  }
+
+  /* Cookie banner: margini ridotti */
+  .cookie {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    padding: 18px 20px;
+  }
+
+  /* Security banner: padding ridotto */
+  .security-banner {
+    padding: 40px 28px;
+  }
+
+  /* Proof strip: gap ridotto per evitare overflow orizzontale */
+  .proof__inner {
+    gap: 22px;
+  }
+
+  /* Footer: gap più compatto */
+  .footer__grid {
+    gap: 28px;
+  }
+
+  /* Section head: margin inferiore ridotto */
+  .section-head {
+    margin-bottom: 36px;
+  }
+
+  /* Modale: padding laterale ridotto su schermi stretti */
+  .modal-container {
+    padding: 22px 18px;
+    border-radius: 16px;
+    max-height: 92vh;
+  }
+
+  /* Modal close button: touch target 44×44px */
+  .modal-close {
+    width: 44px;
+    height: 44px;
+    top: 10px;
+    right: 10px;
+    font-size: 1.15rem;
+  }
+
+  /* Console split (AI demo): già coperto a 820px, rinforzo */
+  .console-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Smartphone (max 480px) ---------- */
+@media (max-width: 480px) {
+  /* Spaziature sezioni */
+  .section {
+    padding: 52px 0;
+  }
+  .section--tight {
+    padding: 36px 0;
+  }
+  .section-head {
+    margin-bottom: 28px;
+  }
+
+  /* Hero */
+  .hero {
+    padding-top: calc(var(--nav-h) + 28px);
+  }
+  .hero h1 {
+    font-size: clamp(1.85rem, 8vw, 2.3rem);
+    margin-bottom: 14px;
+  }
+  .hero__sub {
+    font-size: 1rem;
+    margin-bottom: 22px;
+  }
+  .hero__actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+  .hero__note {
+    font-size: 0.82rem;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* Bottoni: larghezza piena e testo ben leggibile */
+  .btn:not(.nav__cta .btn):not(.toggle button) {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    padding: 15px 20px;
+    font-size: 0.97rem;
+  }
+
+  /* Cards glassmorphism */
+  .card {
+    padding: 22px 18px;
+  }
+  .card__icon {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 14px;
+  }
+  .card h3 {
+    font-size: 1.1rem;
+  }
+  .card p {
+    font-size: 0.9rem;
+  }
+
+  /* Step cards */
+  .step {
+    padding: 30px 20px 24px;
+  }
+
+  /* Flip cards su 480px: min-height ridotto */
+  .flip,
+  .flip__inner {
+    min-height: 220px;
+  }
+
+  /* Security banner */
+  .security-banner {
+    padding: 30px 20px;
+    border-radius: 16px;
+  }
+
+  /* Badges */
+  .badge-chip {
+    font-size: 0.78rem;
+    padding: 8px 12px;
+  }
+
+  /* Pricing: plan card più compatta */
+  .plan {
+    padding: 26px 18px;
+  }
+  .plan h3 {
+    font-size: 1.05rem;
+  }
+  .plan__price {
+    font-size: 1.85rem;
+  }
+  .plan li {
+    font-size: 0.84rem;
+  }
+
+  /* Toggle fatturazione mensile/annuale */
+  .toggle {
+    gap: 8px;
+    padding: 5px;
+  }
+  .toggle button {
+    padding: 8px 16px;
+    font-size: 0.84rem;
+  }
+
+  /* Comparison table: font ridotto + celle compatte */
+  .compare {
+    font-size: 0.78rem;
+  }
+  .compare th,
+  .compare td {
+    padding: 10px 12px;
+  }
+
+  /* CTA finale */
+  .cta-final {
+    padding: 44px 18px;
+    border-radius: 16px;
+  }
+  .cta-final h2 {
+    font-size: 1.7rem;
+    margin-bottom: 14px;
+  }
+  .cta-final p {
+    font-size: 0.93rem;
+    margin-bottom: 24px;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 44px 0 20px;
+    margin-top: 60px;
+  }
+  .footer__grid {
+    gap: 22px;
+  }
+  .footer ul a {
+    font-size: 0.94rem;
+    display: block;
+    padding: 3px 0; /* touch target verticale migliorato */
+  }
+  .footer__bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding-top: 20px;
+    font-size: 0.78rem;
+  }
+
+  /* Cookie banner */
+  .cookie {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 16px;
+  }
+  .cookie__actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cookie__actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Page-hero subpagine */
+  .page-hero {
+    padding: calc(var(--nav-h) + 32px) 0 20px;
+  }
+  .page-hero h1 {
+    font-size: clamp(1.6rem, 7vw, 2rem);
+  }
+
+  /* Feature rows */
+  .feature-row {
+    gap: 20px;
+    padding: 36px 0;
+  }
+  .feature-row h3 {
+    font-size: 1.2rem;
+  }
+  .feature-row__media {
+    min-height: 200px;
+    padding: 20px;
+  }
+
+  /* FAQ */
+  .faq details {
+    padding: 0 16px;
+  }
+  .faq summary {
+    font-size: 0.95rem;
+    padding: 16px 0;
+  }
+  .faq details p {
+    font-size: 0.88rem;
+  }
+
+  /* Legal pages */
+  .legal {
+    padding: calc(var(--nav-h) + 32px) 16px 60px;
+  }
+  .legal h2 {
+    font-size: 1.2rem;
+    margin-top: 32px;
+  }
+  .legal p,
+  .legal li {
+    font-size: 0.9rem;
+  }
+
+  /* ROI grid: 2 col su 480px */
+  .roi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .roi-kpi-num {
+    font-size: 1.5rem;
+  }
+  .roi-kpi-lbl {
+    font-size: 0.76rem;
+  }
+
+  /* Console AI demo */
+  .console-doc-box,
+  .console-ai-box {
+    padding: 16px;
+  }
+
+  /* Extracted grid: 1 col su piccoli schermi */
+  .extracted-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Menu mobile aperto: migliore spaziatura link */
+  .nav__links.is-open {
+    padding: 18px 20px 24px;
+    gap: 14px;
+  }
+  .nav__links.is-open a {
+    font-size: 1rem;
+    padding: 6px 0; /* touch target verticale */
+    display: block;
+  }
+}
+
+/* ---------- Device ultracompatti (max 360px) ---------- */
+@media (max-width: 360px) {
+  .container {
+    padding: 0 14px;
+  }
+
+  h1 {
+    font-size: clamp(1.65rem, 9vw, 2rem);
+  }
+
+  .hero h1 {
+    font-size: clamp(1.6rem, 9vw, 1.9rem);
+  }
+
+  .btn {
+    font-size: 0.9rem;
+    padding: 13px 16px;
+  }
+
+  .plan {
+    padding: 22px 14px;
+  }
+
+  .card {
+    padding: 18px 14px;
+  }
+
+  .toggle button {
+    padding: 7px 12px;
+    font-size: 0.8rem;
+  }
+
+  .cta-final {
+    padding: 36px 14px;
+  }
+  .cta-final h2 {
+    font-size: 1.5rem;
+  }
+
+  /* ROI grid: 1 col su 360px */
+  .roi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   FIX ADDIZIONALI — Dall'audit completo (30 problemi)
+   ============================================================ */
+
+/* ---------- Section--tight: mancava la responsività ---------- */
+@media (max-width: 720px) {
+  .section--tight { padding: 44px 0; }
+}
+@media (max-width: 480px) {
+  .section--tight { padding: 32px 0; }
+}
+
+/* ---------- Hero: padding-bottom mai ridotto su mobile ---------- */
+@media (max-width: 720px) {
+  .hero { padding-bottom: 48px; }
+}
+@media (max-width: 480px) {
+  .hero { padding-bottom: 32px; }
+  .hero__grid { gap: 0; } /* annulla gap residuo dopo mockup display:none */
+}
+
+/* ---------- Nav CTA: bottone "Inizia gratis" su schermi 320px ---------- */
+@media (max-width: 380px) {
+  .nav__cta .btn--sm {
+    font-size: 0.8rem;
+    padding: 9px 12px;
+  }
+  .nav__inner {
+    gap: 10px;
+  }
+}
+
+/* ---------- Nav menu aperto: max-height + scroll per sicurezza ---------- */
+@media (max-width: 720px) {
+  .nav__links.is-open {
+    max-height: calc(100vh - var(--nav-h));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ---------- Flip cards: niente 3D su mobile (display toggle) ----------
+   Su touch la rotazione 3D non è utilizzabile.
+   Usiamo show/hide delle due facce controllato dalla classe .is-flipped
+   che viene aggiunta via JS al click.
+   -------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .flip {
+    perspective: none;
+    min-height: auto;
+  }
+  .flip__inner {
+    transform-style: flat;
+    transform: none !important;
+    transition: none;
+    min-height: auto;
+    position: relative;
+    height: auto;
+  }
+  .flip:hover .flip__inner,
+  .flip:focus-within .flip__inner {
+    transform: none; /* annulla il hover desktop */
+  }
+  .flip__face {
+    position: relative;
+    inset: auto;
+    backface-visibility: visible;
+    -webkit-backface-visibility: visible;
+  }
+  /* Default: mostra solo il fronte */
+  .flip__back {
+    display: none;
+  }
+  /* Quando JS aggiunge .is-flipped: mostra il retro, nascondi il fronte */
+  .flip.is-flipped .flip__front {
+    display: none;
+  }
+  .flip.is-flipped .flip__back {
+    display: flex;
+    transform: none; /* annulla il rotateY(180deg) */
+  }
+  /* Touch action: rimuove il delay 300ms su Android */
+  .flip {
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+}
+
+/* ---------- Modale overlay: padding ridotto su mobile ---------- */
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 12px;
+  }
+}
+
+/* ---------- Zero-frizione card: CSS mancante per mobile ----------
+   Il componente zero-frizione usa classi non definite nel CSS globale.
+   Aggiungiamo le definizioni base + responsive.
+   ----------------------------------------------------------------- */
+.zero-frizione-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+}
+.zero-frizione-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.zero-frizione-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.zero-frizione-step {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 20px 18px;
+}
+@media (max-width: 720px) {
+  .zero-frizione-header {
+    flex-direction: column;
+  }
+  .zero-frizione-header .btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+  .zero-frizione-steps {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+@media (max-width: 480px) {
+  .zero-frizione-card {
+    padding: 24px 18px;
+  }
+}
+
+/* ---------- Backdrop-filter fallback per Android entry-level ---------- */
+@supports not (backdrop-filter: blur(1px)) {
+  .nav {
+    background: rgba(13, 15, 20, 0.97);
+  }
+  .nav__links.is-open {
+    background: rgba(13, 15, 20, 0.99);
+  }
+  .cookie {
+    background: rgba(22, 27, 39, 0.99);
+  }
+}
+
+/* ---------- Will-change: limitato a momento animazione ----------
+   Rimuoviamo will-change permanente su .reveal per risparmiare
+   memoria GPU su mobile. Il JS animations.js dovrebbe gestirlo
+   dinamicamente, ma come fallback CSS lo annulliamo su mobile.
+   -------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .reveal {
+    will-change: auto;
+  }
+}

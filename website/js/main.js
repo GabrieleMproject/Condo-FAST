@@ -33,7 +33,32 @@
         navToggle.setAttribute('aria-expanded', 'false');
       }
     });
+    // Close menu when tapping outside (mobile UX standard)
+    document.addEventListener('click', (e) => {
+      if (
+        navLinks.classList.contains('is-open') &&
+        !navLinks.contains(e.target) &&
+        !navToggle.contains(e.target)
+      ) {
+        navLinks.classList.remove('is-open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
   }
+
+  /* ---------- Flip cards: toggle su touch (mobile) ----------
+     Su desktop: le carte si girano con hover (CSS).
+     Su mobile: hover non persiste al tocco, quindi usiamo JS
+     per aggiungere/rimuovere la classe .is-flipped al click.
+     Il CSS gestisce il comportamento visivo (flip 3D su desktop,
+     show/hide delle facce su mobile tramite media query).
+  ----------------------------------------------------------- */
+  document.querySelectorAll('.flip').forEach((card) => {
+    card.addEventListener('click', () => {
+      card.classList.toggle('is-flipped');
+    });
+  });
+
 
   /* ---------- Pricing toggle (monthly / annual, -20%) ---------- */
   const btnMonthly = document.getElementById('toggle-monthly');

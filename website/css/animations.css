@@ -173,3 +173,45 @@
   .flip__inner { transition: none; }
   .btn--primary::before { display: none; }
 }
+
+/* ============================================================
+   MOBILE — Disabilita animazioni pesanti su smartphone
+   Queste regole si applicano SOLO su mobile (≤768px).
+   Il desktop rimane completamente invariato.
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Orb con filter:blur(90px) molto pesante per GPU mobile */
+  .orb--1, .orb--2, .orb--3 {
+    animation: none;
+    display: none;
+  }
+
+  /* Float del mockup: nascosto su mobile, inutile animarlo */
+  .float-slow {
+    animation: none;
+  }
+
+  /* Logo animazioni multiple: le tower float e i fogli volanti */
+  /* sono belle su desktop ma consumano GPU su device entry-level */
+  .condofast-logo-container .tower-left,
+  .condofast-logo-container .tower-center,
+  .condofast-logo-container .tower-right {
+    animation: none;
+  }
+  .condofast-logo-container.interactive .sheet-1,
+  .condofast-logo-container.interactive .sheet-2,
+  .condofast-logo-container.interactive .sheet-3 {
+    animation: none;
+    opacity: 0;
+  }
+
+  /* Shimmer del bottone primary: ottimizzazione GPU */
+  .btn--primary::before {
+    display: none;
+  }
+
+  /* Stagger delays su mobile: ridotti per UX più immediata */
+  .reveal[data-delay="3"] { transition-delay: 0.1s; }
+  .reveal[data-delay="4"] { transition-delay: 0.15s; }
+  .reveal[data-delay="5"] { transition-delay: 0.2s; }
+}

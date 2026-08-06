@@ -131,6 +131,24 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S76 (6 Agosto 2026 - Conformità AI Act UE 2024/1689)
+
+### 1. Conformità Normativa (AI Act)
+- **Zero-Training e Trasparenza**: Garantita la conformità al nuovo regolamento europeo per i sistemi a basso rischio. I dati immessi (fatture, anagrafiche) non vengono utilizzati per l'addestramento dei modelli (Gemini).
+- **Procura & Conferma**: Ribadito architetturalmente il principio per cui l'AI suggerisce ma non salva in autonomia, richiedendo sempre l'azione esplicita (click) dell'amministratore (Human in the loop).
+
+### 2. Implementazione Tecnica e Frontend
+- **Sito Marketing (`ai-compliance.html`)**: Creata pagina dedicata alla compliance AI, linkata globalmente in tutti i footer delle pagine pubbliche per massima trasparenza verso i clienti finali.
+- **Gestionale Amministratore**:
+  - Creato il componente `AiBadge.jsx` (✨) integrato nei campi estratti automaticamente dalle fatture (`SpeseForm.jsx`) e dai moduli anagrafici (`AnagraficaCondominioTab.jsx`).
+  - Creata la modale globale `AiComplianceModal.jsx` richiamabile dal banner informativo `AiBanner` in `AppLayout.jsx`.
+- **App Condòmini**: Aggiunta checkbox obbligatoria in fase di registrazione (Auto-Matching) in `AuthForm.jsx` per l'accettazione esplicita dell'uso dell'Intelligenza Artificiale da parte dell'amministratore per l'elaborazione dei documenti.
+
+### 3. Deploy
+- Eseguito il comando unificato `npm run deploy:all` con successo (Sito web aggiornato, App React e funzioni Supabase deployate senza regressioni e con Smoke test OK).
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S71 (5 Agosto 2026 - Pacchetti Telematici, Sconto 75% e Fatturazione Diretta)
 
 ### 1. Architettura Commerciale (Modello a Pacchetti)

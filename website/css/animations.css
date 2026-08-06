@@ -215,3 +215,23 @@
   .reveal[data-delay="4"] { transition-delay: 0.15s; }
   .reveal[data-delay="5"] { transition-delay: 0.2s; }
 }
+
+/* ---------- Scroll-driven Animations (Progressive Enhancement) ---------- */
+@supports ((animation-timeline: view()) and (animation-range: entry)) {
+  .scroll-reveal {
+    animation: fade-in-up linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 35%;
+  }
+
+  @keyframes fade-in-up {
+    0% {
+      opacity: 0;
+      transform: translateY(60px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}

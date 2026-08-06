@@ -1917,3 +1917,26 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **Feedback Voto Assemblee**: Inserito uno stato di `isVoting` (pulsanti disabilitati) e blocco `finally` nella funzione `handleVota` in `AssembleePage.jsx` per prevenire errori silenti in caso di caduta di connettività.
 - **Feedback Download PDF**: Implementato indicatore di caricamento e try/catch/finally in `DocumentiPage.jsx` per informare l'utente dell'attività asincrona ed emettere un alert esplicito su errore di scaricamento.
 - **Gestione Errori JSON**: Prevenuto catch vuoto su parsing note JSON in `CondominiDetailPage.jsx` inserendo un log di avviso, per non nascondere potenziali deviazioni dello schema dati.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S78 (6 Agosto 2026 - Redesign Sito Marketing e UX Semplificata)
+
+### 1. Semplificazione del Carico Cognitivo (UX)
+- **Home Page (`index.html`)**: Abbandonato il layout a 9 card moduli (Sessione S68) a favore della "Regola del 3". La sezione funzionalità ora evidenzia solo i 3 pilastri principali: Intelligenza Artificiale, Automazione Bancaria, Collaborazione Condòmini. Questo riduce la fatica visiva per i nuovi utenti.
+- **Pricing (`pricing.html`)**: Rimossa la lunga lista testuale di spunte in ogni piano. I piani ora elencano solo i differenziatori chiave. I dettagli completi sono stati nascosti dietro un componente nativo Accordion (`<details>`), mantenendo comunque la grande tabella comparativa a fondo pagina.
+
+### 2. Implementazione UI e Design Premium
+- **Glassmorphism**: Introdotte nuove classi CSS (`.glass-panel`) in `style.css` che usano `backdrop-filter: blur(16px)` e sfondi semi-trasparenti, sostituendo le card statiche.
+- **Micro-Animazioni**: Introdotto effetto glow pulsante in puro CSS (`.btn-glow`) sul bottone principale "Inizia gratis" per attrarre l'occhio dell'utente. Aggiunti effetti di hover e tilt 3D sulle card in Home Page.
+- **Divieto Emoji**: Rispettata la regola permanente, per il redesign sono state impiegate esclusivamente icone vettoriali SVG inline.
+
+### 3. Scrollspy e Animazioni Scroll-driven (Pagina Funzionalità)
+- **Menu Navigazione Sticky**: Inserito un `<aside>` in `features.html` con layout CSS Grid per agganciare la navigazione laterale durante lo scroll. L'indicatore si illumina attivamente tramite `IntersectionObserver` in `main.js`.
+- **CSS Animation Timeline**: Utilizzata l'avanzata API `@supports (animation-timeline: view())` in `animations.css` per pilotare le animazioni di entrata dei mockup proporzionalmente allo scroll, con fallback (Progressive Enhancement) basato su normali keyframe e transizioni per i browser legacy.
+- **Workflow Logico Amministratore**: I moduli della pagina sono stati completamente riordinati da codice sorgente (mantenendo l'alternanza visiva pari/dispari) per riflettere il ciclo di vita logico di uno Studio Amministrativo (Setup Tabelle → Ricezione Postbox → Intelligenza Artificiale → Sinistri → Fornitori F24 → Riconciliazione → Solleciti → Rendiconto → Notifiche).
+
+### 4. Ottimizzazione Copywriting (Apple-Style)
+- **Sintesi Descrittiva**: Sostituiti i "muri di testo" dei moduli in `features.html`. Ogni feature è ora spiegata con una frase corta d'impatto e 3 bullet-point super sintetici.
+- **Ridisegno Liste**: Aggiunta la classe `.feature-list-short` in `style.css` che formatta gli elenchi rimuovendo il pallino standard, iniettando tramite pseudo-elementi (`::before`) una spunta colorata `✓` moderna e aumentando il whitespace per massimizzare la leggibilità.
+- **De-Enfatizzazione "AI"**: Per evitare che l'uso eccessivo dell'acronimo "AI" diventasse un generico *buzzword*, sono state apportate mirate sostituzioni testuali (es: "L'AI abbina" → "Il sistema abbina", "L'AI prepara" → "Il gestionale prepara", "Console Assistente AI" → "Console Assistente Intelligente") rendendo la lettura più funzionale e autorevole.

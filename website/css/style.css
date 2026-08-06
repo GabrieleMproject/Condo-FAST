@@ -1128,6 +1128,31 @@ p { margin: 0 0 1em; }
 .feature-row p { color: var(--muted); }
 .feature-row ul { color: var(--muted); font-size: 0.92rem; padding-left: 20px; display: grid; gap: 6px; }
 
+/* Stile minimalista e pulito per i nuovi elenchi corti */
+.feature-row ul.feature-list-short {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 24px;
+  display: grid;
+  gap: 12px;
+}
+.feature-row ul.feature-list-short li {
+  position: relative;
+  padding-left: 32px;
+  color: var(--fg);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+.feature-row ul.feature-list-short li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
 /* Workflow visual: propone → confermi */
 .workflow {
   display: flex;
@@ -2339,3 +2364,167 @@ p { margin: 0 0 1em; }
     will-change: auto;
   }
 }
+
+/* ---------- Redesign: UI/UX Semplificata e Glassmorphism ---------- */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-panel:hover {
+  transform: translateY(-5px) scale(1.02);
+  border-color: rgba(79, 142, 247, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.glass-panel__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(79, 142, 247, 0.1);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.glass-panel:hover .glass-panel__icon {
+  background: var(--gradient);
+  color: #fff;
+  transform: rotate(-5deg) scale(1.1);
+}
+
+/* Animazione bottone hero */
+.btn-glow {
+  position: relative;
+  overflow: visible;
+}
+.btn-glow::before {
+  content: "";
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  background: var(--gradient);
+  z-index: -1;
+  border-radius: calc(10px + 2px);
+  filter: blur(12px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: pulse-glow 3s infinite alternate;
+}
+.btn-glow:hover::before {
+  opacity: 0.8;
+}
+
+@keyframes pulse-glow {
+  0% { transform: scale(0.95); opacity: 0.4; }
+  100% { transform: scale(1.05); opacity: 0.8; }
+}
+
+/* Accordion Pricing pulito */
+details.pricing-accordion {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+details.pricing-accordion summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s ease;
+}
+details.pricing-accordion summary::-webkit-details-marker { display: none; }
+details.pricing-accordion summary:hover { color: var(--text); }
+details.pricing-accordion summary::before {
+  content: "↓";
+  transition: transform 0.3s ease;
+}
+details.pricing-accordion[open] summary::before {
+  transform: rotate(180deg);
+}
+details.pricing-accordion[open] summary {
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+/* ---------- Features Layout (Sticky Sidebar) ---------- */
+.features-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 64px;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .features-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+.features-sidebar {
+  position: sticky;
+  top: calc(var(--nav-h) + 32px);
+  padding-right: 16px;
+  max-height: calc(100vh - var(--nav-h) - 64px);
+  overflow-y: auto;
+}
+
+@media (max-width: 992px) {
+  .features-sidebar {
+    display: none;
+  }
+}
+
+.features-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-left: 2px solid var(--border);
+}
+
+.features-sidebar a {
+  display: block;
+  padding: 8px 16px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  position: relative;
+  left: -2px;
+  border-left: 2px solid transparent;
+}
+
+.features-sidebar a:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.features-sidebar a.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: linear-gradient(90deg, rgba(79, 142, 247, 0.1) 0%, transparent 100%);
+}
+
+.features-content {
+  display: flex;
+  flex-direction: column;
+  gap: 96px;
+}
+
+

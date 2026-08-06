@@ -568,5 +568,31 @@
       }
     }
   });
-})();
 
+  /* ---------- ScrollSpy for Features Sidebar ---------- */
+  const featureRows = document.querySelectorAll('.feature-row');
+  const navLinksList = document.querySelectorAll('#features-nav a');
+
+  if (featureRows.length > 0 && navLinksList.length > 0 && 'IntersectionObserver' in window) {
+    const observerOptions = {
+      root: null,
+      rootMargin: '-20% 0px -60% 0px', // Attiva l'elemento quando entra nel 20-40% superiore dello schermo
+      threshold: 0
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('id');
+          // Rimuovi classe active da tutti
+          navLinksList.forEach(link => link.classList.remove('active'));
+          // Aggiungi active a quello corrispondente
+          const activeLink = document.querySelector(`#features-nav a[href="#${id}"]`);
+          if (activeLink) activeLink.classList.add('active');
+        }
+      });
+    }, observerOptions);
+
+    featureRows.forEach(row => observer.observe(row));
+  }
+})();

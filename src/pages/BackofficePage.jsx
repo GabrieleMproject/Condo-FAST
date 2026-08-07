@@ -99,6 +99,7 @@ export default function BackofficePage() {
     data_scadenza_durc: '',
     durc_verificato: true,
     note_contrattuali: '',
+    invited_by: null,
     attivo: true
   })
 
@@ -233,6 +234,7 @@ export default function BackofficePage() {
       data_scadenza_durc: '',
       durc_verificato: true,
       note_contrattuali: '',
+      invited_by: null,
       attivo: true
     })
     setModalPartnerOpen(true)
@@ -257,6 +259,7 @@ export default function BackofficePage() {
       data_scadenza_durc: p.data_scadenza_durc || '',
       durc_verificato: p.durc_verificato !== false,
       note_contrattuali: p.note_contrattuali || '',
+      invited_by: p.invited_by || null,
       attivo: p.attivo !== false
     })
     setModalPartnerOpen(true)
@@ -2465,7 +2468,11 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                         const logsPartner = partnerMatchLogs.filter(m => m.partner_id === p.id)
                         const totaleFatturatoProcurato = logsPartner.reduce((sum, m) => sum + (Number(m.importo_fattura) || 0), 0)
                         const totaleCommissioniMaturate = logsPartner.reduce((sum, m) => sum + (Number(m.importo_commissione) || 0), 0)
+                        const commDaFatturare = logsPartner.filter(m => m.stato_commissione === 'da_fatturare').reduce((sum, m) => sum + (Number(m.importo_commissione) || 0), 0)
+                        const commSaldato = logsPartner.filter(m => m.stato_commissione === 'saldato' || m.stato_commissione === 'fatturato').reduce((sum, m) => sum + (Number(m.importo_commissione) || 0), 0)
                         const roiFornitore = p.quota_fissa_annuale > 0 ? (totaleFatturatoProcurato / p.quota_fissa_annuale).toFixed(1) : '∞'
+                        
+                        const sponsor = p.invited_by ? utenti.find(u => u.id === p.invited_by) : null;
 
                         return (
                           <div key={p.id} style={{ background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 18 }}>
@@ -2475,6 +2482,11 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                                   {p.provincia_esclusiva} • P.IVA: {p.partita_iva}
                                 </div>
+                                {sponsor && (
+                                  <div style={{ fontSize: 11, color: '#7c3aed', marginTop: 4, fontWeight: 600 }}>
+                                    ✨ Sponsorizzato da: {sponsor.nome} {sponsor.cognome}
+                                  </div>
+                                )}
                               </div>
                               <span style={{ padding: '2px 6px', borderRadius: 4, background: '#10b98115', color: '#10b981', fontWeight: 700, fontSize: 11 }}>
                                 ROI: {roiFornitore}x
@@ -2487,9 +2499,20 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                                 <div style={{ ...styles.infoValue, color: '#10b981', fontSize: 16 }}>€{totaleFatturatoProcurato.toLocaleString()}</div>
                               </div>
                               <div style={styles.infoBox}>
-                                <div style={styles.infoLabel}>Spettante CondoFAST</div>
+                                <div style={styles.infoLabel}>Totale Commissioni</div>
                                 <div style={{ ...styles.infoValue, color: '#f59e0b', fontSize: 16 }}>€{totaleCommissioniMaturate.toFixed(2)}</div>
                               </div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, padding: '8px 12px', background: 'var(--border-color-2)', borderRadius: 6 }}>
+                               <div style={{ fontSize: 12 }}>
+                                 <span style={{ color: 'var(--text-secondary)' }}>Da fatturare: </span>
+                                 <strong style={{ color: '#ef4444' }}>€{commDaFatturare.toFixed(2)}</strong>
+                               </div>
+                               <div style={{ fontSize: 12 }}>
+                                 <span style={{ color: 'var(--text-secondary)' }}>Già Incassato: </span>
+                                 <strong style={{ color: '#10b981' }}>€{commSaldato.toFixed(2)}</strong>
+                               </div>
                             </div>
 
                             <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--border-color)', fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -2904,6 +2927,22 @@ Rispondi ESPLICITAMENTE in formato JSON valido.`
                   <label htmlFor="durc_verificato" style={{ fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     DURC in Regola (Verificato)
                   </label>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Sponsor (Amministratore)</label>
+                  <select
+                    value={partnerForm.invited_by || ''}
+                    onChange={e => setPartnerForm({ ...partnerForm, invited_by: e.target.value || null })}
+                    style={styles.input}
+                  >
+                    <option value="">Nessuno Sponsor (Commissione Piena)</option>
+                    {utenti.filter(u => !u.is_superadmin).map(u => (
+                      <option key={u.id} value={u.id}>{u.nome} {u.cognome} ({u.email})</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

@@ -1973,3 +1973,15 @@ Riallineamento completo del sito marketing (`website/`) con lo stato attuale del
 - **Callback Intelligente (Zero-Click)**: Modificato radicalmente il flusso di rientro dopo l'autenticazione bancaria su `EstrattoContoPage.jsx`. L'app intercetta il ritorno (via query parameter `gocardless_ref`), pulisce l'URL (per prevenire ricaricamenti anomali via History API) ed avvia **automaticamente** la transizione di stato della connessione bancaria da `CREATED` a `LINKED`. Contemporaneamente esegue la prima `sync_transactions` in background.
 - **Abbandono Hardcoding**: Rimosso definitivamente il bypass statico a "Sandbox Finance" (SFIN0000) e cablato il redirect dinamico per il vero ambiente di produzione (pur potendo ancora selezionare Sandbox dal form di ricerca se necessario).
 - **Validazione Triager**: L'architettura asincrona e le mitigazioni dei loop nei ricaricamenti sono state verificate dal sub-agent Bug Triager.
+
+---
+
+## Storico Decisioni e Fatti Verificati della Sessione S78 (7 Agosto 2026 - Concierge MVP Fornitori Partner)
+
+### 1. Strategia Concierge (Zero Code Onboarding)
+- **Scelta Architetturale**: Abbandonata l'idea di sviluppare un portale autonomo per i Fornitori Partner a favore di un modello "Concierge" ad alta interazione umana, ideale per il target B2B (artigiani).
+- **Nuovo Flusso di Invito**: Il link inviato ai fornitori per la registrazione (tramite il banner "Pioneer" in `SpeseForm.jsx`) è stato reindirizzato verso `condofast.it/partner`. Questa landing page statica permetterà di raccogliere la manifestazione di interesse per chiudere i contratti offline/via email.
+
+### 2. Implementazioni Backoffice SuperAdmin
+- **Gestione Esenzioni Sponsor**: Modificata l'interfaccia di `BackofficePage.jsx` introducendo la possibilità di assegnare manualmente uno Sponsor (`invited_by`) all'atto della creazione o modifica del Fornitore Partner. Questo attiva automaticamente la logica di commissione zero (S77).
+- **Report Aggregato di Fine Anno**: Ampliato il tab "Report" per calcolare in tempo reale il ROI, il Fatturato Procurato Totale e le Commissioni suddivise per stato (Da fatturare vs Già Incassato), permettendo a M PROJECT di monitorare i volumi e procedere alla fatturazione a consuntivo senza un portale dedicato ai fornitori.

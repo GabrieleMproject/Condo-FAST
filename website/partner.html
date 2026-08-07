@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta name="view-transition" content="same-origin">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ============ Security headers ============
+       NOTE: headers like HSTS, X-Frame-Options and the full CSP are best set
+       server-side. Example (Netlify _headers / Vercel vercel.json):
+         Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://aapksiokakavarwaumwy.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+         X-Frame-Options: DENY
+         X-Content-Type-Options: nosniff
+         Referrer-Policy: strict-origin-when-cross-origin
+         Permissions-Policy: camera=(), microphone=(), geolocation=()
+         Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://aapksiokakavarwaumwy.supabase.co; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- ============ SEO ============ -->
+  <title>CondoFAST — Il gestionale condominiale con AI per amministratori italiani</title>
+  <meta name="description" content="CondoFAST automatizza rendiconti, riconciliazioni bancarie, solleciti e tabelle millesimali con l'intelligenza artificiale. Conforme all'art. 1130-bis c.c. e al GDPR. Prova gratis 14 giorni.">
+  <link rel="canonical" href="https://condofast.it/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="it_IT">
+  <meta property="og:url" content="https://condofast.it/">
+  <meta property="og:title" content="CondoFAST — Il gestionale condominiale che lavora con te, non per te.">
+  <meta property="og:description" content="Rendiconti, riconciliazioni, solleciti e tabelle millesimali con AI. Sicuro, conforme al GDPR, pensato per gli amministratori di condominio italiani.">
+  <meta property="og:image" content="https://condofast.it/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Fonts: preconnect + Sora with font-display: swap -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Critical CSS: above-the-fold basics inlined -->
+  <style>
+    :root{--bg:#0D0F14;--text:#F1F5F9;--font:'Sora',system-ui,sans-serif;--nav-h:72px}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font)}
+    .hero{min-height:100vh}
+  </style>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+
+  <!-- Structured data: Organization + SoftwareApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "CondoFAST",
+        "url": "https://condofast.it",
+        "logo": "https://condofast.it/logo.png",
+        "description": "Piattaforma SaaS con AI per amministratori di condominio in Italia."
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "CondoFAST",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "EUR",
+          "lowPrice": "59",
+          "highPrice": "299"
+        },
+        "description": "Gestionale condominiale con AI: rendiconto art. 1130-bis, riconciliazione bancaria, solleciti automatici, tabelle millesimali."
+      }
+    ]
+  }
+  </script>
+
+
+  <script src="js/main.js" defer></script>
+  <script src="js/animations.js" defer></script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Vai al contenuto principale</a>
+
+  <!-- ============ NAVBAR ============ -->
+  <header class="nav" id="site-nav">
+    <div class="nav__inner">
+      <a class="nav__logo condofast-logo-container interactive" href="index.html" aria-label="CondoFAST — Home" style="--logo-size: 32px;">
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 100 100"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          class="condofast-icon"
+          style="overflow: visible;"
+        >
+          <defs>
+            <linearGradient id="logoWallLight" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#60a5fa" />
+              <stop offset="100%" stop-color="#2563eb" />
+            </linearGradient>
+            <linearGradient id="logoWallDark" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1d4ed8" />
+              <stop offset="100%" stop-color="#1e3a8a" />
+            </linearGradient>
+            <linearGradient id="logoWallHighlight" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#06b6d4" />
+              <stop offset="100%" stop-color="#3b82f6" />
+            </linearGradient>
+            <linearGradient id="logoSmartFlow" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#c084fc" />
+              <stop offset="50%" stop-color="#f472b6" />
+              <stop offset="100%" stop-color="#60a5fa" />
+            </linearGradient>
+            <filter id="logoNeonGlow" x="-25%" y="-25%" width="150%" height="150%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          <!-- Torre 1 -->
+          <g class="tower-left" style="transition: transform 0.4s ease;">
+            <path d="M 20 55 L 35 63 L 35 85 L 20 77 Z" fill="url(#logoWallDark)" />
+            <path d="M 35 63 L 50 55 L 50 77 L 35 85 Z" fill="url(#logoWallLight)" />
+            <path d="M 20 55 L 35 47 L 50 55 L 35 63 Z" fill="url(#logoWallHighlight)" />
+            <g class="tower-windows" fill="#e0f2fe" opacity="0.95">
+              <path d="M 23 63 L 26 64.6 L 26 68.6 L 23 67 Z" opacity="0.9" fill="#38bdf8" />
+              <path d="M 28 65.7 L 31 67.3 L 31 71.3 L 28 69.7 Z" opacity="0.5" />
+            </g>
+          </g>
+
+          <!-- Torre 2 -->
+          <g class="tower-center" style="transition: transform 0.4s ease; transition-delay: 0.05s;">
+            <path d="M 38 38 L 53 46 L 53 78 L 38 70 Z" fill="url(#logoWallDark)" />
+            <path d="M 53 46 L 68 38 L 68 70 L 53 78 Z" fill="url(#logoWallLight)" />
+            <path d="M 38 38 L 53 30 L 68 38 L 53 46 Z" fill="url(#logoWallHighlight)" opacity="0.95" />
+            <g class="tower-windows" fill="#e0f2fe" opacity="0.95">
+              <path d="M 41 46 L 44 47.6 L 44 51.6 L 41 50 Z" opacity="0.9" />
+              <path d="M 46 48.7 L 49 50.3 L 49 54.3 L 46 52.7 Z" opacity="0.45" />
+              <path d="M 41 54 L 44 55.6 L 44 59.6 L 41 58 Z" opacity="0.8" fill="#38bdf8" />
+              <path d="M 46 56.7 L 49 58.3 L 49 62.3 L 46 60.7 Z" opacity="0.9" />
+            </g>
+          </g>
+
+          <!-- Torre 3 -->
+          <g class="tower-right" style="transition: transform 0.4s ease; transition-delay: 0.1s;">
+            <path d="M 56 25 L 71 33 L 71 68 L 56 60 Z" fill="url(#logoWallDark)" />
+            <path d="M 71 33 L 86 25 L 86 60 L 71 68 Z" fill="url(#logoWallLight)" />
+            <path d="M 56 25 L 71 17 L 86 25 L 71 33 Z" fill="url(#logoWallHighlight)" opacity="0.9" />
+            <g class="tower-windows" fill="#e0f2fe" opacity="0.95">
+              <path d="M 59 33 L 62 34.6 L 62 38.6 L 59 37 Z" opacity="0.9" />
+              <path d="M 64 35.7 L 67 37.3 L 67 41.3 L 64 39.7 Z" opacity="0.4" />
+              <path d="M 59 41 L 62 42.6 L 62 46.6 L 59 45 Z" opacity="0.8" fill="#38bdf8" />
+              <path d="M 64 43.7 L 67 45.3 L 67 49.3 L 64 47.7 Z" opacity="0.9" />
+              <path d="M 59 49 L 62 50.6 L 62 54.6 L 59 53 Z" opacity="0.5" />
+              <path d="M 64 51.7 L 67 53.3 L 67 57.3 L 64 55.7 Z" opacity="0.85" />
+            </g>
+          </g>
+
+          <!-- Onda -->
+          <path
+            d="M 12 73 C 32 93, 68 93, 88 53"
+            stroke="url(#logoSmartFlow)"
+            stroke-width="4.5"
+            stroke-linecap="round"
+            filter="url(#logoNeonGlow)"
+            class="smart-flow-line"
+          />
+
+          <!-- Fogli di carta volanti (coordinate assolute) -->
+          <g class="fly-sheet sheet-1" style="opacity: 0;">
+            <path d="M 36.5 52 L 42 52 L 44 54 L 44 62 L 36.5 62 Z" fill="#ffffff" stroke="#2563eb" stroke-width="0.4" />
+            <path d="M 42 52 L 42 54 L 44 54 Z" fill="#cbd5e1" stroke="#2563eb" stroke-width="0.4" />
+            <line x1="38" y1="55.5" x2="42.5" y2="55.5" stroke="#94a3b8" stroke-width="0.4" />
+            <line x1="38" y1="57.5" x2="42.5" y2="57.5" stroke="#94a3b8" stroke-width="0.4" />
+            <line x1="38" y1="59.5" x2="41" y2="59.5" stroke="#94a3b8" stroke-width="0.4" />
+          </g>
+          <g class="fly-sheet sheet-2" style="opacity: 0;">
+            <path d="M 44 48.7 L 49.5 48.7 L 51.5 50.7 L 51.5 58.7 L 44 58.7 Z" fill="#ffffff" stroke="#06b6d4" stroke-width="0.4" />
+            <path d="M 49.5 48.7 L 49.5 50.7 L 51.5 50.7 Z" fill="#cbd5e1" stroke="#06b6d4" stroke-width="0.4" />
+            <line x1="45.5" y1="52.2" x2="50" y2="52.2" stroke="#94a3b8" stroke-width="0.4" />
+            <line x1="45.5" y1="54.2" x2="49" y2="54.2" stroke="#94a3b8" stroke-width="0.4" />
+            <line x1="45.5" y1="56.2" x2="50" y2="56.2" stroke="#94a3b8" stroke-width="0.4" />
+          </g>
+          <g class="fly-sheet sheet-3" style="opacity: 0;">
+            <path d="M 54.5 33 L 60 33 L 62 35 L 62 43 L 54.5 43 Z" fill="#ffffff" stroke="#c084fc" stroke-width="0.4" />
+            <path d="M 60 33 L 60 35 L 62 35 Z" fill="#cbd5e1" stroke="#c084fc" stroke-width="0.4" />
+            <line x1="56" y1="36.5" x2="60.5" y2="36.5" stroke="#94a3b8" stroke-width="0.4" />
+            <line x1="56" y1="38.5" x2="60.5" y2="38.5" stroke="#94a3b8" stroke-width="0.4" />
+            <line x1="56" y1="40.5" x2="59" y2="40.5" stroke="#94a3b8" stroke-width="0.4" />
+          </g>
+        </svg>
+        <span class="condofast-logo-text">
+          <span class="text-prefix">Condo</span><span class="text-suffix">FAST</span>
+        </span>
+      </a>
+      <nav aria-label="Navigazione principale">
+        <ul class="nav__links" id="nav-links">
+          <li><a href="index.html" aria-current="page">Home</a></li>
+          <li><a href="features.html">Funzionalità</a></li>
+          <li><a href="pricing.html">Prezzi</a></li>
+          <li><a href="sicurezza.html">Sicurezza</a></li>
+        </ul>
+      </nav>
+      <div class="nav__cta">
+        <a class="btn btn--ghost btn--sm" href="https://condofast.app/login" id="nav-login">Accedi</a>
+        <a class="btn btn--primary btn--sm" href="https://condofast.app/register" id="nav-trial">Inizia gratis</a>
+        <button class="nav__toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Apri il menu">☰</button>
+      </div>
+    </div>
+  </header>
+
+  
+  <main id="main" style="padding-top: var(--nav-h); padding-bottom: 80px;">
+    <section class="hero" style="min-height: 60vh; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(to bottom, var(--bg) 0%, #1e1b4b 100%); padding: 60px 24px;">
+      <div style="max-width: 600px; width: 100%;">
+        <div style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 99px; background: rgba(124, 58, 237, 0.15); border: 1px solid rgba(124, 58, 237, 0.3); margin-bottom: 24px;">
+          <span style="font-size: 14px; font-weight: 700; color: #a78bfa;">Pioneer Partner</span>
+        </div>
+        <h1 style="font-size: 42px; font-weight: 800; line-height: 1.1; margin-bottom: 24px; background: linear-gradient(135deg, #fff 0%, #a78bfa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          Diventa Fornitore Esclusivo
+        </h1>
+        <p style="font-size: 18px; color: var(--text); opacity: 0.8; margin-bottom: 32px; line-height: 1.6;">
+          Sei stato invitato da un amministratore CondoFAST. Ottieni l'esclusiva territoriale per la tua categoria e ricevi richieste di intervento qualificate direttamente sul tuo telefono.
+        </p>
+        
+        <form id="partner-form" action="mailto:info@condofast.it" method="POST" enctype="text/plain" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 32px; text-align: left; backdrop-filter: blur(12px);">
+          <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 24px;">Richiedi informazioni senza impegno</h3>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div>
+              <label style="display: block; font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 8px;">Ragione Sociale / Nome</label>
+              <input type="text" name="Nome" required style="width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; font-family: inherit;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 8px;">Partita IVA</label>
+              <input type="text" name="PIVA" id="piva-input" required style="width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; font-family: inherit;">
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div>
+              <label style="display: block; font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 8px;">Categoria (es. Idraulico)</label>
+              <input type="text" name="Categoria" id="cat-input" required style="width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; font-family: inherit;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 8px;">Provincia</label>
+              <input type="text" name="Provincia" id="prov-input" required style="width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; font-family: inherit;">
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 8px;">Email di Contatto</label>
+            <input type="email" name="Email" required style="width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; font-family: inherit;">
+          </div>
+          
+          <input type="hidden" name="SponsorID" id="sponsor-input">
+          
+          <button type="submit" style="width: 100%; background: #7c3aed; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 700; font-family: inherit; font-size: 16px; cursor: pointer; transition: background 0.2s;">
+            Invia Richiesta
+          </button>
+          <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 16px;">
+            Verrai ricontattato da un nostro consulente per spiegarti i dettagli dell'esclusiva.
+          </p>
+        </form>
+      </div>
+    </section>
+    <script>
+      // Precompila campi da query string
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('piva')) document.getElementById('piva-input').value = urlParams.get('piva');
+      if (urlParams.has('cat')) document.getElementById('cat-input').value = urlParams.get('cat');
+      if (urlParams.has('prov')) document.getElementById('prov-input').value = urlParams.get('prov');
+      if (urlParams.has('sponsor_id')) document.getElementById('sponsor-input').value = urlParams.get('sponsor_id');
+      
+      // Update title
+      document.title = "Diventa Partner - CondoFAST";
+    </script>
+  </main>
+
+
+  <!-- ============ 9. FOOTER ============ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div>
+          <a class="nav__logo" href="index.html" style="margin-bottom:16px;display:inline-flex">
+            <span class="nav__logo-mark" aria-hidden="true">C</span>
+            CondoFAST
+          </a>
+          <p class="footer__tagline">CondoFAST — Il gestionale che gli amministratori italiani meritavano.</p>
+        </div>
+        <nav aria-label="Prodotto">
+          <h4>Prodotto</h4>
+          <ul>
+            <li><a href="features.html">Funzionalità</a></li>
+            <li><a href="pricing.html">Prezzi</a></li>
+            <li><a href="sicurezza.html">Sicurezza</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Legale">
+          <h4>Legale</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="termini.html">Termini di Servizio</a></li>
+            <li><a href="dpa.html">DPA (Art. 28 GDPR)</a></li>
+            <li><a href="ai-compliance.html">Conformità AI Act</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Contatti">
+          <h4>Contatti</h4>
+          <ul>
+            <li><a href="mailto:info@condofast.it">info@condofast.it</a></li>
+            <li><a href="mailto:privacy@condofast.it">privacy@condofast.it</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div class="footer__bottom">
+        <span>© <span data-year>2026</span> CondoFAST. Tutti i diritti riservati. P.IVA in corso di attribuzione.</span>
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          Dati custoditi nell'Unione Europea 
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============ COOKIE BANNER (GDPR) ============ -->
+  <div class="cookie" id="cookie-banner" role="dialog" aria-live="polite" aria-label="Preferenze cookie">
+    <p><strong style="color:var(--text)">Rispettiamo la tua privacy.</strong> Usiamo solo cookie tecnici essenziali. Con il tuo consenso, attiviamo statistiche anonime e privacy-first (nessun tracciamento di terze parti, nessun profilo pubblicitario). <a href="privacy.html">Leggi la Privacy Policy</a>.</p>
+    <div class="cookie__actions">
+      <button class="btn btn--primary btn--sm" id="cookie-accept" type="button">Accetta statistiche</button>
+      <button class="btn btn--ghost btn--sm" id="cookie-reject" type="button">Solo essenziali</button>
+    </div>
+  </div>
+
+  <!-- ============ MODALE POP-UP: DEMO AI READER (CONSOLE 2 COLONNE) ============ -->
+  <div class="modal-overlay" id="modal-demo-ai" role="dialog" aria-modal="true" aria-labelledby="modal-demo-title">
+    <div class="modal-container" style="max-width:980px">
+      <button type="button" class="modal-close" data-close-modal aria-label="Chiudi modale">✕</button>
+      
+      <div style="text-align:center;margin-bottom:18px">
+        <span class="eyebrow">Console Assistente AI</span>
+        <h3 id="modal-demo-title" style="font-size:1.65rem;font-weight:800;margin-top:6px;color:#fff">Carica qualsiasi Fattura o Scontrino</h3>
+        <p style="color:var(--muted);font-size:0.92rem;margin-top:4px">Trascina o seleziona una tua fattura (PDF, PNG, JPG) per testare l'estrazione contabile ed il riparto millesimale immediato:</p>
+      </div>
+
+      <!-- AREA DRAG & DROP FATTURA / SCONTRINO UTENTE -->
+      <div class="demo-dropzone-wrapper disabled-privacy" id="demo-dropzone-wrapper">
+        <div class="demo-dropzone disabled-privacy" id="demo-dropzone">
+          <input type="file" id="user-doc-input" accept=".pdf,.png,.jpg,.jpeg,.webp">
+          <div class="scanner-line" id="scanner-line"></div>
+          <div class="dropzone-icon">✦</div>
+          <div style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:4px">Trascina qui la tua Fattura o Scontrino di Prova</div>
+          <div style="color:var(--muted);font-size:0.85rem">Oppure <span style="color:var(--accent);text-decoration:underline">fai clic qui per selezionare un file dal tuo dispositivo</span></div>
+          <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF e Immagini fino a 15 MB · Nessun dato è salvato o usato per addestramenti. (Max 3 prove)</div>
+        </div>
+        <div class="demo-dropzone-overlay" id="demo-dropzone-overlay" onclick="alert('Devi spuntare la casella della Privacy Policy per sbloccare l\'area di elaborazione AI.')"></div>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <input type="checkbox" id="privacy-consent-checkbox" style="width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer;">
+        <label for="privacy-consent-checkbox" style="font-size: 0.85rem; color: var(--muted); cursor: pointer; user-select: none;">
+          Acconsento al trattamento temporaneo del documento per l'elaborazione AI, letta la <a href="privacy.html" style="color:var(--accent);text-decoration:underline">Privacy Policy</a> (art. 13 GDPR).
+        </label>
+      </div>
+
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" onclick="analyzeUserDocument(null)" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:0.8rem;cursor:pointer">✦ Oppure prova con una Fattura di Esempio pre-caricata</button>
+      </div>
+
+      <div class="console-split" style="margin-top:18px">
+        <!-- Colonna Sinistra: Documento Sorgente -->
+        <div class="console-doc-box" id="demo-doc-content">
+          <span class="console-doc-tag highlight-cyan">Documento di Prova</span>
+          <div style="color:#60a5fa;font-weight:700;margin-bottom:8px">FATTURA ELETTRONICA N. 104/2026</div>
+          <div>Fornitore: <strong>Rossi Impianti S.r.l.</strong> (P.IVA: 01847590123)</div>
+          <div>Destinatario: Condominio Via Manzoni 14</div>
+          <div>Data fattura: 14/07/2026</div>
+          <div>Descrizione: Manutenzione ordinaria III Trimestre + Sostituzione relè di sicurezza</div>
+          <div style="margin-top:12px;padding-top:8px;border-top:1px dashed #334155">
+            <div>Imponibile: <span class="highlight-cyan">€ 1.200,00</span></div>
+            <div>IVA (22%): € 264,00</div>
+            <div style="color:#fff;font-weight:700;margin-top:4px">TOTALE FATTURA: € 1.464,00</div>
+          </div>
+        </div>
+
+        <!-- Colonna Destra: Output AI Console -->
+        <div class="console-ai-box">
+          <div>
+            <div class="console-ai-header">
+              <span class="console-ai-badge">✦ Assistente AI CondoFAST</span>
+              <span style="font-size:0.75rem;color:#34d399;font-weight:600">● 100% Conforme Art. 1130-bis</span>
+            </div>
+            <h4 id="demo-ai-header" style="font-size:0.98rem;font-weight:700;color:#fff;margin-bottom:12px">✦ AI Extraction: Documento Riconosciuto</h4>
+            <div id="demo-ai-details">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div class="extracted-grid">
+                  <div class="extracted-card">
+                    <div class="extracted-card-title">Condominio Destinatario</div>
+                    <div class="extracted-card-val" style="color:#60a5fa">Condominio Via Manzoni 14</div>
+                  </div>
+                  <div class="extracted-card">
+                    <div class="extracted-card-title">Fornitore Estratto</div>
+                    <div class="extracted-card-val">Rossi Impianti S.r.l.</div>
+                    <div style="font-size:0.72rem;color:var(--muted);margin-top:2px">P.IVA: IT 01847590123</div>
+                  </div>
+                </div>
+
+                <div class="extracted-grid">
+                  <div class="extracted-card">
+                    <div class="extracted-card-title">Imponibile / IVA (22%)</div>
+                    <div class="extracted-card-val">€ 1.200,00 + IVA € 264,00</div>
+                  </div>
+                  <div class="extracted-card" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25)">
+                    <div class="extracted-card-title" style="color:#34d399">Totale Documento</div>
+                    <div class="extracted-card-val" style="color:#34d399;font-size:1.05rem">€ 1.464,00</div>
+                  </div>
+                </div>
+
+                <div class="extracted-card" style="border-color:rgba(192,132,252,0.3);background:rgba(192,132,252,0.06)">
+                  <div class="extracted-card-title" style="color:#c084fc">Riparto Millesimale Consigliato dall'AI</div>
+                  <div class="extracted-card-val" style="color:#fff">Tabella C — Ascensore / Impianti (1.000/1.000)</div>
+                </div>
+
+                <div class="extracted-card" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.25)">
+                  <div class="extracted-card-title" style="color:#f87171">Ritenuta d'Acconto 4% (Modello F24)</div>
+                  <div class="extracted-card-val" style="color:#fff">€ 48,00 <span style="font-size:0.75rem;font-weight:normal;color:var(--muted)">(Versamento F24 entro il 16 del mese successivo)</span></div>
+                </div>
+
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODALE POP-UP: CALCOLATORE ROI ============ -->
+  <div class="modal-overlay" id="modal-roi-calc" role="dialog" aria-modal="true" aria-labelledby="modal-roi-title">
+    <div class="modal-container" style="max-width:800px">
+      <button type="button" class="modal-close" data-close-modal aria-label="Chiudi modale">✕</button>
+
+      <div class="roi-modal-content">
+        <span class="eyebrow">Simulatore Risparmio</span>
+        <h3 id="modal-roi-title" style="font-size:1.7rem;font-weight:800;margin-top:6px;color:#fff">Calcola il Risparmio per il tuo Studio</h3>
+        <p style="color:var(--muted);font-size:0.95rem;margin-top:4px">Sposta lo slider con il numero di condomini gestiti:</p>
+
+        <div class="roi-slider-container">
+          <div class="roi-slider-label">
+            Stai gestendo <span class="roi-slider-val" id="roi-condo-val">35</span> condomini
+          </div>
+          <input type="range" min="5" max="200" step="5" value="35" class="roi-slider" id="roi-condo-slider" aria-label="Numero condomini gestiti">
+          
+          <!-- Elemento per il Piano Consigliato -->
+          <div style="text-align:center; margin-top:16px; margin-bottom:4px; font-weight:600; font-size:0.95rem; color:#fff;" id="roi-recommended-plan">
+            Piano Consigliato: <span style="background:rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.3); padding:4px 10px; border-radius:20px; color:#d4af37; margin-left:6px;" id="roi-plan-badge">Base</span>
+          </div>
+        </div>
+
+        <div class="roi-grid">
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-hours-val">28 Ore</div>
+            <div class="roi-kpi-lbl">Ore risparmiate ogni mese</div>
+          </div>
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-report-time-val">2 Giorni</div>
+            <div class="roi-kpi-lbl">Tempo chiusura consuntivo</div>
+          </div>
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-recon-val"><span style="text-decoration:line-through;opacity:0.5;font-size:1.1rem;margin-right:8px">15h</span><span style="color:#22c55e">1h</span></div>
+            <div class="roi-kpi-lbl">Spunta Estratti Conto (Mese)</div>
+          </div>
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-invoices-val">6.300</div>
+            <div class="roi-kpi-lbl">Fatture auto-registrate / Anno</div>
+          </div>
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-savings-val">€ 4.725</div>
+            <div class="roi-kpi-lbl">Risparmio stimato all'anno</div>
+          </div>
+          <div class="roi-kpi-card">
+            <div class="roi-kpi-num" id="roi-cost-condo-val">€ 1,69</div>
+            <div class="roi-kpi-lbl">Costo/condominio al mese</div>
+          </div>
+        </div>
+
+        <div style="font-size:0.75rem; color:var(--muted); text-align:center; margin-top:16px; opacity:0.8;">
+          * I valori mostrati sono stime indicative basate sulle medie di settore e sull'efficienza teorica dell'automazione. Il risparmio effettivo può variare in base all'organizzazione dello studio.
+        </div>
+
+        <div style="margin-top:30px;display:flex;justify-content:center;gap:12px">
+          <a href="https://condofast.app/register" class="btn btn--primary">Inizia la prova gratuita di 14 giorni →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

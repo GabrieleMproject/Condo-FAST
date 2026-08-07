@@ -575,7 +575,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
                 </ul>
               </div>
               <p style="text-align: center; margin: 30px 0;">
-                <a href="https://condofast.it/fornitori/registrati?sponsor_id=${userData.user?.id}&piva=${partnerPiva}&cat=${partnerCategoria}&prov=${partnerProvincia}" style="background:#7c3aed;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:bold;">Accetta l'Invito Pioneer</a>
+                <a href="https://condofast.it/partner?sponsor_id=${userData.user?.id}&piva=${partnerPiva}&cat=${partnerCategoria}&prov=${partnerProvincia}" style="background:#7c3aed;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:bold;">Richiedi Contatto Pioneer</a>
               </p>
               <p style="font-size: 12px; color: #666; margin-top: 40px; text-align: center;">Questo è un invito automatico generato su richiesta dell'Amministratore tramite CondoFAST.</p>
             </div>

@@ -131,6 +131,17 @@ Aggiungere a fine di ogni risposta un **indice di contesto** con:
 
 ---
 
+## Storico Decisioni e Fatti Verificati della Sessione S78 (7 Agosto 2026 - Proiezione Finanziaria e Limite Migrazione Dati)
+
+### 1. Modello Finanziario Anno 1
+- **Simulazione Finanziaria**: Sviluppata una stima accurata per il primo anno (Breakeven e compenso Amministratore netto di 30.000€). Per raggiungere il target, calcolando imposte italiane e cuneo fiscale, è necessario un fatturato di ~86.500€ (Costo Aziendale + Costi Operativi). L'obiettivo corrisponde a circa 57 Amministratori Condominiali e 114 Fornitori Partner. (Documentato in `simulazione_finanziaria_anno1.md`).
+
+### 2. Marketing e Migrazione Dati (Zero Frizione)
+- **Aggiornamento Promessa Commerciale**: Ai fini di contenere i costi e i tempi di onboarding, prevenendo problemi tecnici su bilanci pregressi, la promessa commerciale "Zero Frizione" del sito vetrina è stata perfezionata.
+- **Testi Aggiornati**: In `website/index.html` e `website/pricing.html` è stato specificato che l'importazione gratuita da altri software riguarda esclusivamente "anagrafiche, tabelle millesimali e i saldi d'apertura dell'esercizio corrente" ed è garantita in "48 ore lavorative" (anziché 48 ore assolute).
+
+---
+
 ## Storico Decisioni e Fatti Verificati della Sessione S77 (7 Agosto 2026 - Marketplace Fornitori: Logica Sponsor ed Esclusiva Pioneer)
 
 ### 1. Modello Commerciale Pioneer e Sponsor

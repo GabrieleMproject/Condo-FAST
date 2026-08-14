@@ -32,8 +32,7 @@ import EsercizioSelectorHeader from '../components/EsercizioSelectorHeader'
 import DemoCondoBanner from '../components/DemoCondoBanner'
 
 // ── Helper date sicure ──────────────────────────────────────
-const formattaData = (d) => (d && !isNaN(new Date(d).getTime()) ? new Date(d).toLocaleDateString('it-IT') : '—')
-const formattaDataOra = (d) => (d && !isNaN(new Date(d).getTime()) ? `${new Date(d).toLocaleDateString('it-IT')} ${new Date(d).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}` : '—')
+import { formattaData, formattaDataOra } from '../lib/formatters'
 
 // ── Helper formattazione piani ─────────────────────────────
 // ── Icone KPI ────────────────────────────────────────────────
@@ -60,18 +59,39 @@ const DOTAZIONI = (c) => [
   c.presenza_portiere   && { icon: UserCheck,       label: 'Portiere' },
 ].filter(Boolean)
 
-const TABS = [
-  { id: 'panoramica', label: 'Panoramica', icon: LayoutGrid },
-  { id: 'anagrafica', label: 'Anagrafica & Unità', icon: Users },
-  { id: 'preventivo', label: 'Preventivo & Saldi', icon: ClipboardList },
-  { id: 'consuntivo', label: 'Consuntivo', icon: FileBarChart },
-  { id: 'rate',       label: 'Rate',       icon: CreditCard },
-  { id: 'comunicazioni', label: 'Comunicazioni', icon: Mail },
-  { id: 'verbali',    label: 'Verbali',    icon: FileSignature },
-  { id: 'sinistri',   label: 'Sinistri',   icon: ShieldAlert },
-  { id: 'finanze',    label: 'Finanze',    icon: Wallet },        // ← nuovo: accesso pagine finanziarie
-  { id: 'documenti',  label: 'Documenti',  icon: FileText },
-  { id: 'storico',    label: 'Storico',    icon: FolderClock },
+const MACRO_GROUPS = [
+  { 
+    id: 'gestione', 
+    label: 'Gestione', 
+    icon: Building2, 
+    tabs: [
+      { id: 'panoramica', label: 'Panoramica', icon: LayoutGrid },
+      { id: 'anagrafica', label: 'Anagrafica & Unità', icon: Users },
+      { id: 'storico',    label: 'Storico',    icon: FolderClock },
+    ]
+  },
+  { 
+    id: 'contabilita', 
+    label: 'Contabilità', 
+    icon: Wallet, 
+    tabs: [
+      { id: 'finanze',    label: 'Gestione Finanze', icon: Wallet },
+      { id: 'preventivo', label: 'Preventivo & Saldi', icon: ClipboardList },
+      { id: 'consuntivo', label: 'Consuntivo', icon: FileBarChart },
+      { id: 'rate',       label: 'Rate',       icon: CreditCard },
+    ]
+  },
+  { 
+    id: 'documenti', 
+    label: 'Documenti', 
+    icon: FileText, 
+    tabs: [
+      { id: 'documenti',  label: 'Archivio Documenti', icon: FileText },
+      { id: 'verbali',    label: 'Verbali Assemblea',  icon: FileSignature },
+      { id: 'comunicazioni', label: 'Comunicazioni',   icon: Mail },
+      { id: 'sinistri',   label: 'Sinistri',           icon: ShieldAlert },
+    ]
+  },
 ]
 
 // ── Tab Finanze: scorciatoie verso le pagine finanziarie (route già esistenti) ──
@@ -162,6 +182,7 @@ export default function CondominiDetailPage() {
   const navigate = useNavigate()
   const { condomini, loading, refetch } = useCondomini()
   const c = useMemo(() => condomini.find(x => x.id === id), [condomini, id])
+  const [activeGroup, setActiveGroup] = useState('gestione')
   const [activeTab, setActiveTab] = useState('panoramica')
   const [saldoConto, setSaldoConto] = useState(null)
   
@@ -356,9 +377,45 @@ export default function CondominiDetailPage() {
         ))}
       </div>
 
-      {/* Tab bar */}
-      <div style={S.tabBar}>
-        {TABS.map(({ id: tid, label, icon: Icon }) => {
+      {/* Macro Groups Tab Bar */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 12, borderBottom: '1px solid var(--border-color)', paddingBottom: 8, flexWrap: 'wrap' }}>
+        {MACRO_GROUPS.map(group => {
+          const isActiveGroup = activeGroup === group.id
+          const GroupIcon = group.icon
+          return (
+            <button
+              key={group.id}
+              onClick={() => {
+                setActiveGroup(group.id)
+                setActiveTab(group.tabs[0].id) // Seleziona il primo tab del gruppo
+              }}
+              style={{
+                background: isActiveGroup ? 'var(--card-bg)' : 'transparent',
+                color: isActiveGroup ? 'var(--text-primary)' : 'var(--text-secondary)',
+                border: '1px solid',
+                borderColor: isActiveGroup ? 'var(--border-color)' : 'transparent',
+                borderRadius: 20,
+                padding: '6px 14px',
+                fontSize: 13,
+                fontWeight: isActiveGroup ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.15s',
+                boxShadow: isActiveGroup ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
+              }}
+            >
+              <GroupIcon size={15} style={{ color: isActiveGroup ? '#60a5fa' : 'inherit' }} />
+              {group.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Sub Tab Bar (relativa al macro-gruppo attivo) */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 20, flexWrap: 'wrap' }}>
+        {MACRO_GROUPS.find(g => g.id === activeGroup)?.tabs.map(({ id: tid, label, icon: Icon }) => {
           const active = activeTab === tid
           const tourTargetMap = {
             anagrafica: 'tab-anagrafica-unita',
@@ -376,9 +433,12 @@ export default function CondominiDetailPage() {
               onClick={() => setActiveTab(tid)}
               style={{
                 ...S.tabBtn,
-                background: active ? 'rgba(37,99,235,0.12)' : 'transparent',
-                color: active ? '#60a5fa' : '#64748b',
-                borderBottom: `2px solid ${active ? '#2563eb' : 'transparent'}`,
+                background: active ? 'var(--accent, #2563eb)' : 'var(--card-bg)',
+                color: active ? '#ffffff' : 'var(--text-secondary)',
+                border: '1px solid',
+                borderColor: active ? 'var(--accent, #2563eb)' : 'var(--border-color)',
+                borderRadius: 8,
+                boxShadow: active ? '0 4px 6px -1px rgba(37, 99, 235, 0.2)' : 'none'
               }}
             >
               <Icon size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} strokeWidth={active ? 2.5 : 1.8} />
@@ -543,7 +603,7 @@ const S = {
   kpiValue:    { color: 'var(--text-primary)', fontSize: 18, fontWeight: 700 },
   kpiLabel:    { color: 'var(--text-muted)', fontSize: 11 },
   tabBar:      { display: 'flex', gap: 2, borderBottom: '1px solid var(--border-color)', marginBottom: 20, flexWrap: 'wrap' },
-  tabBtn:      { padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', borderRadius: '8px 8px 0 0', fontFamily: 'Sora, sans-serif', transition: 'all 0.15s', display: 'flex', alignItems: 'center' },
+  tabBtn:      { padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', transition: 'all 0.15s', display: 'flex', alignItems: 'center' },
   tabContent:  {},
   section:     { background: 'var(--card-bg)', borderRadius: 12, padding: '20px 24px', marginBottom: 14, border: '1px solid var(--border-color)' },
   sectionTitle:{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px' },

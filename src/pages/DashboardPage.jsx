@@ -11,6 +11,7 @@ import OnboardingTourModal from '../components/OnboardingTourModal'
 import InteractiveOnboarding from '../components/InteractiveOnboarding'
 import ScadenzarioWidget from '../components/ScadenzarioWidget'
 import RisparmioStudioWidget from '../components/RisparmioStudioWidget'
+import { formattaValuta, formattaData } from '../lib/formatters'
 import {
   Building2,
   CheckCircle2,
@@ -27,24 +28,6 @@ import {
   Inbox
 } from 'lucide-react'
 
-// Funzione helper per formattare gli importi in Euro
-function formattaValuta(valore) {
-  if (valore === undefined || valore === null || isNaN(valore)) return '€ 0,00'
-  return `€ ${parseFloat(valore).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
-// Funzione helper per formattare la data in italiano
-function formattaData(dataInput) {
-  if (!dataInput) return 'N/D'
-  try {
-    const d = new Date(dataInput)
-    if (isNaN(d.getTime())) return 'N/D'
-    return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
-  } catch {
-    return 'N/D'
-  }
-}
-
 // Mesi in italiano per F24
 const MESI_IT = [
   'Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
@@ -58,7 +41,6 @@ export default function DashboardPage() {
   const { canUse, piano, isTrialActive } = usePlan()
 
   const [loadingStats, setLoadingStats] = useState(true)
-  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024)
   const generatingDemoRef = useRef(false)
   const [showTourModal, setShowTourModal] = useState(false)
   const [showGuidaModal, setShowGuidaModal] = useState(false)
@@ -80,12 +62,6 @@ export default function DashboardPage() {
     inboxItems: []
   })
 
-  // Gestione responsive
-  useEffect(() => {
-    const handleResize = () => setIsLargeScreen(window.innerWidth > 1024)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -522,10 +498,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Due Colonne */}
-      <div style={{
-        ...styles.twoCol,
-        gridTemplateColumns: isLargeScreen ? '2fr 1fr' : '1fr'
-      }}>
+      <div className="dashboard-content-grid">
         {/* Colonna Sinistra: Tabella Condomini */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
@@ -780,10 +753,6 @@ const styles = {
   kpiSub: {
     color: 'var(--text-muted)',
     fontSize: 11,
-  },
-  twoCol: {
-    display: 'grid',
-    gap: 24,
   },
   card: {
     background: 'var(--card-bg)',

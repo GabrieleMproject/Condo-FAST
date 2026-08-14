@@ -287,6 +287,9 @@ export function PlanProvider({ children }) {
   // ── Stripe ────────────────────────────────────────────────────────────
   const isStripeAttivo = ['active', 'trialing'].includes(profile?.stripe_status)
 
+  // ── Read Only Mode ────────────────────────────────────────────────────
+  const isReadOnly = isTrialScaduto || (!isStripeAttivo && piano !== 'trial')
+
   // ── Condomini ─────────────────────────────────────────────────────────
   const condominiInclusi = limiti.condomini_inclusi
   const condominiExtra   = condominiInclusi === null
@@ -342,6 +345,7 @@ export function PlanProvider({ children }) {
 
     isStripeAttivo,
     stripeStatus: profile?.stripe_status,
+    isReadOnly,
 
     condominiCount,
     condominiInclusi,

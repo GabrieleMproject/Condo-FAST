@@ -676,7 +676,7 @@ export default function AppLayout() {
   const {
     piano, limiti, profile,
     isTrialActive, isTrialScaduto, trialEndsAt,
-    isStripeAttivo, stripeStatus,
+    isStripeAttivo, stripeStatus, isReadOnly,
     condominiCount, condominiInclusi, condominiExtra, costoExtraMese,
     aiCallsCount, aiCallsLimit, aiCallsRimanenti,
     updateBranding, refresh, isSuperAdmin
@@ -788,7 +788,7 @@ export default function AppLayout() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--app-bg)', fontFamily: 'Sora, sans-serif' }}>
+    <div className={isReadOnly ? 'read-only-mode' : ''} style={{ display: 'flex', minHeight: '100vh', background: 'var(--app-bg)', fontFamily: 'Sora, sans-serif' }}>
       
       {/* Sidebar Overlay Mobile */}
       {isMobileMenuOpen && (
@@ -1066,6 +1066,25 @@ export default function AppLayout() {
             </div>
           </div>
         </header>
+
+        {isReadOnly && (
+          <div style={{
+            background: 'var(--error-bg, rgba(239, 68, 68, 0.1))',
+            borderBottom: '1px solid rgba(239, 68, 68, 0.3)',
+            padding: '10px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            color: '#ef4444',
+            fontSize: 13,
+            fontWeight: 500,
+            zIndex: 10
+          }}>
+            <span>⚠️ <strong>Account in Sola Lettura</strong> — Il tuo abbonamento è scaduto o il pagamento è fallito. Puoi consultare ed esportare i tuoi dati, ma non puoi apportare modifiche.</span>
+            <Link to="/impostazioni" className="btn btn--primary btn--sm read-only-allow" style={{ padding: '4px 12px', fontSize: 12 }}>Rinnova ora</Link>
+          </div>
+        )}
 
         <AiBanner />
 

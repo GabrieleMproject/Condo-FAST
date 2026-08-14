@@ -153,6 +153,7 @@ Deno.serve(async (req) => {
       ],
       subscription_data: {
         metadata: { user_id: userId, piano },
+        trial_period_days: 14,
         // Sconto SEPA 5€/mese per Studio e Professional
         ...(piano === 'studio' || piano === 'professional'
           ? {

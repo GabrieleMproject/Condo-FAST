@@ -1021,3 +1021,17 @@ a:hover { text-decoration: underline; }
     transform: translateY(0) scale(1);
   }
 }
+
+/* ───────────────────────────────────────────────────────────── */
+/* READ-ONLY MODE (Account Scaduto o Pagamento Fallito)          */
+/* ───────────────────────────────────────────────────────────── */
+.read-only-mode button:not(.read-only-allow),
+.read-only-mode input:not(.read-only-allow),
+.read-only-mode textarea:not(.read-only-allow),
+.read-only-mode select:not(.read-only-allow),
+.read-only-mode .interactive:not(.read-only-allow) {
+  pointer-events: none !important;
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  user-select: none;
+}

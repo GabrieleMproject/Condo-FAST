@@ -598,6 +598,7 @@ export default function ImpostazioniPage() {
               {isStripeAttivo && profile?.stripe_customer_id && (
                 <button
                   style={styles.btnPortale}
+                  className="read-only-allow"
                   onClick={handlePortale}
                   disabled={loadingPortale}
                 >
@@ -1517,6 +1518,7 @@ export default function ImpostazioniPage() {
                       </div>
                     ) : (
                       <button
+                        className="read-only-allow"
                         style={styles.btnUpgrade}
                         onClick={() => handleUpgrade(key)}
                         disabled={loadingCheckout === key}

@@ -84,25 +84,70 @@ Linee guida di stesura:
   return risposta.trim()
 }
 
+/**
+ * Wrapper intelligente che riprova automaticamente in caso di:
+ * 1. Fallimento nel parsing JSON (es. il modello ha restituito testo o JSON rotto irrecuperabile)
+ * 2. Errore "RateLimitError" (troppe richieste), con attesa graduale.
+ */
+async function withAutoRetry(fn, maxRetries = 2) {
+  let attempt = 0;
+  while (attempt <= maxRetries) {
+    try {
+      return await fn();
+    } catch (err) {
+      const isRateLimit = err.name === 'RateLimitError' || err.message?.toLowerCase().includes('429');
+      const isJsonError = err instanceof SyntaxError || err.message?.includes('JSON');
+      
+      if (!isRateLimit && !isJsonError) {
+        // Se non è un errore "guaribile" o temporaneo, scartiamo subito
+        throw err;
+      }
+      
+      if (attempt >= maxRetries) {
+        console.error(`[withAutoRetry] Fallimento definitivo dopo ${maxRetries} ritentativi.`, err);
+        throw err;
+      }
+      
+      attempt++;
+      // Backoff esponenziale: 1.5s, 3s
+      const delay = isRateLimit ? (err.retryAfter ? err.retryAfter * 1000 : 2000 * attempt) : 1500 * attempt;
+      console.warn(`[withAutoRetry] Tentativo ${attempt} fallito (RateLimit: ${isRateLimit}). Riposo per ${delay}ms...`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}
+
 function pulisciEdEstraiJson(risposta, isArray = false) {
   const rawStr = String(risposta || '').trim();
+  
+  // TENTATIVO 1: Parsing diretto (Gemini API jsonMode spesso restituisce un JSON perfetto, non tocchiamolo)
+  let cleanRawStr = rawStr.replace(/```json\s*|\s*```/g, '').trim();
+  try {
+    const directParsed = JSON.parse(cleanRawStr);
+    return arricchisciConAvvisi(directParsed);
+  } catch (directErr) {
+    // Il parsing pulito ha fallito, proviamo con le euristiche di recupero
+  }
+
+  // TENTATIVO 2: Euristiche di recupero aggressivo
   const regex = isArray ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
   const match = rawStr.match(regex);
-  let clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
+  let clean = match ? match[0] : cleanRawStr;
   
-  // 1. Forza chiavi senza virgolette ad avere virgolette doppie (es: { fornitore: ... } -> { "fornitore": ... })
+  // Forza chiavi senza virgolette ad avere virgolette doppie (es: { fornitore: ... } -> { "fornitore": ... })
   clean = clean.replace(/([{,]\s*)([a-zA-Z0-9_-]+)\s*:/g, '$1"$2":');
-
-  // 2. Converti valori con virgolette singole in virgolette doppie (es: : 'valore' -> : "valore")
+  
+  // Converti valori con virgolette singole in virgolette doppie (solo se non contengono l'apostrofo all'interno, per evitare rotture come "L'Oasi")
+  // NOTA: evitiamo di usare regex distruttive su apici interni, convertiamo solo : '...' -> : "..."
   clean = clean.replace(/:\s*'([^']*)'/g, ': "$1"');
-
-  // 3. Rimuovi virgolette orfane su righe separate prima della chiusura parentesi graffa
+  
+  // Rimuovi virgolette orfane su righe separate prima della chiusura parentesi graffa
   clean = clean.replace(/\n\s*"\s*\n\s*\}/g, '\n}');
   
-  // 4. Rimuovi virgole pendenti (trailing commas) per conformità JSON
+  // Rimuovi virgole pendenti (trailing commas)
   clean = clean.replace(/,\s*\}/g, '}').replace(/,\s*\]/g, ']');
 
-  // 5. Bilancia le parentesi graffe per tagliare caratteri spuri extra alla fine (es: }})
+  // Bilancia le parentesi graffe per tagliare caratteri spuri extra alla fine (es: }})
   clean = clean.trim();
   if (!isArray && clean.startsWith('{') && clean.endsWith('}')) {
     let braceCount = 0;
@@ -124,47 +169,49 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
 
   try {
     const parsed = JSON.parse(clean);
-    
-    // Supporto per la validazione di congruenza e pertinenza dello slot e del condominio
-    if (parsed && typeof parsed === 'object' && ('is_valido' in parsed || 'is_valido_per_slot' in parsed || 'congruenza_condominio' in parsed)) {
-      const isValidoSlot = parsed.is_valido !== false && parsed.is_valido_per_slot !== false;
-      const pertine = parsed.congruenza_condominio;
-      const ePertinente = !pertine || pertine.e_pertinente !== false;
-
-      let warningPertinenza = null;
-      if (!isValidoSlot || !ePertinente) {
-        warningPertinenza = {
-          slotErrato: !isValidoSlot ? {
-            tipoRilevato: parsed.tipo_documento_rilevato || 'documento di altro tipo',
-            motivo: parsed.motivo_errore || 'Il file non sembra congruo allo slot di destinazione.'
-          } : null,
-          condominioErrato: !ePertinente ? {
-            intestatarioRilevato: pertine?.intestatario_rilevato || 'altro condominio',
-            motivoDiscrepanza: pertine?.motivo_discrepanza || 'Il documento risulta intestato ad un altro condominio.'
-          } : null
-        };
-      }
-
-      let resData = parsed.dati !== undefined ? parsed.dati : parsed;
-      
-      // Se resData è un oggetto o array, possiamo allegare _warningPertinenza
-      if (warningPertinenza) {
-        if (resData && typeof resData === 'object') {
-          resData._warningPertinenza = warningPertinenza;
-        } else {
-          resData = { dati: resData, _warningPertinenza: warningPertinenza };
-        }
-      }
-
-      return resData;
-    }
-    
-    return parsed;
+    return arricchisciConAvvisi(parsed);
   } catch (err) {
-    console.error('[pulisciEdEstraiJson] Errore parsing JSON. Stringa estratta:', clean);
-    console.error('[pulisciEdEstraiJson] Errore originale:', err);
+    console.error('[pulisciEdEstraiJson] Parsing fallito anche dopo euristiche.', err);
     throw err;
   }
+}
+
+/**
+ * Aggiunge i warning di pertinenza/congruenza (se restituiti dal modello)
+ */
+function arricchisciConAvvisi(parsed) {
+  if (!parsed || typeof parsed !== 'object') return parsed;
+  if (!('is_valido' in parsed) && !('is_valido_per_slot' in parsed) && !('congruenza_condominio' in parsed)) return parsed;
+
+  const isValidoSlot = parsed.is_valido !== false && parsed.is_valido_per_slot !== false;
+  const pertine = parsed.congruenza_condominio;
+  const ePertinente = !pertine || pertine.e_pertinente !== false;
+
+  let warningPertinenza = null;
+  if (!isValidoSlot || !ePertinente) {
+    warningPertinenza = {
+      slotErrato: !isValidoSlot ? {
+        tipoRilevato: parsed.tipo_documento_rilevato || 'documento di altro tipo',
+        motivo: parsed.motivo_errore || 'Il file non sembra congruo allo slot di destinazione.'
+      } : null,
+      condominioErrato: !ePertinente ? {
+        intestatarioRilevato: pertine?.intestatario_rilevato || 'altro condominio',
+        motivoDiscrepanza: pertine?.motivo_discrepanza || 'Il documento risulta intestato ad un altro condominio.'
+      } : null
+    };
+  }
+
+  let resData = parsed.dati !== undefined ? parsed.dati : parsed;
+  
+  if (warningPertinenza) {
+    if (resData && typeof resData === 'object') {
+      resData._warningPertinenza = warningPertinenza;
+    } else {
+      resData = { dati: resData, _warningPertinenza: warningPertinenza };
+    }
+  }
+
+  return resData;
 }
 
 // ─── Leggi file come base64 ───────────────────────────────────────────────────
@@ -426,13 +473,15 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
     ? 'Analizza questo estratto conto bancario ed estrai tutti i movimenti.'
     : `Analizza questo estratto conto bancario ed estrai tutti i movimenti.\n\nContenuto del file:\n${contenuto}`;
 
-  const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema })
-    : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema });
+  return await withAutoRetry(async () => {
+    const risposta = isVisual
+      ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema })
+      : isPdf
+      ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema })
+      : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema });
 
-  return pulisciEdEstraiJson(risposta, true);
+    return pulisciEdEstraiJson(risposta, true);
+  });
 }
 
 // ─── FATTURA FORNITORE: Estrai dati da fattura ────────────────────────────────
@@ -533,13 +582,15 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
     ? 'Analizza questa fattura ed estrai i dati.'
     : `Analizza questa fattura ed estrai i dati.\n\n${contenuto}`;
 
-  const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema })
-    : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema });
+  return await withAutoRetry(async () => {
+    const risposta = isVisual
+      ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema })
+      : isPdf
+      ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema })
+      : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema });
 
-  return pulisciEdEstraiJson(risposta, false);
+    return pulisciEdEstraiJson(risposta, false);
+  });
 }
 
 // ─── RIPARTIZIONE: Determina criterio da regolamento ─────────────────────────
@@ -577,8 +628,10 @@ Tabelle millesimali disponibili: ${tabelleMillesimali?.map(t => t.nome).join(', 
 
 ${testoRegolamento ? `Regolamento condominiale:\n${testoRegolamento.substring(0, 3000)}` : 'Nessun regolamento disponibile. Usa il Codice Civile.'}`;
 
-  const risposta = await callGemini(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500, jsonMode: true, jsonSchema });
-  return pulisciEdEstraiJson(risposta, false);
+  return await withAutoRetry(async () => {
+    const risposta = await callGemini(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500, jsonMode: true, jsonSchema });
+    return pulisciEdEstraiJson(risposta, false);
+  });
 }
 // ─── CONSUNTIVO ANNO PRECEDENTE: estrai saldi di chiusura per riporto ─────────
 export async function estraiSaldiConsuntivo(file) {
@@ -631,13 +684,15 @@ Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
     ? 'Analizza questo consuntivo condominiale ed estrai i saldi di chiusura.'
     : `Analizza questo consuntivo condominiale ed estrai i saldi di chiusura.\n\nContenuto del file:\n${contenuto}`;
 
-  const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema })
-    : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema });
+  return await withAutoRetry(async () => {
+    const risposta = isVisual
+      ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema })
+      : isPdf
+      ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema })
+      : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema });
 
-  return pulisciEdEstraiJson(risposta, false);
+    return pulisciEdEstraiJson(risposta, false);
+  });
 }// ── Estrae il PROFILO/struttura del modello consuntivo dell'amministratore ──
 // Ritorna { etichette_categorie, ordine_categorie, sezioni:{...flags}, note, motivazione_condofast }.
 // NB: estrae la PRESENTAZIONE (ordine/etichette/sezioni presenti), NON i numeri.
@@ -684,23 +739,25 @@ Fornisci anche una breve motivazione "motivazione_condofast" che spiega perché 
   const userPrompt =
     `Analizza la struttura di questo consuntivo e restituisci il JSON del profilo (solo presentazione).`
 
-  let raw
-  if (prep.isPdf) {
-    raw = await callGeminiDocument(userPrompt, prep.contenuto, {
-      system, mediaType: prep.mediaType || 'application/pdf',
-      funzione: 'estrai_struttura_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema
-    })
-  } else if (prep.isVisual) {
-    raw = await callGeminiVision(`${system}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
-      funzione: 'estrai_struttura_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema
-    })
-  } else {
-    raw = await callGemini(`${userPrompt}\n\n--- DOCUMENTO ---\n${prep.contenuto}`, {
-      system, funzione: 'estrai_struttura_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema
-    })
-  }
+  return await withAutoRetry(async () => {
+    let raw
+    if (prep.isPdf) {
+      raw = await callGeminiDocument(userPrompt, prep.contenuto, {
+        system, mediaType: prep.mediaType || 'application/pdf',
+        funzione: 'estrai_struttura_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema
+      })
+    } else if (prep.isVisual) {
+      raw = await callGeminiVision(`${system}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
+        funzione: 'estrai_struttura_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema
+      })
+    } else {
+      raw = await callGemini(`${userPrompt}\n\n--- DOCUMENTO ---\n${prep.contenuto}`, {
+        system, funzione: 'estrai_struttura_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema
+      })
+    }
 
-  return pulisciEdEstraiJson(raw, false);
+    return pulisciEdEstraiJson(raw, false);
+  });
 }
 
 // ─── ANAGRAFICA: Estrai elenco persone e condòmini da qualsiasi file (PDF, DOCX, XLSX, JPG...) ───
@@ -747,32 +804,34 @@ REGOLE CRITICHE PER I CONTATTI (EVITA ERRORI O OMISSIONI):
 
   const userPrompt = `Estrai l'elenco di tutte le persone e i loro dati anagrafici presenti in questo contenuto:`
 
-  let raw
-  if (prep.isPdf) {
-    raw = await callGeminiDocument(userPrompt, prep.contenuto, {
-      system: systemPrompt,
-      mediaType: prep.mediaType || 'application/pdf',
-      funzione: 'import_anagrafica',
-      maxTokens: 8000,
-      jsonMode: true, jsonSchema
-    })
-  } else if (prep.isVisual) {
-    raw = await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
-      funzione: 'import_anagrafica',
-      maxTokens: 8000,
-      jsonMode: true, jsonSchema
-    })
-  } else {
-    raw = await callGemini(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
-      system: systemPrompt,
-      funzione: 'import_anagrafica',
-      maxTokens: 8000,
-      jsonMode: true, jsonSchema
-    })
-  }
+  return await withAutoRetry(async () => {
+    let raw
+    if (prep.isPdf) {
+      raw = await callGeminiDocument(userPrompt, prep.contenuto, {
+        system: systemPrompt,
+        mediaType: prep.mediaType || 'application/pdf',
+        funzione: 'import_anagrafica',
+        maxTokens: 8000,
+        jsonMode: true, jsonSchema
+      })
+    } else if (prep.isVisual) {
+      raw = await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
+        funzione: 'import_anagrafica',
+        maxTokens: 8000,
+        jsonMode: true, jsonSchema
+      })
+    } else {
+      raw = await callGemini(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
+        system: systemPrompt,
+        funzione: 'import_anagrafica',
+        maxTokens: 8000,
+        jsonMode: true, jsonSchema
+      })
+    }
 
-  const parsed = pulisciEdEstraiJson(raw, false);
-  return Array.isArray(parsed) ? parsed : [];
+    const parsed = pulisciEdEstraiJson(raw, false);
+    return Array.isArray(parsed) ? parsed : [];
+  });
 }
 
 // ── Estrae una o più tabelle millesimali da un file (PDF, XLSX, CSV, DOCX, Immagine) ──
@@ -833,32 +892,34 @@ Se nel documento è presente una tabella con più colonne millesimali (es. colon
 
   const userPrompt = `Estrai le tabelle millesimali e i relativi valori presenti in questo contenuto:`;
 
-  let raw;
-  if (prep.isPdf) {
-    raw = await callGeminiDocument(userPrompt, prep.contenuto, {
-      system: systemPrompt,
-      mediaType: prep.mediaType || 'application/pdf',
-      funzione: 'estrai_tabelle_millesimali',
-      maxTokens: 8000,
-      jsonMode: true, jsonSchema
-    });
-  } else if (prep.isVisual) {
-    raw = await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
-      funzione: 'estrai_tabelle_millesimali',
-      maxTokens: 8000,
-      jsonMode: true, jsonSchema
-    });
-  } else {
-    raw = await callGemini(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
-      system: systemPrompt,
-      funzione: 'estrai_tabelle_millesimali',
-      maxTokens: 8000,
-      jsonMode: true, jsonSchema
-    });
-  }
+  return await withAutoRetry(async () => {
+    let raw;
+    if (prep.isPdf) {
+      raw = await callGeminiDocument(userPrompt, prep.contenuto, {
+        system: systemPrompt,
+        mediaType: prep.mediaType || 'application/pdf',
+        funzione: 'estrai_tabelle_millesimali',
+        maxTokens: 8000,
+        jsonMode: true, jsonSchema
+      });
+    } else if (prep.isVisual) {
+      raw = await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, prep.contenuto, prep.mediaType, {
+        funzione: 'estrai_tabelle_millesimali',
+        maxTokens: 8000,
+        jsonMode: true, jsonSchema
+      });
+    } else {
+      raw = await callGemini(`${userPrompt}\n\n--- CONTENUTO ---\n${String(prep.contenuto).substring(0, 30000)}`, {
+        system: systemPrompt,
+        funzione: 'estrai_tabelle_millesimali',
+        maxTokens: 8000,
+        jsonMode: true, jsonSchema
+      });
+    }
 
-  const parsed = pulisciEdEstraiJson(raw, false);
-  return parsed?.tabelle && Array.isArray(parsed.tabelle) ? parsed.tabelle : [];
+    const parsed = pulisciEdEstraiJson(raw, false);
+    return parsed?.tabelle && Array.isArray(parsed.tabelle) ? parsed.tabelle : [];
+  });
 }
 
 // ─── MIGRAZIONE GESTIONALE: Classifica e struttura i dati da un file esportato ──
@@ -929,13 +990,15 @@ REGOLE CRITICHE PER L'ESTRAZIONE:
     ? 'Analizza questo file esportato da un gestionale condominiale.'
     : `Analizza questo file esportato da un gestionale condominiale.\n\nContenuto del file:\n${String(contenuto).substring(0, 30000)}`;
 
-  const risposta = isVisual
-    ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'classifica_gestionale', maxTokens: 6000, jsonMode: true, jsonSchema })
-    : isPdf
-    ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000, jsonMode: true, jsonSchema })
-    : await callGemini(userPrompt, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000, jsonMode: true, jsonSchema });
+  return await withAutoRetry(async () => {
+    const risposta = isVisual
+      ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'classifica_gestionale', maxTokens: 6000, jsonMode: true, jsonSchema })
+      : isPdf
+      ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000, jsonMode: true, jsonSchema })
+      : await callGemini(userPrompt, { system: systemPrompt, funzione: 'classifica_gestionale', maxTokens: 6000, jsonMode: true, jsonSchema });
 
-  return pulisciEdEstraiJson(risposta, false);
+    return pulisciEdEstraiJson(risposta, false);
+  });
 }
 
 // ─── MIGRAZIONE GESTIONALE: Aggrega i risultati di più file in un unico oggetto ─

@@ -10,7 +10,8 @@ import { exportDossierRendiconto } from '../lib/exportDossier'
 import { useWatermark } from '../hooks/useWatermark'
 import PlanGate from './PlanGate'
 import ModelloConsuntivoModal from './ModelloConsuntivoModal'
-import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame, Sparkles, Archive, FileCheck, Receipt, Landmark, Send, Bot } from 'lucide-react'
+import WizardChiusuraEsercizio from './WizardChiusuraEsercizio'
+import { FileText, Upload, Download, RefreshCw, CheckCircle2, AlertTriangle, AlertCircle, Zap, Flame, Sparkles, Archive, FileCheck, Receipt, Landmark, Send, Bot, Lock } from 'lucide-react'
 
 const eur = (n) => '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const sgn = (n) => (Number(n) < 0 ? '-' : '') + '€ ' + Math.abs(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })
@@ -40,6 +41,7 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
   const { unita, getProprietario } = useUnita(condominioId)
   const { tabelle, getMillesimiUnita, getTotaleTabella } = useMillesimi(condominioId)
   const { WatermarkModal, checkWatermark } = useWatermark()
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   const handleGeneraNotaSinteticaAi = async () => {
     if (!condominio || !data?.esercizio) return
@@ -201,6 +203,16 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
         onConfirm={handleSelectModello}
         loading={savingModello}
       />
+      <WizardChiusuraEsercizio
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        condominioId={condominioId}
+        esercizioId={esercizioId}
+        onSuccess={() => {
+          fetch()
+          setTplMsg('Esercizio chiuso con successo.')
+        }}
+      />
 
       {/* Toolbar */}
       <div style={st.toolbar}>
@@ -235,6 +247,9 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
           <PlanGate feature="rendiconto_pdf" compact>
             <button style={st.btnPrimary} onClick={scaricaPdf} disabled={!data}><Download size={14} /> Esporta PDF</button>
           </PlanGate>
+          <button style={st.btnSuccess} onClick={() => setWizardOpen(true)} disabled={!data}>
+            <Lock size={14} /> Chiudi Esercizio
+          </button>
         </div>
       </div>
 

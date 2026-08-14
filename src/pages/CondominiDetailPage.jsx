@@ -3,7 +3,7 @@ import ConsuntivoTab from '../components/ConsuntivoTab'
 import { FileBarChart } from 'lucide-react'   // se non già importato un'icona; in alternativa riusa Wallet/FileText
 import RateGridTab from '../components/RateGridTab'
 import PreventivoSection from '../components/PreventivoSection'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useCondomini } from '../hooks/useCondomini'
 import { useAuditLog } from '../hooks/useAuditLog'
 import { useMemo, useState, useEffect } from 'react'
@@ -20,16 +20,16 @@ import {
   ArrowLeft, Receipt, Users,
   CheckCircle2,
   ChevronRight, Building2,
-  Mail, FileSignature, ShieldAlert, ShieldCheck
+  Mail, FileSignature, ShieldAlert, ShieldCheck, Activity
 } from 'lucide-react'
 import AssembleeTab from '../components/AssembleeTab'
 import ModaleServiziTelematici from '../components/ModaleServiziTelematici'
 import { eseguiDiagnosiConformitaFiscale } from '../lib/diagnosiFiscaleEngine'
 import DiagnosiFiscaleModal from '../components/DiagnosiFiscaleModal'
-import { Activity } from 'lucide-react'
 import { useEsercizioCorrente } from '../hooks/useEsercizioCorrente'
 import EsercizioSelectorHeader from '../components/EsercizioSelectorHeader'
 import DemoCondoBanner from '../components/DemoCondoBanner'
+import { useMasterclass } from '../hooks/useMasterclass'
 
 // ── Helper date sicure ──────────────────────────────────────
 import { formattaData, formattaDataOra } from '../lib/formatters'
@@ -192,6 +192,15 @@ export default function CondominiDetailPage() {
   const [diagnosiBusy, setDiagnosiBusy] = useState(false)
   
   const [modalPrivacyOpen, setModalPrivacyOpen] = useState(false)
+  const { spotlightTarget } = useMasterclass()
+
+  useEffect(() => {
+    if (spotlightTarget) {
+      if (['tab-anagrafica-unita', 'btn-solleciti-massivi'].includes(spotlightTarget)) setActiveGroup('gestione')
+      if (['tab-preventivo-rate', 'tab-consuntivo-pdf', 'tab-estratto-conto'].includes(spotlightTarget)) setActiveGroup('contabilita')
+      if (['tab-verbali-assemblea'].includes(spotlightTarget)) setActiveGroup('documenti')
+    }
+  }, [spotlightTarget])
 
   const handleAvviaDiagnosiFiscale = async () => {
     if (!c) return

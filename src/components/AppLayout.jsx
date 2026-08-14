@@ -13,6 +13,7 @@ import OnboardingTourModal from './OnboardingTourModal';
 import MasterclassBar from './MasterclassBar';
 import SpotlightHighlight from './SpotlightHighlight';
 import AiComplianceModal from './AiComplianceModal';
+import GlobalDropzone from './GlobalDropzone';
 import { useMasterclass } from '../hooks/useMasterclass';
 import { supabase } from '../lib/supabaseClient';
 import { useTheme } from '../contexts/ThemeContext';
@@ -58,6 +59,13 @@ const NAV_ITEMS = [
   { path: '/migrazione',         label: 'Migra gestionale',      icon: ArrowLeftRight, badge: 'NEW' },
   { path: '/assistenza',         label: 'Assistenza',            icon: LifeBuoy },
   { path: '/impostazioni',       label: 'Impostazioni',          icon: Settings },
+];
+
+const QUICK_ACTIONS = [
+  { id: 'qa1', label: 'Nuovo Condominio', icon: Building2, action: (navigate) => navigate('/condomini?new=1') },
+  { id: 'qa2', label: 'Registra Spesa', icon: Receipt, action: (navigate) => navigate('/spese?new=1') },
+  { id: 'qa3', label: 'Carica File (AI)', icon: Sparkles, action: () => window.dispatchEvent(new CustomEvent('open-ai-dropzone')) },
+  { id: 'qa4', label: 'Aggiungi Persona', icon: Users, action: (navigate) => navigate('/anagrafica?new=1') }
 ];
 
 
@@ -318,6 +326,27 @@ function HeaderSearchBar({ navigate }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--border-color-2)' }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Sparkles size={13} /> Azioni Rapide
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+                {QUICK_ACTIONS.map(qa => (
+                  <button key={qa.id} onClick={() => { setIsOpen(false); setQuery(''); qa.action(navigate); }} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+                    borderRadius: 8, border: '1px solid var(--border-color-2)',
+                    background: 'var(--app-bg)', color: 'var(--text-primary)',
+                    cursor: 'pointer', fontSize: 12, fontWeight: 500, transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--border-color)'; e.currentTarget.style.borderColor = 'var(--accent)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--app-bg)'; e.currentTarget.style.borderColor = 'var(--border-color-2)' }}
+                  >
+                    <qa.icon size={14} style={{ color: 'var(--accent)' }} /> {qa.label}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--border-color-2)' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Clock size={13} /> Ricerche recenti
                 </span>
                 {history.length > 0 && (
@@ -367,6 +396,42 @@ function HeaderSearchBar({ navigate }) {
                   Nessun risultato trovato per "{query}"
                 </div>
               )}
+
+              {/* Quick Actions (filtrate) */}
+              {(() => {
+                const filteredQA = QUICK_ACTIONS.filter(qa => qa.label.toLowerCase().includes(query.toLowerCase()));
+                if (filteredQA.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Sparkles size={13} style={{ color: 'var(--accent)' }} /> Azioni Rapide
+                    </div>
+                    {filteredQA.map(qa => (
+                      <div
+                        key={qa.id}
+                        onClick={() => { setIsOpen(false); setQuery(''); qa.action(navigate); }}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <qa.icon size={16} style={{ color: 'var(--text-muted)' }} />
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{qa.label}</div>
+                        </div>
+                        <ArrowRight size={14} style={{ color: 'var(--accent)' }} />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* Condomini */}
               {results.condomini.length > 0 && (
@@ -525,6 +590,7 @@ function HeaderSearchBar({ navigate }) {
               >
                 Vedi tutti i risultati per "{query}" (Invio) <ArrowRight size={14} />
               </div>
+            </div>
             </div>
           )}
         </div>
@@ -874,6 +940,25 @@ export default function AppLayout() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* ── Bottone Carica File (AI) ── */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open-ai-dropzone'))}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 12px',
+                background: 'linear-gradient(135deg, #7c3aed, #9061f9)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
+            >
+              <Sparkles size={14} /> Carica File
+            </button>
+
             {/* ── Barra di Ricerca Interattiva Topbar ── */}
             <HeaderSearchBar navigate={navigate} />
 
@@ -1620,6 +1705,8 @@ export default function AppLayout() {
           onClose={hideMasterclassSpotlight}
         />
       )}
+
+      <GlobalDropzone />
     </div>
   );
 }

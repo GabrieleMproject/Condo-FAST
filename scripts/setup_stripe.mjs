@@ -1,19 +1,11 @@
 import Stripe from 'stripe';
-import readline from 'readline';
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-const askQuestion = (query) => new Promise((resolve) => rl.question(query, resolve));
 
 async function main() {
   console.log("=== Configurazione Automatica Stripe per CondoFAST ===");
-  const secretKey = await askQuestion("Inserisci la tua STRIPE_SECRET_KEY (inizia con sk_test_ o sk_live_): ");
+  const secretKey = process.argv[2];
   
   if (!secretKey) {
-    console.log("Chiave non valida.");
+    console.log("Chiave non fornita come argomento.");
     process.exit(1);
   }
 
@@ -100,9 +92,7 @@ async function main() {
   for (const [key, value] of Object.entries(envVars)) {
     console.log(`  ${key}=${value} \\`);
   }
-  console.log("\n(Premi Invio per chiudere)");
-
-  rl.close();
+  console.log("\n(Configurazione terminata)");
 }
 
 main().catch(err => {

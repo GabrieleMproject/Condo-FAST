@@ -591,7 +591,6 @@ function HeaderSearchBar({ navigate }) {
                 Vedi tutti i risultati per "{query}" (Invio) <ArrowRight size={14} />
               </div>
             </div>
-            </div>
           )}
         </div>
       )}

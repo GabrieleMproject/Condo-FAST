@@ -198,7 +198,7 @@ function parsePiano(pianoStr) {
   return isNaN(num) ? 1 : num;
 }
 
-const TEST_DIR = './test_data /testgestionale';
+const TEST_DIR = '/Users/gabrielemaesani/Desktop/testgestionale';
 const STATE_FILE = './scripts/e2e_state.json';
 let state = {
   condominioId: null,

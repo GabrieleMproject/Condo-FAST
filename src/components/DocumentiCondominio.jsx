@@ -235,6 +235,15 @@ export default function DocumentiCondominio({ condominioId }) {
                     {new Date(doc.created_at).toLocaleDateString('it-IT')}
                     {doc.note && <span> · {doc.note}</span>}
                   </div>
+                  {doc.tags && doc.tags.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                      {doc.tags.map(tag => (
+                        <span key={tag} style={{ background: 'rgba(37, 99, 235, 0.15)', color: 'var(--accent, #2563eb)', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                   <button

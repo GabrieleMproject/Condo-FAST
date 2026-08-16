@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { callGeminiDocument } from '../lib/geminiClient'
-import { docxToText, comprimiImmagine } from '../lib/fileExtractor'
+import { docxToText, comprimiImmagine, generaTagDocumento } from '../lib/fileExtractor'
 
 const BUCKET = 'documenti-condominio'
 
@@ -120,6 +120,23 @@ export function useDocumenti(condominioId) {
       if (dbError) throw dbError
 
       setDocumenti(prev => [data, ...prev])
+      
+      // 4. Auto-Tagging Asincrono (non bloccante)
+      generaTagDocumento(compressedFile, tipo, note, dataDocumento).then(async (tagsBase) => {
+          if (tagsBase && tagsBase.length > 0) {
+              const { data: updatedDoc } = await supabase
+                .from('documenti_condominio')
+                .update({ tags: tagsBase })
+                .eq('id', data.id)
+                .select()
+                .single()
+              
+              if (updatedDoc) {
+                setDocumenti(prev => prev.map(d => d.id === updatedDoc.id ? updatedDoc : d))
+              }
+          }
+      }).catch(err => console.error("Errore auto-tagging:", err))
+
       return data
     } catch (e) {
       setError(e.message)

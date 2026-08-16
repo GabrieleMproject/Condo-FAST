@@ -117,14 +117,22 @@ export default function RicercaPage() {
     const pattern = `%${term}%`;
 
     try {
+      const docQuery = supabase
+        .from('documenti_condominio')
+        .select('id, nome, note, tipo, data_documento, tags, condominio_id, condomini(id, nome)');
+      
+      const docPromise = term.startsWith('#')
+        ? docQuery.contains('tags', [term.substring(1).toLowerCase()]).order('created_at', { ascending: false }).limit(20)
+        : docQuery.or(`nome.ilike.${pattern},note.ilike.${pattern},tipo.ilike.${pattern}`).order('created_at', { ascending: false }).limit(10);
+
       // Query in parallelo su Supabase
       const [
         resCondomini,
         resPersone,
         resUnita,
         resSpese,
-        resDoc,
-        resCom
+        resCom,
+        resDoc
       ] = await Promise.all([
         // 1. Condomini
         supabase
@@ -161,14 +169,6 @@ export default function RicercaPage() {
           .order('data_spesa', { ascending: false })
           .limit(10),
 
-        // 5. Documenti & Verbali
-        supabase
-          .from('documenti_condominio')
-          .select('id, nome, note, tipo, data_documento, condominio_id, condomini(id, nome)')
-          .or(`nome.ilike.${pattern},note.ilike.${pattern},tipo.ilike.${pattern}`)
-          .order('created_at', { ascending: false })
-          .limit(10),
-
         // 6. Comunicazioni
         supabase
           .from('comunicazioni')
@@ -176,6 +176,9 @@ export default function RicercaPage() {
           .or(`oggetto.ilike.${pattern},testo.ilike.${pattern},destinatario_email.ilike.${pattern},destinatario_nome.ilike.${pattern}`)
           .order('created_at', { ascending: false })
           .limit(10),
+
+        // 5. Documenti & Verbali (ora gestito dalla variabile docPromise)
+        docPromise
       ]);
 
       setResults({
@@ -825,6 +828,15 @@ export default function RicercaPage() {
                         {d.tipo && <div>Tipo: {d.tipo}</div>}
                         {d.note && <div>Note: {d.note}</div>}
                       </div>
+                      {d.tags && d.tags.length > 0 && (
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                          {d.tags.map(tag => (
+                            <span key={tag} style={{ background: 'rgba(37, 99, 235, 0.15)', color: 'var(--accent, #2563eb)', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => navigate(`/condomini/${d.condominio_id}`)}

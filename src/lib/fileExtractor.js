@@ -422,7 +422,7 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se il file è realmente un estratto conto bancario o lista movimenti. False se è palesemente un altro tipo di documento (es. fattura, verbale, f24)." },
+      is_valido: { type: "BOOLEAN", description: "True se il file è realmente un estratto conto bancario o lista movimenti pertinente. False se è palesemente un altro tipo di documento (es. fattura, verbale, f24, o estraneo come ricette di cucina)." },
       tipo_documento_rilevato: { type: "STRING", description: "Es: estratto_conto, fattura, f24, verbale, anagrafica, altro" },
       motivo_errore: { type: "STRING", description: "Spiega brevemente perché il file non è un estratto conto bancario, se is_valido è false." },
       congruenza_condominio: {
@@ -532,7 +532,7 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se il file è realmente una fattura, scontrino o ricevuta. False se è palesemente un altro documento (es. estratto conto, verbale, f24)." },
+      is_valido: { type: "BOOLEAN", description: "True se il file è realmente una fattura, scontrino o ricevuta pertinente. False se è palesemente un altro documento (es. estratto conto, f24, o estraneo come ricette di cucina)." },
       tipo_documento_rilevato: { type: "STRING", description: "Es: fattura, estratto_conto, f24, verbale, anagrafica, altro" },
       motivo_errore: { type: "STRING", description: "Spiega brevemente perché il file non è una fattura, se is_valido è false." },
       congruenza_condominio: {
@@ -604,7 +604,7 @@ Analizza la spesa descritta e determina il corretto criterio di ripartizione bas
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se la spesa e il contesto sono comprensibili. False altrimenti." },
+      is_valido: { type: "BOOLEAN", description: "True se la spesa e il contesto sono comprensibili e pertinenti al condominio. False altrimenti (es. documenti estranei, ricette di cucina)." },
       motivo_errore: { type: "STRING", description: "Se is_valido è false, spiega perché." },
       dati: {
         type: "OBJECT",
@@ -653,7 +653,7 @@ Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se il file è un consuntivo/rendiconto condominiale. False altrimenti." },
+      is_valido: { type: "BOOLEAN", description: "True se il file è un consuntivo/rendiconto condominiale pertinente. False altrimenti (es. documenti estranei, ricette di cucina)." },
       motivo_errore: { type: "STRING", description: "Se is_valido è false, spiega perché." },
       dati: {
         type: "OBJECT",
@@ -710,7 +710,7 @@ Fornisci anche una breve motivazione "motivazione_condofast" che spiega perché 
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se è un consuntivo o rendiconto condominiale. False altrimenti." },
+      is_valido: { type: "BOOLEAN", description: "True se è un consuntivo o rendiconto condominiale pertinente. False altrimenti (es. documenti estranei o ricette di cucina)." },
       motivo_errore: { type: "STRING" },
       dati: {
         type: "OBJECT",
@@ -777,7 +777,7 @@ REGOLE CRITICHE PER I CONTATTI (EVITA ERRORI O OMISSIONI):
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se il file contiene liste di condomini, anagrafiche o contatti. False se il file non contiene dati anagrafici." },
+      is_valido: { type: "BOOLEAN", description: "True se il file contiene liste di condomini, anagrafiche o contatti pertinenti. False se il file non contiene dati anagrafici o è estraneo (es. ricette di cucina)." },
       motivo_errore: { type: "STRING" },
       dati: {
         type: "ARRAY",
@@ -851,7 +851,7 @@ Se nel documento è presente una tabella con più colonne millesimali (es. colon
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se il file contiene tabelle millesimali. False altrimenti." },
+      is_valido: { type: "BOOLEAN", description: "True se il file contiene tabelle millesimali pertinenti. False altrimenti (es. documenti estranei, ricette di cucina)." },
       motivo_errore: { type: "STRING" },
       dati: {
         type: "OBJECT",
@@ -965,7 +965,7 @@ REGOLE CRITICHE PER L'ESTRAZIONE:
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se il file sembra provenire da un gestionale o contiene dati importabili. False se è inutile o vuoto." },
+      is_valido: { type: "BOOLEAN", description: "True se il file sembra provenire da un gestionale o contiene dati importabili. False se è inutile, vuoto, o palesemente estraneo (es. ricette di cucina)." },
       motivo_errore: { type: "STRING" },
       dati: {
         type: "OBJECT",
@@ -1130,7 +1130,7 @@ Regole importanti:
   const jsonSchema = {
     type: "OBJECT",
     properties: {
-      is_valido: { type: "BOOLEAN", description: "True se il file è un modulo di anagrafe condominiale. False altrimenti." },
+      is_valido: { type: "BOOLEAN", description: "True se il file è un modulo di anagrafe condominiale pertinente. False altrimenti (es. documenti estranei, ricette di cucina)." },
       motivo_errore: { type: "STRING" },
       dati: {
         type: "OBJECT",
@@ -1216,4 +1216,47 @@ export function comprimiImmagine(file, maxW = 1600, qualita = 0.8) {
     reader.onerror = () => resolve(file)
     reader.readAsDataURL(file)
   })
+}
+
+// ─── AUTO-TAGGING DOCUMENTI ──────────────────────────────────────────────────
+export async function generaTagDocumento(file, tipo_hint = '', note = '', dataDocumento = null) {
+  if (!validaMimeType(file)) return [];
+  const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
+
+  const systemPrompt = `Sei un assistente esperto in catalogazione documentale per amministratori di condominio.
+Il tuo compito è analizzare il contenuto di un documento e generare un singolo #tag ultra-descrittivo e standardizzato.
+
+REGOLE CRITICHE PER IL NOME DEL TAG:
+1. Deve iniziare con '#' e contenere solo lettere minuscole, numeri e trattini (es. #fattura-pulizie).
+2. Costruisci il tag in base al tipo e al contenuto: 
+   - Se fattura/preventivo: #{tipo}-{fornitore} (es. #fattura-enel, #preventivo-ascensore).
+   - Se verbale: #verbale-{argomento} (es. #verbale-straordinaria, #verbale-ordinaria).
+   - Se altro: #{tipo}-{sunto}
+3. Se viene fornita o trovi nel testo la data del documento, appendi alla fine "-MM-YYYY" o "-YYYY".
+   Esempio completo: #fattura-idraulico-10-2026. Se non hai mese, usa solo l'anno (es. -2026).
+4. Restituisci sempre e solo UN (1) singolo tag altamente rappresentativo nell'array.`;
+
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      tags: {
+        type: "ARRAY",
+        items: { type: "STRING" }
+      }
+    },
+    required: ["tags"]
+  };
+
+  const userPrompt = `Analizza questo documento (tipo utente: ${tipo_hint}). Note: ${note}. Data indicata: ${dataDocumento || 'non fornita'}.\nEstrai il tag standardizzato.`;
+
+  return await withAutoRetry(async () => {
+    const raw = isVisual
+      ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'genera_tag', maxTokens: 100, jsonMode: true, jsonSchema })
+      : isPdf
+      ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'genera_tag', maxTokens: 100, jsonMode: true, jsonSchema })
+      : await callGemini(userPrompt + `\n\nContenuto:\n${String(contenuto).substring(0, 10000)}`, { system: systemPrompt, funzione: 'genera_tag', maxTokens: 100, jsonMode: true, jsonSchema });
+
+    const parsed = pulisciEdEstraiJson(raw, false);
+    return Array.isArray(parsed?.tags) ? parsed.tags : [];
+  });
 }

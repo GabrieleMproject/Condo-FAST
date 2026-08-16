@@ -741,6 +741,7 @@ CREATE TABLE public.documenti_condominio (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     data_documento date,
+    tags text[] DEFAULT '{}',
     CONSTRAINT documenti_condominio_tipo_check CHECK ((tipo = ANY (ARRAY['regolamento'::text, 'tabella_millesimale_doc'::text, 'verbale'::text, 'contratto'::text, 'certificazione'::text, 'altro'::text])))
 );
 

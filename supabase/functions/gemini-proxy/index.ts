@@ -223,19 +223,17 @@ serve(async (req) => {
       safetySettings: [
         {
           category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_LOW_AND_ABOVE"
+          threshold: "BLOCK_NONE"
         },
         {
           category: "HARM_CATEGORY_HATE_SPEECH",
-          threshold: "BLOCK_LOW_AND_ABOVE"
+          threshold: "BLOCK_NONE"
         },
         {
-          // BLOCK_NONE per contenuti sessualmente espliciti — necessario per analisi documenti legali (atti notarili, etc.)
           category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
           threshold: "BLOCK_NONE"
         },
         {
-          // BLOCK_NONE per contenuti pericolosi — necessario per analisi documenti che menzionano sostanze chimiche, manutenzione, etc.
           category: "HARM_CATEGORY_DANGEROUS_CONTENT",
           threshold: "BLOCK_NONE"
         }
@@ -276,9 +274,8 @@ serve(async (req) => {
     
     // Modelli di riserva validi in ordine di preferenza per API Gemini v1beta
     const fallbackModels = [
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro-latest',
       'gemini-flash-latest',
       'gemini-pro-latest',
     ]
@@ -339,7 +336,7 @@ serve(async (req) => {
 
             errorsLog.push(`[Key ${keyLabel} - ${targetModel}] Status ${res.status}: ${errText.slice(0, 120)}`)
 
-            if (!isQuotaOrUnavailable && res.status >= 400 && res.status < 500 && res.status !== 429) {
+            if (!isQuotaOrUnavailable && res.status >= 400 && res.status < 500 && res.status !== 429 && res.status !== 404) {
               // Errore client 4xx diverso da rate limit (es. bad request) -> non ha senso provare altre chiavi per lo stesso payload
               break keyLoop
             }

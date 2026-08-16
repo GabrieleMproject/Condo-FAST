@@ -110,6 +110,9 @@ async function callGeminiDocument(prompt, base64Document, opts = {}) {
   }
   const data = await res.json();
   const block = data.content?.find(b => b.type === 'text');
+  if (!block || !block.text) {
+    console.error(`⚠️ callGeminiDocument empty text. data:`, JSON.stringify(data));
+  }
   return block?.text ?? '';
 }
 
@@ -167,7 +170,12 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
   const regex = isArray ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
   const match = rawStr.match(regex);
   const clean = match ? match[0] : rawStr.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+  try {
+    return JSON.parse(clean);
+  } catch (e) {
+    console.error('❌ JSON Parse Error. Raw AI Response was:', rawStr.slice(0, 500) + '...');
+    throw e;
+  }
 }
 
 // Helper per matching fuzzy dei nomi

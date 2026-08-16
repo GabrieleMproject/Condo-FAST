@@ -1,11 +1,40 @@
 {
   "condominioId": "0abf3287-f899-49a1-a34f-af64c733e732",
   "esercizioId": "3d9ee1fb-2d80-4a4b-8301-985623375921",
-  "personeMap": {},
-  "unitaMap": {},
-  "tabelleMillesimali": {},
-  "preventivoId": null,
+  "personeMap": {
+    "Micieli Domenico Loris": "46f53ccb-9b92-4c8d-a13a-7e6d1c14933c",
+    "Chiodarelli Elena": "e10e8652-bbfa-4f9d-b95f-622806806241",
+    "Stranieri Antonio": "9986bf9b-fa1f-41ce-9f31-c52ef9b53a7a",
+    "Cattaneo Angela": "e8ef8f26-a819-41a8-b29d-8cf51667e8c1",
+    "Galeazzi Elena": "293ca944-4982-4a79-b9f0-90971b292348",
+    "Millo S.": "4355a272-6fb1-4fe0-bf5b-c55010d361a0",
+    "ESPOSITO N/D": "247b0348-a5f7-42c2-bf8f-bb398001191e"
+  },
+  "unitaMap": {
+    "Sub. 7": "efb421cc-6755-4eae-aa96-b07c657c7483",
+    "Sub. 2": "d1420faa-06cd-4cbc-aa6f-1a02de3fb9c0",
+    "Sub. 8": "b36bc5cf-1d20-4068-8255-0ac5bebce2c1",
+    "Sub. 4": "3f58f081-1917-4b70-b83e-10c3b19c348a",
+    "Sub. 9": "bfce60c5-24c6-42c0-b456-3aa5edba4e3d",
+    "Sub. 3": "a0c1c48b-3727-4f8c-bf51-0f8e94cbeaa8",
+    "Sub. 10": "f13e5f82-8fcb-49ce-ae4c-5fd5826d482d",
+    "Sub. 6": "938ccac3-03e6-452f-b19a-42f57d2cb562",
+    "Sub. 701": "e4daabec-5fb8-4f2e-90d0-ca5965cd47e5",
+    "Sub. 5": "1ef21bde-92c2-4de7-9ba7-29e733950c29",
+    "Sub. 702": "2566db36-3f02-45ac-ba7b-90a809f25176"
+  },
+  "tabelleMillesimali": {
+    "Millesimi di proprietà": "4036e703-ca77-469e-b06d-7ecc369054a6",
+    "Millesimi Scale & Ascensore": "8d03fa25-56a1-492d-808d-c82342a6b764"
+  },
+  "preventivoId": "ef7ceb4c-0634-4fc1-aff6-f6cd24ad860e",
   "speseMappa": {},
-  "fattureMappa": {},
+  "fattureMappa": {
+    "Untitled_01072026_151512.pdf": "b8930a5b-481f-4919-92cc-3a50ad2af6a4",
+    "Untitled_01072026_151529.pdf": "6f050120-2f22-42a2-8ea1-49aa3a867667",
+    "Untitled_01072026_151605.pdf": "e16be1d2-c043-4489-9c1f-0a66c114e1be",
+    "Untitled_01072026_151733.pdf": "667290c4-68a1-479f-98ae-94a014fa66ca",
+    "Untitled_01072026_151824.pdf": "fc97cc20-3380-4ca4-b3e1-f6f812b125f9"
+  },
   "movimentiCaricati": false
 }

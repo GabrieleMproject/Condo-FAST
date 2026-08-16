@@ -48,11 +48,9 @@ import {
 
 const NAV_ITEMS = [
   { path: '/dashboard',          label: 'Dashboard',            icon: LayoutDashboard },
-  { path: '/ricerca',            label: 'Ricerca Rapida',       icon: Search },
   { path: '/condomini',          label: 'Condomini',             icon: Building2 },
   { path: '/anagrafica',         label: 'Anagrafica',            icon: Users },
   { path: '/pronto-intervento',  label: 'Pronto Intervento',     icon: PhoneCall, badge: 'H24' },
-  { path: '/postbox',            label: 'Postbox Studio',        icon: Inbox, badge: 'STUDIO' },
   { path: '/comunicazioni',       label: 'Comunicazioni',        icon: Send },
   { path: '/fiscale',            label: 'Certificazioni',        icon: Landmark },
   { path: '/archivio',           label: 'Storico operazioni',    icon: Archive },
@@ -69,39 +67,6 @@ const QUICK_ACTIONS = [
 ];
 
 
-// ── Banner AI Act ────────────────────────────────────────────────────────────
-function AiBanner() {
-  const [dismissed, setDismissed] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  if (dismissed) return null;
-  return (
-    <>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '9px 24px',
-        background: 'rgba(37, 99, 235, 0.08)',
-        borderBottom: '1px solid rgba(37, 99, 235, 0.2)',
-        color: 'var(--text-primary)',
-        fontSize: 12,
-        lineHeight: 1.5,
-        flexShrink: 0,
-      }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Bot size={16} style={{ color: 'var(--accent, #2563eb)', flexShrink: 0 }} />
-          <span><strong style={{ color: 'var(--text-primary)' }}>CondoFAST utilizza intelligenza artificiale</strong> (Google Gemini) per alcune funzioni. I suggerimenti AI sono indicativi e vanno sempre verificati dall'amministratore. Conforme AI Act UE 2024/1689. <button onClick={() => setShowModal(true)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: 'inherit' }}>Scopri di più</button></span>
-        </span>
-        <button
-          onClick={() => setDismissed(true)}
-          style={{ marginLeft: 16, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 4, borderRadius: 4 }}
-          aria-label="Chiudi banner"
-        ><X size={16} /></button>
-      </div>
-      {showModal && <AiComplianceModal onClose={() => setShowModal(false)} />}
-    </>
-  );
-}
 
 // ── Componente Barra di Ricerca Interattiva in Topbar Header ──────────────
 function HeaderSearchBar({ navigate }) {
@@ -711,6 +676,7 @@ export default function AppLayout() {
   const [isEditing, setIsEditing] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [savingBranding, setSavingBranding] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   // Stati per il form di modifica
   const [studioNome, setStudioNome] = useState('');
@@ -907,7 +873,36 @@ export default function AppLayout() {
             <LogOut size={18} style={{ flexShrink: 0 }} />
             {!collapsed && 'Esci'}
           </button>
+          
+          {/* AI Badge nel footer */}
+          <button
+            onClick={() => setShowAiModal(true)}
+            style={{
+              background: 'rgba(37, 99, 235, 0.05)',
+              border: '1px solid rgba(37, 99, 235, 0.2)',
+              borderRadius: 8,
+              padding: '6px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginTop: 12,
+              color: 'var(--accent, #2563eb)',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              width: '100%',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37, 99, 235, 0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(37, 99, 235, 0.05)' }}
+            title="Conforme AI Act UE 2024/1689"
+          >
+            <Bot size={16} style={{ flexShrink: 0 }} />
+            {!collapsed && 'AI Powered'}
+          </button>
         </div>
+        {showAiModal && <AiComplianceModal onClose={() => setShowAiModal(false)} />}
       </aside>
 
       {/* Main */}
@@ -1086,7 +1081,7 @@ export default function AppLayout() {
           </div>
         )}
 
-        <AiBanner />
+
 
         <main style={{ flex: 1, overflow: 'auto', padding: 24 }}>
           {/* Barra Masterclass Operativa a 10 Step */}

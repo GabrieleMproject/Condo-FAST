@@ -285,6 +285,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [codaFatture, setCodaFatture] = useState([])
   const [savingBatch, setSavingBatch] = useState(false)
+  const [showAvanzata, setShowAvanzata] = useState(false)
 
   const avviaLottoFatture = async (filesList) => {
     if (!filesList || !filesList.length) return
@@ -1435,6 +1436,21 @@ Formato JSON:
           />
         </div>
 
+        <div style={{ gridColumn: '1/-1', marginTop: 8 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none', fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>
+            <input 
+              type="checkbox" 
+              checked={showAvanzata || form.criterio !== 'millesimi' || form.tipo_lavoro !== 'ordinario'} 
+              onChange={e => setShowAvanzata(e.target.checked)} 
+              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#3b82f6' }}
+            />
+            Ripartizione Avanzata / Manuale
+          </label>
+        </div>
+
+        {(showAvanzata || form.criterio !== 'millesimi' || form.tipo_lavoro !== 'ordinario') && (
+          <>
+
         <div>
           <label style={labelStyle}>Categoria</label>
           <select style={inputStyle} value={form.categoria} onChange={e => setField('categoria', e.target.value)}>
@@ -1527,6 +1543,8 @@ Formato JSON:
             />
             <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Il resto ({100 - form.percentuale_millesimi}%) in parti uguali</span>
           </div>
+        )}
+        </>
         )}
 
         <div>

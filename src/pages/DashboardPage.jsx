@@ -25,7 +25,8 @@ import {
   ChevronRight,
   MessageSquare,
   User,
-  Inbox
+  Inbox,
+  Search
 } from 'lucide-react'
 
 // Mesi in italiano per F24
@@ -353,6 +354,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* --- Nuova Barra Ricerca Rapida --- */}
+      <div style={{ marginBottom: 24, background: 'var(--card-bg)', borderRadius: 12, padding: '12px 20px', border: '1px solid var(--border-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const q = new FormData(e.target).get('q');
+          if (q) navigate(`/ricerca?q=${encodeURIComponent(q)}`);
+        }} style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 0 }}>
+          <Search size={20} color="var(--accent, #3b82f6)" />
+          <input name="q" placeholder="Cerca un condomino, una fattura, un indirizzo... (Scorciatoia globale: Cmd+K)" style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: 'var(--text-primary)' }} />
+          <button type="submit" style={{ background: 'var(--accent, #3b82f6)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>Cerca</button>
+        </form>
+      </div>
+
       {/* Onboarding Trial Checklist */}
       {(piano === 'trial' || isTrialActive) && (
         <OnboardingChecklist 
@@ -391,7 +405,7 @@ export default function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
               <h4 style={{ margin: '0 0 4px', color: 'var(--text-primary)', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Inbox size={18} color="#7c3aed" /> Postbox Studio 
+                <Inbox size={18} color="#7c3aed" /> Comunicazioni (Postbox) 
                 <span style={{ 
                   fontSize: 11, 
                   background: stats.inboxCount > 0 ? '#7c3aed' : 'var(--border-color)', 
@@ -428,7 +442,7 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <Link to="/postbox" style={{
+          <Link to="/comunicazioni" style={{
             background: '#7c3aed',
             color: '#fff',
             textDecoration: 'none',
@@ -445,7 +459,7 @@ export default function DashboardPage() {
             onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
             onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}
           >
-            Apri Postbox <ArrowRight size={14} />
+            Apri Comunicazioni <ArrowRight size={14} />
           </Link>
         </div>
       )}

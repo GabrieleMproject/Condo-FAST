@@ -3,6 +3,7 @@ import ConsuntivoTab from '../components/ConsuntivoTab'
 import { FileBarChart } from 'lucide-react'   // se non già importato un'icona; in alternativa riusa Wallet/FileText
 import RateGridTab from '../components/RateGridTab'
 import PreventivoSection from '../components/PreventivoSection'
+import WizardChiusuraEsercizio from '../components/WizardChiusuraEsercizio'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useCondomini } from '../hooks/useCondomini'
 import { useAuditLog } from '../hooks/useAuditLog'
@@ -67,7 +68,7 @@ const MACRO_GROUPS = [
     tabs: [
       { id: 'panoramica', label: 'Panoramica', icon: LayoutGrid },
       { id: 'anagrafica', label: 'Anagrafica & Unità', icon: Users },
-      { id: 'storico',    label: 'Storico',    icon: FolderClock },
+      { id: 'sinistri',   label: 'Sinistri',           icon: ShieldAlert },
     ]
   },
   { 
@@ -77,7 +78,6 @@ const MACRO_GROUPS = [
     tabs: [
       { id: 'finanze',    label: 'Gestione Finanze', icon: Wallet },
       { id: 'preventivo', label: 'Preventivo & Saldi', icon: ClipboardList },
-      { id: 'consuntivo', label: 'Consuntivo', icon: FileBarChart },
       { id: 'rate',       label: 'Rate',       icon: CreditCard },
     ]
   },
@@ -88,8 +88,6 @@ const MACRO_GROUPS = [
     tabs: [
       { id: 'documenti',  label: 'Archivio Documenti', icon: FileText },
       { id: 'verbali',    label: 'Verbali Assemblea',  icon: FileSignature },
-      { id: 'comunicazioni', label: 'Comunicazioni',   icon: Mail },
-      { id: 'sinistri',   label: 'Sinistri',           icon: ShieldAlert },
     ]
   },
 ]
@@ -315,47 +313,68 @@ export default function CondominiDetailPage() {
 
   return (
     <div style={S.page}>
-      {/* Breadcrumb */}
-      <div style={S.breadcrumb}>
-        <Link to="/condomini" style={S.breadLink}>Condomini</Link>
-        <ChevronRight size={13} color="#475569" style={{ verticalAlign: 'middle', margin: '0 2px' }} />
-        <span style={{ color: 'var(--text-secondary)' }}>{c.nome}</span>
-      </div>
-
-      {/* Header */}
-      <div style={S.header}>
-        <div style={S.headerLeft}>
-          <div style={S.bigIcon}>
-            <Building2 size={28} color="#60a5fa" />
-          </div>
-          <div>
-            <h1 style={S.title}>{c.nome}</h1>
-            <p style={S.addr}>{c.indirizzo} {c.civico}, {c.cap} {c.citta} ({c.provincia})</p>
-            {c.codice_fiscale && <p style={S.cf}>CF: {c.codice_fiscale}</p>}
-            {c.codice_app && (
-              <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', background: 'rgba(37, 99, 235, 0.1)', padding: '4px 10px', borderRadius: 6 }}>
-                <span style={{ fontSize: 12, color: '#2563eb', fontWeight: 600, marginRight: 6 }}>PIN App Condòmini:</span>
-                <span style={{ fontSize: 14, color: '#1e40af', fontWeight: 800, letterSpacing: 1 }}>{c.codice_app}</span>
-              </div>
-            )}
+      {/* Modale Storico */}
+      {activeTab === 'storico_modal' && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--card-bg)', width: 600, maxHeight: '80vh', borderRadius: 12, overflow: 'auto', padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>Storico Modifiche</h3>
+              <button onClick={() => setActiveTab('panoramica')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>Chiudi</button>
+            </div>
+            <StoricoTab condominioId={c.id} />
           </div>
         </div>
-        <div style={S.headerActions}>
-          <button style={S.btnSecondary} onClick={() => navigate('/condomini')}>
-            <ArrowLeft size={15} style={{ marginRight: 6 }} /> Torna
+      )}
+
+      {/* Testata: Info Base */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24, marginBottom: 24, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <Link to="/condomini" style={{
+              color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 6,
+              textDecoration: 'none', fontSize: 13, fontWeight: 500, padding: '4px 10px',
+              borderRadius: 6, border: '1px solid var(--border-color)', background: 'var(--app-bg)'
+            }}>
+              <ArrowLeft size={16} /> Torna all'elenco
+            </Link>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Building2 size={14} /> Condominio
+            </span>
+          </div>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+            {c.nome}
+          </h1>
+          <p style={{ margin: '6px 0 0', color: 'var(--text-secondary)', fontSize: 14 }}>
+            {c.indirizzo} — {c.comune} {c.cap && `(${c.cap})`} {c.provincia}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button onClick={() => setActiveTab('storico_modal')} style={{ background: 'var(--app-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }} title="Vedi Storico Operazioni">
+            <FolderClock size={16} />
           </button>
-          <button
-            style={{ ...S.btnSuccess, background: '#10b981' }}
+          
+          <button 
             onClick={handleAvviaDiagnosiFiscale}
             disabled={diagnosiBusy}
+            style={{
+              background: '#047857', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8,
+              display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(4,120,87,0.2)', transition: 'all 0.2s', opacity: diagnosiBusy ? 0.7 : 1
+            }}
           >
-            <Activity size={15} style={{ marginRight: 6 }} /> {diagnosiBusy ? 'Diagnosi...' : 'Diagnosi Conformità Fiscale'}
+            {diagnosiBusy ? <Activity size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+            Diagnosi Fiscale
           </button>
-          <button style={S.btnSuccess} data-tour-target="tab-spese-fatture" onClick={() => navigate(`/condomini/${id}/spese`)}>
-            <Receipt size={15} style={{ marginRight: 6 }} /> Spese
-          </button>
-          <button style={S.btnPrimary} onClick={() => navigate(`/condomini/${id}/anagrafica`)}>
-            <Users size={15} style={{ marginRight: 6 }} /> Anagrafica
+          <button 
+            onClick={() => navigate(`/condomini?edit=${c.id}`)}
+            style={{
+              background: 'var(--app-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)',
+              padding: '8px 16px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Modifica
           </button>
         </div>
       </div>
@@ -363,13 +382,26 @@ export default function CondominiDetailPage() {
       {/* Banner Ambiente Demo per Condomini Demo */}
       <DemoCondoBanner condominio={c} onDeleteSuccess={refetch} />
 
-      {/* Barra Esercizio Amministrativo Unificata */}
-      <EsercizioSelectorHeader
-        esercizi={esercizi}
-        esercizioAttivo={esercizioAttivo}
-        onSelectEsercizio={setEsercizioId}
-        loading={loadingEsercizi}
-      />
+      {/* Barra Esercizio */}
+      <div style={{ marginBottom: 24 }}>
+        <EsercizioSelectorHeader 
+          condominioId={c.id} 
+          esercizioCorrenteId={esercizioId} 
+          esercizi={esercizi} 
+          onSelect={setEsercizioId}
+          loading={loadingEsercizi} 
+        />
+        
+        {/* WIZARD CHIUSURA ESERCIZIO */}
+        {esercizioAttivo && (
+          <div style={{ marginTop: 16 }}>
+            <WizardChiusuraEsercizio condominioId={c.id} esercizio={esercizioAttivo} />
+          </div>
+        )}
+      </div>
+
+
+
 
       {/* KPI */}
       <div style={S.kpiRow}>
@@ -429,10 +461,9 @@ export default function CondominiDetailPage() {
           const tourTargetMap = {
             anagrafica: 'tab-anagrafica-unita',
             preventivo: 'tab-preventivo-rate',
-            consuntivo: 'tab-consuntivo-pdf',
             rate: 'tab-preventivo-rate',
-            comunicazioni: 'btn-solleciti-massivi',
             verbali: 'tab-verbali-assemblea',
+            sinistri: 'tab-sinistri',
             finanze: 'tab-estratto-conto'
           }
           return (
@@ -563,8 +594,6 @@ export default function CondominiDetailPage() {
 
         {activeTab === 'rate' && <RateGridTab condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
 
-        {activeTab === 'comunicazioni' && <ComunicazioniTab condominioId={c.id} />}
-
         {activeTab === 'verbali' && <AssembleeTab condominioId={c.id} />}
 
         {activeTab === 'sinistri' && <SinistriTab condominioId={c.id} />}
@@ -572,9 +601,6 @@ export default function CondominiDetailPage() {
         {activeTab === 'finanze' && <FinanzeTab condominioId={c.id} esercizioId={esercizioId} />}
 
         {activeTab === 'documenti' && <DocumentiCondominio condominioId={c.id} />}
-
-        {activeTab === 'storico' && <StoricoTab condominioId={c.id} />}
-        {activeTab === 'consuntivo' && <ConsuntivoTab condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
       </div>
 
       {/* MODALE DIAGNOSI CONFORMITÀ FISCALE */}

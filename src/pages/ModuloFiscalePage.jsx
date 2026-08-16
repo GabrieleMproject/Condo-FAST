@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { Landmark, Download, FileSpreadsheet, Building2, User, Calendar, CheckCircle2, AlertTriangle, FileText, Upload, ChevronRight, ExternalLink, Monitor, ShieldCheck, PlayCircle } from 'lucide-react'
+import { Landmark, Download, FileSpreadsheet, Building2, User, Calendar, CheckCircle2, AlertTriangle, FileText, Upload, ChevronRight, ExternalLink, Monitor, ShieldCheck, ShieldAlert, PlayCircle } from 'lucide-react'
 import { exportBozzaCU, exportQuietanzaFornitore, generaPdfQuietanzaBase64 } from '../lib/exportFiscale'
 import { generaCbiF24 } from '../lib/cbiGenerator'
 import { generaTelematicoCU, generaTelematico770 } from '../lib/fiscaleTelematico'
@@ -466,6 +466,14 @@ export default function ModuloFiscalePage() {
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Disclaimer Fiscale */}
+      <div style={{ background: '#f59e0b10', border: '1px solid #f59e0b30', borderRadius: 10, padding: '12px 16px', margin: '0 24px 16px 24px', fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <ShieldAlert size={18} color="#f59e0b" style={{ flexShrink: 0, marginTop: 2 }} />
+        <span>
+          <b>Disclaimer di Responsabilità Fiscale:</b> CondoFast opera esclusivamente come software di calcolo ed elaborazione dati. La responsabilità legale per la correttezza, la validazione, l'invio telematico degli adempimenti (F24, 770, CU) e il rispetto delle scadenze di legge in qualità di Sostituto d'Imposta ricade in via esclusiva sull'Amministratore del Condominio.
+        </span>
       </div>
 
       {/* Tabs di Navigazione */}

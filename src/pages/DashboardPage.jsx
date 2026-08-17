@@ -384,7 +384,7 @@ export default function DashboardPage() {
       )}
 
       {/* Risparmio Studio Gamification */}
-      <RisparmioStudioWidget compact={true} />
+
 
       {/* Postbox Alert Banner */}
       {canUse('postbox_studio') && (

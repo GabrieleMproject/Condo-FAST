@@ -10,7 +10,7 @@ export default function RisparmioStudioWidget({ compact = false }) {
   const canoneSaaS = limiti?.canone || 0;
   if (canoneSaaS === 0) return null; // Free plan (if exists) has no discount
 
-  const maxSconto = canoneSaaS * 0.5;
+  const maxSconto = canoneSaaS * 0.75;
   const percSconto = Math.min(100, Math.round((scontoTelematiciMensile / maxSconto) * 100));
 
   const formatEuro = (val) => `€ ${parseFloat(val || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -38,7 +38,7 @@ export default function RisparmioStudioWidget({ compact = false }) {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#065f46', marginBottom: 4 }}>
             <span>{condominiServizioAttivo} condomini attivi</span>
-            <span>Max {formatEuro(maxSconto)} (50%)</span>
+            <span>Max {formatEuro(maxSconto)} (75%)</span>
           </div>
           <div style={{ height: 6, background: 'rgba(16, 185, 129, 0.2)', borderRadius: 4, overflow: 'hidden' }}>
             <div style={{ width: `${percSconto}%`, height: '100%', background: '#10b981', borderRadius: 4, transition: 'width 0.5s ease' }}></div>
@@ -82,7 +82,7 @@ export default function RisparmioStudioWidget({ compact = false }) {
             </h3>
           </div>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 16 }}>
-            Per ogni condominio in cui attivi il modulo <strong>Conservazione Fiscale & Privacy</strong>, ricevi 1,00 € di sconto al mese sulla tua licenza CondoFAST, fino ad abbattere il 50% del canone.
+            Per ogni condominio in cui attivi il modulo <strong>Conservazione Fiscale & Privacy</strong>, ricevi 1,00 € di sconto al mese sulla tua licenza CondoFAST, fino ad abbattere il 75% del canone.
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -95,12 +95,15 @@ export default function RisparmioStudioWidget({ compact = false }) {
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
             <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>Sconto Accumulato</span>
-            <span style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>-{formatEuro(scontoTelematiciMensile)}<span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>/mese</span></span>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>-{formatEuro(scontoTelematiciMensile)}<span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>/mese</span></div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>pari a {formatEuro(scontoTelematiciMensile * 12)} / anno</div>
+            </div>
           </div>
 
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
-              <span>Avanzamento verso il CAP (50%)</span>
+              <span>Avanzamento verso il CAP (75%)</span>
               <span style={{ fontWeight: 600 }}>{percSconto}%</span>
             </div>
             <div style={{ height: 8, background: 'var(--border-color)', borderRadius: 4, overflow: 'hidden' }}>
@@ -115,10 +118,13 @@ export default function RisparmioStudioWidget({ compact = false }) {
           <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 600 }}>Costo Netto Licenza:</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{formatEuro(prezzoSaaSFinale)}</span>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{formatEuro(prezzoSaaSFinale)} <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>/mese</span></div>
+              </div>
             </div>
-            <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-              anziché {formatEuro(canoneSaaS)}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>anziché {formatEuro(canoneSaaS)}/mese</span>
+              <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>Tot. Annuo: {formatEuro(prezzoSaaSFinale * 12)}</span>
             </div>
           </div>
 

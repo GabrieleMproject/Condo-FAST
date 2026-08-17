@@ -43,7 +43,8 @@ import {
   Trash2,
   ArrowRight,
   FileText,
-  PhoneCall
+  PhoneCall,
+  Gift
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -56,6 +57,7 @@ const NAV_ITEMS = [
   { path: '/archivio',           label: 'Storico operazioni',    icon: Archive },
   { path: '/migrazione',         label: 'Migra gestionale',      icon: ArrowLeftRight, badge: 'NEW' },
   { path: '/assistenza',         label: 'Assistenza',            icon: LifeBuoy },
+  { path: '/sconti',             label: 'Sconti & Promo',        icon: Gift },
   { path: '/impostazioni',       label: 'Impostazioni',          icon: Settings },
 ];
 

@@ -1,4 +1,5 @@
 import ImpostazioniPage from './pages/ImpostazioniPage'
+import ScontiPromoPage from './pages/ScontiPromoPage'
 import MillesimiEditor from './components/MillesimiEditor'
 import RipartizionePage from './pages/RipartizionePage'
 import ConfigPagantePage from './pages/ConfigPagantePage'
@@ -78,6 +79,7 @@ export default function App() {
                 <Route path="/fiscale" element={<ModuloFiscalePage />} />
                 <Route path="/assistenza" element={<AssistenzaPage />} />
                 <Route path="/impostazioni" element={<ImpostazioniPage />} />
+                <Route path="/sconti" element={<ScontiPromoPage />} />
                 <Route path="/migrazione" element={<MigrazionePage />} />
                 <Route element={<SuperAdminGuard />}>
                   <Route path="/backoffice" element={<BackofficePage />} />

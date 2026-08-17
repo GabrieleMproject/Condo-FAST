@@ -429,22 +429,22 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
         type: "OBJECT",
         properties: {
           e_pertinente: { type: "BOOLEAN", description: "False se l'intestazione del conto differisce nettamente dal condominio attivo." },
-          intestatario_rilevato: { type: "STRING", nullable: true, description: "Intestatario del conto corrente o documento" },
-          motivo_discrepanza: { type: "STRING", nullable: true, description: "Spiega perché non appartiene a questo condominio" }
+          intestatario_rilevato: { type: "STRING", description: "Intestatario del conto corrente o documento" },
+          motivo_discrepanza: { type: "STRING", description: "Spiega perché non appartiene a questo condominio" }
         }
       },
       dati: {
         type: "OBJECT",
         properties: {
-          saldo_iniziale: { type: "NUMBER", nullable: true, description: "Saldo contabile all'inizio del periodo" },
-          data_saldo_iniziale: { type: "STRING", nullable: true, description: "Data del saldo iniziale (YYYY-MM-DD)" },
-          saldo_finale: { type: "NUMBER", nullable: true, description: "Saldo contabile finale al termine del periodo" },
-          data_saldo_finale: { type: "STRING", nullable: true, description: "Data esatta a cui si riferisce il saldo finale (YYYY-MM-DD)" },
-          periodo_da: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
-          periodo_a: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
-          banca: { type: "STRING", nullable: true },
-          conto: { type: "STRING", nullable: true },
-          note: { type: "STRING", nullable: true },
+          saldo_iniziale: { type: "NUMBER", description: "Saldo contabile all'inizio del periodo" },
+          data_saldo_iniziale: { type: "STRING", description: "Data del saldo iniziale (YYYY-MM-DD)" },
+          saldo_finale: { type: "NUMBER", description: "Saldo contabile finale al termine del periodo" },
+          data_saldo_finale: { type: "STRING", description: "Data esatta a cui si riferisce il saldo finale (YYYY-MM-DD)" },
+          periodo_da: { type: "STRING", description: "YYYY-MM-DD" },
+          periodo_a: { type: "STRING", description: "YYYY-MM-DD" },
+          banca: { type: "STRING" },
+          conto: { type: "STRING" },
+          note: { type: "STRING" },
           movimenti: {
             type: "ARRAY",
             items: {
@@ -453,11 +453,11 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
                 data: { type: "STRING", description: "YYYY-MM-DD" },
                 causale: { type: "STRING" },
                 importo: { type: "NUMBER", description: "NEGATIVI per uscite/addebiti, POSITIVI per entrate/accrediti" },
-                saldo: { type: "NUMBER", nullable: true },
+                saldo: { type: "NUMBER" },
                 tipo: { type: "STRING", description: "entrata, uscita o giroconto" },
-                fornitore_rilevato: { type: "STRING", nullable: true },
-                pagante_rilevato: { type: "STRING", nullable: true },
-                riferimento_esterno: { type: "STRING", nullable: true }
+                fornitore_rilevato: { type: "STRING" },
+                pagante_rilevato: { type: "STRING" },
+                riferimento_esterno: { type: "STRING" }
               },
               required: ["data", "causale", "importo", "tipo"]
             }
@@ -539,34 +539,34 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
         type: "OBJECT",
         properties: {
           e_pertinente: { type: "BOOLEAN", description: "False se l'intestazione/destinatario differisce palesemente dal condominio attivo." },
-          intestatario_rilevato: { type: "STRING", nullable: true, description: "Ragione sociale e CF del condominio destinatario presente sul documento" },
-          motivo_discrepanza: { type: "STRING", nullable: true, description: "Spiega perché non sembra essere intestato a questo condominio" }
+          intestatario_rilevato: { type: "STRING", description: "Ragione sociale e CF del condominio destinatario presente sul documento" },
+          motivo_discrepanza: { type: "STRING", description: "Spiega perché non sembra essere intestato a questo condominio" }
         }
       },
       dati: {
         type: "OBJECT",
         properties: {
           fornitore: { type: "STRING", description: "Ragione sociale del fornitore" },
-          partita_iva_fornitore: { type: "STRING", nullable: true },
-          categoria_fornitore: { type: "STRING", nullable: true, description: "La categoria lavorativa dell'artigiano/ditta. Scegli tra: idraulico, elettricista, edile, spurghi, ascensorista, giardiniere, pulizie, energia, assicurazioni, professionista, altro" },
-          provincia_fornitore: { type: "STRING", nullable: true, description: "La sigla della provincia di sede del fornitore (es. MI, RM, NA) estratta dall'indirizzo" },
-          numero_fattura: { type: "STRING", nullable: true },
+          partita_iva_fornitore: { type: "STRING" },
+          categoria_fornitore: { type: "STRING", description: "La categoria lavorativa dell'artigiano/ditta. Scegli tra: idraulico, elettricista, edile, spurghi, ascensorista, giardiniere, pulizie, energia, assicurazioni, professionista, altro" },
+          provincia_fornitore: { type: "STRING", description: "La sigla della provincia di sede del fornitore (es. MI, RM, NA) estratta dall'indirizzo" },
+          numero_fattura: { type: "STRING" },
           data_fattura: { type: "STRING", description: "YYYY-MM-DD" },
-          data_scadenza: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
+          data_scadenza: { type: "STRING", description: "YYYY-MM-DD" },
           importo_totale: { type: "NUMBER" },
           importo_iva: { type: "NUMBER" },
           importo_netto: { type: "NUMBER" },
           aliquota_iva: { type: "NUMBER", description: "Percentuale IVA" },
           descrizione: { type: "STRING", description: "Descrizione sintetica lavori o servizi" },
           categoria: { type: "STRING", description: "manutenzione, pulizie, utenze, assicurazione, amministrazione, altro" },
-          note: { type: "STRING", nullable: true },
+          note: { type: "STRING" },
           imponibile_ritenuta: { type: "NUMBER" },
           aliquota_ritenuta_percentuale: { type: "NUMBER" },
           importo_ritenuta: { type: "NUMBER" },
-          codice_tributo_f24: { type: "STRING", nullable: true, description: "1019, 1020 o 1040" },
-          condominio_destinatario_nome: { type: "STRING", nullable: true },
-          condominio_destinatario_codice_fiscale: { type: "STRING", nullable: true },
-          condominio_destinatario_indirizzo: { type: "STRING", nullable: true }
+          codice_tributo_f24: { type: "STRING", description: "1019, 1020 o 1040" },
+          condominio_destinatario_nome: { type: "STRING" },
+          condominio_destinatario_codice_fiscale: { type: "STRING" },
+          condominio_destinatario_indirizzo: { type: "STRING" }
         },
         required: [
           "fornitore", "data_fattura", "importo_totale", "descrizione", "categoria"
@@ -608,11 +608,11 @@ Analizza la spesa descritta e determina il corretto criterio di ripartizione bas
         type: "OBJECT",
         properties: {
           criterio: { type: "STRING", description: "millesimi_generali, millesimi_scala, millesimi_riscaldamento, millesimi_acqua, quote_uguali, piano o personalizzato" },
-          tabella_millesimale: { type: "STRING", nullable: true },
+          tabella_millesimale: { type: "STRING" },
           motivazione: { type: "STRING", description: "Breve spiegazione del criterio scelto con riferimento normativo" },
           fonte: { type: "STRING", description: "regolamento, codice_civile o accordo" },
-          articolo_riferimento: { type: "STRING", nullable: true, description: "art. X c.c. o riferimento al regolamento" },
-          note: { type: "STRING", nullable: true }
+          articolo_riferimento: { type: "STRING", description: "art. X c.c. o riferimento al regolamento" },
+          note: { type: "STRING" }
         },
         required: ["criterio", "motivazione", "fonte"]
       }
@@ -656,21 +656,21 @@ Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
       dati: {
         type: "OBJECT",
         properties: {
-          anno: { type: "NUMBER", nullable: true },
-          saldo_cassa_finale: { type: "NUMBER", nullable: true },
+          anno: { type: "NUMBER" },
+          saldo_cassa_finale: { type: "NUMBER" },
           saldi_unita: {
             type: "ARRAY",
             items: {
               type: "OBJECT",
               properties: {
-                numero: { type: "STRING", nullable: true },
+                numero: { type: "STRING" },
                 nominativo: { type: "STRING" },
                 saldo: { type: "NUMBER" }
               },
               required: ["nominativo", "saldo"]
             }
           },
-          note: { type: "STRING", nullable: true }
+          note: { type: "STRING" }
         },
         required: ["saldi_unita"]
       }
@@ -727,7 +727,7 @@ Fornisci anche una breve motivazione "motivazione_condofast" che spiega perché 
             }
           },
           motivazione_condofast: { type: "STRING", description: "Breve frase sui vantaggi dello standard CondoFAST rispetto al file caricato." },
-          note: { type: "STRING", nullable: true }
+          note: { type: "STRING" }
         }
       }
     },
@@ -782,17 +782,17 @@ REGOLE CRITICHE PER I CONTATTI (EVITA ERRORI O OMISSIONI):
         items: {
           type: "OBJECT",
           properties: {
-            nome: { type: "STRING", nullable: true },
-            cognome: { type: "STRING", nullable: true },
-            email: { type: "STRING", nullable: true },
-            telefono: { type: "STRING", nullable: true },
-            indirizzo: { type: "STRING", nullable: true },
-            citta: { type: "STRING", nullable: true },
-            cap: { type: "STRING", nullable: true },
-            provincia: { type: "STRING", nullable: true },
-            codice_fiscale: { type: "STRING", nullable: true },
-            ruolo: { type: "STRING", nullable: true },
-            unita: { type: "STRING", nullable: true }
+            nome: { type: "STRING" },
+            cognome: { type: "STRING" },
+            email: { type: "STRING" },
+            telefono: { type: "STRING" },
+            indirizzo: { type: "STRING" },
+            citta: { type: "STRING" },
+            cap: { type: "STRING" },
+            provincia: { type: "STRING" },
+            codice_fiscale: { type: "STRING" },
+            ruolo: { type: "STRING" },
+            unita: { type: "STRING" }
           }
         }
       }
@@ -866,12 +866,12 @@ Se nel documento è presente una tabella con più colonne millesimali (es. colon
                     type: "OBJECT",
                     properties: {
                       unita: { type: "STRING", description: "Identificativo univoco dell'unità immobiliare nel documento. Usa Subalterno se presente, o Numero interno. NON lasciare vuoto." },
-                      piano: { type: "STRING", nullable: true },
-                      destinazione: { type: "STRING", nullable: true },
-                      superficie_mq: { type: "NUMBER", nullable: true },
-                      proprietario_nome: { type: "STRING", nullable: true },
-                      proprietario_cognome: { type: "STRING", nullable: true },
-                      nominativo_completo: { type: "STRING", nullable: true },
+                      piano: { type: "STRING" },
+                      destinazione: { type: "STRING" },
+                      superficie_mq: { type: "NUMBER" },
+                      proprietario_nome: { type: "STRING" },
+                      proprietario_cognome: { type: "STRING" },
+                      nominativo_completo: { type: "STRING" },
                       valore: { type: "NUMBER", description: "Valore millesimale decimale" }
                     },
                     required: ["unita", "valore"]
@@ -970,13 +970,13 @@ REGOLE CRITICHE PER L'ESTRAZIONE:
         properties: {
           tipo: { type: "STRING", description: "anagrafica, unita, millesimi, spese, rate, saldo_cassa, misto, sconosciuto" },
           gestionale: { type: "STRING", description: "Danea Domustudio, Gecosei, Metodo, generico" },
-          condominio: { type: "OBJECT", nullable: true, properties: { nome: { type: "STRING", nullable: true }, indirizzo: { type: "STRING", nullable: true }, cf_condominio: { type: "STRING", nullable: true } } },
-          persone: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { nome: { type: "STRING" }, cognome: { type: "STRING" }, codice_fiscale: { type: "STRING", nullable: true }, email: { type: "STRING", nullable: true }, telefono: { type: "STRING", nullable: true }, ruolo: { type: "STRING", nullable: true }, unita_rif: { type: "STRING", nullable: true } }, required: ["nome", "cognome"] } },
-          unita: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { numero: { type: "STRING" }, tipo: { type: "STRING", nullable: true }, scala: { type: "STRING", nullable: true }, piano: { type: "STRING", nullable: true }, mq: { type: "NUMBER", nullable: true }, proprietario_nome: { type: "STRING", nullable: true }, proprietario_cognome: { type: "STRING", nullable: true } }, required: ["numero"] } },
-          millesimi: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { tabella: { type: "STRING" }, righe: { type: "ARRAY", items: { type: "OBJECT", properties: { unita_rif: { type: "STRING" }, valore: { type: "NUMBER" }, proprietario_nome: { type: "STRING", nullable: true } }, required: ["unita_rif", "valore"] } } }, required: ["tabella", "righe"] } },
-          saldi_iniziali: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { anno: { type: "NUMBER" }, unita_rif: { type: "STRING" }, proprietario_nome: { type: "STRING", nullable: true }, saldo: { type: "NUMBER" } }, required: ["anno", "unita_rif", "saldo"] } },
-          spese: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { anno: { type: "NUMBER" }, data: { type: "STRING", nullable: true }, descrizione: { type: "STRING" }, categoria: { type: "STRING" }, importo: { type: "NUMBER" }, fornitore: { type: "STRING", nullable: true } }, required: ["anno", "descrizione", "categoria", "importo"] } },
-          rate: { type: "ARRAY", nullable: true, items: { type: "OBJECT", properties: { anno: { type: "NUMBER" }, numero_rata: { type: "NUMBER", nullable: true }, scadenza: { type: "STRING", nullable: true }, unita_rif: { type: "STRING" }, importo: { type: "NUMBER" }, importo_pagato: { type: "NUMBER" }, stato: { type: "STRING", description: "pagata, parziale, non_pagata" } }, required: ["anno", "unita_rif", "importo", "importo_pagato", "stato"] } }
+          condominio: { type: "OBJECT", properties: { nome: { type: "STRING" }, indirizzo: { type: "STRING" }, cf_condominio: { type: "STRING" } } },
+          persone: { type: "ARRAY", items: { type: "OBJECT", properties: { nome: { type: "STRING" }, cognome: { type: "STRING" }, codice_fiscale: { type: "STRING" }, email: { type: "STRING" }, telefono: { type: "STRING" }, ruolo: { type: "STRING" }, unita_rif: { type: "STRING" } }, required: ["nome", "cognome"] } },
+          unita: { type: "ARRAY", items: { type: "OBJECT", properties: { numero: { type: "STRING" }, tipo: { type: "STRING" }, scala: { type: "STRING" }, piano: { type: "STRING" }, mq: { type: "NUMBER" }, proprietario_nome: { type: "STRING" }, proprietario_cognome: { type: "STRING" } }, required: ["numero"] } },
+          millesimi: { type: "ARRAY", items: { type: "OBJECT", properties: { tabella: { type: "STRING" }, righe: { type: "ARRAY", items: { type: "OBJECT", properties: { unita_rif: { type: "STRING" }, valore: { type: "NUMBER" }, proprietario_nome: { type: "STRING" } }, required: ["unita_rif", "valore"] } } }, required: ["tabella", "righe"] } },
+          saldi_iniziali: { type: "ARRAY", items: { type: "OBJECT", properties: { anno: { type: "NUMBER" }, unita_rif: { type: "STRING" }, proprietario_nome: { type: "STRING" }, saldo: { type: "NUMBER" } }, required: ["anno", "unita_rif", "saldo"] } },
+          spese: { type: "ARRAY", items: { type: "OBJECT", properties: { anno: { type: "NUMBER" }, data: { type: "STRING" }, descrizione: { type: "STRING" }, categoria: { type: "STRING" }, importo: { type: "NUMBER" }, fornitore: { type: "STRING" } }, required: ["anno", "descrizione", "categoria", "importo"] } },
+          rate: { type: "ARRAY", items: { type: "OBJECT", properties: { anno: { type: "NUMBER" }, numero_rata: { type: "NUMBER" }, scadenza: { type: "STRING" }, unita_rif: { type: "STRING" }, importo: { type: "NUMBER" }, importo_pagato: { type: "NUMBER" }, stato: { type: "STRING", description: "pagata, parziale, non_pagata" } }, required: ["anno", "unita_rif", "importo", "importo_pagato", "stato"] } }
         },
         required: ["tipo", "gestionale"]
       }
@@ -1136,28 +1136,28 @@ Regole importanti:
           unita: {
             type: "OBJECT",
             properties: {
-              catasto_foglio: { type: "STRING", nullable: true },
-              catasto_particella: { type: "STRING", nullable: true },
-              catasto_subalterno: { type: "STRING", nullable: true },
-              catasto_categoria: { type: "STRING", nullable: true },
-              catasto_rendita: { type: "NUMBER", nullable: true }
+              catasto_foglio: { type: "STRING" },
+              catasto_particella: { type: "STRING" },
+              catasto_subalterno: { type: "STRING" },
+              catasto_categoria: { type: "STRING" },
+              catasto_rendita: { type: "NUMBER" }
             }
           },
           persona: {
             type: "OBJECT",
             properties: {
-              nome: { type: "STRING", nullable: true },
-              cognome: { type: "STRING", nullable: true },
-              codice_fiscale: { type: "STRING", nullable: true, description: "Normalizzato a 16 caratteri maiuscoli" },
-              email: { type: "STRING", nullable: true },
-              telefono: { type: "STRING", nullable: true },
-              residenza_indirizzo: { type: "STRING", nullable: true, description: "Via/piazza, civico" },
-              residenza_comune: { type: "STRING", nullable: true },
-              residenza_cap: { type: "STRING", nullable: true },
-              residenza_provincia: { type: "STRING", nullable: true, description: "Sigla a 2 caratteri" }
+              nome: { type: "STRING" },
+              cognome: { type: "STRING" },
+              codice_fiscale: { type: "STRING", description: "Normalizzato a 16 caratteri maiuscoli" },
+              email: { type: "STRING" },
+              telefono: { type: "STRING" },
+              residenza_indirizzo: { type: "STRING", description: "Via/piazza, civico" },
+              residenza_comune: { type: "STRING" },
+              residenza_cap: { type: "STRING" },
+              residenza_provincia: { type: "STRING", description: "Sigla a 2 caratteri" }
             }
           },
-          ruolo: { type: "STRING", nullable: true, description: "proprietario, inquilino, comproprietario, usufruttuario" }
+          ruolo: { type: "STRING", description: "proprietario, inquilino, comproprietario, usufruttuario" }
         }
       }
     },

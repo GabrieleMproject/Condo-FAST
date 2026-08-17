@@ -69,6 +69,31 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
     }
   }, [condominio])
 
+  // Autocompletamento Città/Provincia da CAP
+  useEffect(() => {
+    if (form.cap && /^\d{5}$/.test(form.cap)) {
+      fetch(`https://api.zippopotam.us/it/${form.cap}`)
+        .then(res => {
+          if (!res.ok) throw new Error('CAP non trovato')
+          return res.json()
+        })
+        .then(data => {
+          if (data.places && data.places.length > 0) {
+            const place = data.places[0]
+            setForm(prev => ({
+              ...prev,
+              citta: prev.citta ? prev.citta : place['place name'],
+              provincia: PROVINCE_IT.includes(place['state abbreviation']) ? place['state abbreviation'] : prev.provincia
+            }))
+            if (errors.citta || errors.provincia) {
+              setErrors(prev => ({ ...prev, citta: null, provincia: null }))
+            }
+          }
+        })
+        .catch(() => { /* fallback silente */ })
+    }
+  }, [form.cap])
+
   const set = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }))
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }))
@@ -78,9 +103,13 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
     const e = {}
     if (!form.nome?.trim()) e.nome = 'Nome obbligatorio'
     if (!form.indirizzo?.trim()) e.indirizzo = 'Indirizzo obbligatorio'
+    if (!form.civico?.trim()) e.civico = 'Civico obbligatorio'
+    if (!form.cap?.trim()) e.cap = 'CAP obbligatorio'
+    if (form.cap && !/^\d{5}$/.test(form.cap)) e.cap = 'CAP non valido (5 cifre)'
+    if (!form.citta?.trim()) e.citta = 'Città obbligatoria'
+    if (!form.provincia) e.provincia = 'Provincia obbligatoria'
     if (!form.codice_fiscale?.trim()) e.codice_fiscale = 'Codice Fiscale obbligatorio'
     if (!form.iban?.trim()) e.iban = 'IBAN obbligatorio'
-    if (form.cap && !/^\d{5}$/.test(form.cap)) e.cap = 'CAP non valido (5 cifre)'
     return e
   }
 
@@ -88,7 +117,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
     const e = validate()
     if (Object.keys(e).length > 0) {
       setErrors(e)
-      if (e.nome || e.indirizzo || e.codice_fiscale || e.iban) {
+      if (e.nome || e.indirizzo || e.civico || e.cap || e.citta || e.provincia || e.codice_fiscale || e.iban) {
         setActiveTab('anagrafica')
       }
       return
@@ -203,7 +232,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                     placeholder="Via/Piazza/Corso..."
                   />
                 </Field>
-                <Field label="Civico" error={errors.civico} small>
+                <Field label="Civico *" error={errors.civico} small>
                   <input
                     type="text"
                     value={form.civico}
@@ -214,7 +243,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
               </div>
 
               <div className="form-row">
-                <Field label="CAP" error={errors.cap} small>
+                <Field label="CAP *" error={errors.cap} small>
                   <input
                     type="text"
                     value={form.cap}
@@ -223,7 +252,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                     maxLength={5}
                   />
                 </Field>
-                <Field label="Città" error={errors.citta}>
+                <Field label="Città *" error={errors.citta}>
                   <input
                     type="text"
                     value={form.citta}
@@ -231,7 +260,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                     placeholder="Milano"
                   />
                 </Field>
-                <Field label="Provincia" error={errors.provincia} small>
+                <Field label="Provincia *" error={errors.provincia} small>
                   <select value={form.provincia} onChange={e => set('provincia', e.target.value)}>
                     {PROVINCE_IT.map(p => (
                       <option key={p} value={p}>{p}</option>

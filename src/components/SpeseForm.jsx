@@ -336,8 +336,17 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
           throw new Error('Il file supera i 10MB. Ti consigliamo di comprimerlo gratuitamente online prima di caricarlo.')
         }
 
-        const fileCompresso = await comprimiImmagine(item.file)
-        const estratto = await estraiFattura(fileCompresso)
+        let fileCompresso = item.file
+        let estratto = null
+        const tipo = getTipoFile(item.file)
+
+        if (tipo === 'xml' || tipo === 'p7m') {
+          const resXml = await parseFatturaXmlP7m(item.file)
+          estratto = resXml.dati
+        } else {
+          fileCompresso = await comprimiImmagine(item.file)
+          estratto = await estraiFattura(fileCompresso)
+        }
 
         const CAT_VALIDE = CATEGORIE.map(c => c.value)
         const catSpesa = CAT_VALIDE.includes(estratto.categoria) ? estratto.categoria : 'ordinaria'

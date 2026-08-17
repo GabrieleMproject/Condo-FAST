@@ -569,9 +569,7 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
           condominio_destinatario_indirizzo: { type: "STRING", nullable: true }
         },
         required: [
-          "fornitore", "data_fattura", "importo_totale", "importo_iva", "importo_netto",
-          "aliquota_iva", "descrizione", "categoria", "imponibile_ritenuta",
-          "aliquota_ritenuta_percentuale", "importo_ritenuta"
+          "fornitore", "data_fattura", "importo_totale", "descrizione", "categoria"
         ]
       }
     },

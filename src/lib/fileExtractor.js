@@ -279,8 +279,8 @@ export async function xlsxToText(file) {
 // ─── Estrai testo da DOCX via mammoth ────────────────────────────────────────
 export async function docxToText(file) {
   const buffer         = await fileToArrayBuffer(file);
-  const { value: text } = await mammoth.extractRawText({ arrayBuffer: buffer });
-  return text;
+  const { value: html } = await mammoth.convertToHtml({ arrayBuffer: buffer });
+  return html;
 }
 
 // ─── Determina tipo file ──────────────────────────────────────────────────────

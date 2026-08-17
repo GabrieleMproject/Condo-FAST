@@ -278,17 +278,17 @@ export function PlanProvider({ children }) {
   const limiti = PIANI[piano] || PIANI.trial
 
   // ── Trial ─────────────────────────────────────────────────────────────
-  const isTrialActive = piano === 'trial' && profile?.trial_ends_at
+  const isTrialActive = profile?.is_superadmin ? true : (piano === 'trial' && profile?.trial_ends_at
     ? new Date(profile.trial_ends_at) > new Date()
-    : false
+    : false)
 
-  const isTrialScaduto = piano === 'trial' && !isTrialActive
+  const isTrialScaduto = profile?.is_superadmin ? false : (piano === 'trial' && !isTrialActive)
 
   // ── Stripe ────────────────────────────────────────────────────────────
   const isStripeAttivo = ['active', 'trialing'].includes(profile?.stripe_status)
 
   // ── Read Only Mode ────────────────────────────────────────────────────
-  const isReadOnly = isTrialScaduto || (!isStripeAttivo && piano !== 'trial')
+  const isReadOnly = profile?.is_superadmin ? false : (isTrialScaduto || (!isStripeAttivo && piano !== 'trial'))
 
   // ── Condomini ─────────────────────────────────────────────────────────
   const condominiInclusi = limiti.condomini_inclusi
@@ -309,18 +309,20 @@ export function PlanProvider({ children }) {
 
   // ── canUse(feature) ───────────────────────────────────────────────────
   const canUse = useCallback((feature) => {
+    if (profile?.is_superadmin) return true
     const pianiAbilitati = FEATURE_GATES[feature]
     if (!pianiAbilitati) return true
     if (isTrialActive) return pianiAbilitati.includes('studio')
     if (!isStripeAttivo && piano !== 'trial') return false
     return pianiAbilitati.includes(piano)
-  }, [piano, isTrialActive, isStripeAttivo])
+  }, [piano, isTrialActive, isStripeAttivo, profile?.is_superadmin])
 
   // ── canUseAI() ────────────────────────────────────────────────────────
   const canUseAI = useCallback(() => {
+    if (profile?.is_superadmin) return true
     if (limiti.ai_calls_mese === null) return true
     return aiCallsCount < limiti.ai_calls_mese
-  }, [limiti.ai_calls_mese, aiCallsCount])
+  }, [limiti.ai_calls_mese, aiCallsCount, profile?.is_superadmin])
 
   // ── Piano minimo per una feature ─────────────────────────────────────
   const pianoMinimoPerFeature = useCallback((feature) => {

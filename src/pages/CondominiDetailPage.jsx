@@ -189,6 +189,9 @@ export default function CondominiDetailPage() {
   const [saldoConto, setSaldoConto] = useState(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   
+  const activeGroupData = MACRO_GROUPS.find(g => g.id === activeGroup)
+  const themeColor = activeGroupData?.color || '#2563eb'
+  
   // Modal Diagnosi Conformità Fiscale
   const [modalDiagnosiOpen, setModalDiagnosiOpen] = useState(false)
   const [diagnosiResult, setDiagnosiResult] = useState(null)
@@ -472,41 +475,45 @@ export default function CondominiDetailPage() {
       </div>
 
       {/* Sub Tab Bar (relativa al macro-gruppo attivo) */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, flexWrap: 'wrap' }}>
-        {MACRO_GROUPS.find(g => g.id === activeGroup)?.tabs.map(({ id: tid, label, icon: Icon }) => {
-          const active = activeTab === tid
-          const tourTargetMap = {
-            anagrafica: 'tab-anagrafica-unita',
-            preventivo: 'tab-preventivo-rate',
-            rate: 'tab-preventivo-rate',
-            verbali: 'tab-verbali-assemblea',
-            sinistri: 'tab-sinistri',
-            finanze: 'tab-estratto-conto'
-          }
-          return (
-            <button
-              key={tid}
-              data-tour-target={tourTargetMap[tid]}
-              onClick={() => setActiveTab(tid)}
-              style={{
-                ...S.tabBtn,
-                background: active ? 'var(--accent, #2563eb)' : 'var(--card-bg)',
-                color: active ? '#ffffff' : 'var(--text-secondary)',
-                border: '1px solid',
-                borderColor: active ? 'var(--accent, #2563eb)' : 'var(--border-color)',
-                borderRadius: 8,
-                boxShadow: active ? '0 4px 6px -1px rgba(37, 99, 235, 0.2)' : 'none'
-              }}
-            >
-              <Icon size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} strokeWidth={active ? 2.5 : 1.8} />
-              {label}
-            </button>
-          )
-        })}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        {(() => {
+          if (!activeGroupData) return null
+          return activeGroupData.tabs.map(({ id: tid, label, icon: Icon }) => {
+            const active = activeTab === tid
+            const tourTargetMap = {
+              anagrafica: 'tab-anagrafica-unita',
+              preventivo: 'tab-preventivo-rate',
+              rate: 'tab-preventivo-rate',
+              verbali: 'tab-verbali-assemblea',
+              sinistri: 'tab-sinistri',
+              finanze: 'tab-estratto-conto'
+            }
+            return (
+              <button
+                key={tid}
+                data-tour-target={tourTargetMap[tid]}
+                onClick={() => setActiveTab(tid)}
+                style={{
+                  ...S.tabBtn,
+                  background: active ? themeColor : 'var(--card-bg)',
+                  color: active ? '#ffffff' : 'var(--text-secondary)',
+                  border: '1px solid',
+                  borderColor: active ? themeColor : 'var(--border-color)',
+                  borderRadius: 8,
+                  boxShadow: active ? `0 4px 6px -1px ${themeColor}40` : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <Icon size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} strokeWidth={active ? 2.5 : 1.8} />
+                {label}
+              </button>
+            )
+          })
+        })()}
       </div>
 
       {/* Tab content */}
-      <div style={S.tabContent}>
+      <div style={{ ...S.tabContent, '--accent': themeColor, '--accent-glow': `${themeColor}25` }}>
 
         {activeTab === 'panoramica' && (
           <>

@@ -84,9 +84,21 @@ export default function AssistenzaPage() {
 
   // Stati Chatbot
   const [chatInput, setChatInput] = useState('')
-  const [chatHistory, setChatHistory] = useState([
-    { role: 'assistant', content: 'Ciao! Sono l\'assistente virtuale di CondoFAST. Come posso aiutarti con il gestionale oggi?' }
-  ])
+  const [chatHistory, setChatHistory] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('assistenza_chat_history')
+      if (saved) {
+        const { history, timestamp } = JSON.parse(saved)
+        // Check se sono passati meno di 15 minuti (900000 ms)
+        if (new Date().getTime() - timestamp < 900000) {
+          return history
+        }
+      }
+    } catch (e) {
+      console.error('Errore lettura session storage:', e)
+    }
+    return [{ role: 'assistant', content: 'Ciao! Sono l\'assistente virtuale di CondoFAST. Come posso aiutarti con il gestionale oggi?' }]
+  })
   const [isTyping, setIsTyping] = useState(false)
   const [isConvertingToTicket, setIsConvertingToTicket] = useState(false)
   const chatEndRef = useRef(null)
@@ -109,15 +121,23 @@ export default function AssistenzaPage() {
     }
   }, [])
 
-  // Timer reset chat inattività (10 minuti = 600000 ms)
+  // Salva cronologia in sessionStorage ad ogni aggiornamento
   useEffect(() => {
-    if (chatHistory.length <= 1) return; // Non timerizza il messaggio di benvenuto iniziale
+    sessionStorage.setItem('assistenza_chat_history', JSON.stringify({
+      history: chatHistory,
+      timestamp: new Date().getTime()
+    }))
+  }, [chatHistory])
+
+  // Timer reset chat inattività (15 minuti = 900000 ms)
+  useEffect(() => {
+    if (chatHistory.length <= 1) return; // Non timerizza il messaggio di benvenuto iniziale o di reset
     const timer = setTimeout(() => {
       salvaLogChat(chatHistory, false)
       setChatHistory([
-        { role: 'assistant', content: 'La chat è stata riavviata automaticamente dopo 10 minuti di inattività. Se serve altro, sono qui!' }
+        { role: 'assistant', content: 'La chat è stata riavviata automaticamente dopo 15 minuti di inattività. Se serve altro, sono qui!' }
       ])
-    }, 600000);
+    }, 900000);
     return () => clearTimeout(timer);
   }, [chatHistory]);
 

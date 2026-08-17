@@ -19,7 +19,6 @@ const EMPTY_FORM = {
   cap: '',
   citta: '',
   provincia: 'MI',
-  anno_costruzione: '',
   num_unita: '',
   num_scale: '1',
   num_piani: '',
@@ -29,10 +28,10 @@ const EMPTY_FORM = {
   presenza_giardino: false,
   presenza_parcheggio: false,
   presenza_portiere: false,
+  impianto_termico: 'Autonomo',
+  presenza_fotovoltaico: false,
   data_inizio_amministrazione: '',
   stato: 'attivo',
-  fondo_cassa: '',
-  quote_annuali: '',
   note: '',
   iban: '',
 }
@@ -42,26 +41,31 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
   const isEdit = !!condominio
 
   const [form, setForm] = useState(EMPTY_FORM)
+  const originalForm = useRef(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
-  const [activeTab, setActiveTab] = useState('anagrafica')
+  const [activeTab, setActiveTab] = useState('amministrazione')
 
   useEffect(() => {
     if (condominio) {
-      setForm({
+      const payload = {
         ...EMPTY_FORM,
         ...condominio,
-        anno_costruzione: condominio.anno_costruzione ?? '',
         num_unita: condominio.num_unita ?? '',
         num_scale: condominio.num_scale ?? '1',
         num_piani: condominio.num_piani ?? '',
         num_piani_fuori_terra: condominio.num_piani_fuori_terra ?? condominio.num_piani ?? '',
         num_piani_interrati: condominio.num_piani_interrati ?? '',
-        fondo_cassa: condominio.fondo_cassa ?? '',
-        quote_annuali: condominio.quote_annuali ?? '',
+        impianto_termico: condominio.impianto_termico ?? 'Autonomo',
+        presenza_fotovoltaico: condominio.presenza_fotovoltaico ?? false,
         data_inizio_amministrazione: condominio.data_inizio_amministrazione ?? '',
         iban: condominio.iban ?? '',
-      })
+      }
+      setForm(payload)
+      originalForm.current = payload
+    } else {
+      setForm(EMPTY_FORM)
+      originalForm.current = EMPTY_FORM
     }
   }, [condominio])
 
@@ -103,14 +107,11 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
 
       const payload = {
         ...form,
-        anno_costruzione: form.anno_costruzione ? parseInt(form.anno_costruzione) : null,
         num_unita: parseInt(form.num_unita) || 0,
         num_scale: parseInt(form.num_scale) || 1,
         num_piani_fuori_terra: ft,
         num_piani_interrati: int,
         num_piani: totalPiani,
-        fondo_cassa: form.fondo_cassa ? parseFloat(form.fondo_cassa) : 0,
-        quote_annuali: form.quote_annuali ? parseFloat(form.quote_annuali) : 0,
         data_inizio_amministrazione: form.data_inizio_amministrazione || null,
         iban: form.iban || null,
       }
@@ -134,18 +135,27 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
     }
   }
 
+  const handleClose = () => {
+    if (JSON.stringify(form) !== JSON.stringify(originalForm.current)) {
+      if (!window.confirm("Hai delle modifiche non salvate. Sei sicuro di voler chiudere senza salvare?")) {
+        return;
+      }
+    }
+    onClose();
+  }
+
   const TABS = [
+    { id: 'amministrazione', label: 'Amministrazione' },
     { id: 'anagrafica', label: 'Anagrafica' },
     { id: 'struttura', label: 'Struttura' },
-    { id: 'amministrazione', label: 'Amministrazione' },
   ]
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-box form-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{isEdit ? 'Modifica condominio' : 'Nuovo condominio'}</h2>
-          <button className="modal-close" onClick={onClose}>
+          <button className="modal-close" onClick={handleClose}>
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M2 2l12 12M14 2L2 14"/>
             </svg>
@@ -232,6 +242,18 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                   </select>
                 </Field>
               </div>
+
+              <div className="form-row">
+                <Field label="IBAN Conto Corrente Condominiale" fullWidth>
+                  <input
+                    type="text"
+                    value={form.iban}
+                    onChange={e => set('iban', e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                    placeholder="Es. IT60X0542403200000001234567"
+                    maxLength={34}
+                  />
+                </Field>
+              </div>
             </div>
           )}
 
@@ -277,15 +299,11 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
               </div>
 
               <div className="form-row">
-                <Field label="Anno di costruzione">
-                  <input
-                    type="number"
-                    value={form.anno_costruzione}
-                    onChange={e => set('anno_costruzione', e.target.value)}
-                    placeholder="1980"
-                    min="1800"
-                    max={new Date().getFullYear()}
-                  />
+                <Field label="Impianto termico">
+                  <select value={form.impianto_termico} onChange={e => set('impianto_termico', e.target.value)}>
+                    <option value="Autonomo">Autonomo</option>
+                    <option value="Centralizzato">Centralizzato</option>
+                  </select>
                 </Field>
               </div>
 
@@ -297,6 +315,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                     { field: 'presenza_giardino', label: 'Giardino / Aree verdi' },
                     { field: 'presenza_parcheggio', label: 'Box' },
                     { field: 'presenza_portiere', label: 'Portiere / Custode' },
+                    { field: 'presenza_fotovoltaico', label: 'Impianto Fotovoltaico' },
                   ].map(({ field, label }) => (
                     <label key={field} className="checkbox-item">
                       <input
@@ -331,40 +350,6 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                 </Field>
               </div>
 
-              <div className="form-row">
-                <Field label="Fondo cassa (€)">
-                  <input
-                    type="number"
-                    value={form.fondo_cassa}
-                    onChange={e => set('fondo_cassa', e.target.value)}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
-                </Field>
-                <Field label="Quote annuali (€)">
-                  <input
-                    type="number"
-                    value={form.quote_annuali}
-                    onChange={e => set('quote_annuali', e.target.value)}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
-                </Field>
-              </div>
-              <div className="form-row">
-                <Field label="IBAN Conto Corrente Condominiale" fullWidth>
-                  <input
-                    type="text"
-                    value={form.iban}
-                    onChange={e => set('iban', e.target.value.toUpperCase().replace(/\s+/g, ''))}
-                    placeholder="Es. IT60X0542403200000001234567"
-                    maxLength={34}
-                  />
-                </Field>
-              </div>
-
               <Field label="Note" fullWidth>
                 <textarea
                   value={form.note}
@@ -378,7 +363,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
         </div>
 
         <div className="modal-footer">
-          <button className="btn-ghost" onClick={onClose}>Annulla</button>
+          <button className="btn-ghost" onClick={handleClose}>Annulla</button>
           <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
             {saving ? 'Salvataggio…' : isEdit ? 'Salva modifiche' : 'Crea condominio'}
           </button>

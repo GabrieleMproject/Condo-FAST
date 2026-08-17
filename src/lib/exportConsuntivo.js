@@ -233,9 +233,9 @@ function intestazione(doc, condominio, esercizio, branding) {
   if (branding?.studio_indirizzo) { doc.text(branding.studio_indirizzo, x, y); y += 5 }
   if (branding?.partita_iva) { doc.text(`P.IVA: ${branding.partita_iva}`, x, y); y += 4.5 }
   if (branding?.codice_fiscale) { doc.text(`C.F.: ${branding.codice_fiscale}`, x, y); y += 4.5 }
-  if (branding?.studio_contatti) {
-    String(branding.studio_contatti).split('\n').forEach(line => { if (line.trim()) { doc.text(line.trim(), x, y); y += 4.5 } })
-  }
+  if (branding?.studio_telefono) { doc.text(`Tel: ${branding.studio_telefono}`, x, y); y += 4.5 }
+  if (branding?.studio_email) { doc.text(`Email: ${branding.studio_email}`, x, y); y += 4.5 }
+  if (branding?.studio_pec) { doc.text(`PEC: ${branding.studio_pec}`, x, y); y += 4.5 }
   y = Math.max(y, 42)
   doc.setDrawColor(37, 99, 235); doc.setLineWidth(0.5); doc.line(14, y, W - 14, y); y += 8
   doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(15, 23, 42)

@@ -156,7 +156,7 @@ export default function ImpostazioniPage() {
   // ── Branding studio ───────────────────────────────────────────────────
   const logoInputRef = useRef()
   const [branding, setBranding] = useState({
-    studio_nome: '', studio_indirizzo: '', studio_contatti: '', logo_base64: '',
+    studio_nome: '', studio_indirizzo: '', studio_telefono: '', studio_email: '', studio_pec: '', logo_base64: '',
     ragione_sociale: '', partita_iva: '', codice_fiscale: '',
   })
   const [savingBranding, setSavingBranding] = useState(false)
@@ -199,7 +199,9 @@ export default function ImpostazioniPage() {
       setBranding({
         studio_nome:      profile.studio_nome || '',
         studio_indirizzo: profile.studio_indirizzo || '',
-        studio_contatti:  profile.studio_contatti || '',
+        studio_telefono:  profile.studio_telefono || '',
+        studio_email:     profile.studio_email || '',
+        studio_pec:       profile.studio_pec || '',
         logo_base64:      profile.logo_base64 || '',
         ragione_sociale:  profile.ragione_sociale || '',
         partita_iva:      profile.partita_iva || '',
@@ -758,14 +760,34 @@ export default function ImpostazioniPage() {
                     onChange={e => setBranding(b => ({ ...b, studio_indirizzo: e.target.value }))}
                   />
                 </div>
-                <div>
-                  <label style={styles.brandingLabel}>Contatti (tel / email / PEC / P.IVA)</label>
-                  <textarea
-                    style={{ ...styles.brandingInput, minHeight: 80, resize: 'vertical' }}
-                    placeholder={'Mobile: +39 333 1234567\ne-mail: info@studiorossi.it\nPEC: studiorossi@pec.it\nP.IVA: 12345678901'}
-                    value={branding.studio_contatti}
-                    onChange={e => setBranding(b => ({ ...b, studio_contatti: e.target.value }))}
-                  />
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={styles.brandingLabel}>Telefono</label>
+                    <input
+                      style={styles.brandingInput}
+                      placeholder="Es. +39 333 1234567"
+                      value={branding.studio_telefono}
+                      onChange={e => setBranding(b => ({ ...b, studio_telefono: e.target.value }))}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={styles.brandingLabel}>Email</label>
+                    <input
+                      style={styles.brandingInput}
+                      placeholder="Es. info@studiorossi.it"
+                      value={branding.studio_email}
+                      onChange={e => setBranding(b => ({ ...b, studio_email: e.target.value }))}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={styles.brandingLabel}>PEC</label>
+                    <input
+                      style={styles.brandingInput}
+                      placeholder="Es. studiorossi@pec.it"
+                      value={branding.studio_pec}
+                      onChange={e => setBranding(b => ({ ...b, studio_pec: e.target.value }))}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

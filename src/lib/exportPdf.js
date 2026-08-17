@@ -505,7 +505,9 @@ export function exportModuloAutocertificazionePdf({ condominio, unita, occupante
   if (profilo?.studio_indirizzo) intestazioneStudio.push(profilo.studio_indirizzo);
   if (profilo?.partita_iva) intestazioneStudio.push(`P.IVA: ${profilo.partita_iva}`);
   if (profilo?.codice_fiscale) intestazioneStudio.push(`C.F.: ${profilo.codice_fiscale}`);
-  if (profilo?.studio_contatti) intestazioneStudio.push(profilo.studio_contatti);
+  if (profilo?.studio_telefono) intestazioneStudio.push(`Tel: ${profilo.studio_telefono}`);
+  if (profilo?.studio_email) intestazioneStudio.push(`Email: ${profilo.studio_email}`);
+  if (profilo?.studio_pec) intestazioneStudio.push(`PEC: ${profilo.studio_pec}`);
   
   doc.text(intestazioneStudio.slice(0, 2).join('  ·  '), 12, 26);
   doc.text(intestazioneStudio.slice(2).join('  ·  '), 12, 31);

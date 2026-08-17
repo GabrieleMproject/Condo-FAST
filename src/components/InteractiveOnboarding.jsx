@@ -80,9 +80,9 @@ export default function InteractiveOnboarding({ onComplete }) {
         
         // Crea Persone di prova
         const personePayload = [
-          { nome: 'Mario', cognome: 'Rossi', email: 'mario@example.com', user_id: user.id },
-          { nome: 'Luigi', cognome: 'Verdi', email: 'luigi@example.com', user_id: user.id },
-          { nome: 'Giulia', cognome: 'Bianchi', email: 'giulia@example.com', user_id: user.id }
+          { nome: 'Mario', cognome: 'Rossi', email: 'mario@example.com', amministratore_id: user.id },
+          { nome: 'Luigi', cognome: 'Verdi', email: 'luigi@example.com', amministratore_id: user.id },
+          { nome: 'Giulia', cognome: 'Bianchi', email: 'giulia@example.com', amministratore_id: user.id }
         ]
         const { data: personeList } = await supabase.from('persone').insert(personePayload).select()
         

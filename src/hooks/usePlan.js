@@ -236,7 +236,7 @@ export function PlanProvider({ children }) {
     try {
       const fieldsToUpdate = {}
       const textFields = [
-        'studio_nome', 'studio_indirizzo', 'studio_contatti', 'logo_base64',
+        'studio_nome', 'studio_indirizzo', 'studio_telefono', 'studio_email', 'studio_pec', 'logo_base64',
         'ragione_sociale', 'partita_iva', 'codice_fiscale', 'mail_invio_tipo',
         'mail_mittente_email', 'mail_mittente_nome', 'smtp_host',
         'smtp_user', 'smtp_password', 'resend_api_key',

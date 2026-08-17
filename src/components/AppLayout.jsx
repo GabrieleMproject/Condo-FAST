@@ -715,7 +715,9 @@ export default function AppLayout() {
   // Stati per il form di modifica
   const [studioNome, setStudioNome] = useState('');
   const [studioIndirizzo, setStudioIndirizzo] = useState('');
-  const [studioContatti, setStudioContatti] = useState('');
+  const [studioTelefono, setStudioTelefono] = useState('');
+  const [studioEmail, setStudioEmail] = useState('');
+  const [studioPec, setStudioPec] = useState('');
   const [logoBase64, setLogoBase64] = useState('');
   const [ragioneSociale, setRagioneSociale] = useState('');
   const [partitaIva, setPartitaIva] = useState('');
@@ -725,7 +727,9 @@ export default function AppLayout() {
   const startEditing = () => {
     setStudioNome(profile?.studio_nome || '');
     setStudioIndirizzo(profile?.studio_indirizzo || '');
-    setStudioContatti(profile?.studio_contatti || '');
+    setStudioTelefono(profile?.studio_telefono || '');
+    setStudioEmail(profile?.studio_email || '');
+    setStudioPec(profile?.studio_pec || '');
     setLogoBase64(profile?.logo_base64 || '');
     setRagioneSociale(profile?.ragione_sociale || '');
     setPartitaIva(profile?.partita_iva || '');
@@ -739,7 +743,9 @@ export default function AppLayout() {
       const res = await updateBranding({
         studio_nome: studioNome,
         studio_indirizzo: studioIndirizzo,
-        studio_contatti: studioContatti,
+        studio_telefono: studioTelefono,
+        studio_email: studioEmail,
+        studio_pec: studioPec,
         logo_base64: logoBase64,
         ragione_sociale: ragioneSociale,
         partita_iva: partitaIva,

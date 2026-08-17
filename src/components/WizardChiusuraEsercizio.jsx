@@ -115,13 +115,17 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <CheckCircle2 size={20} /> Questo esercizio è stato chiuso in modo definitivo.
         </div>
-        {(onDownloadPdf || onDownloadDossier) && (
+        {(onDownloadPdf || onDownloadDossier || onNavigateToConsuntivo) && (
           <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-            {onDownloadPdf && (
+            {onDownloadPdf ? (
               <button onClick={onDownloadPdf} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
                 <FileText size={16} /> Scarica Consuntivo PDF
               </button>
-            )}
+            ) : onNavigateToConsuntivo ? (
+              <button onClick={onNavigateToConsuntivo} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
+                <FileText size={16} /> Apri Consuntivo per l'Export
+              </button>
+            ) : null}
             {onDownloadDossier && (
               <button onClick={onDownloadDossier} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #10b981', color: '#059669', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
                 <Archive size={16} /> Dossier Completo (.zip)

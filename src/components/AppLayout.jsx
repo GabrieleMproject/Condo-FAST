@@ -677,6 +677,7 @@ export default function AppLayout() {
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [savingBranding, setSavingBranding] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Stati per il form di modifica
   const [studioNome, setStudioNome] = useState('');
@@ -748,9 +749,13 @@ export default function AppLayout() {
     }
   };
 
-  const handleSignOut = async () => {
+  const confirmSignOut = async () => {
     await signOut();
     navigate('/login');
+  };
+
+  const handleSignOut = () => {
+    setShowLogoutConfirm(true);
   };
 
   return (
@@ -1720,6 +1725,36 @@ export default function AppLayout() {
       )}
 
       <GlobalDropzone />
+
+      {/* Modale Conferma Logout */}
+      {showLogoutConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: 400, textAlign: 'center', padding: '24px 16px' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#ef4444' }}>
+              <LogOut size={28} />
+            </div>
+            <h2 style={{ fontSize: 20, margin: '0 0 12px 0', color: 'var(--text-primary)' }}>Uscita dall'account</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 24px 0', lineHeight: 1.5 }}>
+              Sei sicuro di voler uscire da CondoSmart?
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={() => setShowLogoutConfirm(false)} 
+                style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 500, fontFamily: 'Sora, sans-serif' }}
+              >
+                Annulla
+              </button>
+              <button 
+                onClick={confirmSignOut} 
+                style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', cursor: 'pointer', fontWeight: 600, fontFamily: 'Sora, sans-serif' }}
+              >
+                Sì, Esci
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

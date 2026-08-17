@@ -59,7 +59,7 @@ export default function AiComplianceModal({ onClose }) {
         </div>
 
         <div style={{ marginTop: 24, textAlign: 'center' }}>
-          <button className="btn btn--primary" onClick={onClose} style={{ width: '100%', justifyContent: 'center' }}>
+          <button className="btn-primary" onClick={onClose}>
             Ho compreso
           </button>
         </div>

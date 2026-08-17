@@ -283,6 +283,38 @@ export async function docxToText(file) {
   return html;
 }
 
+// ─── Estrazione di ripiego per .doc (legacy) ──────────────────────────────────
+export async function docToTextFallback(file) {
+  try {
+    // Prova prima con mammoth nel caso sia un .docx rinominato
+    const buffer = await fileToArrayBuffer(file);
+    const { value: html } = await mammoth.convertToHtml({ arrayBuffer: buffer });
+    if (html && html.trim().length > 0) return html;
+  } catch(e) {
+    // Ignora e procedi al fallback
+  }
+
+  // Estrazione "grezza" delle stringhe dal file binario OLE
+  const buffer = await fileToArrayBuffer(file);
+  const data = new Uint8Array(buffer);
+  
+  let text = '';
+  for (let i = 0; i < data.length; i++) {
+    const c = data[i];
+    if ((c >= 32 && c <= 126) || (c >= 192 && c <= 255)) {
+      text += String.fromCharCode(c);
+    } else if (c === 9 || c === 10 || c === 13) {
+      text += '\n';
+    } else if (c === 0) {
+      // ignora i byte nulli (molto comuni in UTF-16LE)
+    } else {
+      text += ' ';
+    }
+  }
+  // Pulisci per dare in pasto all'AI solo le parti rilevanti (rimuovi gli spazi multipli)
+  return text.replace(/ {2,}/g, ' ').replace(/\n+/g, '\n');
+}
+
 // ─── Determina tipo file ──────────────────────────────────────────────────────
 export function getTipoFile(file) {
   const name = file.name.toLowerCase();
@@ -298,7 +330,9 @@ export function getTipoFile(file) {
     type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     name.endsWith('.docx')
   )                                                                                       return 'docx';
-  // .doc legacy NON supportato (decisione di progetto — solo .docx)
+  
+  if (type === 'application/msword' || name.endsWith('.doc'))                             return 'doc';
+
   if (type === 'text/plain' || name.endsWith('.txt'))                                    return 'txt';
   return 'unknown';
 }
@@ -313,6 +347,7 @@ const MIME_CONSENTITI = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/msword', // .doc
   'text/csv',
   'text/plain',
   'image/jpeg',
@@ -327,7 +362,7 @@ export function validaMimeType(file) {
   if (MIME_CONSENTITI.has(type)) return true;
 
   // Fallback su estensione (alcuni browser non rilevano correttamente il MIME)
-  const estensioniOk = ['.pdf', '.xml', '.p7m', '.xlsx', '.xls', '.docx', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp'];
+  const estensioniOk = ['.pdf', '.xml', '.p7m', '.xlsx', '.xls', '.docx', '.doc', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp'];
   return estensioniOk.some(ext => name.endsWith(ext));
 }
 
@@ -344,6 +379,9 @@ async function preparaContenuto(file) {
 
     case 'docx':
       return { contenuto: await docxToText(file), isVisual: false };
+
+    case 'doc':
+      return { contenuto: await docToTextFallback(file), isVisual: false };
 
     case 'csv':
     case 'txt':

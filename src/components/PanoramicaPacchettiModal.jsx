@@ -25,7 +25,7 @@ const PACCHETTI = [
     costo: 100,
     sconto: 30,
     scontoMensile: 2.50,
-    descrizione: 'Fornisce ai condòmini un accesso limitato tramite piattaforma web. Aumenta la trasparenza.',
+    descrizione: 'Accesso web per i condòmini. Aumenta la trasparenza e riduce drasticamente le telefonate in studio per richieste di informazioni.',
     benefits: [
       'Tutto il piano Fiscale Base',
       'Accesso Web per i Condòmini',
@@ -42,7 +42,7 @@ const PACCHETTI = [
     costo: 150,
     sconto: 50,
     scontoMensile: 4.16,
-    descrizione: 'L\'esperienza top. Web App interattiva (nessun download richiesto) e partecipazione live alle assemblee con votazione facilitata.',
+    descrizione: 'L\'esperienza top. Web App interattiva (senza download) e assemblee live. Elimina il carico di telefonate dando totale autonomia ai condòmini.',
     benefits: [
       'Tutto il piano Web Access',
       'Web App completa accessibile da Browser',

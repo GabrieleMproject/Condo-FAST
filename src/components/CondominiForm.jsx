@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useCondomini } from '../hooks/useCondomini'
 
 const PROVINCE_IT = [

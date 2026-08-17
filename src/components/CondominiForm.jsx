@@ -11,6 +11,19 @@ const PROVINCE_IT = [
   'TO','TP','TN','TV','TS','UD','VA','VE','VB','VC','VR','VV','VI','VT'
 ]
 
+const MAPPA_CAP_PROVINCIA = {
+  '00': 'RM', '01': 'VT', '02': 'RI', '03': 'FR', '04': 'LT', '05': 'TR', '06': 'PG', '07': 'SS', '08': 'NU', '09': 'CA',
+  '10': 'TO', '11': 'AO', '12': 'CN', '13': 'VC', '14': 'AT', '15': 'AL', '16': 'GE', '17': 'SV', '18': 'IM', '19': 'SP',
+  '20': 'MI', '21': 'VA', '22': 'CO', '23': 'LC', '24': 'BG', '25': 'BS', '26': 'CR', '27': 'PV', '28': 'NO', '29': 'PC',
+  '30': 'VE', '31': 'TV', '32': 'BL', '33': 'UD', '34': 'TS', '35': 'PD', '36': 'VI', '37': 'VR', '38': 'TN', '39': 'BZ',
+  '40': 'BO', '41': 'MO', '42': 'RE', '43': 'PR', '44': 'FE', '45': 'RO', '46': 'MN', '47': 'FC', '48': 'RA', '50': 'FI',
+  '51': 'PT', '52': 'AR', '53': 'SI', '54': 'MS', '55': 'LU', '56': 'PI', '57': 'LI', '58': 'GR', '59': 'PO', '60': 'AN',
+  '61': 'PU', '62': 'MC', '63': 'AP', '64': 'TE', '65': 'PE', '66': 'CH', '67': 'AQ', '70': 'BA', '71': 'FG', '72': 'BR',
+  '73': 'LE', '74': 'TA', '75': 'MT', '76': 'BT', '80': 'NA', '81': 'CE', '82': 'BN', '83': 'AV', '84': 'SA', '85': 'PZ',
+  '86': 'CB', '87': 'CS', '88': 'CZ', '89': 'RC', '90': 'PA', '91': 'TP', '92': 'AG', '93': 'CL', '94': 'EN', '95': 'CT',
+  '96': 'SR', '97': 'RG', '98': 'ME'
+}
+
 const EMPTY_FORM = {
   nome: '',
   codice_fiscale: '',
@@ -69,28 +82,20 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
     }
   }, [condominio])
 
-  // Autocompletamento Città/Provincia da CAP
+  // Autocompletamento Provincia da CAP (Local mapping)
   useEffect(() => {
     if (form.cap && /^\d{5}$/.test(form.cap)) {
-      fetch(`https://api.zippopotam.us/it/${form.cap}`)
-        .then(res => {
-          if (!res.ok) throw new Error('CAP non trovato')
-          return res.json()
-        })
-        .then(data => {
-          if (data.places && data.places.length > 0) {
-            const place = data.places[0]
-            setForm(prev => ({
-              ...prev,
-              citta: prev.citta ? prev.citta : place['place name'],
-              provincia: PROVINCE_IT.includes(place['state abbreviation']) ? place['state abbreviation'] : prev.provincia
-            }))
-            if (errors.citta || errors.provincia) {
-              setErrors(prev => ({ ...prev, citta: null, provincia: null }))
-            }
-          }
-        })
-        .catch(() => { /* fallback silente */ })
+      const prefix = form.cap.substring(0, 2)
+      const provincia = MAPPA_CAP_PROVINCIA[prefix]
+      if (provincia) {
+        setForm(prev => ({
+          ...prev,
+          provincia: prev.provincia !== 'MI' && prev.provincia ? prev.provincia : provincia // MI is default, overwrite if default or empty
+        }))
+        if (errors.provincia) {
+          setErrors(prev => ({ ...prev, provincia: null }))
+        }
+      }
     }
   }, [form.cap])
 

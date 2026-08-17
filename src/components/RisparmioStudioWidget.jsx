@@ -2,7 +2,7 @@ import React from 'react';
 import { usePlan } from '../hooks/usePlan';
 import { ShieldCheck, TrendingDown, PiggyBank } from 'lucide-react';
 
-export default function RisparmioStudioWidget({ compact = false }) {
+export default function RisparmioStudioWidget({ compact = false, onScopriClick }) {
   const { piano, limiti, condominiServizioAttivo, scontoTelematiciMensile, prezzoSaaSFinale } = usePlan();
 
   if (piano === 'trial') return null; // No billing in trial
@@ -82,13 +82,33 @@ export default function RisparmioStudioWidget({ compact = false }) {
             </h3>
           </div>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 16 }}>
-            Per ogni condominio in cui attivi il modulo <strong>Conservazione Fiscale & Privacy</strong>, ricevi 1,00 € di sconto al mese sulla tua licenza CondoFAST, fino ad abbattere il 75% del canone.
+            Per ogni condominio in cui attivi il piano <strong>App Full Access & Live</strong>, ricevi 4,16 € di sconto al mese (pari a 50 € all'anno) sulla tua licenza CondoFAST, fino ad abbattere il 75% del canone.
           </p>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>
             <ShieldCheck size={16} color="#059669" />
             <span>Condomini con modulo attivo: <strong style={{ color: 'var(--text-primary)' }}>{condominiServizioAttivo}</strong></span>
           </div>
+
+          <button 
+            onClick={onScopriClick}
+            style={{
+              padding: '10px 20px',
+              background: '#10b981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+              boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+            }}
+            onMouseOver={(e) => e.target.style.background = '#059669'}
+            onMouseOut={(e) => e.target.style.background = '#10b981'}
+          >
+            Scopri i Pacchetti Condominio
+          </button>
         </div>
 
         <div style={{ flex: '1 1 300px', background: 'var(--app-bg)', padding: 20, borderRadius: 12, border: '1px solid var(--border-color)' }}>

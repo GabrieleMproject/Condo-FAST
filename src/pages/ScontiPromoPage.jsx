@@ -4,6 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { Gift, Copy, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import RisparmioStudioWidget from '../components/RisparmioStudioWidget';
+import PanoramicaPacchettiModal from '../components/PanoramicaPacchettiModal';
+import SelezioneCondominioModal from '../components/SelezioneCondominioModal';
+import ModaleServiziTelematici from '../components/ModaleServiziTelematici';
 
 const styles = {
   container: {
@@ -90,6 +93,14 @@ export default function ScontiPromoPage() {
   const [loadingReferrals, setLoadingReferrals] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Stati Modali Pacchetti
+  const [showPanoramica, setShowPanoramica] = useState(false);
+  const [showSelezione, setShowSelezione] = useState(false);
+  const [showAttivazione, setShowAttivazione] = useState(false);
+  
+  const [selectedPacchetto, setSelectedPacchetto] = useState(null);
+  const [selectedCondominio, setSelectedCondominio] = useState(null);
+
   useEffect(() => {
     if (user?.id) {
       fetchReferralData();
@@ -146,7 +157,7 @@ export default function ScontiPromoPage() {
         <p style={{ ...styles.subtitle, marginTop: -8, marginBottom: 16 }}>
           Il programma che riduce il tuo canone mensile offrendo servizi extra ai tuoi condomini.
         </p>
-        <RisparmioStudioWidget />
+        <RisparmioStudioWidget onScopriClick={() => setShowPanoramica(true)} />
       </section>
 
       {/* ── REFERRAL PROGRAM / PORTA UN AMICO ────────────────────────── */}
@@ -278,6 +289,39 @@ export default function ScontiPromoPage() {
           </div>
         </div>
       </section>
+
+
+      {/* ── MODALI ────────────────────────── */}
+      {showPanoramica && (
+        <PanoramicaPacchettiModal 
+          onClose={() => setShowPanoramica(false)} 
+          onSelectPacchetto={(pkg) => {
+            setSelectedPacchetto(pkg);
+            setShowPanoramica(false);
+            setShowSelezione(true);
+          }} 
+        />
+      )}
+
+      {showSelezione && (
+        <SelezioneCondominioModal 
+          pacchetto={selectedPacchetto}
+          onClose={() => setShowSelezione(false)}
+          onConferma={(condominio, pkg) => {
+            setSelectedCondominio(condominio);
+            setShowSelezione(false);
+            setShowAttivazione(true);
+          }}
+        />
+      )}
+
+      {showAttivazione && selectedCondominio && (
+        <ModaleServiziTelematici 
+          isOpen={showAttivazione}
+          onClose={() => setShowAttivazione(false)}
+          condominio={selectedCondominio}
+        />
+      )}
     </div>
   );
 }

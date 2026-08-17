@@ -800,7 +800,7 @@ export default function AppLayout() {
             const active = location.pathname.startsWith(path);
             const activeBadge = path === '/postbox' && inboxCount > 0 ? String(inboxCount) : badge;
             return (
-              <Link key={path} to={path} style={{
+              <Link key={path} to={path} title={collapsed ? label : undefined} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: collapsed ? '10px 16px' : '10px 12px',
                 borderRadius: 8, textDecoration: 'none',
@@ -831,7 +831,7 @@ export default function AppLayout() {
           {isSuperAdmin && (
             <>
               <div style={{ margin: '8px 12px', borderTop: '1px solid var(--border-color-2)' }} />
-              <Link to="/backoffice" style={{
+              <Link to="/backoffice" title={collapsed ? 'Backoffice (Admin)' : undefined} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: collapsed ? '10px 16px' : '10px 12px',
                 borderRadius: 8, textDecoration: 'none',
@@ -853,20 +853,22 @@ export default function AppLayout() {
 
         {/* Bottom */}
         <div style={{ padding: '8px', borderTop: '1px solid var(--border-color-2)', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <button onClick={() => setCollapsed(c => !c)} style={{
+          <button title={collapsed ? 'Espandi Sidebar' : 'Riduci Sidebar'} onClick={() => setCollapsed(c => !c)} style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: collapsed ? '10px 0' : '10px 12px',
-            borderRadius: 8, border: 'none', background: 'transparent',
-            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
+            borderRadius: 8, border: collapsed ? '1px solid var(--border-color)' : 'none', 
+            background: collapsed ? 'var(--card-bg)' : 'transparent',
+            boxShadow: collapsed ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+            color: collapsed ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
             justifyContent: collapsed ? 'center' : 'flex-start',
             whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', transition: 'all 0.15s',
           }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--border-color-2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = collapsed ? 'var(--text-primary)' : 'var(--text-muted)'; e.currentTarget.style.background = collapsed ? 'var(--card-bg)' : 'transparent'; }}
           >
             {collapsed ? <ChevronRight size={18} /> : <><ChevronLeft size={18} /><span>Riduci</span></>}
           </button>
-          <button onClick={handleSignOut} style={{
+          <button title={collapsed ? 'Esci' : undefined} onClick={handleSignOut} style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: collapsed ? '10px 16px' : '10px 12px',
             borderRadius: 8, border: 'none', background: 'transparent',
@@ -883,6 +885,7 @@ export default function AppLayout() {
           
           {/* AI Badge nel footer */}
           <button
+            title={collapsed ? 'Conformità AI Act' : undefined}
             onClick={() => setShowAiModal(true)}
             style={{
               background: 'rgba(37, 99, 235, 0.05)',

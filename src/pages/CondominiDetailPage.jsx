@@ -78,6 +78,7 @@ const MACRO_GROUPS = [
     tabs: [
       { id: 'finanze',    label: 'Gestione Finanze', icon: Wallet },
       { id: 'preventivo', label: 'Preventivo & Saldi', icon: ClipboardList },
+      { id: 'consuntivo', label: 'Consuntivo', icon: FileText },
       { id: 'rate',       label: 'Rate',       icon: CreditCard },
     ]
   },
@@ -395,7 +396,14 @@ export default function CondominiDetailPage() {
         {/* WIZARD CHIUSURA ESERCIZIO */}
         {esercizioAttivo && (
           <div style={{ marginTop: 16 }}>
-            <WizardChiusuraEsercizio condominioId={c.id} esercizio={esercizioAttivo} />
+            <WizardChiusuraEsercizio 
+              condominioId={c.id} 
+              esercizio={esercizioAttivo} 
+              onNavigateToConsuntivo={() => {
+                setActiveGroup('contabilita')
+                setActiveTab('consuntivo')
+              }}
+            />
           </div>
         )}
       </div>
@@ -591,6 +599,8 @@ export default function CondominiDetailPage() {
 
         {activeTab === 'anagrafica' && <AnagraficaCondominioTab condominioId={c.id} condominio={c} />}
         {activeTab === 'preventivo' && <PreventivoSection condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
+
+        {activeTab === 'consuntivo' && <ConsuntivoTab condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
 
         {activeTab === 'rate' && <RateGridTab condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
 

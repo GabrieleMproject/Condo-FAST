@@ -1,19 +1,61 @@
-import React, { useState } from 'react';
-import { CheckCircle2, AlertTriangle, ArrowRight, Save, X, CalendarCheck, FileText, Landmark, FileBarChart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle2, AlertTriangle, ArrowRight, Save, X, CalendarCheck, FileText, Landmark, FileBarChart, Archive } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
+import { useConsuntivo } from '../hooks/useConsuntivo';
 
-export default function WizardChiusuraEsercizio({ condominioId, esercizio, onSuccess }) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function WizardChiusuraEsercizio({ condominioId, esercizio, esercizioId, onSuccess, isOpen: controlledIsOpen, onClose: controlledOnClose, onDownloadPdf, onDownloadDossier, onNavigateToConsuntivo, hideTrigger }) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [notaNonConformita, setNotaNonConformita] = useState('');
 
-  // Dati mock / stati temporanei per la UI del Wizard
+  const targetEsercizioId = esercizio?.id || esercizioId;
+  const { data: consuntivoData, loading: loadingConsuntivo, fetch: fetchConsuntivo } = useConsuntivo(condominioId, targetEsercizioId);
+
   const [datiVerifica, setDatiVerifica] = useState({
-    speseNonPagate: 2,
+    speseNonPagate: 0,
     incassiDaRiconciliare: 0,
-    saldiQuadri: true
+    saldiQuadri: true,
+    caricamento: true,
   });
+
+  const hasAnomalies = datiVerifica.speseNonPagate > 0 || datiVerifica.incassiDaRiconciliare > 0 || !datiVerifica.saldiQuadri;
+  const canConfirm = !hasAnomalies || notaNonConformita.trim().length > 5;
+
+  useEffect(() => {
+    if (isOpen && targetEsercizioId) {
+      fetchConsuntivo();
+    }
+  }, [isOpen, targetEsercizioId, fetchConsuntivo]);
+
+  useEffect(() => {
+    if (consuntivoData) {
+      const speseNonPagate = consuntivoData.fatture?.rows?.filter(f => f.stato !== 'pagata').length || 0;
+      const scarto = consuntivoData.cassa?.scartoQuadratura || 0;
+      const saldiQuadri = Math.abs(scarto) < 0.05;
+      
+      const { data_inizio, data_fine } = consuntivoData.esercizio || {};
+      let q = supabase.from('estratto_conto').select('id', { count: 'exact', head: true })
+        .eq('condominio_id', condominioId)
+        .is('spesa_id', null)
+        .is('rata_unita_id', null)
+        .neq('riconciliato', true);
+      
+      if (data_inizio) q = q.gte('data_movimento', data_inizio);
+      if (data_fine) q = q.lte('data_movimento', data_fine);
+      
+      q.then(({ count }) => {
+        setDatiVerifica({
+          speseNonPagate,
+          incassiDaRiconciliare: count || 0,
+          saldiQuadri,
+          caricamento: false
+        });
+      });
+    }
+  }, [consuntivoData, condominioId]);
 
   const handleNext = () => {
     if (step < 4) setStep(step + 1);
@@ -23,15 +65,32 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, onSuc
     if (step > 1) setStep(step - 1);
   };
 
-  const onClose = () => setIsOpen(false);
+  const onClose = () => {
+    if (controlledOnClose) controlledOnClose();
+    setInternalIsOpen(false);
+    setTimeout(() => setStep(1), 300);
+  };
 
   const handleChiudi = async () => {
     setIsProcessing(true);
     try {
-      await new Promise(r => setTimeout(r, 1500)); // Simulazione
+      const targetEsercizioId = esercizio?.id || esercizioId;
+      if (!targetEsercizioId) throw new Error("ID Esercizio mancante.");
+
+      const prevNote = consuntivoData?.esercizio?.note || esercizio?.note || '';
+      const notaAggiuntiva = hasAnomalies ? `\n\n[CHIUSURA FORZATA - ${new Date().toLocaleDateString()}] Note di non conformità:\n${notaNonConformita}` : '';
+      const newNote = (prevNote + notaAggiuntiva).trim();
+
+      const { error } = await supabase
+        .from('esercizi')
+        .update({ stato: 'chiuso', note: newNote })
+        .eq('id', targetEsercizioId);
+
+      if (error) throw error;
+
       toast.success('Esercizio chiuso con successo! Saldi riportati al nuovo anno.');
       if (onSuccess) onSuccess();
-      onClose();
+      setStep(5); // Move to download step
     } catch (err) {
       toast.error('Errore durante la chiusura: ' + err.message);
     } finally {
@@ -41,24 +100,41 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, onSuc
 
   if (esercizio?.stato === 'chiuso') {
     return (
-      <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 12, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, color: '#059669', fontSize: 14, fontWeight: 500 }}>
-        <CheckCircle2 size={20} /> Questo esercizio è stato chiuso in modo definitivo.
+      <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12, color: '#059669', fontSize: 14, fontWeight: 500 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <CheckCircle2 size={20} /> Questo esercizio è stato chiuso in modo definitivo.
+        </div>
+        {(onDownloadPdf || onDownloadDossier) && (
+          <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+            {onDownloadPdf && (
+              <button onClick={onDownloadPdf} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
+                <FileText size={16} /> Scarica Consuntivo PDF
+              </button>
+            )}
+            {onDownloadDossier && (
+              <button onClick={onDownloadDossier} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #10b981', color: '#059669', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
+                <Archive size={16} /> Dossier Completo (.zip)
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <>
-      <div 
-        onClick={() => setIsOpen(true)}
-        style={{
-          background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: '16px 24px',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)', transition: 'all 0.2s'
-        }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = '#7c3aed'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
-      >
+      {!hideTrigger && (
+        <div 
+          onClick={() => setInternalIsOpen(true)}
+          style={{
+            background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: '16px 24px',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.03)', transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = '#7c3aed'}
+          onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+        >
          <div style={{ flex: '1 1 auto' }}>
             <h4 style={{ margin: '0 0 6px', fontSize: 15, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
                <FileBarChart size={18} style={{ color: '#7c3aed' }} /> Chiusura Esercizio {esercizio?.etichetta || ''}
@@ -77,7 +153,8 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, onSuc
             </div>
          </div>
          <ArrowRight size={20} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-      </div>
+        </div>
+      )}
 
       {isOpen && (
         <div style={styles.overlay}>
@@ -93,13 +170,15 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, onSuc
             </div>
 
             {/* Stepper Progress */}
-            <div style={styles.stepperContainer}>
-              {[1, 2, 3, 4].map(num => (
-                <div key={num} style={styles.stepIndicator(step >= num)}>
-                  {step > num ? <CheckCircle2 size={16} /> : num}
-                </div>
-              ))}
-            </div>
+            {step < 5 && (
+              <div style={styles.stepperContainer}>
+                {[1, 2, 3, 4].map(num => (
+                  <div key={num} style={styles.stepIndicator(step >= num)}>
+                    {step > num ? <CheckCircle2 size={16} /> : num}
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={styles.stepLabel}>
               {step === 1 && "Fase 1: Verifica Spese e Fatture"}
               {step === 2 && "Fase 2: Riconciliazione Incassi"}
@@ -112,10 +191,18 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, onSuc
                 <div style={styles.stepContent}>
                   <FileText size={48} style={{ color: '#3b82f6', marginBottom: 16 }} />
                   <h3 style={{ margin: '0 0 16px' }}>Ci sono spese in sospeso?</h3>
-                  <div style={styles.alertBox(datiVerifica.speseNonPagate > 0 ? 'warning' : 'success')}>
-                    <AlertTriangle size={20} />
-                    <span>Hai <strong>{datiVerifica.speseNonPagate}</strong> fatture registrate ma non ancora pagate. Vuoi riportarle come debiti verso fornitori nell'esercizio successivo?</span>
-                  </div>
+                  {datiVerifica.caricamento ? (
+                    <p style={{ color: 'var(--text-muted)' }}>Verifica in corso...</p>
+                  ) : (
+                    <div style={styles.alertBox(datiVerifica.speseNonPagate > 0 ? 'warning' : 'success')}>
+                      {datiVerifica.speseNonPagate > 0 ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
+                      <span>
+                        {datiVerifica.speseNonPagate > 0 
+                          ? `Hai ${datiVerifica.speseNonPagate} fatture registrate ma non ancora pagate. Vuoi riportarle come debiti verso fornitori nell'esercizio successivo?`
+                          : "Tutte le fatture registrate risultano regolarmente pagate."}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -123,31 +210,59 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, onSuc
                 <div style={styles.stepContent}>
                   <Landmark size={48} style={{ color: '#10b981', marginBottom: 16 }} />
                   <h3 style={{ margin: '0 0 16px' }}>Quadratura Incassi</h3>
-                  <div style={styles.alertBox(datiVerifica.incassiDaRiconciliare > 0 ? 'warning' : 'success')}>
-                    <CheckCircle2 size={20} />
-                    <span>Tutti gli incassi dell'estratto conto sembrano riconciliati con le rate dei condòmini. Nessun movimento anomalo rilevato.</span>
-                  </div>
+                  {datiVerifica.caricamento ? (
+                    <p style={{ color: 'var(--text-muted)' }}>Verifica in corso...</p>
+                  ) : (
+                    <div style={styles.alertBox(datiVerifica.incassiDaRiconciliare > 0 ? 'warning' : 'success')}>
+                      {datiVerifica.incassiDaRiconciliare > 0 ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
+                      <span>
+                        {datiVerifica.incassiDaRiconciliare > 0 
+                          ? `Ci sono ${datiVerifica.incassiDaRiconciliare} movimenti dell'estratto conto non ancora riconciliati (né spese né rate).`
+                          : "Tutti i movimenti dell'estratto conto sembrano riconciliati correttamente. Nessun movimento anomalo rilevato."}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
               {step === 3 && (
                 <div style={styles.stepContent}>
                   <CalendarCheck size={48} style={{ color: '#f59e0b', marginBottom: 16 }} />
-                  <h3 style={{ margin: '0 0 16px' }}>Calcolo dei Conguagli</h3>
-                  <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
-                    Verrà generato il riparto consuntivo definitivo per calcolare i saldi di ogni condòmino (Quote versate - Spese di competenza).
-                  </p>
-                  <div style={{ background: 'var(--app-bg)', padding: 16, borderRadius: 8, textAlign: 'left', border: '1px solid var(--border-color)', width: '100%', maxWidth: 400 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
-                      <span>Spese Totali Esercizio:</span> <strong>€ 12.450,00</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
-                      <span>Quote Versate dai Condòmini:</span> <strong>€ 11.200,00</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontSize: 14 }}>
-                      <span>Conguaglio Complessivo:</span> <strong>€ 1.250,00 (da incassare)</strong>
-                    </div>
-                  </div>
+                  <h3 style={{ margin: '0 0 16px' }}>Calcolo dei Conguagli e Saldi</h3>
+                  {datiVerifica.caricamento ? (
+                    <p style={{ color: 'var(--text-muted)' }}>Calcolo in corso...</p>
+                  ) : (
+                    <>
+                      <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
+                        Verrà generato il riparto consuntivo definitivo per calcolare i saldi di ogni condòmino (Quote versate - Spese di competenza).
+                      </p>
+                      <div style={{ background: 'var(--app-bg)', padding: 16, borderRadius: 8, textAlign: 'left', border: '1px solid var(--border-color)', width: '100%', maxWidth: 400, marginBottom: 16 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
+                          <span>Spese Totali Esercizio:</span> <strong>€ {consuntivoData?.competenza?.totSpese?.toLocaleString('it-IT', { minimumFractionDigits: 2 }) || '0,00'}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14 }}>
+                          <span>Quote Versate dai Condòmini:</span> <strong>€ {consuntivoData?.riparto?.tot?.versato?.toLocaleString('it-IT', { minimumFractionDigits: 2 }) || '0,00'}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: consuntivoData?.riparto?.tot?.conguaglio < 0 ? '#ef4444' : '#10b981', fontSize: 14 }}>
+                          <span>Conguaglio Complessivo:</span> 
+                          <strong>€ {Math.abs(consuntivoData?.riparto?.tot?.conguaglio || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })} {consuntivoData?.riparto?.tot?.conguaglio < 0 ? '(da incassare)' : '(credito)'}</strong>
+                        </div>
+                      </div>
+                      
+                      {!datiVerifica.saldiQuadri && (
+                        <div style={styles.alertBox('warning')}>
+                          <AlertTriangle size={20} />
+                          <span><strong>Attenzione:</strong> Rilevato scarto di quadratura tra situazione di cassa e di competenza (differenza: € {consuntivoData?.cassa?.scartoQuadratura?.toLocaleString('it-IT', { minimumFractionDigits: 2 })}).</span>
+                        </div>
+                      )}
+                      {datiVerifica.saldiQuadri && (
+                        <div style={styles.alertBox('success')}>
+                          <CheckCircle2 size={20} />
+                          <span>Nessuno scarto di quadratura rilevato tra cassa e competenza.</span>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 
@@ -155,30 +270,87 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, onSuc
                 <div style={styles.stepContent}>
                   <CheckCircle2 size={56} style={{ color: '#7c3aed', marginBottom: 16 }} />
                   <h3 style={{ margin: '0 0 8px' }}>Tutto pronto per la chiusura</h3>
-                  <p style={{ color: 'var(--text-secondary)' }}>
-                    Questa operazione congelerà l'esercizio corrente e genererà automaticamente 
-                    un nuovo esercizio per l'anno successivo, riportando i saldi e i debiti.
+                  
+                  {hasAnomalies ? (
+                    <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.3)', padding: 20, borderRadius: 12, marginTop: 12, textAlign: 'left', width: '100%' }}>
+                      <p style={{ color: '#d97706', margin: '0 0 12px', fontSize: 14, fontWeight: 600 }}>
+                        <AlertTriangle size={16} style={{ verticalAlign: 'text-bottom', marginRight: 6 }} />
+                        Attenzione: Sono state rilevate anomalie contabili.
+                      </p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '0 0 16px', lineHeight: 1.5 }}>
+                        Per forzare la chiusura dell'esercizio nonostante le anomalie (fatture non pagate, movimenti non riconciliati, o scarti di quadratura), devi obbligatoriamente inserire una <strong>Nota di non conformità</strong> (es. "Fatture in sospeso riportate al nuovo anno"). Questa nota verrà salvata permanentemente a registro.
+                      </p>
+                      <textarea 
+                        value={notaNonConformita}
+                        onChange={e => setNotaNonConformita(e.target.value)}
+                        placeholder="Inserisci qui le motivazioni per la chiusura forzata..."
+                        style={{ width: '100%', boxSizing: 'border-box', minHeight: 90, padding: 12, borderRadius: 8, border: '1px solid var(--border-color-2)', background: 'var(--app-bg)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical', fontSize: 14 }}
+                      />
+                    </div>
+                  ) : (
+                    <p style={{ color: 'var(--text-secondary)' }}>
+                      Questa operazione congelerà l'esercizio corrente in modo definitivo e riporterà i saldi.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {step === 5 && (
+                <div style={styles.stepContent}>
+                  <CheckCircle2 size={64} style={{ color: '#10b981', marginBottom: 16 }} />
+                  <h3 style={{ margin: '0 0 8px', fontSize: 24 }}>Chiusura Completata!</h3>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
+                    L'esercizio è stato chiuso con successo. Ora puoi scaricare il consuntivo e il dossier con tutte le fatture.
                   </p>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    {onDownloadPdf ? (
+                      <button onClick={onDownloadPdf} style={{ padding: '12px 24px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
+                        <FileText size={18} /> Scarica Consuntivo PDF
+                      </button>
+                    ) : onNavigateToConsuntivo ? (
+                      <button onClick={() => { onClose(); onNavigateToConsuntivo(); }} style={{ padding: '12px 24px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
+                        <FileText size={18} /> Vai al Consuntivo
+                      </button>
+                    ) : null}
+                    
+                    {onDownloadDossier && (
+                      <button onClick={onDownloadDossier} style={{ padding: '12px 24px', background: 'transparent', border: '1px solid #10b981', color: '#059669', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
+                        <Archive size={18} /> Dossier Completo (.zip)
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
             <div style={styles.footer}>
-              <button 
-                onClick={step === 1 ? onClose : handlePrev} 
-                style={styles.btnSecondary}
-                disabled={isProcessing}
-              >
-                {step === 1 ? 'Annulla' : 'Indietro'}
-              </button>
-              
-              {step < 4 ? (
-                <button onClick={handleNext} style={styles.btnPrimary}>
-                  Prosegui <ArrowRight size={16} />
-                </button>
+              {step < 5 ? (
+                <>
+                  <button 
+                    onClick={step === 1 ? onClose : handlePrev} 
+                    style={styles.btnSecondary}
+                    disabled={isProcessing}
+                  >
+                    {step === 1 ? 'Annulla' : 'Indietro'}
+                  </button>
+                  
+                  {step < 4 ? (
+                    <button onClick={handleNext} style={styles.btnPrimary} disabled={datiVerifica.caricamento}>
+                      Prosegui <ArrowRight size={16} />
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleChiudi} 
+                      style={{ ...styles.btnSuccess, opacity: canConfirm && !isProcessing ? 1 : 0.5 }} 
+                      disabled={!canConfirm || isProcessing}
+                    >
+                      {isProcessing ? 'Chiusura in corso...' : 'Conferma Chiusura'} <Save size={16} />
+                    </button>
+                  )}
+                </>
               ) : (
-                <button onClick={handleChiudi} style={styles.btnSuccess} disabled={isProcessing}>
-                  {isProcessing ? 'Chiusura in corso...' : 'Conferma Chiusura'} <Save size={16} />
+                <button onClick={onClose} style={styles.btnSecondary}>
+                  Chiudi Wizard
                 </button>
               )}
             </div>

@@ -212,6 +212,9 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
           fetch()
           setTplMsg('Esercizio chiuso con successo.')
         }}
+        hideTrigger={true}
+        onDownloadPdf={scaricaPdf}
+        onDownloadDossier={scaricaDossierZip}
       />
 
       {/* Toolbar */}

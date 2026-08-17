@@ -78,7 +78,6 @@ export function useNotifiche() {
           ? supabase
               .from('fatture_fornitori')
               .select('id, condominio_id, ritenuta_acconto, stato, ritenuta_pagata, data_pagamento, condomini(nome)')
-              .eq('amministratore_id', user.id)
               .gt('ritenuta_acconto', 0)
               .neq('ritenuta_pagata', true)
           : Promise.resolve({ data: [] }),

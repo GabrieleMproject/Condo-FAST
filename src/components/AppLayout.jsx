@@ -790,7 +790,7 @@ export default function AppLayout() {
         flexShrink: 0,
       }}>
         {/* Logo */}
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: collapsed ? '0 16px' : '0 20px', borderBottom: '1px solid var(--border-color-2)', gap: 10, overflow: 'hidden' }}>
+        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? 0 : '0 20px', borderBottom: '1px solid var(--border-color-2)', overflow: 'hidden' }}>
           <BrandLogo size={32} showText={!collapsed} variant="sidebar" />
         </div>
 
@@ -855,14 +855,14 @@ export default function AppLayout() {
         <div style={{ padding: '8px', borderTop: '1px solid var(--border-color-2)', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <button onClick={() => setCollapsed(c => !c)} style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: collapsed ? '10px 16px' : '10px 12px',
+            padding: collapsed ? '10px 0' : '10px 12px',
             borderRadius: 8, border: 'none', background: 'transparent',
             color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
             justifyContent: collapsed ? 'center' : 'flex-start',
-            whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', transition: 'color 0.15s',
+            whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', transition: 'all 0.15s',
           }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--border-color-2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
           >
             {collapsed ? <ChevronRight size={18} /> : <><ChevronLeft size={18} /><span>Riduci</span></>}
           </button>

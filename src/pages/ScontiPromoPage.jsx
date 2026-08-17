@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
-import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 import { Gift, Copy, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import RisparmioStudioWidget from '../components/RisparmioStudioWidget';

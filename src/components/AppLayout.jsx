@@ -754,7 +754,7 @@ export default function AppLayout() {
   };
 
   return (
-    <div className={isReadOnly ? 'read-only-mode' : ''} style={{ display: 'flex', minHeight: '100vh', background: 'var(--app-bg)', fontFamily: 'Sora, sans-serif' }}>
+    <div className={isReadOnly ? 'read-only-mode' : ''} style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--app-bg)', fontFamily: 'Sora, sans-serif' }}>
       
       {/* Sidebar Overlay Mobile */}
       {isMobileMenuOpen && (
@@ -788,7 +788,7 @@ export default function AppLayout() {
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
           {NAV_ITEMS.map(({ path, label, icon: Icon, badge }) => {
             const active = location.pathname.startsWith(path);
             const activeBadge = path === '/postbox' && inboxCount > 0 ? String(inboxCount) : badge;

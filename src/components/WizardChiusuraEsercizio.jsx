@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, AlertTriangle, ArrowRight, Save, X, CalendarCheck, FileText, Landmark, FileBarChart, Archive } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ArrowRight, Save, X, CalendarCheck, FileText, Landmark, FileBarChart, Archive, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
 import { useConsuntivo } from '../hooks/useConsuntivo';
@@ -12,16 +12,17 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
   const [notaNonConformita, setNotaNonConformita] = useState('');
 
   const targetEsercizioId = esercizio?.id || esercizioId;
-  const { data: consuntivoData, loading: loadingConsuntivo, fetch: fetchConsuntivo } = useConsuntivo(condominioId, targetEsercizioId);
+  const { data: consuntivoData, loading: loadingConsuntivo, error: errorConsuntivo, fetch: fetchConsuntivo } = useConsuntivo(condominioId, targetEsercizioId);
 
+  const [verificandoIncassi, setVerificandoIncassi] = useState(false);
   const [datiVerifica, setDatiVerifica] = useState({
     speseNonPagate: 0,
     incassiDaRiconciliare: 0,
     saldiQuadri: true,
-    caricamento: true,
   });
 
-  const hasAnomalies = datiVerifica.speseNonPagate > 0 || datiVerifica.incassiDaRiconciliare > 0 || !datiVerifica.saldiQuadri;
+  const isCaricamento = loadingConsuntivo || verificandoIncassi;
+  const hasAnomalies = datiVerifica.speseNonPagate > 0 || datiVerifica.incassiDaRiconciliare > 0 || !datiVerifica.saldiQuadri || errorConsuntivo;
   const canConfirm = !hasAnomalies || notaNonConformita.trim().length > 5;
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
 
   useEffect(() => {
     if (consuntivoData) {
+      setVerificandoIncassi(true);
       const speseNonPagate = consuntivoData.fatture?.rows?.filter(f => f.stato !== 'pagata').length || 0;
       const scarto = consuntivoData.cassa?.scartoQuadratura || 0;
       const saldiQuadri = Math.abs(scarto) < 0.05;
@@ -46,13 +48,15 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
       if (data_inizio) q = q.gte('data_movimento', data_inizio);
       if (data_fine) q = q.lte('data_movimento', data_fine);
       
-      q.then(({ count }) => {
+      q.then(({ count, error }) => {
         setDatiVerifica({
           speseNonPagate,
           incassiDaRiconciliare: count || 0,
-          saldiQuadri,
-          caricamento: false
+          saldiQuadri
         });
+        setVerificandoIncassi(false);
+      }).catch(err => {
+        setVerificandoIncassi(false);
       });
     }
   }, [consuntivoData, condominioId]);
@@ -191,8 +195,15 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
                 <div style={styles.stepContent}>
                   <FileText size={48} style={{ color: '#3b82f6', marginBottom: 16 }} />
                   <h3 style={{ margin: '0 0 16px' }}>Ci sono spese in sospeso?</h3>
-                  {datiVerifica.caricamento ? (
-                    <p style={{ color: 'var(--text-muted)' }}>Verifica in corso...</p>
+                  {isCaricamento ? (
+                    <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Loader2 size={16} className="animate-spin" /> Verifica in corso...
+                    </p>
+                  ) : errorConsuntivo ? (
+                    <div style={styles.alertBox('warning')}>
+                      <AlertTriangle size={20} />
+                      <span>Impossibile completare la verifica: {errorConsuntivo}</span>
+                    </div>
                   ) : (
                     <div style={styles.alertBox(datiVerifica.speseNonPagate > 0 ? 'warning' : 'success')}>
                       {datiVerifica.speseNonPagate > 0 ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
@@ -210,8 +221,15 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
                 <div style={styles.stepContent}>
                   <Landmark size={48} style={{ color: '#10b981', marginBottom: 16 }} />
                   <h3 style={{ margin: '0 0 16px' }}>Quadratura Incassi</h3>
-                  {datiVerifica.caricamento ? (
-                    <p style={{ color: 'var(--text-muted)' }}>Verifica in corso...</p>
+                  {isCaricamento ? (
+                    <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Loader2 size={16} className="animate-spin" /> Verifica in corso...
+                    </p>
+                  ) : errorConsuntivo ? (
+                    <div style={styles.alertBox('warning')}>
+                      <AlertTriangle size={20} />
+                      <span>Impossibile completare la verifica.</span>
+                    </div>
                   ) : (
                     <div style={styles.alertBox(datiVerifica.incassiDaRiconciliare > 0 ? 'warning' : 'success')}>
                       {datiVerifica.incassiDaRiconciliare > 0 ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
@@ -229,8 +247,15 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
                 <div style={styles.stepContent}>
                   <CalendarCheck size={48} style={{ color: '#f59e0b', marginBottom: 16 }} />
                   <h3 style={{ margin: '0 0 16px' }}>Calcolo dei Conguagli e Saldi</h3>
-                  {datiVerifica.caricamento ? (
-                    <p style={{ color: 'var(--text-muted)' }}>Calcolo in corso...</p>
+                  {isCaricamento ? (
+                    <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Loader2 size={16} className="animate-spin" /> Calcolo in corso...
+                    </p>
+                  ) : errorConsuntivo ? (
+                    <div style={styles.alertBox('warning')}>
+                      <AlertTriangle size={20} />
+                      <span>Errore nel calcolo del consuntivo. Controllare la connessione o l'integrità dei dati.</span>
+                    </div>
                   ) : (
                     <>
                       <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
@@ -271,7 +296,11 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
                   <CheckCircle2 size={56} style={{ color: '#7c3aed', marginBottom: 16 }} />
                   <h3 style={{ margin: '0 0 8px' }}>Tutto pronto per la chiusura</h3>
                   
-                  {hasAnomalies ? (
+                  {isCaricamento ? (
+                    <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
+                      <Loader2 size={16} className="animate-spin" /> Attendere la fine delle verifiche...
+                    </p>
+                  ) : hasAnomalies ? (
                     <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.3)', padding: 20, borderRadius: 12, marginTop: 12, textAlign: 'left', width: '100%' }}>
                       <p style={{ color: '#d97706', margin: '0 0 12px', fontSize: 14, fontWeight: 600 }}>
                         <AlertTriangle size={16} style={{ verticalAlign: 'text-bottom', marginRight: 6 }} />
@@ -335,14 +364,14 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
                   </button>
                   
                   {step < 4 ? (
-                    <button onClick={handleNext} style={styles.btnPrimary} disabled={datiVerifica.caricamento}>
+                    <button onClick={handleNext} style={styles.btnPrimary}>
                       Prosegui <ArrowRight size={16} />
                     </button>
                   ) : (
                     <button 
                       onClick={handleChiudi} 
-                      style={{ ...styles.btnSuccess, opacity: canConfirm && !isProcessing ? 1 : 0.5 }} 
-                      disabled={!canConfirm || isProcessing}
+                      style={{ ...styles.btnSuccess, opacity: canConfirm && !isProcessing && !isCaricamento ? 1 : 0.5 }} 
+                      disabled={!canConfirm || isProcessing || isCaricamento}
                     >
                       {isProcessing ? 'Chiusura in corso...' : 'Conferma Chiusura'} <Save size={16} />
                     </button>

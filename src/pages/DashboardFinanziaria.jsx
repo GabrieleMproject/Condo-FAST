@@ -19,38 +19,38 @@ export default function DashboardFinanziaria() {
   const [mesiViz, setMesiViz] = useState(6);
 
   useEffect(() => {
+    async function loadDashboard() {
+      setLoading(true);
+      const dataLimite = new Date();
+      dataLimite.setMonth(dataLimite.getMonth() - mesiViz);
+      const dataStr = dataLimite.toISOString().split('T')[0];
+
+      const [
+        { data: cond },
+        { data: movimenti },
+        { data: fatture },
+        { data: riconciliazioni },
+        { data: spese },
+        { data: rate },
+      ] = await Promise.all([
+        supabase.from('condomini').select('*').eq('id', condominioId).single(),
+        supabase.from('estratto_conto').select('*').eq('condominio_id', condominioId).gte('data_movimento', dataStr).order('data_movimento', { ascending: false }),
+        supabase.from('fatture_fornitori').select('*').eq('condominio_id', condominioId).order('data_fattura', { ascending: false }),
+        supabase.from('riconciliazioni').select('*').eq('condominio_id', condominioId),
+        supabase.from('spese').select('*, esercizio:esercizi(anno, data_inizio, data_fine)').eq('condominio_id', condominioId).order('data_spesa', { ascending: false }).limit(20),
+        supabase.from('rate_unita')
+          .select('*, rate!inner(data_scadenza)')
+          .eq('condominio_id', condominioId)
+          .neq('stato', 'pagata')
+          .lte('rate.data_scadenza', new Date().toISOString().split('T')[0]),
+      ]);
+
+      setDati({ cond, movimenti: movimenti || [], fatture: fatture || [], riconciliazioni: riconciliazioni || [], spese: spese || [], rate: rate || [] });
+      setLoading(false);
+    }
+
     if (condominioId) loadDashboard();
   }, [condominioId, mesiViz]);
-
-  async function loadDashboard() {
-    setLoading(true);
-    const dataLimite = new Date();
-    dataLimite.setMonth(dataLimite.getMonth() - mesiViz);
-    const dataStr = dataLimite.toISOString().split('T')[0];
-
-    const [
-      { data: cond },
-      { data: movimenti },
-      { data: fatture },
-      { data: riconciliazioni },
-      { data: spese },
-      { data: rate },
-    ] = await Promise.all([
-      supabase.from('condomini').select('*').eq('id', condominioId).single(),
-      supabase.from('estratto_conto').select('*').eq('condominio_id', condominioId).gte('data_movimento', dataStr).order('data_movimento', { ascending: false }),
-      supabase.from('fatture_fornitori').select('*').eq('condominio_id', condominioId).order('data_fattura', { ascending: false }),
-      supabase.from('riconciliazioni').select('*').eq('condominio_id', condominioId),
-      supabase.from('spese').select('*, esercizio:esercizi(anno, data_inizio, data_fine)').eq('condominio_id', condominioId).order('data_spesa', { ascending: false }).limit(20),
-      supabase.from('rate_unita')
-        .select('*, rate!inner(data_scadenza)')
-        .eq('condominio_id', condominioId)
-        .neq('stato', 'pagata')
-        .lte('rate.data_scadenza', new Date().toISOString().split('T')[0]),
-    ]);
-
-    setDati({ cond, movimenti: movimenti || [], fatture: fatture || [], riconciliazioni: riconciliazioni || [], spese: spese || [], rate: rate || [] });
-    setLoading(false);
-  }
 
   const computed = useMemo(() => {
     if (!dati) return null;

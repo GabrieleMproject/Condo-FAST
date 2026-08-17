@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlan } from '../hooks/usePlan';
 import { useNotifiche } from '../hooks/useNotifiche';
-import { PlanBadge } from './PlanGate';
+import PlanGate, { PlanBadge } from './PlanGate';
 import { toast } from 'react-hot-toast';
 import BrandLogo from './BrandLogo';
 import NotificheDropdown from './NotificheDropdown';
@@ -46,6 +46,37 @@ import {
   PhoneCall,
   Gift
 } from 'lucide-react';
+
+function fileToResizedDataUrl(file, maxW = 400) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width)
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/jpeg', 0.9))
+      }
+      img.onerror = reject
+      img.src = reader.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+async function apriPortaleStripe(customerId) {
+  const { data, error } = await supabase.functions.invoke('stripe-portal', {
+    body: { customerId, returnUrl: window.location.href },
+  })
+  if (error) throw new Error(error.message || 'Errore apertura portale')
+  if (data?.url) window.location.href = data.url
+  else throw new Error(data?.error || 'Errore apertura portale')
+}
 
 const NAV_ITEMS = [
   { path: '/dashboard',          label: 'Dashboard',            icon: LayoutDashboard },
@@ -906,7 +937,6 @@ export default function AppLayout() {
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37, 99, 235, 0.1)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(37, 99, 235, 0.05)' }}
-            title="Conforme AI Act UE 2024/1689"
           >
             <Bot size={16} style={{ flexShrink: 0 }} />
             {!collapsed && 'AI Powered'}

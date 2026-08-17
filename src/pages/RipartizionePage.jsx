@@ -38,66 +38,66 @@ export default function RipartizionePage() {
 
   // ─── Carica dati quando cambia esercizio ─────────────────────
   useEffect(() => {
+    async function loadDati() {
+      setLoading(true);
+      try {
+        const [
+          { data: sp },
+          { data: uni },
+          { data: rip },
+          { data: tab },
+          { data: rt },
+        ] = await Promise.all([
+          supabase.from('spese').select('*').eq('esercizio_id', esercizioId).order('data_spesa'),
+          supabase.from('unita').select(`
+            *,
+            occupanti:occupanti_unita(
+              id, ruolo, attivo,
+              persona:persone(id, nome, cognome, email)
+            )
+          `).eq('condominio_id', condominioId).order('numero'),
+          supabase.from('ripartizioni').select(`
+            *, spesa:spese!inner(id, descrizione, importo, criterio, tabella_millesimale_id, categoria, esercizio_id)
+          `).eq('spese.esercizio_id', esercizioId),
+          supabase.from('tabelle_millesimali').select('*').eq('condominio_id', condominioId),
+          supabase.from('rate').select('*').eq('esercizio_id', esercizioId).order('numero_rata'),
+        ]);
+
+        const tabelleList = tab || [];
+        let milList = [];
+        if (tabelleList.length > 0) {
+          const { data: milData } = await supabase
+            .from('millesimi_unita')
+            .select('*')
+            .in('tabella_id', tabelleList.map(t => t.id));
+          milList = milData || [];
+        }
+
+        // celle rate_unita: scoped alle rate di questo esercizio
+        const rateList = rt || [];
+        let cellList = [];
+        if (rateList.length) {
+          const { data: cellData } = await supabase
+            .from('rate_unita').select('*')
+            .in('rata_id', rateList.map(r => r.id));
+          cellList = cellData || [];
+        }
+
+        setSpese(sp || []);
+        setUnita(uni || []);
+        setRipartizioni(rip || []);
+        setTabelle(tabelleList);
+        setMillesimi(milList);
+        setRate(rateList);
+        setCells(cellList);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     if (!esercizioId || !condominioId) return;
     loadDati();
   }, [esercizioId, condominioId]);
-
-  async function loadDati() {
-    setLoading(true);
-    try {
-      const [
-        { data: sp },
-        { data: uni },
-        { data: rip },
-        { data: tab },
-        { data: rt },
-      ] = await Promise.all([
-        supabase.from('spese').select('*').eq('esercizio_id', esercizioId).order('data_spesa'),
-        supabase.from('unita').select(`
-          *,
-          occupanti:occupanti_unita(
-            id, ruolo, attivo,
-            persona:persone(id, nome, cognome, email)
-          )
-        `).eq('condominio_id', condominioId).order('numero'),
-        supabase.from('ripartizioni').select(`
-          *, spesa:spese!inner(id, descrizione, importo, criterio, tabella_millesimale_id, categoria, esercizio_id)
-        `).eq('spese.esercizio_id', esercizioId),
-        supabase.from('tabelle_millesimali').select('*').eq('condominio_id', condominioId),
-        supabase.from('rate').select('*').eq('esercizio_id', esercizioId).order('numero_rata'),
-      ]);
-
-      const tabelleList = tab || [];
-      let milList = [];
-      if (tabelleList.length > 0) {
-        const { data: milData } = await supabase
-          .from('millesimi_unita')
-          .select('*')
-          .in('tabella_id', tabelleList.map(t => t.id));
-        milList = milData || [];
-      }
-
-      // celle rate_unita: scoped alle rate di questo esercizio
-      const rateList = rt || [];
-      let cellList = [];
-      if (rateList.length) {
-        const { data: cellData } = await supabase
-          .from('rate_unita').select('*')
-          .in('rata_id', rateList.map(r => r.id));
-        cellList = cellData || [];
-      }
-
-      setSpese(sp || []);
-      setUnita(uni || []);
-      setRipartizioni(rip || []);
-      setTabelle(tabelleList);
-      setMillesimi(milList);
-      setRate(rateList);
-      setCells(cellList);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   // ─── Categorie disponibili ───────────────────────────────────
   const categorie = useMemo(() => {

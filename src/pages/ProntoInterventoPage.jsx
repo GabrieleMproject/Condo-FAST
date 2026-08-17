@@ -30,24 +30,24 @@ export default function ProntoInterventoPage() {
   const [selectedPartnerModal, setSelectedPartnerModal] = useState(null)
 
   useEffect(() => {
+    const loadPartners = async () => {
+      setLoading(true)
+      try {
+        const data = await fetchFornitoriPartner()
+        setPartnerList(data.filter(p => p.attivo))
+      } catch (err) {
+        if (err.code === '42P01' || (err.message && (err.message.includes('schema cache') || err.message.includes('relation')))) {
+          setPartnerList([]);
+        } else {
+          toast.error("Errore caricamento fornitori pronto intervento: " + err.message);
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
     loadPartners()
   }, [])
-
-  const loadPartners = async () => {
-    setLoading(true)
-    try {
-      const data = await fetchFornitoriPartner()
-      setPartnerList(data.filter(p => p.attivo))
-    } catch (err) {
-      if (err.code === '42P01' || (err.message && (err.message.includes('schema cache') || err.message.includes('relation')))) {
-        setPartnerList([]);
-      } else {
-        toast.error("Errore caricamento fornitori pronto intervento: " + err.message);
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const partnerFiltrati = partnerList.filter(p => {
     const matchProv = selectedProvincia === 'tutte' || p.provincia_esclusiva?.toUpperCase() === selectedProvincia.toUpperCase()

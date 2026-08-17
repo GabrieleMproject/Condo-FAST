@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus, Settings, Link2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callGemini } from '../lib/geminiClient';
+import { trovaBestMatchFattura } from '../lib/autoMatchingEngine';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
 
 const formattaData = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—');

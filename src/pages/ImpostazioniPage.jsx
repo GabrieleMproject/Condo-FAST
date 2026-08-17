@@ -1630,25 +1630,25 @@ function AssegnaCondominiModal({ collaboratore, onClose }) {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
+    async function fetchAssignedCondos() {
+      setLoadingAssigned(true)
+      try {
+        const { data, error } = await supabase
+          .from('collaboratori_condomini')
+          .select('condominio_id')
+          .eq('collaboratore_id', collaboratore.id)
+        if (error) throw error
+        setAssignedCondoIds(data.map(item => item.condominio_id))
+      } catch (e) {
+        console.error('Errore caricamento condomini assegnati:', e)
+        toast.error('Errore nel caricamento dei condomini assegnati.')
+      } finally {
+        setLoadingAssigned(false)
+      }
+    }
+
     fetchAssignedCondos()
   }, [collaboratore.id])
-
-  async function fetchAssignedCondos() {
-    setLoadingAssigned(true)
-    try {
-      const { data, error } = await supabase
-        .from('collaboratori_condomini')
-        .select('condominio_id')
-        .eq('collaboratore_id', collaboratore.id)
-      if (error) throw error
-      setAssignedCondoIds(data.map(item => item.condominio_id))
-    } catch (e) {
-      console.error('Errore caricamento condomini assegnati:', e)
-      toast.error('Errore nel caricamento dei condomini assegnati.')
-    } finally {
-      setLoadingAssigned(false)
-    }
-  }
 
   async function handleToggleCondo(condoId, isChecked) {
     setSaving(true)

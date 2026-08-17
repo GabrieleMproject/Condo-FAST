@@ -102,35 +102,35 @@ export default function ScontiPromoPage() {
   const [selectedCondominio, setSelectedCondominio] = useState(null);
 
   useEffect(() => {
+    async function fetchReferralData() {
+      try {
+        const { data: refs, error: refsErr } = await supabase
+          .from('referrals')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (refsErr) throw refsErr;
+        setUserReferrals(refs || []);
+
+        const { data: camp, error: campErr } = await supabase
+          .from('referral_campaigns')
+          .select('*')
+          .eq('attiva', true)
+          .maybeSingle();
+
+        if (campErr) throw campErr;
+        setActiveCampagna(camp || null);
+      } catch (e) {
+        console.error('Errore caricamento dati referral:', e);
+      } finally {
+        setLoadingReferrals(false);
+      }
+    }
+
     if (user?.id) {
       fetchReferralData();
     }
   }, [user]);
-
-  async function fetchReferralData() {
-    try {
-      const { data: refs, error: refsErr } = await supabase
-        .from('referrals')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (refsErr) throw refsErr;
-      setUserReferrals(refs || []);
-
-      const { data: camp, error: campErr } = await supabase
-        .from('referral_campaigns')
-        .select('*')
-        .eq('attiva', true)
-        .maybeSingle();
-
-      if (campErr) throw campErr;
-      setActiveCampagna(camp || null);
-    } catch (e) {
-      console.error('Errore caricamento dati referral:', e);
-    } finally {
-      setLoadingReferrals(false);
-    }
-  }
 
   function formattaEmailMascherata(email) {
     if (!email) return '';

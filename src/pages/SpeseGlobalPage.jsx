@@ -81,6 +81,28 @@ export default function SpeseGlobalPage() {
     fetchCondomini()
   }, [])
 
+  // Helper per recuperare i dettagli di un condominio selezionato
+  const fetchCondominioDati = async (condoId) => {
+    if (!condoId) return { tabelle: [], unita: [], documenti: [], esercizi: [] }
+    try {
+      const [resEsercizi, resUnita, resTabelle, resDocumenti] = await Promise.all([
+        supabase.from('esercizi').select('*').eq('condominio_id', condoId).order('anno', { ascending: false }),
+        supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condoId),
+        supabase.from('tabelle_millesimali').select('*, millesimi_unita(*)').eq('condominio_id', condoId),
+        supabase.from('documenti_condominio').select('*').eq('condominio_id', condoId)
+      ])
+      return {
+        esercizi: resEsercizi.data || [],
+        unita: resUnita.data || [],
+        tabelle: resTabelle.data || [],
+        documenti: resDocumenti.data || []
+      }
+    } catch (err) {
+      console.error('Errore caricamento dettagli condominio:', err)
+      return { tabelle: [], unita: [], documenti: [], esercizi: [] }
+    }
+  }
+
   // 2. Caricamento Coda da Database (inbox_documenti in stato nuovo, rilevato, da_smistare)
   const fetchQueue = async () => {
     if (!user) return
@@ -203,27 +225,7 @@ export default function SpeseGlobalPage() {
     }
   }, [activeQueueId])
 
-  // Helper per recuperare i dettagli di un condominio selezionato
-  const fetchCondominioDati = async (condoId) => {
-    if (!condoId) return { tabelle: [], unita: [], documenti: [], esercizi: [] }
-    try {
-      const [resEsercizi, resUnita, resTabelle, resDocumenti] = await Promise.all([
-        supabase.from('esercizi').select('*').eq('condominio_id', condoId).order('anno', { ascending: false }),
-        supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condoId),
-        supabase.from('tabelle_millesimali').select('*, millesimi_unita(*)').eq('condominio_id', condoId),
-        supabase.from('documenti_condominio').select('*').eq('condominio_id', condoId)
-      ])
-      return {
-        esercizi: resEsercizi.data || [],
-        unita: resUnita.data || [],
-        tabelle: resTabelle.data || [],
-        documenti: resDocumenti.data || []
-      }
-    } catch (err) {
-      console.error('Errore caricamento dettagli condominio:', err)
-      return { tabelle: [], unita: [], documenti: [], esercizi: [] }
-    }
-  }
+
 
   // Algoritmo di matching del condominio
   const matchCondominio = (datiEstratti, condominiList) => {

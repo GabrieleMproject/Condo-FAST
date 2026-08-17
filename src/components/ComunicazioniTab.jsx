@@ -334,7 +334,7 @@ L'Amministratore`;
                       </select>
                     </div>
 
-                    <div style={styles.formGroup} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ ...styles.formGroup, flex: 1, display: 'flex', flexDirection: 'column' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                         <label style={styles.label}>Destinatari ({destinatariSelezionati.length})</label>
                         {persone.length > 0 && (
@@ -388,7 +388,7 @@ L'Amministratore`;
                       />
                     </div>
 
-                    <div style={styles.formGroup} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ ...styles.formGroup, flex: 1, display: 'flex', flexDirection: 'column' }}>
                       <label style={styles.label}>Messaggio (Supporta HTML)</label>
                       <textarea
                         value={messaggio}

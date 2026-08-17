@@ -659,17 +659,6 @@ export default function PostboxPage() {
     if (refresh) refresh()
   }
 
-  if (loadingPlan) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 64px)', background: 'var(--app-bg)', color: 'var(--text-muted)' }}>
-        <Loader2 className="animate-spin" size={32} />
-      </div>
-    )
-  }
-
-  if (!canUse('postbox_studio')) {
-    return <PostboxPaywall />
-  }
 
   // 1. Carica i condomini all'avvio
   useEffect(() => {
@@ -689,6 +678,28 @@ export default function PostboxPage() {
     }
     fetchCondomini()
   }, [])
+
+  // Helper per caricare i dettagli del condominio
+  const fetchCondominioDati = async (condoId) => {
+    if (!condoId) return { tabelle: [], unita: [], documenti: [], esercizi: [] }
+    try {
+      const [resEsercizi, resUnita, resTabelle, resDocumenti] = await Promise.all([
+        supabase.from('esercizi').select('*').eq('condominio_id', condoId).order('anno', { ascending: false }),
+        supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condoId),
+        supabase.from('tabelle_millesimali').select('*, millesimi_unita(*)').eq('condominio_id', condoId),
+        supabase.from('documenti_condominio').select('*').eq('condominio_id', condoId)
+      ])
+      return {
+        esercizi: resEsercizi.data || [],
+        unita: resUnita.data || [],
+        tabelle: resTabelle.data || [],
+        documenti: resDocumenti.data || []
+      }
+    } catch (err) {
+      console.error('Errore caricamento dettagli condominio:', err)
+      return { tabelle: [], unita: [], documenti: [], esercizi: [] }
+    }
+  }
 
   // 2. Caricamento Coda da Database
   const fetchQueue = async () => {
@@ -779,28 +790,6 @@ export default function PostboxPage() {
     }
   }, [user, profile])
 
-  // Helper per caricare i dettagli del condominio
-  const fetchCondominioDati = async (condoId) => {
-    if (!condoId) return { tabelle: [], unita: [], documenti: [], esercizi: [] }
-    try {
-      const [resEsercizi, resUnita, resTabelle, resDocumenti] = await Promise.all([
-        supabase.from('esercizi').select('*').eq('condominio_id', condoId).order('anno', { ascending: false }),
-        supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condoId),
-        supabase.from('tabelle_millesimali').select('*, millesimi_unita(*)').eq('condominio_id', condoId),
-        supabase.from('documenti_condominio').select('*').eq('condominio_id', condoId)
-      ])
-      return {
-        esercizi: resEsercizi.data || [],
-        unita: resUnita.data || [],
-        tabelle: resTabelle.data || [],
-        documenti: resDocumenti.data || []
-      }
-    } catch (err) {
-      console.error('Errore caricamento dettagli condominio:', err)
-      return { tabelle: [], unita: [], documenti: [], esercizi: [] }
-    }
-  }
-
   // 4. Carica Signed URL del PDF quando cambia l'elemento attivo
   const getActiveItem = () => {
     if (activeTab === 'spese') return queue.find(q => q.id === activeSpesaId)
@@ -834,6 +823,18 @@ export default function PostboxPage() {
     }
     getSignedUrl()
   }, [activeSpesaId, activeSubentroId, activeMessaggioId, activeTab, queue])
+
+  if (loadingPlan) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 64px)', background: 'var(--app-bg)', color: 'var(--text-muted)' }}>
+        <Loader2 className="animate-spin" size={32} />
+      </div>
+    )
+  }
+
+  if (!canUse('postbox_studio')) {
+    return <PostboxPaywall />
+  }
 
   // Cestina / Ignora
   const handleIgnoraDocumento = async (doc) => {

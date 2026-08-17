@@ -76,14 +76,11 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
 
   const validate = () => {
     const e = {}
-    if (!form.nome.trim()) e.nome = 'Nome obbligatorio'
-    if (!form.indirizzo.trim()) e.indirizzo = 'Indirizzo obbligatorio'
-    if (!form.civico.trim()) e.civico = 'Civico obbligatorio'
-    if (!form.cap.trim()) e.cap = 'CAP obbligatorio'
+    if (!form.nome?.trim()) e.nome = 'Nome obbligatorio'
+    if (!form.indirizzo?.trim()) e.indirizzo = 'Indirizzo obbligatorio'
+    if (!form.codice_fiscale?.trim()) e.codice_fiscale = 'Codice Fiscale obbligatorio'
+    if (!form.iban?.trim()) e.iban = 'IBAN obbligatorio'
     if (form.cap && !/^\d{5}$/.test(form.cap)) e.cap = 'CAP non valido (5 cifre)'
-    if (!form.citta.trim()) e.citta = 'Città obbligatoria'
-    if (!form.provincia) e.provincia = 'Provincia obbligatoria'
-    if (!form.num_unita || parseInt(form.num_unita) < 1) e.num_unita = 'Almeno 1 unità'
     return e
   }
 
@@ -91,7 +88,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
     const e = validate()
     if (Object.keys(e).length > 0) {
       setErrors(e)
-      if (e.nome || e.indirizzo || e.civico || e.cap || e.citta || e.provincia) {
+      if (e.nome || e.indirizzo || e.codice_fiscale || e.iban) {
         setActiveTab('anagrafica')
       }
       return
@@ -186,7 +183,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                     placeholder="Es. Condominio Centrale"
                   />
                 </Field>
-                <Field label="Codice fiscale">
+                <Field label="Codice fiscale *" error={errors.codice_fiscale}>
                   <input
                     type="text"
                     value={form.codice_fiscale}
@@ -206,7 +203,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                     placeholder="Via/Piazza/Corso..."
                   />
                 </Field>
-                <Field label="Civico *" error={errors.civico} small>
+                <Field label="Civico" error={errors.civico} small>
                   <input
                     type="text"
                     value={form.civico}
@@ -217,7 +214,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
               </div>
 
               <div className="form-row">
-                <Field label="CAP *" error={errors.cap} small>
+                <Field label="CAP" error={errors.cap} small>
                   <input
                     type="text"
                     value={form.cap}
@@ -226,7 +223,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                     maxLength={5}
                   />
                 </Field>
-                <Field label="Città *" error={errors.citta}>
+                <Field label="Città" error={errors.citta}>
                   <input
                     type="text"
                     value={form.citta}
@@ -234,7 +231,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
                     placeholder="Milano"
                   />
                 </Field>
-                <Field label="Provincia *" error={errors.provincia} small>
+                <Field label="Provincia" error={errors.provincia} small>
                   <select value={form.provincia} onChange={e => set('provincia', e.target.value)}>
                     {PROVINCE_IT.map(p => (
                       <option key={p} value={p}>{p}</option>
@@ -244,7 +241,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
               </div>
 
               <div className="form-row">
-                <Field label="IBAN Conto Corrente Condominiale" fullWidth>
+                <Field label="IBAN Conto Corrente Condominiale *" error={errors.iban} fullWidth>
                   <input
                     type="text"
                     value={form.iban}
@@ -260,7 +257,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
           {activeTab === 'struttura' && (
             <div className="form-section">
               <div className="form-row">
-                <Field label="Numero unità abitative *" error={errors.num_unita}>
+                <Field label="Numero unità abitative" error={errors.num_unita}>
                   <input
                     type="number"
                     value={form.num_unita}

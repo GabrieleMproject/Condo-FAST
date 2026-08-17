@@ -4,6 +4,7 @@ import { FileBarChart } from 'lucide-react'   // se non già importato un'icona;
 import RateGridTab from '../components/RateGridTab'
 import PreventivoSection from '../components/PreventivoSection'
 import WizardChiusuraEsercizio from '../components/WizardChiusuraEsercizio'
+import CondominiForm from '../components/CondominiForm'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useCondomini } from '../hooks/useCondomini'
 import { useAuditLog } from '../hooks/useAuditLog'
@@ -184,6 +185,7 @@ export default function CondominiDetailPage() {
   const [activeGroup, setActiveGroup] = useState('gestione')
   const [activeTab, setActiveTab] = useState('panoramica')
   const [saldoConto, setSaldoConto] = useState(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   
   // Modal Diagnosi Conformità Fiscale
   const [modalDiagnosiOpen, setModalDiagnosiOpen] = useState(false)
@@ -368,7 +370,7 @@ export default function CondominiDetailPage() {
             Diagnosi Fiscale
           </button>
           <button 
-            onClick={() => navigate(`/condomini?edit=${c.id}`)}
+            onClick={() => setIsEditModalOpen(true)}
             style={{
               background: 'var(--app-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)',
               padding: '8px 16px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer',
@@ -626,6 +628,17 @@ export default function CondominiDetailPage() {
         onClose={() => setModalPrivacyOpen(false)}
         condominio={c}
       />
+
+      {isEditModalOpen && (
+        <CondominiForm 
+          condominio={c} 
+          onClose={() => setIsEditModalOpen(false)} 
+          onSave={() => {
+            refetch()
+            setIsEditModalOpen(false)
+          }} 
+        />
+      )}
     </div>
   )
 }

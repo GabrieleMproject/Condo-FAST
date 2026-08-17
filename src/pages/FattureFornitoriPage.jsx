@@ -141,7 +141,7 @@ export default function FattureFornitoriPage() {
     }
 
     if (file.size > 15 * 1024 * 1024) {
-      setErroreUpload('Il file supera il limite massimo consentito di 15MB.');
+      setErroreUpload('Il file supera i 15MB. Ti consigliamo di comprimerlo gratuitamente online prima di caricarlo.');
       return;
     }
 

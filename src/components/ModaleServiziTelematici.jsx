@@ -57,7 +57,7 @@ export default function ModaleServiziTelematici({ isOpen, onClose, condominio })
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("Il file è troppo grande (max 10MB).");
+      toast.error("Il file supera i 10MB. Ti consigliamo di comprimerlo gratuitamente online prima di caricarlo.");
       return;
     }
     setFileCaricato(file);

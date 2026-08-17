@@ -39,7 +39,11 @@ export default function ProntoInterventoPage() {
       const data = await fetchFornitoriPartner()
       setPartnerList(data.filter(p => p.attivo))
     } catch (err) {
-      toast.error("Errore caricamento fornitori pronto intervento: " + err.message)
+      if (err.code === '42P01' || (err.message && (err.message.includes('schema cache') || err.message.includes('relation')))) {
+        setPartnerList([]);
+      } else {
+        toast.error("Errore caricamento fornitori pronto intervento: " + err.message);
+      }
     } finally {
       setLoading(false)
     }

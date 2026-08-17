@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, AlertTriangle, ArrowRight, Save, X, CalendarCheck, FileText, Landmark, FileBarChart, Archive, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, AlertTriangle, ArrowRight, Save, X, CalendarCheck, FileText, Landmark, FileBarChart, Archive, Loader2, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
 import { useConsuntivo } from '../hooks/useConsuntivo';
 
 export default function WizardChiusuraEsercizio({ condominioId, esercizio, esercizioId, onSuccess, isOpen: controlledIsOpen, onClose: controlledOnClose, onDownloadPdf, onDownloadDossier, onNavigateToConsuntivo, hideTrigger }) {
+  const navigate = useNavigate();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
   const [step, setStep] = useState(1);
@@ -73,6 +75,11 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
     if (controlledOnClose) controlledOnClose();
     setInternalIsOpen(false);
     setTimeout(() => setStep(1), 300);
+  };
+
+  const handleResolveAnomaly = (path) => {
+    onClose();
+    navigate(`/condomini/${condominioId}/${path}?esercizio=${targetEsercizioId}`);
   };
 
   const handleChiudi = async () => {
@@ -207,11 +214,21 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
                   ) : (
                     <div style={styles.alertBox(datiVerifica.speseNonPagate > 0 ? 'warning' : 'success')}>
                       {datiVerifica.speseNonPagate > 0 ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
-                      <span>
-                        {datiVerifica.speseNonPagate > 0 
-                          ? `Hai ${datiVerifica.speseNonPagate} fatture registrate ma non ancora pagate. Vuoi riportarle come debiti verso fornitori nell'esercizio successivo?`
-                          : "Tutte le fatture registrate risultano regolarmente pagate."}
-                      </span>
+                      <div style={{ flex: 1 }}>
+                        {datiVerifica.speseNonPagate > 0 ? (
+                          <>
+                            <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Attenzione: Fatture da saldare</p>
+                            <p style={{ margin: '0 0 12px', fontSize: 13 }}>
+                              Risultano <strong>{datiVerifica.speseNonPagate}</strong> fatture fornitore caricate a sistema ma non ancora segnate come pagate. Se procedi, verranno automaticamente riportate come debiti verso fornitori nel nuovo bilancio.
+                            </p>
+                            <button onClick={() => handleResolveAnomaly('fatture')} style={styles.btnActionWarning}>
+                              <ExternalLink size={14} /> Vai alla gestione fatture
+                            </button>
+                          </>
+                        ) : (
+                          <span>Tutte le fatture registrate risultano regolarmente pagate.</span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -233,11 +250,21 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
                   ) : (
                     <div style={styles.alertBox(datiVerifica.incassiDaRiconciliare > 0 ? 'warning' : 'success')}>
                       {datiVerifica.incassiDaRiconciliare > 0 ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
-                      <span>
-                        {datiVerifica.incassiDaRiconciliare > 0 
-                          ? `Ci sono ${datiVerifica.incassiDaRiconciliare} movimenti dell'estratto conto non ancora riconciliati (né spese né rate).`
-                          : "Tutti i movimenti dell'estratto conto sembrano riconciliati correttamente. Nessun movimento anomalo rilevato."}
-                      </span>
+                      <div style={{ flex: 1 }}>
+                        {datiVerifica.incassiDaRiconciliare > 0 ? (
+                          <>
+                            <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Attenzione: Movimenti non riconciliati</p>
+                            <p style={{ margin: '0 0 12px', fontSize: 13 }}>
+                              Sono presenti <strong>{datiVerifica.incassiDaRiconciliare}</strong> movimenti nell'estratto conto bancario che non sono stati associati ad alcuna rata (incasso) o fattura (spesa). 
+                            </p>
+                            <button onClick={() => handleResolveAnomaly('estratto-conto')} style={styles.btnActionWarning}>
+                              <ExternalLink size={14} /> Controlla l'Estratto Conto
+                            </button>
+                          </>
+                        ) : (
+                          <span>Tutti i movimenti dell'estratto conto sembrano riconciliati correttamente. Nessun movimento orfano rilevato.</span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -277,7 +304,15 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
                       {!datiVerifica.saldiQuadri && (
                         <div style={styles.alertBox('warning')}>
                           <AlertTriangle size={20} />
-                          <span><strong>Attenzione:</strong> Rilevato scarto di quadratura tra situazione di cassa e di competenza (differenza: € {consuntivoData?.cassa?.scartoQuadratura?.toLocaleString('it-IT', { minimumFractionDigits: 2 })}).</span>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Attenzione: Scarto di Quadratura Rilevato</p>
+                            <p style={{ margin: '0 0 12px', fontSize: 13 }}>
+                              I totali della situazione di cassa (banca) non coincidono con il totale di competenza (entrate e uscite calcolate). È presente una differenza di <strong>€ {consuntivoData?.cassa?.scartoQuadratura?.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong>. Questo solitamente accade se ci sono movimenti bancari mancanti o errati.
+                            </p>
+                            <button onClick={() => handleResolveAnomaly('dashboard-fin')} style={styles.btnActionWarning}>
+                              <ExternalLink size={14} /> Analizza la Dashboard Finanziaria
+                            </button>
+                          </div>
                         </div>
                       )}
                       {datiVerifica.saldiQuadri && (
@@ -466,5 +501,11 @@ const styles = {
     padding: '10px 24px', borderRadius: 8, border: 'none',
     background: '#10b981', color: '#fff', cursor: 'pointer',
     fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8
+  },
+  btnActionWarning: {
+    padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(245,158,11,0.5)',
+    background: 'rgba(255, 255, 255, 0.5)', color: '#b45309', cursor: 'pointer',
+    fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12,
+    transition: 'all 0.2s'
   }
 };

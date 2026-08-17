@@ -29,7 +29,14 @@ export function useSinistri(condominioId) {
         .eq('condominio_id', condominioId)
         .order('data_evento', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        // Ignora errore se la tabella non esiste ancora (es. migrazione non eseguita)
+        if (error.code === '42P01' || (error.message && (error.message.includes('schema cache') || error.message.includes('relation')))) {
+          setSinistri([])
+          return
+        }
+        throw error
+      }
       setSinistri(data || [])
     } catch (e) {
       setError(e.message)

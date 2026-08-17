@@ -75,8 +75,19 @@ export default function DashboardPage() {
         const oggi = new Date()
         oggi.setHours(0, 0, 0, 0)
 
+        // Funzione helper per ignorare gli errori di tabelle mancanti (es. in fase di setup/migrazione)
+        const handleDbResult = (res) => {
+          if (res.error) {
+            if (res.error.code === '42P01' || (res.error.message && (res.error.message.includes('schema cache') || res.error.message.includes('relation')))) {
+              return []
+            }
+            throw res.error
+          }
+          return res.data || []
+        }
+
         // 1. Carica rate_unita non pagate (con join su rate per data_scadenza)
-        const { data: rateData, error: errRate } = await supabase
+        const rateData = handleDbResult(await supabase
           .from('rate_unita')
           .select(`
             id, 
@@ -85,49 +96,37 @@ export default function DashboardPage() {
             condominio_id,
             rate:rata_id(data_scadenza)
           `)
-          .neq('stato', 'pagata')
-
-        if (errRate) throw errRate
+          .neq('stato', 'pagata'))
 
         // 2. Carica estratto conto non riconciliato
-        const { data: movData, error: errMov } = await supabase
+        const movData = handleDbResult(await supabase
           .from('estratto_conto')
           .select('id, condominio_id, importo, data_movimento')
-          .eq('riconciliato', false)
-
-        if (errMov) throw errMov
+          .eq('riconciliato', false))
 
         // 3. Carica fatture fornitori
-        const { data: fatData, error: errFat } = await supabase
+        const fatData = handleDbResult(await supabase
           .from('fatture_fornitori')
-          .select('id, condominio_id, importo_totale, stato, ritenuta_acconto, data_pagamento, ritenuta_pagata, fornitore')
-
-        if (errFat) throw errFat
+          .select('id, condominio_id, importo_totale, stato, ritenuta_acconto, data_pagamento, ritenuta_pagata, fornitore'))
 
         // 4. Carica saldi cassa (ordinati per data_movimento decrescente per prendere il più recente)
-        const { data: saldoData, error: errSaldo } = await supabase
+        const saldoData = handleDbResult(await supabase
           .from('estratto_conto')
           .select('condominio_id, saldo, data_movimento')
           .not('saldo', 'is', null)
-          .order('data_movimento', { ascending: false })
-
-        if (errSaldo) throw errSaldo
+          .order('data_movimento', { ascending: false }))
 
         // 5. Carica esercizi per allerta scadenze
-        const { data: esData, error: errEs } = await supabase
+        const esData = handleDbResult(await supabase
           .from('esercizi')
           .select('id, condominio_id, anno, data_fine')
-          .not('data_fine', 'is', null)
-
-        if (errEs) throw errEs
+          .not('data_fine', 'is', null))
 
         // 5b. Carica documenti inbox pendenti
-        const { data: inboxData, error: errInbox } = await supabase
+        const inboxData = handleDbResult(await supabase
           .from('inbox_documenti')
           .select('id, file_name, email_mittente, data_ricezione, condominio_id, stato, dati_estratti, tipo')
-          .in('stato', ['nuovo', 'rilevato', 'da_smistare', 'elaborato'])
-
-        if (errInbox) throw errInbox
+          .in('stato', ['nuovo', 'rilevato', 'da_smistare', 'elaborato']))
 
         // --- ELABORAZIONE DATI ---
         const condoMap = {}

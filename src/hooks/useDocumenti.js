@@ -69,7 +69,7 @@ export function useDocumenti(condominioId) {
     setError(null)
     try {
       if (file.size > 10 * 1024 * 1024) {
-        throw new Error('Il file supera il limite massimo consentito di 10MB.')
+        throw new Error('Il file supera i 10MB. Ti consigliamo di comprimerlo gratuitamente online prima di caricarlo.')
       }
 
       // Prevenzione SVG/HTML Upload (Stored XSS)

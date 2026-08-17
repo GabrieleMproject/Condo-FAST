@@ -133,7 +133,7 @@ export default function DocumentiCondominio({ condominioId }) {
         <button
           onClick={() => setShowForm(true)}
           style={{
-            background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8,
+            background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8,
             padding: '10px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'Sora, sans-serif'
           }}
@@ -149,9 +149,9 @@ export default function DocumentiCondominio({ condominioId }) {
             key={tipo}
             onClick={() => setFiltroTipo(tipo)}
             style={{
-              background: filtroTipo === tipo ? '#2563eb' : 'var(--app-bg)',
+              background: filtroTipo === tipo ? 'var(--accent)' : 'var(--app-bg)',
               color: filtroTipo === tipo ? '#fff' : 'var(--text-secondary)',
-              border: `1px solid ${filtroTipo === tipo ? '#2563eb' : 'var(--border-color)'}`,
+              border: `1px solid ${filtroTipo === tipo ? 'var(--accent)' : 'var(--border-color)'}`,
               borderRadius: 20, padding: '5px 14px', fontSize: 12,
               cursor: 'pointer', fontFamily: 'Sora, sans-serif', fontWeight: 500
             }}
@@ -200,7 +200,7 @@ export default function DocumentiCondominio({ condominioId }) {
                 key={doc.id}
                 style={{
                   background: 'var(--card-bg)', borderRadius: 10, padding: '14px 18px',
-                  border: `1px solid ${isNormativo ? '#2563eb44' : 'var(--border-color)'}`,
+                  border: `1px solid ${isNormativo ? 'var(--accent-glow)' : 'var(--border-color)'}`,
                   display: 'flex', alignItems: 'center', gap: 16
                 }}
               >
@@ -238,7 +238,7 @@ export default function DocumentiCondominio({ condominioId }) {
                   {doc.tags && doc.tags.length > 0 && (
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                       {doc.tags.map(tag => (
-                        <span key={tag} style={{ background: 'rgba(37, 99, 235, 0.15)', color: 'var(--accent, #2563eb)', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
+                        <span key={tag} style={{ background: 'var(--accent-glow)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
                           {tag}
                         </span>
                       ))}
@@ -329,12 +329,12 @@ export default function DocumentiCondominio({ condominioId }) {
                 <div
                   onClick={() => fileRef.current?.click()}
                   style={{
-                    background: 'var(--app-bg)', border: `2px dashed ${selectedFile ? '#2563eb' : 'var(--border-color)'}`,
+                    background: 'var(--app-bg)', border: `2px dashed ${selectedFile ? 'var(--accent)' : 'var(--border-color)'}`,
                     borderRadius: 8, padding: '20px', textAlign: 'center', cursor: 'pointer'
                   }}
                 >
                   {selectedFile ? (
-                    <span style={{ color: '#60a5fa', fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: 'var(--accent)', fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                       <Paperclip size={14} /> {selectedFile.name}
                     </span>
                   ) : (
@@ -365,8 +365,8 @@ export default function DocumentiCondominio({ condominioId }) {
 
               {uploadProgress && (
                 <div style={{
-                  background: 'var(--app-bg)', border: '1px solid #2563eb', borderRadius: 8,
-                  padding: '10px 14px', marginBottom: 16, color: '#60a5fa', fontSize: 13,
+                  background: 'var(--app-bg)', border: '1px solid var(--accent)', borderRadius: 8,
+                  padding: '10px 14px', marginBottom: 16, color: 'var(--accent)', fontSize: 13,
                   display: 'flex', alignItems: 'center', gap: 6
                 }}>
                   <Loader2 size={13} className="spin" /> {uploadProgress}
@@ -390,8 +390,8 @@ export default function DocumentiCondominio({ condominioId }) {
                   type="submit"
                   disabled={!selectedFile || uploading}
                   style={{
-                    background: selectedFile && !uploading ? '#2563eb' : '#1e3a6e',
-                    color: '#fff', border: 'none', borderRadius: 8,
+                    background: selectedFile && !uploading ? 'var(--accent)' : 'var(--border-color)',
+                    color: selectedFile && !uploading ? '#fff' : 'var(--text-muted)', border: 'none', borderRadius: 8,
                     padding: '10px 20px', fontSize: 14, fontWeight: 600,
                     cursor: selectedFile && !uploading ? 'pointer' : 'not-allowed',
                     fontFamily: 'Sora, sans-serif'

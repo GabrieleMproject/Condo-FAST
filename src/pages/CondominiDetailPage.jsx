@@ -118,7 +118,7 @@ function FinanzeTab({ condominioId, esercizioId }) {
       {FIN_LINKS(condominioId, esercizioId).map(({ label, desc, icon: Icon, to }) => (
         <button key={to} onClick={() => navigate(to)} style={S.finCard}>
           <div style={S.finIconWrap}>
-            <Icon size={20} color="#60a5fa" strokeWidth={1.8} />
+            <Icon size={20} color="var(--accent)" strokeWidth={1.8} />
           </div>
           <div style={{ textAlign: 'left', minWidth: 0 }}>
             <div style={S.finLabel}>{label}</div>
@@ -688,8 +688,8 @@ const S = {
   btnSuccess:  { background: '#059669', color: 'white', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center' },
   btnSecondary:{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '9px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center' },
   // ── Tab Finanze ──
-  finCard:     { background: 'var(--card-bg)', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'center', border: '1px solid var(--border-color)', cursor: 'pointer', fontFamily: 'Sora, sans-serif', textAlign: 'left', transition: 'border-color 0.15s' },
-  finIconWrap: { width: 40, height: 40, borderRadius: 10, background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  finCard:     { background: 'var(--card-bg)', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'center', border: '1px solid var(--border-color)', cursor: 'pointer', fontFamily: 'Sora, sans-serif', textAlign: 'left', transition: 'border-color 0.15s, box-shadow 0.15s' },
+  finIconWrap: { width: 40, height: 40, borderRadius: 10, background: 'var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   finLabel:    { color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 },
   finDesc:     { color: 'var(--text-muted)', fontSize: 12, marginTop: 2 },
 }

@@ -1,6 +1,6 @@
 import fs from 'fs'
 
-async function test() {
+async function test(modelName) {
   try {
     const res = await fetch('https://btlxynwpcoiodvwvbnbe.supabase.co/functions/v1/gemini-proxy', {
       method: 'POST',
@@ -9,27 +9,31 @@ async function test() {
         'X-CondoFAST-Demo': 'true'
       },
       body: JSON.stringify({
-        prompt: 'Estrai i dati da questo testo: Mario Rossi nato a Milano il 12/05/1980, email mario.rossi@email.it',
+        prompt: 'test',
         type: 'text',
-        model: 'gemini-flash-latest',
-        jsonSchema: {
-          type: "OBJECT",
-          properties: {
-            nome: { type: "STRING" },
-            cognome: { type: "STRING" },
-            email: { type: "STRING", nullable: true }
-          },
-          required: ["nome", "cognome"]
-        }
+        model: modelName,
+        maxTokens: 10
       })
     });
     
-    console.log('Status:', res.status);
-    const text = await res.text();
-    console.log('Response:', text);
+    console.log(`[${modelName}] Status:`, res.status);
+    if (res.status !== 200) {
+      console.log(`[${modelName}] Error:`, await res.text());
+    }
   } catch (e) {
     console.error(e);
   }
 }
 
-test();
+async function runAll() {
+  await test('gemini-1.5-flash-latest');
+  await test('gemini-1.5-flash-001');
+  await test('gemini-1.5-flash-002');
+  await test('gemini-flash-latest');
+  await test('gemini-pro-latest');
+  await test('gemini-1.5-pro-latest');
+  await test('gemini-1.5-pro-001');
+  await test('gemini-1.5-pro-002');
+}
+
+runAll();

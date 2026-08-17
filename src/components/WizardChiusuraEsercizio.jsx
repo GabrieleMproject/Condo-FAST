@@ -4,8 +4,15 @@ import { CheckCircle2, AlertTriangle, ArrowRight, Save, X, CalendarCheck, FileTe
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
 import { useConsuntivo } from '../hooks/useConsuntivo';
+import { useCondomini } from '../hooks/useCondomini';
+import { useUnita } from '../hooks/useUnita';
+import { useMillesimi } from '../hooks/useMillesimi';
+import { useWatermark } from '../hooks/useWatermark';
+import { exportConsuntivoPdf } from '../lib/exportConsuntivo';
+import { exportDossierRendiconto } from '../lib/exportDossier';
+import { exportConsuntivoXlsx } from '../lib/exportXlsx';
 
-export default function WizardChiusuraEsercizio({ condominioId, esercizio, esercizioId, onSuccess, isOpen: controlledIsOpen, onClose: controlledOnClose, onDownloadPdf, onDownloadDossier, onNavigateToConsuntivo, hideTrigger }) {
+export default function WizardChiusuraEsercizio({ condominioId, esercizio, esercizioId, onSuccess, isOpen: controlledIsOpen, onClose: controlledOnClose, onDownloadPdf, onDownloadDossier, onDownloadXls, onNavigateToConsuntivo, hideTrigger }) {
   const navigate = useNavigate();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
@@ -14,7 +21,77 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
   const [notaNonConformita, setNotaNonConformita] = useState('');
 
   const targetEsercizioId = esercizio?.id || esercizioId;
-  const { data: consuntivoData, loading: loadingConsuntivo, error: errorConsuntivo, fetch: fetchConsuntivo } = useConsuntivo(condominioId, targetEsercizioId);
+  const { data: consuntivoData, template, loading: loadingConsuntivo, error: errorConsuntivo, fetch: fetchConsuntivo } = useConsuntivo(condominioId, targetEsercizioId);
+
+  const { condomini } = useCondomini();
+  const condominio = condomini?.find(c => c.id === condominioId);
+  const { unita, getProprietario } = useUnita(condominioId);
+  const { tabelle, getMillesimiUnita, getTotaleTabella } = useMillesimi(condominioId);
+  const { WatermarkModal, checkWatermark } = useWatermark();
+  const tabellaMillId = tabelle?.[0]?.id;
+
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingXls, setExportingXls] = useState(false);
+  const [exportingZip, setExportingZip] = useState(false);
+  const [zipMsg, setZipMsg] = useState('');
+
+  const handleScaricaPdfDiretto = async () => {
+    if (!consuntivoData) {
+      toast.error('Dati consuntivo non pronti.');
+      return;
+    }
+    setExportingPdf(true);
+    checkWatermark((withWatermark) => {
+      exportConsuntivoPdf({
+        condominio, consuntivo: consuntivoData, template, unita, getProprietario,
+        getMillesimiUnita, getTotaleTabella, tabellaMillId, withWatermark
+      }).catch(err => {
+        toast.error('Errore generazione PDF: ' + err.message);
+      }).finally(() => setExportingPdf(false));
+    });
+  };
+
+  const handleScaricaXlsDiretto = async () => {
+    if (!consuntivoData) {
+      toast.error('Dati consuntivo non pronti.');
+      return;
+    }
+    setExportingXls(true);
+    try {
+      await exportConsuntivoXlsx({
+        condominio, consuntivo: consuntivoData, template, unita, getProprietario,
+        getMillesimiUnita, tabellaMillId
+      });
+      toast.success('Excel scaricato con successo!');
+    } catch (err) {
+      toast.error('Errore generazione Excel: ' + err.message);
+    } finally {
+      setExportingXls(false);
+    }
+  };
+
+  const handleScaricaDossierDiretto = async () => {
+    if (!consuntivoData) {
+      toast.error('Dati consuntivo non pronti.');
+      return;
+    }
+    setExportingZip(true);
+    setZipMsg('Avvio ZIP...');
+    checkWatermark((withWatermark) => {
+      exportDossierRendiconto({
+        condominio, consuntivo: consuntivoData, template, unita, getProprietario,
+        getMillesimiUnita, getTotaleTabella, tabellaMillId, withWatermark,
+        onProgress: (p) => setZipMsg(p.messaggio || 'Pacchettizzazione ZIP…'),
+      }).then(() => {
+        toast.success('Dossier Completo (.zip) scaricato con successo!');
+      }).catch(err => {
+        toast.error('Errore generazione Dossier ZIP: ' + err.message);
+      }).finally(() => {
+        setExportingZip(false);
+        setZipMsg('');
+      });
+    });
+  };
 
   const [verificandoIncassi, setVerificandoIncassi] = useState(false);
   const [datiVerifica, setDatiVerifica] = useState({
@@ -112,38 +189,33 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
   if (esercizio?.stato === 'chiuso') {
     return (
       <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12, color: '#059669', fontSize: 14, fontWeight: 500 }}>
+        <WatermarkModal />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <CheckCircle2 size={20} /> Questo esercizio è stato chiuso in modo definitivo.
         </div>
-        {(onDownloadPdf || onDownloadDossier || onNavigateToConsuntivo) && (
-          <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-            {onDownloadPdf ? (
-              <button onClick={onDownloadPdf} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
-                <FileText size={16} /> Scarica Consuntivo PDF
-              </button>
-            ) : onNavigateToConsuntivo ? (
-              <button onClick={() => { toast('Ti sposto nel tab Consuntivo per avviare il download...'); onNavigateToConsuntivo(); }} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
-                <FileText size={16} /> Scarica Consuntivo PDF
-              </button>
-            ) : null}
-            
-            {onDownloadDossier ? (
-              <button onClick={onDownloadDossier} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #10b981', color: '#059669', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
-                <Archive size={16} /> Dossier Completo (.zip)
-              </button>
-            ) : onNavigateToConsuntivo ? (
-              <button onClick={() => { toast('Ti sposto nel tab Consuntivo per pacchettizzare il Dossier...'); onNavigateToConsuntivo(); }} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #10b981', color: '#059669', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
-                <Archive size={16} /> Dossier Completo (.zip)
-              </button>
-            ) : null}
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+          <button onClick={onDownloadPdf || handleScaricaPdfDiretto} disabled={exportingPdf} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, opacity: exportingPdf ? 0.7 : 1 }}>
+            {exportingPdf ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />} 
+            {exportingPdf ? 'Esportazione PDF...' : 'Scarica PDF'}
+          </button>
+          
+          <button onClick={onDownloadXls || handleScaricaXlsDiretto} disabled={exportingXls} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, opacity: exportingXls ? 0.7 : 1 }}>
+            {exportingXls ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />} 
+            {exportingXls ? 'Esportazione XLS...' : 'Scarica XLS'}
+          </button>
+          
+          <button onClick={onDownloadDossier || handleScaricaDossierDiretto} disabled={exportingZip} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #10b981', color: '#059669', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, opacity: exportingZip ? 0.7 : 1 }}>
+            {exportingZip ? <Loader2 size={16} className="animate-spin" /> : <Archive size={16} />} 
+            {exportingZip ? (zipMsg || 'Dossier in corso...') : 'Dossier Completo (.zip)'}
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <>
+      <WatermarkModal />
       {!hideTrigger && (
         <div 
           onClick={() => setInternalIsOpen(true)}

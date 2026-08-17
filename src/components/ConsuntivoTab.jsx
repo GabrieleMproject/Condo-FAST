@@ -7,6 +7,7 @@ import { useMillesimi } from '../hooks/useMillesimi'
 import { estraiStrutturaConsuntivo, generaNotaSinteticaAi } from '../lib/fileExtractor'
 import { exportConsuntivoPdf } from '../lib/exportConsuntivo'
 import { exportDossierRendiconto } from '../lib/exportDossier'
+import { exportConsuntivoXlsx } from '../lib/exportXlsx'
 import { useWatermark } from '../hooks/useWatermark'
 import PlanGate from './PlanGate'
 import ModelloConsuntivoModal from './ModelloConsuntivoModal'
@@ -161,6 +162,25 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
     })
   }
 
+  const [exportingXls, setExportingXls] = useState(false)
+  async function scaricaXls() {
+    if (!data) return
+    setExportingXls(true)
+    try {
+      await exportConsuntivoXlsx({
+        condominio, consuntivo: data, template, unita, getProprietario,
+        getMillesimiUnita, tabellaMillId
+      })
+      setTplMsg('Excel scaricato con successo!')
+      setTimeout(() => setTplMsg(''), 4000)
+    } catch (err) {
+      setTplMsg('Errore generazione Excel: ' + err.message)
+      setTimeout(() => setTplMsg(''), 5000)
+    } finally {
+      setExportingXls(false)
+    }
+  }
+
   async function scaricaDossierZip() {
     if (!data) return
     setExportingZip(true)
@@ -215,6 +235,7 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
         hideTrigger={true}
         onDownloadPdf={scaricaPdf}
         onDownloadDossier={scaricaDossierZip}
+        onDownloadXls={scaricaXls}
       />
 
       {/* Toolbar */}
@@ -247,8 +268,13 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
           <button style={st.btnGhost} onClick={scaricaDossierZip} disabled={!data || exportingZip} title="Scarica consuntivo, estratti conto e tutte le fatture in un unico archivio ZIP">
             <Archive size={14} color="#60a5fa" /> {exportingZip ? (zipMsg || 'Dossier…') : 'Dossier Completo (.zip)'}
           </button>
+          <button style={st.btnGhost} onClick={scaricaXls} disabled={!data || exportingXls} title="Scarica il consuntivo in formato Excel">
+            <Download size={14} color="#10b981" /> {exportingXls ? 'Esportazione...' : 'Scarica Excel'}
+          </button>
           <PlanGate feature="rendiconto_pdf" compact>
-            <button style={st.btnPrimary} onClick={scaricaPdf} disabled={!data}><Download size={14} /> Esporta PDF</button>
+            <button style={st.btnPrimary} onClick={scaricaPdf} disabled={!data} title="Genera il consuntivo impaginato in PDF">
+              <Download size={14} /> Esporta PDF
+            </button>
           </PlanGate>
           <button style={st.btnSuccess} onClick={() => setWizardOpen(true)} disabled={!data}>
             <Lock size={14} /> Chiudi Esercizio

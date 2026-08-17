@@ -191,3 +191,156 @@ function buildFoglioPersone(ws, persone) {
     styleDataRow(row, i);
   });
 }
+
+export async function exportConsuntivoXlsx({ condominio, consuntivo, template, unita, getProprietario, getMillesimiUnita, tabellaMillId }) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'CondoFAST'; wb.created = new Date(); wb.modified = new Date();
+
+  // FOGLIO 1: Competenza
+  const wsComp = wb.addWorksheet('Competenza');
+  wsComp.columns = [
+    { header: 'Categoria', key: 'categoria', width: 30 },
+    { header: 'Tipo', key: 'tipo', width: 20 },
+    { header: 'Importo €', key: 'importo', width: 15, style: { numFmt: '#,##0.00' } },
+  ];
+  styleHeader(wsComp.getRow(1));
+  let i = 0;
+  const ord = template?.ordine_categorie || Object.keys(consuntivo.competenza.catMap);
+  const catKeys = [...new Set([...ord, ...Object.keys(consuntivo.competenza.catMap)])];
+  catKeys.forEach(k => {
+    const v = consuntivo.competenza.catMap[k];
+    if (v) {
+      const tot = v.ordinaria + v.straordinaria;
+      if (tot) {
+        styleDataRow(wsComp.addRow({
+          categoria: template?.etichette_categorie?.[k] || k.toUpperCase(),
+          tipo: v.straordinaria > 0 ? 'straordinaria' : 'ordinaria',
+          importo: tot
+        }), i++);
+      }
+    }
+  });
+  const totComp = wsComp.addRow({ categoria: 'TOTALE CONSUNTIVO', tipo: '', importo: consuntivo.competenza.totSpese });
+  totComp.font = { bold: true };
+  totComp.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DBEAFE' } };
+
+  // FOGLIO 2: Riparto
+  const wsRip = wb.addWorksheet('Riparto');
+  wsRip.columns = [
+    { header: 'Unità', key: 'unita', width: 12 },
+    { header: 'Proprietario', key: 'prop', width: 30 },
+    { header: 'Millesimi', key: 'mill', width: 12 },
+    { header: 'Dovuto €', key: 'dovuto', width: 15, style: { numFmt: '#,##0.00' } },
+    { header: 'Versato €', key: 'versato', width: 15, style: { numFmt: '#,##0.00' } },
+    { header: 'Saldo Iniz. €', key: 'saldo_iniz', width: 15, style: { numFmt: '#,##0.00' } },
+    { header: 'Conguaglio €', key: 'conguaglio', width: 15, style: { numFmt: '#,##0.00' } },
+    { header: 'Arretrati €', key: 'arretrati', width: 15, style: { numFmt: '#,##0.00' } },
+  ];
+  styleHeader(wsRip.getRow(1));
+  i = 0;
+  (unita || []).forEach(u => {
+    const r = consuntivo.riparto.unitaRows.find(x => x.unita_id === u.id) || { dovuto: 0, versato: 0, saldoIniz: 0, conguaglio: 0, arretrati: 0 };
+    const p = getProprietario ? getProprietario(u) : null;
+    const mill = getMillesimiUnita ? getMillesimiUnita(tabellaMillId, u.id) : '';
+    styleDataRow(wsRip.addRow({
+      unita: `U.${u.numero}`,
+      prop: p ? `${p.cognome || ''} ${p.nome || ''}`.trim() : '',
+      mill: mill ? Number(mill) : '',
+      dovuto: r.dovuto,
+      versato: r.versato,
+      saldo_iniz: r.saldoIniz,
+      conguaglio: r.conguaglio,
+      arretrati: r.arretrati
+    }), i++);
+  });
+  const totRip = wsRip.addRow({
+    unita: 'TOTALI', prop: '', mill: '',
+    dovuto: consuntivo.riparto.tot.dovuto,
+    versato: consuntivo.riparto.tot.versato,
+    saldo_iniz: consuntivo.riparto.tot.saldoIniz,
+    conguaglio: consuntivo.riparto.tot.conguaglio,
+    arretrati: consuntivo.riparto.tot.arretrati
+  });
+  totRip.font = { bold: true };
+  totRip.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DBEAFE' } };
+
+  // FOGLIO 3: Cassa
+  const wsCassa = wb.addWorksheet('Cassa');
+  wsCassa.columns = [
+    { header: 'Voce', key: 'voce', width: 40 },
+    { header: 'Importo €', key: 'importo', width: 15, style: { numFmt: '#,##0.00' } },
+  ];
+  styleHeader(wsCassa.getRow(1));
+  i = 0;
+  [
+    { voce: 'Saldo cassa iniziale', importo: consuntivo.cassa.saldoInizCassa },
+    { voce: 'Entrate periodo', importo: consuntivo.cassa.entrate },
+    { voce: 'Uscite periodo', importo: consuntivo.cassa.uscite > 0 ? -consuntivo.cassa.uscite : 0 },
+    { voce: 'Saldo cassa finale', importo: consuntivo.cassa.saldoFinaleCassa },
+    { voce: 'Risultato di competenza (versato − spese)', importo: consuntivo.cassa.saldoCompetenza },
+    { voce: 'Quadratura competenza ↔ cassa', importo: consuntivo.cassa.scartoQuadratura },
+  ].forEach(r => styleDataRow(wsCassa.addRow(r), i++));
+
+  // FOGLIO 4: Fatture
+  if (consuntivo.fatture.rows.length > 0) {
+    const wsFatture = wb.addWorksheet('Fatture');
+    wsFatture.columns = [
+      { header: 'Fornitore', key: 'fornitore', width: 30 },
+      { header: 'N° Fattura', key: 'numero', width: 15 },
+      { header: 'Data', key: 'data', width: 15 },
+      { header: 'Importo €', key: 'importo', width: 15, style: { numFmt: '#,##0.00' } },
+      { header: 'Stato', key: 'stato', width: 15 },
+      { header: 'Ritenuta/F24', key: 'ritenuta', width: 20 },
+    ];
+    styleHeader(wsFatture.getRow(1));
+    i = 0;
+    consuntivo.fatture.rows.forEach(f => {
+      styleDataRow(wsFatture.addRow({
+        fornitore: f.fornitore,
+        numero: f.numero_fattura || '',
+        data: f.data_fattura ? fmtData(f.data_fattura) : '',
+        importo: f.importo_totale,
+        stato: f.stato,
+        ritenuta: f.ritenutaBadge || ''
+      }), i++);
+    });
+  }
+
+  // FOGLIO 5: Confronto
+  if (consuntivo.confronto.rows.length > 0) {
+    const wsConf = wb.addWorksheet('Confronto Prev-Cons');
+    wsConf.columns = [
+      { header: 'Categoria', key: 'categoria', width: 30 },
+      { header: 'Preventivo €', key: 'prev', width: 15, style: { numFmt: '#,##0.00' } },
+      { header: 'Consuntivo €', key: 'cons', width: 15, style: { numFmt: '#,##0.00' } },
+      { header: 'Differenza €', key: 'diff', width: 15, style: { numFmt: '#,##0.00' } },
+    ];
+    styleHeader(wsConf.getRow(1));
+    i = 0;
+    consuntivo.confronto.rows.forEach(r => {
+      styleDataRow(wsConf.addRow({
+        categoria: template?.etichette_categorie?.[r.categoria] || r.categoria.toUpperCase(),
+        prev: r.preventivo,
+        cons: r.consuntivo,
+        diff: r.differenza
+      }), i++);
+    });
+    const totConf = wsConf.addRow({
+      categoria: 'TOTALE',
+      prev: consuntivo.confronto.tot.preventivo,
+      cons: consuntivo.confronto.tot.consuntivo,
+      diff: consuntivo.confronto.tot.differenza
+    });
+    totConf.font = { bold: true };
+    totConf.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DBEAFE' } };
+  }
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Consuntivo_${(condominio?.nome || 'Condominio').replace(/\s+/g, '_')}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}

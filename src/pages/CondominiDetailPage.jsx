@@ -50,7 +50,6 @@ const KPI_ITEMS = (c, saldoConto) => [
       ? `€${Number(saldoConto.saldo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}` 
       : (c.fondo_cassa ? `€${Number(c.fondo_cassa).toLocaleString('it-IT')}` : '—') 
   },
-  { icon: ClipboardList, label: 'Quote annuali',         value: c.quote_annuali ? `€${Number(c.quote_annuali).toLocaleString('it-IT')}` : '—' },
   { icon: CalendarDays,  label: 'Anno costruzione',      value: c.anno_costruzione || '—' },
 ]
 

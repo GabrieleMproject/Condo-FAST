@@ -122,15 +122,20 @@ export default function WizardChiusuraEsercizio({ condominioId, esercizio, eserc
                 <FileText size={16} /> Scarica Consuntivo PDF
               </button>
             ) : onNavigateToConsuntivo ? (
-              <button onClick={onNavigateToConsuntivo} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
-                <FileText size={16} /> Apri Consuntivo per l'Export
+              <button onClick={() => { toast('Ti sposto nel tab Consuntivo per avviare il download...'); onNavigateToConsuntivo(); }} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
+                <FileText size={16} /> Scarica Consuntivo PDF
               </button>
             ) : null}
-            {onDownloadDossier && (
+            
+            {onDownloadDossier ? (
               <button onClick={onDownloadDossier} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #10b981', color: '#059669', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
                 <Archive size={16} /> Dossier Completo (.zip)
               </button>
-            )}
+            ) : onNavigateToConsuntivo ? (
+              <button onClick={() => { toast('Ti sposto nel tab Consuntivo per pacchettizzare il Dossier...'); onNavigateToConsuntivo(); }} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #10b981', color: '#059669', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
+                <Archive size={16} /> Dossier Completo (.zip)
+              </button>
+            ) : null}
           </div>
         )}
       </div>

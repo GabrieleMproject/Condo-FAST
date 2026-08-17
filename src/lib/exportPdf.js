@@ -485,7 +485,7 @@ export function exportRegistroAnagrafePdf(condominio, righe) {
 }
 
 // ─── ANAGRAFE: Esportazione Modulo di Autocertificazione Anagrafica e Catastale (Art. 1130 c.c. + GDPR)
-export function exportModuloAutocertificazionePdf({ condominio, unita, occupante, profilo }) {
+export function exportModuloAutocertificazionePdf({ condominio, unita, occupante, profilo }, returnBase64 = false) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   
@@ -640,5 +640,11 @@ export function exportModuloAutocertificazionePdf({ condominio, unita, occupante
     doc.text(`Richiesta compilazione Registro Anagrafe - ${condominio?.nome || 'Condominio'}`, 12, HMod - 5);
   }
 
+  if (returnBase64) {
+    const pdfOutput = doc.output('datauristring');
+    const base64 = pdfOutput.split(',')[1];
+    return base64;
+  }
+  
   doc.save(`Modulo_Anagrafe_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
 }

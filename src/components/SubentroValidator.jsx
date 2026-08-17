@@ -252,13 +252,24 @@ Restiamo a disposizione per qualsiasi chiarimento.
 Cordiali saluti,
 Lo Studio Amministrativo`
 
+        const allegatoPdfBase64 = exportModuloAutocertificazionePdf({
+          condominio,
+          unita: unit || { scala, piano, numero: interno },
+          occupante: { ruolo, persona: { nome, cognome, codice_fiscale: cf, email, telefono, indirizzo: residenza } },
+          profilo: item?.profilo || {}
+        }, true) // returnBase64 = true
+
         await inviaComunicazione({
           condominioId,
           destinatari: [{ email: email.trim(), nome: `${nome} ${cognome}`.trim() }],
           oggetto: `Benvenuto in Condominio & Richiesta Dati - ${condominio?.nome || 'CondoFAST'}`,
           messaggio,
           tipo: 'avviso',
-          skipFetch: true
+          skipFetch: true,
+          allegati: [{
+            filename: `Modulo_Anagrafe_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`,
+            content: allegatoPdfBase64
+          }]
         })
 
         toast.success("Subentro registrato e Lettera di Benvenuto inviata con successo!")
@@ -410,6 +421,16 @@ Lo Studio Amministrativo`
 
       {fase === 'A' ? (
         <form onSubmit={handleSalvaAnagrafica} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          
+          {(!item?.profilo?.mail_invio_tipo || item?.profilo?.mail_invio_tipo === 'sistema') && (
+            <div style={{ display: 'flex', gap: 10, background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '12px 16px', borderRadius: 8, color: '#d97706', fontSize: 13 }}>
+              <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <strong style={{ display: 'block', marginBottom: 4 }}>Invio tramite sistema (non aziendale)</strong>
+                Non hai ancora configurato un server email professionale per lo studio. L'email di benvenuto verrà spedita tramite il sistema (onboarding@resend.dev). Configura l'invio SMTP nelle Impostazioni per una comunicazione più professionale verso i condòmini.
+              </div>
+            </div>
+          )}
           
           {/* Condominio ed Unità di Riferimento */}
           <div style={{ padding: 16, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12 }}>

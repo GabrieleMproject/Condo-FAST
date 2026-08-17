@@ -72,9 +72,9 @@ function getModel(funzione?: string): string {
     'struttura_tabella_millesimale'
   ];
   if (funzione && proFunctions.includes(funzione)) {
-    return 'gemini-1.5-pro';
+    return 'gemini-pro-latest';
   }
-  return 'gemini-1.5-flash';
+  return 'gemini-flash-latest';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -274,10 +274,10 @@ serve(async (req) => {
     
     // Modelli di riserva validi in ordine di preferenza per API Gemini v1beta
     const fallbackModels = [
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
-      'gemini-2.0-flash-exp', // nuovo modello sperimentale se disponibile
-      'gemini-1.5-flash-8b',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro-latest',
+      'gemini-flash-latest',
+      'gemini-pro-latest',
     ]
 
     const isEquivalentModel = (m1: string, m2: string) => {

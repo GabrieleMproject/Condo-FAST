@@ -814,10 +814,10 @@ export default function AppLayout() {
                 onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; } }}
               >
                 <Icon size={18} strokeWidth={active ? 2.5 : 1.8} style={{ flexShrink: 0 }} />
-                {!collapsed && label}
+                {!collapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>}
                 {!collapsed && activeBadge && (
                   <span style={{
-                    marginLeft: 'auto', fontSize: 9, fontWeight: 700,
+                    marginLeft: 'auto', marginRight: 4, flexShrink: 0, fontSize: 9, fontWeight: 700,
                     background: path === '/postbox' && inboxCount > 0 ? 'linear-gradient(135deg,#7c3aed,#9061f9)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
                     color: '#fff', borderRadius: 4, padding: '2px 5px',
                     letterSpacing: '0.05em',

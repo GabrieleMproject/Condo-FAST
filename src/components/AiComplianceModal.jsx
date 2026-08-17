@@ -4,7 +4,7 @@ import { X, Sparkles, ShieldCheck, UserCheck } from 'lucide-react';
 export default function AiComplianceModal({ onClose }) {
   return (
     <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: 600, maxHeight: '90vh', overflowY: 'auto' }}>
+      <div className="modal-content" style={{ background: 'var(--app-bg)', borderRadius: 24, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', position: 'relative', maxWidth: 600, width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: 40 }}>
         <button className="modal-close" onClick={onClose}><X size={20} /></button>
         
         <div style={{ textAlign: 'center', marginBottom: 24 }}>

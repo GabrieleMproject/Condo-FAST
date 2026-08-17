@@ -16,7 +16,7 @@ export default function SelezioneCondominioModal({ pacchetto, onClose, onConferm
 
   return (
     <div className="modal-overlay" style={{ zIndex: 1001, padding: 20 }}>
-      <div className="modal-content" style={{ maxWidth: 500, width: '100%', padding: 32 }}>
+      <div className="modal-content" style={{ background: 'var(--app-bg)', borderRadius: 24, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', position: 'relative', maxWidth: 500, width: '100%', padding: 40 }}>
         <button className="modal-close" onClick={onClose}><X size={24} /></button>
         
         <div style={{ textAlign: 'center', marginBottom: 24 }}>

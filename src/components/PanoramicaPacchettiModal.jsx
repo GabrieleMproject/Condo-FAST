@@ -42,11 +42,12 @@ const PACCHETTI = [
     costo: 150,
     sconto: 50,
     scontoMensile: 4.16,
-    descrizione: 'L\'esperienza top. App interattiva e partecipazione live alle assemblee con votazione facilitata.',
+    descrizione: 'L\'esperienza top. Web App interattiva (nessun download richiesto) e partecipazione live alle assemblee con votazione facilitata.',
     benefits: [
       'Tutto il piano Web Access',
-      'App Mobile completa (iOS/Android)',
+      'Web App completa accessibile da Browser',
       'Voto elettronico in assemblea',
+      'Proposte argomenti all\'OdG',
       'Segnalazione guasti con foto',
       'Esperienza Premium per i condòmini'
     ],
@@ -58,7 +59,7 @@ const PACCHETTI = [
 export default function PanoramicaPacchettiModal({ onClose, onSelectPacchetto }) {
   return (
     <div className="modal-overlay" style={{ zIndex: 1000, padding: 20 }}>
-      <div className="modal-content" style={{ maxWidth: 1100, width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: 32 }}>
+      <div className="modal-content" style={{ background: 'var(--app-bg)', borderRadius: 24, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', position: 'relative', maxWidth: 1100, width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: 40 }}>
         <button className="modal-close" onClick={onClose}><X size={24} /></button>
         
         <div style={{ textAlign: 'center', marginBottom: 40 }}>

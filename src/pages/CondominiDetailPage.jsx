@@ -66,6 +66,7 @@ const MACRO_GROUPS = [
     id: 'gestione', 
     label: 'Gestione', 
     icon: Building2, 
+    color: '#3b82f6', // Blue
     tabs: [
       { id: 'panoramica', label: 'Panoramica', icon: LayoutGrid },
       { id: 'anagrafica', label: 'Anagrafica & Unità', icon: Users },
@@ -76,6 +77,7 @@ const MACRO_GROUPS = [
     id: 'contabilita', 
     label: 'Contabilità', 
     icon: Wallet, 
+    color: '#10b981', // Emerald
     tabs: [
       { id: 'finanze',    label: 'Gestione Finanze', icon: Wallet },
       { id: 'preventivo', label: 'Preventivo & Saldi', icon: ClipboardList },
@@ -87,6 +89,7 @@ const MACRO_GROUPS = [
     id: 'documenti', 
     label: 'Documenti', 
     icon: FileText, 
+    color: '#8b5cf6', // Violet
     tabs: [
       { id: 'documenti',  label: 'Archivio Documenti', icon: FileText },
       { id: 'verbali',    label: 'Verbali Assemblea',  icon: FileSignature },
@@ -429,10 +432,11 @@ export default function CondominiDetailPage() {
       </div>
 
       {/* Macro Groups Tab Bar */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 12, borderBottom: '1px solid var(--border-color)', paddingBottom: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
         {MACRO_GROUPS.map(group => {
           const isActiveGroup = activeGroup === group.id
           const GroupIcon = group.icon
+          const color = group.color
           return (
             <button
               key={group.id}
@@ -441,23 +445,27 @@ export default function CondominiDetailPage() {
                 setActiveTab(group.tabs[0].id) // Seleziona il primo tab del gruppo
               }}
               style={{
-                background: isActiveGroup ? 'var(--card-bg)' : 'transparent',
-                color: isActiveGroup ? 'var(--text-primary)' : 'var(--text-secondary)',
-                border: '1px solid',
-                borderColor: isActiveGroup ? 'var(--border-color)' : 'transparent',
-                borderRadius: 20,
-                padding: '6px 14px',
-                fontSize: 13,
-                fontWeight: isActiveGroup ? 700 : 500,
+                flex: '1 1 200px',
+                background: isActiveGroup ? `${color}15` : 'var(--card-bg)', // Hex alpha per background leggero
+                color: isActiveGroup ? color : 'var(--text-secondary)',
+                border: '2px solid',
+                borderColor: isActiveGroup ? color : 'var(--border-color)',
+                borderRadius: 16,
+                padding: '20px 16px',
+                fontSize: 16,
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.15s',
-                boxShadow: isActiveGroup ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
+                justifyContent: 'center',
+                gap: 12,
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: isActiveGroup ? `0 8px 24px ${color}25` : '0 2px 4px rgba(0,0,0,0.02)',
+                transform: isActiveGroup ? 'translateY(-2px)' : 'none'
               }}
             >
-              <GroupIcon size={15} style={{ color: isActiveGroup ? '#60a5fa' : 'inherit' }} />
+              <GroupIcon size={28} style={{ color: isActiveGroup ? color : 'var(--text-muted)', transition: 'all 0.2s' }} />
               {group.label}
             </button>
           )

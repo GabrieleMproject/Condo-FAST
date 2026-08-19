@@ -8,6 +8,7 @@
  */
 import ExcelJS  from 'exceljs';
 import mammoth  from 'mammoth';
+import JSZip    from 'jszip';
 import { callGemini, callGeminiVision, callGeminiDocument } from './geminiClient';
 
 /**
@@ -315,11 +316,66 @@ export async function docToTextFallback(file) {
   return text.replace(/ {2,}/g, ' ').replace(/\n+/g, '\n');
 }
 
+// ─── Estrazione file da archivio ZIP (pacchetti AdE o cartelle fatture) ──────
+export async function estraiFileDaZip(zipFile) {
+  if (!zipFile) return [];
+  const zip = new JSZip();
+  const zipLoaded = await zip.loadAsync(zipFile);
+  const filesEstratti = [];
+
+  const MIME_MAP = {
+    xml:  'application/xml',
+    p7m:  'application/pkcs7-mime',
+    pdf:  'application/pdf',
+    jpg:  'image/jpeg',
+    jpeg: 'image/jpeg',
+    png:  'image/png',
+    webp: 'image/webp',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    doc:  'application/msword',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    xls:  'application/vnd.ms-excel',
+    csv:  'text/csv',
+    txt:  'text/plain',
+  };
+
+  for (const [relativePath, zipEntry] of Object.entries(zipLoaded.files)) {
+    // Ignora directory, file di sistema macOS e file nascosti
+    if (
+      zipEntry.dir ||
+      relativePath.startsWith('__MACOSX') ||
+      relativePath.includes('/.') ||
+      zipEntry.name.startsWith('.')
+    ) {
+      continue;
+    }
+
+    const cleanName = zipEntry.name.split('/').pop() || zipEntry.name;
+    const ext = (cleanName.split('.').pop() || '').toLowerCase();
+    
+    // Ignora file non pertinenti (es. file binari sconosciuti o DS_Store)
+    if (!MIME_MAP[ext] && !cleanName.toLowerCase().endsWith('.p7m')) continue;
+
+    const mimeType = MIME_MAP[ext] || (cleanName.toLowerCase().endsWith('.p7m') ? 'application/pkcs7-mime' : 'application/octet-stream');
+    const blob = await zipEntry.async('blob');
+    
+    const file = new File([blob], cleanName, {
+      type: mimeType,
+      lastModified: zipEntry.date ? zipEntry.date.getTime() : Date.now(),
+    });
+
+    filesEstratti.push(file);
+  }
+
+  return filesEstratti;
+}
+
 // ─── Determina tipo file ──────────────────────────────────────────────────────
 export function getTipoFile(file) {
   const name = file.name.toLowerCase();
   const type = (file.type || '').toLowerCase();
 
+  if (type === 'application/zip' || type === 'application/x-zip-compressed' || type === 'multipart/x-zip' || name.endsWith('.zip')) return 'zip';
   if (type === 'application/pdf' || name.endsWith('.pdf'))                                return 'pdf';
   if (type.includes('xml') || name.endsWith('.xml'))                                     return 'xml';
   if (name.endsWith('.p7m') || type.includes('pkcs7'))                                  return 'p7m';
@@ -339,6 +395,9 @@ export function getTipoFile(file) {
 
 // ─── Validazione MIME type (sicurezza upload) ─────────────────────────────────
 const MIME_CONSENTITI = new Set([
+  'application/zip',
+  'application/x-zip-compressed',
+  'multipart/x-zip',
   'application/pdf',
   'text/xml',
   'application/xml',
@@ -362,7 +421,7 @@ export function validaMimeType(file) {
   if (MIME_CONSENTITI.has(type)) return true;
 
   // Fallback su estensione (alcuni browser non rilevano correttamente il MIME)
-  const estensioniOk = ['.pdf', '.xml', '.p7m', '.xlsx', '.xls', '.docx', '.doc', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp'];
+  const estensioniOk = ['.zip', '.pdf', '.xml', '.p7m', '.xlsx', '.xls', '.docx', '.doc', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp'];
   return estensioniOk.some(ext => name.endsWith(ext));
 }
 

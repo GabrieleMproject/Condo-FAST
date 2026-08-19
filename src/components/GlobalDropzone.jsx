@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { UploadCloud, FileText, X, Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react'
-import { estraiFattura, getTipoFile, comprimiImmagine } from '../lib/fileExtractor'
+import { estraiFattura, getTipoFile, comprimiImmagine, estraiFileDaZip } from '../lib/fileExtractor'
+import { parseFatturaXmlP7m } from '../lib/xmlFatturaParser'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 
@@ -82,13 +83,29 @@ export default function GlobalDropzone() {
     
     try {
       let fileToSend = file
-      const info = getTipoFile(file)
-      if (info === 'image') {
-        fileToSend = await comprimiImmagine(file)
+      let info = getTipoFile(file)
+
+      if (info === 'zip') {
+        const estratti = await estraiFileDaZip(file)
+        if (estratti.length === 0) {
+          throw new Error('Nessun file valido trovato all\'interno dello ZIP.')
+        }
+        fileToSend = estratti[0]
+        info = getTipoFile(fileToSend)
+        toast.success(`Estratto file ${fileToSend.name} da archivio ZIP`)
+      }
+
+      let estratto = null
+      if (info === 'xml' || info === 'p7m') {
+        const resXml = await parseFatturaXmlP7m(fileToSend)
+        estratto = resXml.dati
+      } else {
+        if (info === 'image') {
+          fileToSend = await comprimiImmagine(fileToSend)
+        }
+        estratto = await estraiFattura(fileToSend)
       }
       
-      // Ipotizziamo sia una fattura per semplicità del drop universale
-      const estratto = await estraiFattura(fileToSend)
       if (estratto && estratto.is_valido !== false) {
         setExtractedData(estratto)
         toast.success('Dati estratti con successo!')
@@ -98,7 +115,7 @@ export default function GlobalDropzone() {
       }
     } catch (err) {
       console.error(err)
-      toast.error('Errore durante l\'estrazione AI: ' + err.message)
+      toast.error('Errore durante l\'estrazione: ' + err.message)
       setIsModalOpen(false)
     } finally {
       setIsProcessing(false)
@@ -205,7 +222,7 @@ export default function GlobalDropzone() {
             ref={fileInputRef}
             onChange={handleManualFileChange}
             style={{ display: 'none' }}
-            accept=".pdf,image/*"
+            accept=".pdf,.xml,.p7m,.zip,image/*,.docx,.xlsx"
           />
         </div>
       )}

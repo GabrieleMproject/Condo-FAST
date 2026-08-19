@@ -21,6 +21,13 @@ export async function parseFatturaXmlP7m(file) {
     throw new Error('Impossibile decodificare la Struttura XML della Fattura Elettronica: file corrotto o non valido.');
   }
 
+  // Ignora file di notifica o metadati SDI privi di corpo fattura
+  const hasFatturaBody = xmlDoc.querySelector('FatturaElettronicaBody') || xmlDoc.getElementsByTagName('FatturaElettronicaBody').length > 0;
+  const hasCedente = xmlDoc.querySelector('CedentePrestatore') || xmlDoc.getElementsByTagName('CedentePrestatore').length > 0;
+  if (!hasFatturaBody && !hasCedente) {
+    throw new Error('Il file XML non contiene una Fattura Elettronica valida (file di notifica, metadati SDI o formato non conforme).');
+  }
+
   // 3. Helper per cercare elementi ignorando prefissi namespace (es. p:FatturaElettronica, ns2:Header...)
   const getTag = (parent, tagName) => {
     if (!parent) return null;

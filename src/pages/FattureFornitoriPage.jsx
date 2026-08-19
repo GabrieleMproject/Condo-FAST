@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { estraiFattura, getTipoFile, comprimiImmagine } from '../lib/fileExtractor';
+import { estraiFattura, getTipoFile, comprimiImmagine, estraiFileDaZip } from '../lib/fileExtractor';
 import { parseFatturaXmlP7m } from '../lib/xmlFatturaParser';
 import { calcolaFileHash } from '../lib/fileHash';
 import { useFornitori } from '../hooks/useFornitori';
@@ -131,90 +131,144 @@ export default function FattureFornitoriPage() {
     return isNaN(d.getTime()) ? dataStr : d.toLocaleDateString('it-IT');
   }
 
-  // ─── Upload fattura ──────────────────────────────────────────
-  async function handleFile(file) {
-    if (!file) return;
-    const tipo = getTipoFile(file);
-    if (tipo === 'unknown') {
-      setErroreUpload('Formato non supportato. Usa PDF, XML, p7m, DOCX, immagine, Excel o TXT.');
-      return;
-    }
-
-    if (file.size > 15 * 1024 * 1024) {
-      setErroreUpload('Il file supera i 15MB. Ti consigliamo di comprimerlo gratuitamente online prima di caricarlo.');
-      return;
-    }
-
-    // Controllo Feature Gate per Fatture Elettroniche XML/p7m
-    if ((tipo === 'xml' || tipo === 'p7m') && !canUse('fatturazione_xml_sdi')) {
-      setErroreUpload('L\'importazione nativa delle Fatture Elettroniche XML/p7m è una funzionalità esclusiva del piano Professional. Passa al piano Professional per accedere all\'estrazione istantanea a costo zero.');
-      return;
-    }
+  // ─── Upload fattura (singolo o lotto / pacchetti ZIP) ──────────────────────
+  async function handleFiles(rawFiles) {
+    if (!rawFiles || (Array.isArray(rawFiles) ? rawFiles.length === 0 : !rawFiles.length && !(rawFiles instanceof File))) return;
+    const fileList = rawFiles instanceof File ? [rawFiles] : Array.from(rawFiles);
+    if (!fileList.length) return;
 
     setUploading(true);
     setErroreUpload('');
-    setUploadProgress('Verifica integrità file e controllo duplicati...');
+    setUploadProgress('Verifica e decompressione file in corso...');
 
     try {
-      // Controllo Anti-Duplicato SHA-256
-      const hash = await calcolaFileHash(file);
-      if (hash) {
-        const { data: fatturaEsistente } = await supabase
-          .from('fatture_fornitori')
-          .select('id, fornitore, data_fattura, importo_totale')
-          .eq('condominio_id', condominioId)
-          .eq('file_hash', hash)
-          .maybeSingle();
-
-        if (fatturaEsistente) {
-          const confermata = window.confirm(
-            `ATTENZIONE DUPLICATO:\nQuesto documento risulta già caricato nel sistema per la fattura "${fatturaEsistente.fornitore}" del ${fatturaEsistente.data_fattura} (€ ${fatturaEsistente.importo_totale}).\n\nVuoi procedere comunque col ricaricamento?`
-          );
-          if (!confermata) {
-            setUploading(false);
-            setUploadProgress('');
-            return;
+      const filesEspansi = [];
+      for (const f of fileList) {
+        const tipo = getTipoFile(f);
+        if (tipo === 'zip') {
+          setUploadProgress(`Estrazione pacchetto ZIP: ${f.name}...`);
+          const estratti = await estraiFileDaZip(f);
+          if (estratti.length === 0) {
+            setErroreUpload('Nessun file supportato (XML, p7m, PDF, immagini) trovato all\'interno dell\'archivio ZIP.');
           }
+          filesEspansi.push(...estratti);
+        } else {
+          filesEspansi.push(f);
         }
       }
 
-      let datiAI = null;
-      let fileCompresso = file;
-
-      if (tipo === 'xml' || tipo === 'p7m') {
-        setUploadProgress('Estrazione nativa Fattura Elettronica XML (0ms)...');
-        const resXml = await parseFatturaXmlP7m(file);
-        datiAI = resXml.dati;
-      } else {
-        fileCompresso = await comprimiImmagine(file);
-        setUploadProgress('Estrazione dati fattura con AI...');
-        datiAI = await estraiFattura(fileCompresso, condominio);
-      }
-
-      if (datiAI?._warningPertinenza) {
-        setPendingFile({ fileCompresso, datiAI, tipo, hash });
-        setWarningModal({
-          slotErrato: datiAI._warningPertinenza.slotErrato ? {
-            tipoRilevato: datiAI._warningPertinenza.slotErrato.tipoRilevato,
-            slotAtteso: 'Fatture Fornitori'
-          } : null,
-          condominioErrato: datiAI._warningPertinenza.condominioErrato ? {
-            intestatarioRilevato: datiAI._warningPertinenza.condominioErrato.intestatarioRilevato,
-            condominioAttivoNome: condominio?.nome || 'Condominio Corrente',
-            motivoDiscrepanza: datiAI._warningPertinenza.condominioErrato.motivoDiscrepanza
-          } : null
-        });
+      if (filesEspansi.length === 0) {
         setUploading(false);
         setUploadProgress('');
         return;
       }
 
-      await salvaFatturaEstratta(fileCompresso, datiAI, tipo, hash);
+      let contatoreSalvati = 0;
+      for (let i = 0; i < filesEspansi.length; i++) {
+        const file = filesEspansi[i];
+        const tipo = getTipoFile(file);
+        if (tipo === 'unknown') continue;
+
+        if (file.size > 15 * 1024 * 1024) {
+          console.warn(`File ${file.name} supera 15MB, ignorato.`);
+          continue;
+        }
+
+        // Controllo Feature Gate per Fatture Elettroniche XML/p7m
+        if ((tipo === 'xml' || tipo === 'p7m') && !canUse('fatturazione_xml_sdi')) {
+          setErroreUpload('L\'importazione nativa delle Fatture Elettroniche XML/p7m è una funzionalità esclusiva del piano Professional.');
+          continue;
+        }
+
+        const prefix = filesEspansi.length > 1 ? `[${i + 1}/${filesEspansi.length}] ${file.name}: ` : '';
+        setUploadProgress(`${prefix}Controllo duplicati e hash...`);
+
+        // Controllo Anti-Duplicato SHA-256
+        const hash = await calcolaFileHash(file);
+        if (hash) {
+          const { data: fatturaEsistente } = await supabase
+            .from('fatture_fornitori')
+            .select('id, fornitore, data_fattura, importo_totale')
+            .eq('condominio_id', condominioId)
+            .eq('file_hash', hash)
+            .maybeSingle();
+
+          if (fatturaEsistente) {
+            if (filesEspansi.length === 1) {
+              const confermata = window.confirm(
+                `ATTENZIONE DUPLICATO:\nQuesto documento risulta già caricato nel sistema per la fattura "${fatturaEsistente.fornitore}" del ${fatturaEsistente.data_fattura} (€ ${fatturaEsistente.importo_totale}).\n\nVuoi procedere comunque col ricaricamento?`
+              );
+              if (!confermata) continue;
+            } else {
+              // In batch o ZIP, salta duplicato
+              continue;
+            }
+          }
+        }
+
+        let datiAI = null;
+        let fileCompresso = file;
+
+        if (tipo === 'xml' || tipo === 'p7m') {
+          setUploadProgress(`${prefix}Estrazione nativa XML SDI (0ms)...`);
+          try {
+            const resXml = await parseFatturaXmlP7m(file);
+            datiAI = resXml.dati;
+          } catch (xmlErr) {
+            console.warn(`File XML ${file.name} non conforme a fattura:`, xmlErr.message);
+            continue;
+          }
+        } else {
+          fileCompresso = await comprimiImmagine(file);
+          setUploadProgress(`${prefix}Estrazione dati con AI...`);
+          datiAI = await estraiFattura(fileCompresso, condominio);
+        }
+
+        if (!datiAI) continue;
+
+        if (datiAI?._warningPertinenza && filesEspansi.length === 1) {
+          setPendingFile({ fileCompresso, datiAI, tipo, hash });
+          setWarningModal({
+            slotErrato: datiAI._warningPertinenza.slotErrato ? {
+              tipoRilevato: datiAI._warningPertinenza.slotErrato.tipoRilevato,
+              slotAtteso: 'Fatture Fornitori'
+            } : null,
+            condominioErrato: datiAI._warningPertinenza.condominioErrato ? {
+              intestatarioRilevato: datiAI._warningPertinenza.condominioErrato.intestatarioRilevato,
+              condominioAttivoNome: condominio?.nome || 'Condominio Corrente',
+              motivoDiscrepanza: datiAI._warningPertinenza.condominioErrato.motivoDiscrepanza
+            } : null
+          });
+          setUploading(false);
+          setUploadProgress('');
+          return;
+        }
+
+        setUploadProgress(`${prefix}Salvataggio nel database...`);
+        await salvaFatturaEstratta(fileCompresso, datiAI, tipo, hash);
+        contatoreSalvati++;
+      }
+
+      await loadFatture();
+      if (filesEspansi.length > 1) {
+        setUploadProgress(`Completato! ${contatoreSalvati} fatture elaborate con successo.`);
+        setTimeout(() => {
+          setUploading(false);
+          setUploadProgress('');
+        }, 2000);
+      } else {
+        setUploading(false);
+        setUploadProgress('');
+      }
     } catch (e) {
       setErroreUpload('Errore: ' + e.message);
       setUploadProgress('');
       setUploading(false);
     }
+  }
+
+  async function handleFile(file) {
+    return handleFiles([file]);
   }
 
   async function salvaFatturaEstratta(fileCompresso, datiAI, tipo, hash = '') {
@@ -503,12 +557,12 @@ export default function FattureFornitoriPage() {
         style={{ ...styles.dropZone, ...(dragOver ? styles.dropActive : {}) }}
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+        onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
       >
         <input
-          type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp,.xlsx,.xls,.txt,.xml,.p7m"
+          type="file" multiple accept=".pdf,.docx,.jpg,.jpeg,.png,.webp,.xlsx,.xls,.txt,.xml,.p7m,.zip"
           style={{ display: 'none' }} id="fattura-upload"
-          onChange={e => handleFile(e.target.files[0])}
+          onChange={e => handleFiles(e.target.files)}
           disabled={uploading}
         />
         <label htmlFor="fattura-upload" style={{ cursor: uploading ? 'wait' : 'pointer' }}>
@@ -516,10 +570,10 @@ export default function FattureFornitoriPage() {
             {uploading ? <Loader2 size={36} className="spin" color="var(--primary)" /> : <Receipt size={36} color="var(--text-muted)" />}
           </div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
-            {uploading ? uploadProgress : 'Trascina una fattura qui'}
+            {uploading ? uploadProgress : 'Trascina le fatture o archivi ZIP qui'}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {uploading ? '' : 'PDF, XML, p7m, DOCX, immagine, Excel — estrazione nativa SDI o con IA'}
+            {uploading ? '' : 'ZIP (Cassetto Fiscale AdE), XML, p7m, PDF, DOCX, immagine, Excel — estrazione nativa SDI o con IA'}
           </div>
         </label>
       </div>

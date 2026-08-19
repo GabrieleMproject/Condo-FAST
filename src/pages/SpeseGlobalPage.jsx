@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
-import { estraiFattura } from '../lib/fileExtractor'
+import { estraiFattura, getTipoFile, estraiFileDaZip } from '../lib/fileExtractor'
+import { parseFatturaXmlP7m } from '../lib/xmlFatturaParser'
 import SpeseForm from '../components/SpeseForm'
 import { toast } from 'react-hot-toast'
 import {
@@ -273,17 +274,29 @@ export default function SpeseGlobalPage() {
 
   // 5. Caricamento File manuale e analisi AI (aggiorna DB)
   const handleFilesAdded = async (fileList) => {
-    const files = Array.from(fileList)
-    if (files.length === 0) return
-
-    if (queue.length >= 10) {
-      toast.error('La coda è piena. Gestisci o rimuovi le fatture presenti prima di caricarne altre (Max 10).')
-      return
-    }
+    const rawFiles = Array.from(fileList)
+    if (rawFiles.length === 0) return
 
     setProcessing(true)
     try {
-      for (const file of files) {
+      const files = []
+      for (const f of rawFiles) {
+        const tipo = getTipoFile(f)
+        if (tipo === 'zip') {
+          const estratti = await estraiFileDaZip(f)
+          files.push(...estratti)
+        } else {
+          files.push(f)
+        }
+      }
+
+      if (queue.length + files.length > 20) {
+        toast.error('La coda può contenere massimo 20 fatture contemporaneamente.')
+      }
+
+      const targetFiles = files.slice(0, Math.max(1, 20 - queue.length))
+
+      for (const file of targetFiles) {
         // Carica su Supabase Storage (inbox-ricezione)
         const path = `${user.id}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
         const { error: uploadErr } = await supabase.storage
@@ -326,8 +339,16 @@ export default function SpeseGlobalPage() {
         setQueue(prev => [newItem, ...prev])
         setActiveQueueId(newDoc.id)
 
-        // Esegui estrazione AI
-        const estratto = await estraiFattura(file)
+        // Esegui estrazione (nativa XML per SDI, o AI per PDF/immagini)
+        let estratto = null
+        const tipoDoc = getTipoFile(file)
+        if (tipoDoc === 'xml' || tipoDoc === 'p7m') {
+          const resXml = await parseFatturaXmlP7m(file)
+          estratto = resXml.dati
+        } else {
+          estratto = await estraiFattura(file)
+        }
+
         const matchedCondoId = matchCondominio(estratto, condomini)
         
         let condoDati = { esercizi: [], unita: [], tabelle: [], documenti: [] }
@@ -641,23 +662,23 @@ export default function SpeseGlobalPage() {
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.csv,.txt"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.csv,.txt,.xml,.p7m,.zip"
               style={{ display: 'none' }}
               onChange={handleFileInput}
             />
             {processing ? (
               <div>
                 <Loader2 size={32} style={{ margin: '0 auto 10px', color: '#7c3aed', animation: 'spin 1s linear infinite' }} />
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Elaborazione file...</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Elaborazione e decompressione file...</div>
               </div>
             ) : (
               <>
                 <UploadCloud size={32} style={{ margin: '0 auto 10px', color: 'var(--text-muted)' }} />
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
-                  Trascina qui le fatture
+                  Trascina qui le fatture o pacchetti ZIP
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  Carica manualmente o inoltra alla tua email CondoFAST
+                  ZIP (Cassetto Fiscale AdE), XML SDI, p7m, PDF, DOCX, immagini o Excel
                 </div>
               </>
             )}

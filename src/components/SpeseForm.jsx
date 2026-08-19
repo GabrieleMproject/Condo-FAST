@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { callGemini, callGeminiDocument } from '../lib/geminiClient'
-import { estraiFattura, fileToBase64, comprimiImmagine, getTipoFile } from '../lib/fileExtractor'
+import { estraiFattura, fileToBase64, comprimiImmagine, getTipoFile, estraiFileDaZip } from '../lib/fileExtractor'
 import { parseFatturaXmlP7m } from '../lib/xmlFatturaParser'
 import { usePlan } from '../hooks/usePlan'
 import { supabase } from '../lib/supabaseClient'
@@ -758,23 +758,50 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     }))
   }
 
-  const handleDrop = (e) => {
-    e.preventDefault()
-    setDragOver(false)
-    const files = Array.from(e.dataTransfer.files || [])
-    if (files.length === 1) {
-      elaboraFattura(files[0])
-    } else if (files.length > 1) {
-      avviaLottoFatture(files)
+  const espandiFilesEAvvia = async (rawFiles) => {
+    if (!rawFiles || !rawFiles.length) return
+    setLoadingFattura(true)
+    setErrFattura(null)
+    try {
+      const filesEspansi = []
+      for (const f of rawFiles) {
+        const tipo = getTipoFile(f)
+        if (tipo === 'zip') {
+          const estratti = await estraiFileDaZip(f)
+          if (estratti.length === 0) {
+            setErrFattura('Nessun file supportato (XML, p7m, PDF, immagini) trovato all\'interno dell\'archivio ZIP.')
+          }
+          filesEspansi.push(...estratti)
+        } else {
+          filesEspansi.push(f)
+        }
+      }
+
+      if (filesEspansi.length === 1) {
+        await elaboraFattura(filesEspansi[0])
+      } else if (filesEspansi.length > 1) {
+        await avviaLottoFatture(filesEspansi)
+      }
+    } catch (err) {
+      console.error('Errore elaborazione file/ZIP:', err)
+      setErrFattura('Errore decompressione pacchetto: ' + err.message)
+    } finally {
+      setLoadingFattura(false)
     }
   }
 
-  const handleFileInput = (e) => {
+  const handleDrop = async (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    const files = Array.from(e.dataTransfer.files || [])
+    await espandiFilesEAvvia(files)
+  }
+
+  const handleFileInput = async (e) => {
     const files = Array.from(e.target.files || [])
-    if (files.length === 1) {
-      elaboraFattura(files[0])
-    } else if (files.length > 1) {
-      avviaLottoFatture(files)
+    await espandiFilesEAvvia(files)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
@@ -1309,14 +1336,14 @@ Formato JSON:
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.csv,.txt,.xml,.p7m"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.xls,.csv,.txt,.xml,.p7m,.zip"
               style={{ display: 'none' }}
               onChange={handleFileInput}
             />
             {loadingFattura ? (
               <div>
                 <Loader2 size={24} style={{ margin: '0 auto 8px', color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
-                <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Estrazione dati in corso...</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Estrazione dati e decompressione in corso...</div>
               </div>
             ) : fatturaImportata ? (
               <div>
@@ -1340,10 +1367,10 @@ Formato JSON:
               <div>
                 <Receipt size={28} style={{ margin: '0 auto 8px', color: 'var(--text-muted)' }} />
                 <div style={{ color: 'var(--text-secondary)', fontSize: 14, fontWeight: 600 }}>
-                  Trascina le fatture qui oppure clicca per selezionarle (fino a 5 file)
+                  Trascina le fatture o pacchetti ZIP qui (anche dal Cassetto Fiscale AdE)
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
-                  PDF, XML, p7m, immagini, DOCX, Excel · Estrazione nativa SDI o con IA
+                  ZIP, XML, p7m, PDF, immagini, DOCX, Excel · Estrazione istantanea SDI o con IA
                 </div>
               </div>
             )}

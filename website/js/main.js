@@ -242,6 +242,66 @@
     updateRoiCalculator(roiSlider.value);
   }
 
+  const MAX_DEMO_TRIES = 10;
+
+  function renderTrialLimitBanner() {
+    const aiDetails = document.getElementById('demo-ai-details');
+    const aiHeader = document.getElementById('demo-ai-header');
+    const scannerLine = document.getElementById('scanner-line');
+    const docPreview = document.getElementById('demo-doc-content');
+
+    if (scannerLine) scannerLine.classList.remove('is-scanning');
+    if (aiHeader) aiHeader.innerHTML = '✦ Prove Gratuite Completate (10/10)';
+
+    const bannerHtml = `
+      <div class="trial-limit-banner" style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.18) 0%, rgba(147, 51, 234, 0.18) 100%); border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 16px; padding: 28px 20px; text-align: center; box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">🎉</div>
+        <h4 style="color: #fff; font-size: 1.25rem; font-weight: 800; margin-bottom: 8px;">Hai completato le tue 10 prove gratuite!</h4>
+        <p style="color: #cbd5e1; font-size: 0.92rem; max-width: 520px; margin: 0 auto 18px; line-height: 1.55;">
+          Hai visto quanto è veloce l'Intelligenza Artificiale di CondoFAST? Attiva subito la tua <strong>prova gratuita di 14 giorni</strong> per elaborare fatture ed estratti conto illimitati, gestire la contabilità e i tuoi condomini senza limiti.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap;">
+          <a href="https://condofast.app/register" class="btn btn--primary btn-glow" style="padding: 13px 28px; font-weight: 700; font-size: 0.96rem; text-decoration: none; border-radius: 12px;">
+            🚀 Inizia la Prova Gratuita — 14 Giorni →
+          </a>
+        </div>
+        <div style="margin-top: 12px; font-size: 0.78rem; color: #94a3b8;">
+          Nessuna carta di credito richiesta · Setup in 2 minuti · Disdici quando vuoi
+        </div>
+      </div>
+    `;
+
+    if (aiDetails) {
+      aiDetails.innerHTML = bannerHtml;
+      const modalContainer = aiDetails.closest('.modal-container');
+      if (modalContainer) {
+        modalContainer.scrollTo({ top: aiDetails.offsetTop - 30, behavior: 'smooth' });
+      }
+    }
+
+    if (docPreview) {
+      docPreview.innerHTML = `
+        <span class="console-doc-tag highlight-cyan">Limite Raggiunto</span>
+        <div style="color:#60a5fa;font-weight:700;font-size:1rem;margin-bottom:8px">10 Prove su 10 Effettuate</div>
+        <div style="color:var(--muted);font-size:0.85rem;line-height:1.5">
+          Tutte le 10 elaborazioni di anteprima sono state completate con successo. Per elaborare nuovi documenti reali del tuo studio, crea il tuo account gratuito.
+        </div>
+        <div style="margin-top:16px">
+          <a href="https://condofast.app/register" class="btn btn--ghost btn--sm" style="width:100%;justify-content:center">Crea Account Gratuito →</a>
+        </div>
+      `;
+    }
+  }
+
+  function updateDemoCounterBadge() {
+    let demoCount = parseInt(localStorage.getItem('condofast_demo_count') || '0', 10);
+    const badge = document.getElementById('demo-tries-badge');
+    if (badge) {
+      const remaining = Math.max(0, MAX_DEMO_TRIES - demoCount);
+      badge.textContent = `Prove rimanenti: ${remaining}/${MAX_DEMO_TRIES}`;
+    }
+  }
+
   /* ---------- Analizzatore AI Reale per qualsiasi Fattura / Scontrino Utente ---------- */
   window.analyzeUserDocument = function (file) {
     const docPreview = document.getElementById('demo-doc-content');
@@ -250,6 +310,12 @@
     const scannerLine = document.getElementById('scanner-line');
 
     if (!docPreview || !aiDetails || !aiHeader) return;
+
+    let demoCount = parseInt(localStorage.getItem('condofast_demo_count') || '0', 10);
+    if (demoCount >= MAX_DEMO_TRIES) {
+      renderTrialLimitBanner();
+      return;
+    }
 
     const fileName = file ? file.name : 'Fattura_Esempio_Manutenzione.pdf';
     const fileSize = file ? (file.size / 1024).toFixed(1) + ' KB' : '245 KB';
@@ -261,7 +327,7 @@
     aiDetails.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--muted)">
       <div style="display:inline-block;width:24px;height:24px;border:3px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:8px"></div>
       <div>Analisi AI in corso da <strong>${fileName}</strong>...</div>
-      <div style="font-size:0.75rem;margin-top:4px;color:#94a3b8">Estrazione esclusiva dei dati presenti nel documento</div>
+      <div style="font-size:0.75rem;margin-top:4px;color:#94a3b8">Estrazione esclusiva dei dati presenti nel documento (Prova ${demoCount + 1} di ${MAX_DEMO_TRIES})</div>
     </div>`;
 
     docPreview.innerHTML = `
@@ -283,7 +349,8 @@
     function renderExtractedData(data) {
       if (scannerLine) scannerLine.classList.remove('is-scanning');
 
-      aiHeader.textContent = '✦ AI Extraction Completa: Dati Estratti dal Documento';
+      const currentCount = parseInt(localStorage.getItem('condofast_demo_count') || '0', 10);
+      aiHeader.textContent = `✦ AI Extraction Completa (Prova ${currentCount} di ${MAX_DEMO_TRIES})`;
 
       const condoDisplay = data.condominio ? data.condominio : 'Dato non rilevato nel documento';
       const fornitoreDisplay = data.fornitore ? data.fornitore : 'Dato non rilevato nel documento';
@@ -295,6 +362,20 @@
       const ivaDisplay = data.iva ? ' (IVA € ' + Number(data.iva).toFixed(2).replace('.', ',') + ')' : '';
       const tabellaDisplay = data.tabella_riparto ? data.tabella_riparto : 'Tabella A — Proprietà Generale';
       const ritenutaDisplay = data.ritenuta4 ? '€ ' + Number(data.ritenuta4).toFixed(2).replace('.', ',') : (data.imponibile ? '€ ' + (data.imponibile * 0.04).toFixed(2).replace('.', ',') : 'Non applicabile');
+
+      const reachedLimit = currentCount >= MAX_DEMO_TRIES;
+      const trialCtaBanner = reachedLimit ? `
+        <div class="trial-limit-banner" style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%); border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 14px; padding: 20px; text-align: center; margin-top: 16px;">
+          <div style="font-size: 1.5rem; margin-bottom: 4px;">🎉</div>
+          <h5 style="color: #fff; font-size: 1.1rem; font-weight: 800; margin-bottom: 6px;">Hai completato le 10 prove gratuite!</h5>
+          <p style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 14px;">
+            Attiva la prova completa di 14 giorni per continuare a elaborare documenti illimitati.
+          </p>
+          <a href="https://condofast.app/register" class="btn btn--primary" style="padding: 10px 22px; font-weight: 700; font-size: 0.88rem; text-decoration: none; border-radius: 10px;">
+            Inizia la Prova Gratuita di 14 Giorni →
+          </a>
+        </div>
+      ` : '';
 
       aiDetails.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:10px">
@@ -346,8 +427,10 @@
           </div>
 
           <div style="margin-top:8px;display:flex;gap:10px;justify-content:flex-end">
-            <button style="background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem">Simula Registrazione in Contabilità</button>
+            <a href="https://condofast.app/register" class="btn btn--primary" style="padding:10px 18px;border-radius:8px;font-weight:700;font-size:0.85rem;text-decoration:none">Registrati e Salva in Contabilità →</a>
           </div>
+
+          ${trialCtaBanner}
         </div>
       `;
 
@@ -369,15 +452,6 @@
     }
 
     if (file) {
-      let demoCount = parseInt(localStorage.getItem('condofast_demo_count') || '0', 10);
-      if (demoCount >= 3) {
-        alert("Hai raggiunto il limite massimo di 3 prove gratuite. Registrati per continuare a usare l'Intelligenza Artificiale CondoFAST!");
-        const aiPulse = document.getElementById('ai-pulse');
-        if (aiPulse) aiPulse.style.display = 'none';
-        if (aiHeader) aiHeader.innerHTML = '✦ AI Extraction: Limite Raggiunto';
-        return;
-      }
-
       const isImage = file.type.startsWith('image/');
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       
@@ -451,6 +525,7 @@
       };
       reader.readAsDataURL(file);
     } else {
+      localStorage.setItem('condofast_demo_count', (demoCount + 1).toString());
       setTimeout(() => {
         renderExtractedData({
           condominio: 'Condominio Via Manzoni 14 (Milano)',
@@ -542,6 +617,22 @@
       e.preventDefault();
       const targetId = trigger.getAttribute('data-open-modal');
       window.openModal(targetId);
+      return;
+    }
+
+    const sampleDocBtn = e.target.closest('[data-action="sample-doc"]');
+    if (sampleDocBtn) {
+      e.preventDefault();
+      if (typeof window.analyzeUserDocument === 'function') {
+        window.analyzeUserDocument(null);
+      }
+      return;
+    }
+
+    const privacyAlert = e.target.closest('[data-action="privacy-alert"], #demo-dropzone-overlay');
+    if (privacyAlert) {
+      e.preventDefault();
+      alert("Devi spuntare la casella della Privacy Policy per sbloccare l'area di elaborazione AI.");
       return;
     }
 

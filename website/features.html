@@ -8,7 +8,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://aapksiokakavarwaumwy.supabase.co; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://api.stripe.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co https://aapksiokakavarwaumwy.supabase.co https://api.stripe.com; base-uri 'self'; form-action 'self'">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
@@ -177,7 +177,7 @@
         <h1 id="page-title" class="reveal" data-delay="1">L'AI <span class="grad-text">propone</span>. Tu <span class="grad-text">confermi</span>.</h1>
         <p class="lead reveal" data-delay="2">CondoFAST è l'unico gestionale condominiale con un assistente AI nativo che legge documenti, estrae dati e propone azioni. Ma niente entra mai in contabilità senza la tua approvazione esplicita: è il modello «propone → confermi».</p>
         <div style="margin-top:20px" class="reveal" data-delay="3">
-          <button class="btn btn--ghost" data-open-modal="modal-demo-ai" onclick="openModal('modal-demo-ai')" type="button">✦ Prova l'Assistente AI in tempo reale →</button>
+          <button class="btn btn--ghost" data-open-modal="modal-demo-ai" type="button">✦ Prova l'Assistente AI in tempo reale →</button>
         </div>
       </div>
     </section>
@@ -628,9 +628,9 @@
           <div class="dropzone-icon">✦</div>
           <div style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:4px">Trascina qui la tua Fattura o Scontrino di Prova</div>
           <div style="color:var(--muted);font-size:0.85rem">Oppure <span style="color:var(--accent);text-decoration:underline">fai clic qui per selezionare un file dal tuo dispositivo</span></div>
-          <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF e Immagini fino a 15 MB · Nessun dato è salvato o usato per addestramenti. (Max 3 prove)</div>
+          <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF e Immagini fino a 15 MB · Nessun dato è salvato o usato per addestramenti. (10 prove gratuite incluse)</div>
         </div>
-        <div class="demo-dropzone-overlay" id="demo-dropzone-overlay" onclick="alert('Devi spuntare la casella della Privacy Policy per sbloccare l\'area di elaborazione AI.')"></div>
+        <div class="demo-dropzone-overlay" id="demo-dropzone-overlay" data-action="privacy-alert"></div>
       </div>
 
       <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -641,7 +641,7 @@
       </div>
 
       <div style="text-align:center;margin-top:14px">
-        <button type="button" onclick="analyzeUserDocument(null)" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:0.8rem;cursor:pointer">✦ Oppure prova con una Fattura di Esempio pre-caricata</button>
+        <button type="button" data-action="sample-doc" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:0.8rem;cursor:pointer">✦ Oppure prova con una Fattura di Esempio pre-caricata</button>
       </div>
 
       <div class="console-split" style="margin-top:18px">

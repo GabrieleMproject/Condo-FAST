@@ -6,27 +6,35 @@ import { User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import BrandLogo from '../components/BrandLogo';
 
 export default function RegisterPage() {
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ nome: '', cognome: '', email: '', confermaEmail: '', password: '' });
-  const [dpaAccepted, setDpaAccepted] = useState(false);
-  const [tosAccepted, setTosAccepted] = useState(false);
+  const [form, setForm] = useState({ nome: '', cognome: '', email: '', password: '' });
+  const [legalAccepted, setLegalAccepted] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleChange = e =>
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
+  const handleGoogleSignUp = async () => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      const { error: googleError } = await signInWithGoogle();
+      if (googleError) throw googleError;
+    } catch (err) {
+      setError(err.message || 'Errore durante la registrazione con Google.');
+      setGoogleLoading(false);
+    }
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!tosAccepted || !dpaAccepted) {
-      setError('Devi accettare i Termini, la Privacy e il DPA per continuare.');
-      return;
-    }
-    if (form.email.trim().toLowerCase() !== form.confermaEmail.trim().toLowerCase()) {
-      setError('Gli indirizzi email non corrispondono.');
+    if (!legalAccepted) {
+      setError('Devi accettare i Termini di Servizio, la Privacy Policy e il DPA per continuare.');
       return;
     }
     setError('');
@@ -119,6 +127,54 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {/* Google Sign-Up Button */}
+          <button
+            type="button"
+            onClick={handleGoogleSignUp}
+            disabled={googleLoading || loading}
+            className="btn-google"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              width: '100%',
+              padding: '0.85rem 1rem',
+              borderRadius: 'var(--radius)',
+              background: 'var(--bg-2)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              fontSize: '0.92rem',
+              fontWeight: 600,
+              cursor: (googleLoading || loading) ? 'wait' : 'pointer',
+              transition: 'all 0.2s ease',
+              marginBottom: '1.2rem'
+            }}
+            onMouseOver={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+            onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border)'}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            {googleLoading ? 'Accesso con Google...' : 'Registrati con Google'}
+          </button>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            margin: '1.2rem 0',
+            color: 'var(--text-3)',
+            fontSize: '0.8rem'
+          }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+            <span>oppure con email</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+          </div>
+
           <form onSubmit={handleSubmit} className="auth-form">
             
             {/* Nome e Cognome */}
@@ -173,23 +229,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Conferma Email */}
-            <div className="field-group">
-              <label htmlFor="confermaEmail">Conferma Email</label>
-              <div className="input-wrapper">
-                <Mail size={16} className="input-icon" />
-                <input
-                  id="confermaEmail"
-                  name="confermaEmail"
-                  type="email"
-                  placeholder="Conferma la tua email"
-                  value={form.confermaEmail}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
             {/* Password */}
             <div className="field-group">
               <label htmlFor="password">Password</label>
@@ -212,7 +251,7 @@ export default function RegisterPage() {
               <p style={{ color: 'var(--text-3)', fontSize: '0.75rem', marginTop: 2 }}>Minimo 8 caratteri</p>
             </div>
 
-            {/* DPA Checkbox Box */}
+            {/* Consenso Legale Unificato: Termini, Privacy e DPA */}
             <div style={{
               background: 'var(--bg-2)',
               border: '1px solid var(--border)',
@@ -226,43 +265,8 @@ export default function RegisterPage() {
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer', margin: 0 }}>
                 <input
                   type="checkbox"
-                  checked={dpaAccepted}
-                  onChange={e => setDpaAccepted(e.target.checked)}
-                  style={{
-                    marginTop: '0.2rem',
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '4px',
-                    accentColor: 'var(--accent)',
-                    cursor: 'pointer',
-                    flexShrink: 0
-                  }}
-                />
-                <span style={{ color: 'var(--text-2)', fontSize: '0.82rem', lineHeight: '1.45', fontWeight: 400 }}>
-                  Accetto il{' '}
-                  <a href="/dpa.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
-                    Contratto di Trattamento Dati (DPA)
-                  </a>{' '}
-                  ex art. 28 GDPR. Dichiaro di agire quale Titolare del trattamento per i dati gestiti.
-                </span>
-              </label>
-            </div>
-
-            {/* Termini & Privacy Checkbox Box */}
-            <div style={{
-              background: 'var(--bg-2)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius)',
-              padding: '0.95rem 1.1rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5rem'
-            }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer', margin: 0 }}>
-                <input
-                  type="checkbox"
-                  checked={tosAccepted}
-                  onChange={e => setTosAccepted(e.target.checked)}
+                  checked={legalAccepted}
+                  onChange={e => setLegalAccepted(e.target.checked)}
                   style={{
                     marginTop: '0.2rem',
                     width: '16px',
@@ -277,12 +281,14 @@ export default function RegisterPage() {
                   Accetto i{' '}
                   <a href="/termini.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
                     Termini di Servizio
-                  </a>
-                  {' '}e la{' '}
+                  </a>, la{' '}
                   <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
                     Privacy Policy
-                  </a>
-                  {' '}di CondoFAST.
+                  </a>{' '}
+                  e il{' '}
+                  <a href="/dpa.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+                    Contratto DPA ex art. 28 GDPR
+                  </a>.
                 </span>
               </label>
             </div>
@@ -290,11 +296,11 @@ export default function RegisterPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading || !dpaAccepted || !tosAccepted}
+              disabled={loading || !legalAccepted}
               className="btn-primary"
               style={{
-                background: (dpaAccepted && tosAccepted) ? 'var(--accent)' : 'var(--border)',
-                cursor: (dpaAccepted && tosAccepted && !loading) ? 'pointer' : 'not-allowed',
+                background: legalAccepted ? 'var(--accent)' : 'var(--border)',
+                cursor: (legalAccepted && !loading) ? 'pointer' : 'not-allowed',
                 marginTop: '0.8rem',
                 opacity: loading ? 0.7 : 1
               }}

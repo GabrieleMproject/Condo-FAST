@@ -561,59 +561,28 @@
     }
   };
 
-  // Helper per evidenziare visivamente la spunta privacy senza popup alert
-  function highlightPrivacyConsent() {
-    const cb = document.getElementById('privacy-consent-checkbox');
-    const container = cb ? cb.closest('div') : null;
-    if (container) {
-      container.style.transition = 'all 0.3s ease';
-      container.style.transform = 'scale(1.03)';
-      container.style.padding = '6px 12px';
-      container.style.borderRadius = '8px';
-      container.style.background = 'rgba(239, 68, 68, 0.15)';
-      container.style.border = '1px solid rgba(239, 68, 68, 0.4)';
-      if (cb) cb.focus();
-      setTimeout(() => {
-        container.style.transform = 'scale(1)';
-        container.style.background = 'transparent';
-        container.style.border = '1px solid transparent';
-      }, 1800);
-    }
-  }
-
   // Setup Event Listeners Drag & Drop e Upload File
   document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'user-doc-input') {
       const file = e.target.files[0];
-      if (file) analyzeUserDocument(file);
-    }
-    
-    if (e.target && e.target.id === 'privacy-consent-checkbox') {
-      const isChecked = e.target.checked;
-      const dropzone = document.getElementById('demo-dropzone');
-      const wrapper = document.getElementById('demo-dropzone-wrapper');
-      if (isChecked) {
-        dropzone.classList.remove('disabled-privacy');
-        wrapper.classList.remove('disabled-privacy');
-      } else {
-        dropzone.classList.add('disabled-privacy');
-        wrapper.classList.add('disabled-privacy');
-      }
+      if (file) window.analyzeUserDocument(file);
     }
   });
 
   document.addEventListener('dragover', (e) => {
-    const dropzone = e.target.closest('#demo-dropzone-wrapper');
-    if (dropzone && !dropzone.classList.contains('disabled-privacy')) {
+    const wrapper = e.target.closest('#demo-dropzone-wrapper');
+    if (wrapper) {
       e.preventDefault();
-      dropzone.querySelector('#demo-dropzone').classList.add('is-dragover');
+      const dropzone = wrapper.querySelector('#demo-dropzone');
+      if (dropzone) dropzone.classList.add('is-dragover');
     }
   });
 
   document.addEventListener('dragleave', (e) => {
-    const dropzone = e.target.closest('#demo-dropzone-wrapper');
-    if (dropzone && !dropzone.classList.contains('disabled-privacy')) {
-      dropzone.querySelector('#demo-dropzone').classList.remove('is-dragover');
+    const wrapper = e.target.closest('#demo-dropzone-wrapper');
+    if (wrapper) {
+      const dropzone = wrapper.querySelector('#demo-dropzone');
+      if (dropzone) dropzone.classList.remove('is-dragover');
     }
   });
 
@@ -621,11 +590,8 @@
     const wrapper = e.target.closest('#demo-dropzone-wrapper');
     if (wrapper) {
       e.preventDefault();
-      if (wrapper.classList.contains('disabled-privacy')) {
-        highlightPrivacyConsent();
-        return;
-      }
-      wrapper.querySelector('#demo-dropzone').classList.remove('is-dragover');
+      const dropzone = wrapper.querySelector('#demo-dropzone');
+      if (dropzone) dropzone.classList.remove('is-dragover');
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
         window.analyzeUserDocument(e.dataTransfer.files[0]);
       }
@@ -665,13 +631,6 @@
       if (typeof window.analyzeUserDocument === 'function') {
         window.analyzeUserDocument(null);
       }
-      return;
-    }
-
-    const privacyAlert = e.target.closest('[data-action="privacy-alert"], #demo-dropzone-overlay');
-    if (privacyAlert) {
-      e.preventDefault();
-      highlightPrivacyConsent();
       return;
     }
 

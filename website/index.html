@@ -231,14 +231,14 @@
         <div class="hero__grid">
           <div>
             <span class="eyebrow reveal">AI per amministratori di condominio</span>
-            <h1 id="hero-title" class="reveal" data-delay="1">Il gestionale condominiale che lavora <span class="grad-text">con te</span>, non per te.</h1>
-            <p class="hero__sub reveal" data-delay="2">CondoFAST automatizza la gestione contabile e documentale del condominio con l'AI — rendiconti, riconciliazioni, solleciti e tabelle millesimali in un unico posto sicuro e conforme GDPR.</p>
+            <h1 id="hero-title" class="reveal" data-delay="1">Rendiconti perfetti senza contestazioni. <span class="grad-text">Fatture e conti con l'AI.</span></h1>
+            <p class="hero__sub reveal" data-delay="2">CondoFAST è il gestionale cloud conforme all'art. 1130-bis c.c. che elimina il caos di Excel, automatizza la riconciliazione bancaria e protegge la privacy del tuo studio.</p>
             <div class="hero__actions reveal" data-delay="3">
               <a class="btn btn--primary btn-glow" href="https://condofast.app/register" id="hero-cta-trial">Inizia gratis — 14 giorni</a>
               <button class="btn btn--ghost" data-open-modal="modal-demo-ai" type="button">✦ Prova Assistente AI</button>
-              <button class="btn btn--ghost" data-open-modal="modal-roi-calc" type="button">Calcola ROI</button>
+              <button class="btn btn--ghost" data-open-modal="modal-roi-calc" type="button" style="font-size:0.88rem;opacity:0.9">Calcola Risparmio ROI →</button>
             </div>
-            <p class="hero__note reveal" data-delay="4"><span class="dot" aria-hidden="true">●</span> Nessuna carta di credito richiesta · Dati in EU · Disdici quando vuoi</p>
+            <p class="hero__note reveal" data-delay="4"><span class="dot" aria-hidden="true">●</span> Nessuna carta di credito richiesta · Setup in 2 minuti · Dati in EU (Francoforte)</p>
           </div>
 
           <!-- Product mockup (built in CSS, 100% responsive & pixel-perfect) -->
@@ -692,24 +692,20 @@
         <p style="color:var(--muted);font-size:0.92rem;margin-top:4px">Trascina o seleziona una tua fattura (PDF, PNG, JPG) per testare l'estrazione contabile ed il riparto millesimale immediato:</p>
       </div>
 
-      <!-- AREA DRAG & DROP FATTURA / SCONTRINO UTENTE -->
-      <div class="demo-dropzone-wrapper disabled-privacy" id="demo-dropzone-wrapper">
-        <div class="demo-dropzone disabled-privacy" id="demo-dropzone">
+      <!-- AREA DRAG & DROP FATTURA / SCONTRINO UTENTE (SUBITO ATTIVA) -->
+      <div class="demo-dropzone-wrapper" id="demo-dropzone-wrapper">
+        <div class="demo-dropzone" id="demo-dropzone">
           <input type="file" id="user-doc-input" accept=".pdf,.png,.jpg,.jpeg,.webp">
           <div class="scanner-line" id="scanner-line"></div>
           <div class="dropzone-icon">✦</div>
           <div style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:4px">Trascina qui la tua Fattura o Scontrino di Prova</div>
           <div style="color:var(--muted);font-size:0.85rem">Oppure <span style="color:var(--accent);text-decoration:underline">fai clic qui per selezionare un file dal tuo dispositivo</span></div>
-          <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF e Immagini fino a 15 MB · Nessun dato è salvato o usato per addestramenti. (10 prove gratuite incluse)</div>
+          <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF e Immagini fino a 15 MB · 10 prove gratuite incluse</div>
         </div>
-        <div class="demo-dropzone-overlay" id="demo-dropzone-overlay" data-action="privacy-alert"></div>
       </div>
 
-      <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <input type="checkbox" id="privacy-consent-checkbox" style="width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer;">
-        <label for="privacy-consent-checkbox" style="font-size: 0.85rem; color: var(--muted); cursor: pointer; user-select: none;">
-          Acconsento al trattamento temporaneo del documento per l'elaborazione AI, letta la <a href="privacy.html" style="color:var(--accent);text-decoration:underline">Privacy Policy</a> (art. 13 GDPR).
-        </label>
+      <div style="margin-top: 10px; text-align: center; font-size: 0.8rem; color: var(--muted); line-height: 1.4;">
+        🔒 <strong style="color: var(--text);">Conformità GDPR (Art. 13):</strong> Il documento viene elaborato temporaneamente in memoria per la sola dimostrazione AI e non viene memorizzato né usato per addestramento. <a href="privacy.html" target="_blank" style="color:var(--accent);text-decoration:underline">Informativa Privacy</a>.
       </div>
 
       <div style="text-align:center;margin-top:14px">

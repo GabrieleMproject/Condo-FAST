@@ -173,11 +173,12 @@
 
     <section class="page-hero" aria-labelledby="page-title">
       <div class="container">
-        <span class="eyebrow reveal">Funzionalità</span>
-        <h1 id="page-title" class="reveal" data-delay="1">L'AI <span class="grad-text">propone</span>. Tu <span class="grad-text">confermi</span>.</h1>
-        <p class="lead reveal" data-delay="2">CondoFAST è l'unico gestionale condominiale con un assistente AI nativo che legge documenti, estrae dati e propone azioni. Ma niente entra mai in contabilità senza la tua approvazione esplicita: è il modello «propone → confermi».</p>
-        <div style="margin-top:20px" class="reveal" data-delay="3">
-          <button class="btn btn--ghost" data-open-modal="modal-demo-ai" type="button">✦ Prova l'Assistente AI in tempo reale →</button>
+        <span class="eyebrow reveal">Funzionalità & Piattaforma</span>
+        <h1 id="page-title" class="reveal" data-delay="1">L'AI <span class="grad-text">propone</span>. Tu <span class="grad-text">confermi</span>. Tutto sotto controllo.</h1>
+        <p class="lead reveal" data-delay="2">CondoFAST è il gestionale condominiale sviluppato per amministratori professionisti. L'assistente AI estrae dati, prepara registrazioni contabili e riparti, ma ogni operazione entra a sistema solo con la tua approvazione esplicita. 100% conforme all'art. 1130-bis c.c. e Legge 220/2012.</p>
+        <div style="margin-top:24px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;" class="reveal" data-delay="3">
+          <button class="btn btn--primary" data-open-modal="modal-demo-ai" type="button">✦ Prova l'Assistente AI in tempo reale →</button>
+          <a class="btn btn--ghost" href="https://condofast.app/register">Inizia la prova gratuita di 14 giorni</a>
         </div>
       </div>
     </section>
@@ -185,272 +186,329 @@
     <section class="section section--tight" aria-label="Moduli della piattaforma">
       <div class="container">
 
+        <!-- Banner Migrazione Zero Frizioni da altri gestionali o Excel -->
+        <div class="migration-banner reveal">
+          <div class="migration-banner__icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          </div>
+          <div class="migration-banner__text">
+            <span class="migration-banner__badge">Passaggio senza stress · Zero reinserimento dati</span>
+            <h3>Passi a CondoFAST da un altro gestionale o da fogli Excel?</h3>
+            <p>Non devi reinserire nulla a mano. Il nostro assistente AI importa anagrafiche, condòmini, tabelle millesimali e saldi iniziali direttamente dai file PDF ed Excel esportati dal tuo vecchio software. Oppure, il nostro team esegue la migrazione completa per te, gratuitamente.</p>
+          </div>
+          <div class="migration-banner__action">
+            <a href="https://condofast.app/register" class="btn btn--ghost btn--sm">Richiedi migrazione gratuita →</a>
+          </div>
+        </div>
+
+        <!-- Filter Tabs / Macro-Aree (Desktop & Mobile) -->
+        <div class="features-filter-wrapper reveal">
+          <div class="features-filter" role="tablist" aria-label="Filtra per area operativa">
+            <button type="button" class="feature-tab active" data-filter="all" role="tab" aria-selected="true">Tutti i 9 Moduli</button>
+            <button type="button" class="feature-tab" data-filter="contabilita" role="tab" aria-selected="false">📊 Contabilità & Fisco</button>
+            <button type="button" class="feature-tab" data-filter="banca" role="tab" aria-selected="false">🏦 Banca & Incassi</button>
+            <button type="button" class="feature-tab" data-filter="studio" role="tab" aria-selected="false">🏢 Studio & Sinistri</button>
+          </div>
+        </div>
+
         <div class="features-layout">
           <aside class="features-sidebar">
-  <ul id="features-nav">
-    <li><a href="#mod-millesimi">Tabelle Millesimali</a></li>
-    <li><a href="#mod-postbox">Postbox Studio</a></li>
-    <li><a href="#mod-ai">Lettura Intelligente</a></li>
-    <li><a href="#mod-sinistri">Sinistri e Subentri</a></li>
-    <li><a href="#mod-fornitori">Fornitori & F24</a></li>
-    <li><a href="#mod-banca">Riconciliazione</a></li>
-    <li><a href="#mod-solleciti">Solleciti e Rate</a></li>
-    <li><a href="#mod-rendiconto">Rendiconto 1130-bis</a></li>
-    <li><a href="#mod-notifiche">Notifiche Intelligenti</a></li>
-  </ul>
-</aside>
-<div class="features-content">
-        <!-- Modulo 2: Millesimi -->
-        <div class="feature-row" id="mod-millesimi" class="feature-row">
-          <div class="scroll-reveal">
-            <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bar-chart-2" style="vertical-align: -2px; margin-right: 4px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Riparto spese</span>
-            <h3>Tabelle millesimali automatiche</h3>
-            <p>Importa le tue tabelle una sola volta. Ogni spesa viene ripartita matematicamente all'istante.</p>
-            <ul class="feature-list-short">
-              <li>Import assistito anche da PDF</li>
-              <li>Supporto a subentri e inquilini</li>
-              <li>Ricalcolo istantaneo delle quote</li>
-            </ul>
-          </div>
-          <div class="feature-row__media scroll-reveal" data-delay="1">
-            <div class="workflow">
-              <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip" style="vertical-align: -2px; margin-right: 4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> Tabella_millesimale_ViaRoma12.pdf</div>
-              <div class="workflow__msg workflow__msg--ai">
-                <b>✦ Proposta</b>
-                Rilevate 3 tabelle: A — Proprietà generale (1.000,00 mm), B — Scale (1.000,00 mm), C — Ascensore (1.000,00 mm). 24 unità immobiliari riconosciute. Importo tutto?
+            <div class="features-sidebar__group">
+              <span class="features-sidebar__heading">Contabilità & Fisco</span>
+              <ul id="features-nav-contabilita">
+                <li><a href="#mod-ai">Lettura Documenti AI</a></li>
+                <li><a href="#mod-millesimi">Tabelle Millesimali</a></li>
+                <li><a href="#mod-fornitori">Fornitori & F24</a></li>
+                <li><a href="#mod-rendiconto">Rendiconto 1130-bis</a></li>
+              </ul>
+            </div>
+            <div class="features-sidebar__group">
+              <span class="features-sidebar__heading">Banca & Incassi</span>
+              <ul id="features-nav-banca">
+                <li><a href="#mod-banca">Riconciliazione Estratti</a></li>
+                <li><a href="#mod-solleciti">Solleciti & Rate</a></li>
+              </ul>
+            </div>
+            <div class="features-sidebar__group">
+              <span class="features-sidebar__heading">Studio & Sinistri</span>
+              <ul id="features-nav-studio">
+                <li><a href="#mod-postbox">Postbox Studio</a></li>
+                <li><a href="#mod-sinistri">Sinistri & Consegne</a></li>
+                <li><a href="#mod-notifiche">Notifiche Scadenze</a></li>
+              </ul>
+            </div>
+          </aside>
+
+          <div class="features-content">
+
+            <!-- ================= AREA 1: CONTABILITÀ & FISCO ================= -->
+
+            <!-- Modulo 1: AI documenti -->
+            <div class="feature-row" id="mod-ai" data-category="contabilita">
+              <div class="scroll-reveal">
+                <span class="feature-pill-badge">⏱ Risparmio dell'85% sui tempi di registrazione</span>
+                <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-cpu" style="vertical-align: -2px; margin-right: 4px;"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="15" x2="23" y2="15"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="15" x2="4" y2="15"></line></svg> Assistente AI</span>
+                <h3>Lettura intelligente dei documenti</h3>
+                <p>Carica qualsiasi fattura o documento contabile. L'assistente estrae fornitore, importi, IVA e date, preparando la registrazione contabile in pochi istanti.</p>
+                <ul class="feature-list-short">
+                  <li>Estrazione dati multi-formato (PDF, immagini, XLSX)</li>
+                  <li>Riparto millesimale integrato automatico</li>
+                  <li>Proposte sempre modificabili dall'amministratore</li>
+                </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Prova l'estrazione con una tua fattura →</button>
               </div>
-              <div class="workflow__confirm" aria-hidden="true">
-                <span class="ok">✓ Importa 3 tabelle</span>
-                <span class="edit">Rivedi</span>
+              <div class="feature-row__media scroll-reveal" data-delay="1">
+                <div class="workflow" aria-label="Esempio di flusso: l'AI propone una registrazione e l'amministratore conferma">
+                  <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip" style="vertical-align: -2px; margin-right: 4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> Fattura_Idraulico_Marzo.pdf caricata</div>
+                  <div class="workflow__msg workflow__msg--ai">
+                    <b>✦ Proposta</b>
+                    Fattura n. 47/2026 — Rossi Impianti Srl — €1.830,00 (IVA 22%). Categoria: manutenzione ordinaria. Riparto: tabella A (proprietà). Ritenuta 4% da versare con F24.
+                  </div>
+                  <div class="workflow__confirm" aria-hidden="true">
+                    <span class="ok" data-action="confirm-demo">✓ Conferma e registra</span>
+                    <span class="edit">Modifica</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-    <!-- Modulo 7: Postbox Studio & Automazione Email -->
-    <section class="section section--tight" aria-label="Nuovi Moduli della piattaforma">
-      <div class="container">
-        
-        <!-- Modulo 7: Postbox Studio & Automazione Email -->
-        <div class="feature-row" id="mod-postbox" class="feature-row feature-row--flip">
-          <div class="scroll-reveal">
-            <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-inbox" style="vertical-align: -2px; margin-right: 4px;"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg> Postbox</span>
-            <h3>Postbox Studio: le email diventano azioni</h3>
-            <p>Trasforma la casella email dello studio in azioni. Il sistema analizza ogni messaggio in ingresso, assegnandolo automaticamente al condominio.</p>
-            <ul class="feature-list-short">
-              <li>Classificazione intelligente dei messaggi</li>
-              <li>Lettura automatica degli allegati</li>
-              <li>Archivio tracciato e ordinato</li>
-            </ul>
-          </div>
-          <div class="feature-row__media scroll-reveal" data-delay="1">
-            <div class="workflow" aria-label="Esempio di flusso: elaborazione automatica email">
-              <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail" style="vertical-align: -2px; margin-right: 4px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> Email da Enel Energia con allegato PDF</div>
-              <div class="workflow__msg workflow__msg--ai">
-                <b>✦ Proposta</b>
-                Bolletta elettrica riconosciuta, Condominio Via Manzoni 14, importo €892,40. Riparto: tabella A (proprietà).
+            <!-- Modulo 2: Millesimi -->
+            <div class="feature-row feature-row--flip" id="mod-millesimi" data-category="contabilita">
+              <div class="scroll-reveal">
+                <span class="feature-pill-badge">📐 Import assistito da PDF e ricalcolo quote istantaneo</span>
+                <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bar-chart-2" style="vertical-align: -2px; margin-right: 4px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Riparto spese</span>
+                <h3>Tabelle millesimali automatiche</h3>
+                <p>Importa le tabelle una sola volta. Ogni spesa viene ripartita matematicamente all'istante su proprietari, usufruttuari e inquilini.</p>
+                <ul class="feature-list-short">
+                  <li>Import assistito anche da file PDF ed Excel</li>
+                  <li>Supporto completo a subentri in corso d'anno</li>
+                  <li>Ricalcolo istantaneo delle quote di spesa</li>
+                </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Prova l'import tabelle millesimali →</button>
               </div>
-              <div class="workflow__confirm" aria-hidden="true">
-                <span class="ok">✓ Conferma</span>
-                <span class="edit">Modifica</span>
+              <div class="feature-row__media scroll-reveal" data-delay="1">
+                <div class="workflow">
+                  <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip" style="vertical-align: -2px; margin-right: 4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> Tabella_millesimale_ViaRoma12.pdf</div>
+                  <div class="workflow__msg workflow__msg--ai">
+                    <b>✦ Proposta</b>
+                    Rilevate 3 tabelle: A — Proprietà generale (1.000,00 mm), B — Scale (1.000,00 mm), C — Ascensore (1.000,00 mm). 24 unità immobiliari riconosciute. Importo tutto?
+                  </div>
+                  <div class="workflow__confirm" aria-hidden="true">
+                    <span class="ok" data-action="confirm-demo">✓ Importa 3 tabelle</span>
+                    <span class="edit">Rivedi</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Modulo 1: AI documenti -->
-        <div class="feature-row" id="mod-ai" class="feature-row">
-          <div class="scroll-reveal">
-            <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-cpu" style="vertical-align: -2px; margin-right: 4px;"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="15" x2="23" y2="15"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="15" x2="4" y2="15"></line></svg> Assistente AI</span>
-            <h3>Lettura intelligente dei documenti</h3>
-            <p>Carica qualsiasi documento contabile. L'assistente estrae fornitore, importi e date, preparando la registrazione in un istante.</p>
-            <ul class="feature-list-short">
-              <li>Estrazione dati multi-formato</li>
-              <li>Riparto millesimale integrato</li>
-              <li>Proposte sempre modificabili</li>
-            </ul>
-          </div>
-          <div class="feature-row__media scroll-reveal" data-delay="1">
-            <div class="workflow" aria-label="Esempio di flusso: l'AI propone una registrazione e l'amministratore conferma">
-              <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip" style="vertical-align: -2px; margin-right: 4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> Fattura_Idraulico_Marzo.pdf caricata</div>
-              <div class="workflow__msg workflow__msg--ai">
-                <b>✦ Proposta</b>
-                Fattura n. 47/2026 — Rossi Impianti Srl — €1.830,00 (IVA 22%). Categoria: manutenzione ordinaria. Riparto: tabella A (proprietà). Ritenuta 4% da versare con F24.
+            <!-- Modulo 6: Fornitori & F24 -->
+            <div class="feature-row" id="mod-fornitori" data-category="contabilita">
+              <div class="scroll-reveal">
+                <span class="feature-pill-badge">⚖️ Calcolo ritenute 4% a norma art. 25 DPR 600/73</span>
+                <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-credit-card" style="vertical-align: -2px; margin-right: 4px;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg> Fornitori & Fisco</span>
+                <h3>Fatture fornitori e ritenute F24</h3>
+                <p>Storico fornitori sempre aggiornato. La piattaforma calcola e monitora automaticamente le ritenute d'acconto al 4% e genera le scadenze F24.</p>
+                <ul class="feature-list-short">
+                  <li>Anagrafiche fornitori complete con P.IVA e codice fiscale</li>
+                  <li>Calcolo ritenute d'acconto 4% istantaneo</li>
+                  <li>Scadenzario tributi F24 per il 16 del mese</li>
+                </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Prova il modulo fornitori & ritenute →</button>
               </div>
-              <div class="workflow__confirm" aria-hidden="true">
-                <span class="ok">✓ Conferma e registra</span>
-                <span class="edit">Modifica</span>
+              <div class="feature-row__media scroll-reveal" data-delay="1">
+                <div class="workflow">
+                  <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip" style="vertical-align: -2px; margin-right: 4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> Fattura Rossi Impianti — €1.830,00 registrata</div>
+                  <div class="workflow__msg workflow__msg--ai">
+                    <b>✦ Promemoria</b>
+                    Ritenuta 4% = €60,00 da versare entro il 16 del mese successivo al pagamento. La aggiungo allo scadenzario F24 di agosto?
+                  </div>
+                  <div class="workflow__confirm" aria-hidden="true">
+                    <span class="ok" data-action="confirm-demo">✓ Aggiungi a scadenzario</span>
+                    <span class="edit">Non ora</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Modulo 8: Sinistri, Polizze & Passaggio Consegne -->
-        <div class="feature-row" id="mod-sinistri" class="feature-row feature-row--flip">
-          <div class="scroll-reveal">
-            <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield" style="vertical-align: -2px; margin-right: 4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Gestione</span>
-            <h3>Sinistri assicurativi e passaggio consegne</h3>
-            <p>Monitora l'andamento di ogni pratica e genera con un click l'inventario per il passaggio consegne.</p>
-            <ul class="feature-list-short">
-              <li>Registro sinistri centralizzato</li>
-              <li>Tracciamento liquidazioni</li>
-              <li>Passaggio consegne automatico</li>
-            </ul>
-          </div>
-          <div class="feature-row__media scroll-reveal" data-delay="1">
-            <div class="workflow" aria-label="Esempio di flusso: passaggio di consegne">
-              <div class="workflow__msg">▶ Genera passaggio consegne</div>
-              <div class="workflow__msg workflow__msg--ai">
-                <b>✦ Proposta</b>
-                Verbale pronto per Via Manzoni 14: 47 documenti inventariati, 3 sinistri aperti, situazione finanziaria aggiornata al 31/12/2026.
+            <!-- Modulo 4: Rendiconto -->
+            <div class="feature-row feature-row--flip" id="mod-rendiconto" data-category="contabilita">
+              <div class="scroll-reveal">
+                <span class="feature-pill-badge">🏛 100% conforme art. 1130-bis c.c. (Cassa, Finanziario, Nota Sintetica)</span>
+                <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text" style="vertical-align: -2px; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Rendiconto Ufficiale</span>
+                <h3>Rendiconto annuale a prova di impugnazione</h3>
+                <p>Genera i tre registri obbligatori per l'assemblea con un click, garantendo perfetta conformità di legge e azzerando le contestazioni.</p>
+                <ul class="feature-list-short">
+                  <li>Registro di contabilità (cassa effettiva)</li>
+                  <li>Riepilogo finanziario con quadratura matematica</li>
+                  <li>Nota sintetica esplicativa e confronto preventivo/consuntivo</li>
+                </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Guarda un esempio di rendiconto 1130-bis →</button>
               </div>
-              <div class="workflow__confirm" aria-hidden="true">
-                <span class="ok">✓ Scarica PDF</span>
-                <span class="edit">Rivedi</span>
+              <div class="feature-row__media scroll-reveal" data-delay="1">
+                <div class="workflow">
+                  <div class="workflow__msg">▶ Genera rendiconto esercizio 2026</div>
+                  <div class="workflow__msg workflow__msg--ai">
+                    <b>✦ Proposta</b>
+                    Bozza pronta: registro di contabilità (214 movimenti), riepilogo finanziario (saldo €4.120,00), nota sintetica. Ho evidenziato 1 voce anomala: manutenzione +38% rispetto al preventivo.
+                  </div>
+                  <div class="workflow__confirm" aria-hidden="true">
+                    <span class="ok" data-action="confirm-demo">✓ Approva bozza</span>
+                    <span class="edit">Apri e modifica</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Modulo 6: Fornitori & F24 -->
-        <div class="feature-row" id="mod-fornitori" class="feature-row">
-          <div class="scroll-reveal">
-            <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-credit-card" style="vertical-align: -2px; margin-right: 4px;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg> Fornitori</span>
-            <h3>Fatture fornitori e ritenute F24</h3>
-            <p>Storico fornitori sempre aggiornato. La piattaforma calcola e monitora per te le ritenute d'acconto al 4%.</p>
-            <ul class="feature-list-short">
-              <li>Anagrafiche automatiche complete</li>
-              <li>Calcolo ritenute istantaneo</li>
-              <li>Scadenzario F24 integrato</li>
-            </ul>
-          </div>
-          <div class="feature-row__media scroll-reveal" data-delay="1">
-            <div class="workflow">
-              <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip" style="vertical-align: -2px; margin-right: 4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> Fattura Rossi Impianti — €1.830,00 registrata</div>
-              <div class="workflow__msg workflow__msg--ai">
-                <b>✦ Promemoria</b>
-                Ritenuta 4% = €60,00 da versare entro il 16 del mese successivo al pagamento. La aggiungo allo scadenzario F24 di agosto?
+            <!-- ================= AREA 2: BANCA & INCASSI ================= -->
+
+            <!-- Modulo 3: Riconciliazione -->
+            <div class="feature-row" id="mod-banca" data-category="banca">
+              <div class="scroll-reveal">
+                <span class="feature-pill-badge">🔍 Riconoscimento automatico bonifici e causali dubbie</span>
+                <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-landmark" style="vertical-align: -2px; margin-right: 4px;"><line x1="3" y1="22" x2="21" y2="22"></line><line x1="6" y1="18" x2="6" y2="11"></line><line x1="10" y1="18" x2="10" y2="11"></line><line x1="14" y1="18" x2="14" y2="11"></line><line x1="18" y1="18" x2="18" y2="11"></line><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> Automazione Bancaria</span>
+                <h3>Riconciliazione estratti conto senza errori</h3>
+                <p>Il sistema abbina i bonifici in entrata alle rate dei condòmini, e le uscite alle fatture fornitori. Risparmi ore di spunta manuale.</p>
+                <ul class="feature-list-short">
+                  <li>Abbinamento incassi e pagamenti ad alta precisione</li>
+                  <li>Riconoscimento causali imprecise o incomplete</li>
+                  <li>Evidenziazione trasparente dei soli movimenti da verificare</li>
+                </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Prova con un estratto conto di prova →</button>
               </div>
-              <div class="workflow__confirm" aria-hidden="true">
-                <span class="ok">✓ Aggiungi a scadenzario</span>
-                <span class="edit">Non ora</span>
+              <div class="feature-row__media scroll-reveal" data-delay="1">
+                <div class="workflow">
+                  <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip" style="vertical-align: -2px; margin-right: 4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> EstrattoConto_Marzo2026.csv — 16 movimenti</div>
+                  <div class="workflow__msg workflow__msg--ai">
+                    <b>✦ Proposta</b>
+                    14 movimenti riconciliati con confidenza alta. 2 da verificare: bonifico €310,00 con causale generica (probabile rata 2 — interno 7) e addebito €95,00 non associato a fatture.
+                  </div>
+                  <div class="workflow__confirm" aria-hidden="true">
+                    <span class="ok" data-action="confirm-demo">✓ Conferma i 14</span>
+                    <span class="edit">Verifica i 2</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-      </div>
-    </section>
-
-        <!-- Modulo 3: Riconciliazione -->
-        <div class="feature-row" id="mod-banca" class="feature-row feature-row--flip">
-          <div class="scroll-reveal">
-            <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-landmark" style="vertical-align: -2px; margin-right: 4px;"><line x1="3" y1="22" x2="21" y2="22"></line><line x1="6" y1="18" x2="6" y2="11"></line><line x1="10" y1="18" x2="10" y2="11"></line><line x1="14" y1="18" x2="14" y2="11"></line><line x1="18" y1="18" x2="18" y2="11"></line><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> Banca</span>
-            <h3>Riconciliazione estratti conto</h3>
-            <p>Il sistema abbina i bonifici in entrata alle rate, e le uscite ai fornitori. Risparmi ore di spunta manuale.</p>
-            <ul class="feature-list-short">
-              <li>Abbinamento incassi e pagamenti</li>
-              <li>Riconoscimento causali imprecise</li>
-              <li>Evidenziazione movimenti dubbi</li>
-            </ul>
-          </div>
-          <div class="feature-row__media scroll-reveal" data-delay="1">
-            <div class="workflow">
-              <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip" style="vertical-align: -2px; margin-right: 4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg> EstrattoConto_Marzo2026.csv — 16 movimenti</div>
-              <div class="workflow__msg workflow__msg--ai">
-                <b>✦ Proposta</b>
-                14 movimenti riconciliati con confidenza alta. 2 da verificare: bonifico €310,00 con causale generica (probabile rata 2 — interno 7) e addebito €95,00 non associato a fatture.
+            <!-- Modulo 5: Solleciti -->
+            <div class="feature-row feature-row--flip" id="mod-solleciti" data-category="banca">
+              <div class="scroll-reveal">
+                <span class="feature-pill-badge">📬 Tono graduale e tracciamento storico morosità</span>
+                <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail" style="vertical-align: -2px; margin-right: 4px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> Incassi & Crediti</span>
+                <h3>Solleciti rata e recupero morosità</h3>
+                <p>Recupera le rate insolute con serenità. Il software prepara le email di sollecito con il giusto livello di sollecito: tu devi solo approvare l'invio.</p>
+                <ul class="feature-list-short">
+                  <li>Tono di voce graduale (promemoria cortese, sollecito formale, diffida)</li>
+                  <li>Dettaglio rate e coordinate IBAN inserite in automatico</li>
+                  <li>Invio tracciato e storico consultabile per l'assemblea</li>
+                </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Guarda un esempio di sollecito automatico →</button>
               </div>
-              <div class="workflow__confirm" aria-hidden="true">
-                <span class="ok">✓ Conferma i 14</span>
-                <span class="edit">Verifica i 2</span>
+              <div class="feature-row__media scroll-reveal" data-delay="1">
+                <div class="workflow">
+                  <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle" style="vertical-align: -2px; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Rata 2/2026 scaduta da 15 giorni — interno 7</div>
+                  <div class="workflow__msg workflow__msg--ai">
+                    <b>✦ Bozza sollecito</b>
+                    «Gentile Sig.ra Colombo, le ricordiamo che la rata condominiale n. 2/2026 di €310,00, scaduta il 15/06, non risulta ancora pervenuta…» — Tono: promemoria cortese.
+                  </div>
+                  <div class="workflow__confirm" aria-hidden="true">
+                    <span class="ok" data-action="confirm-demo">✓ Approva e invia</span>
+                    <span class="edit">Modifica testo</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Modulo 5: Solleciti -->
-        <div class="feature-row" id="mod-solleciti" class="feature-row">
-          <div class="scroll-reveal">
-            <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail" style="vertical-align: -2px; margin-right: 4px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> Incassi</span>
-            <h3>Solleciti rata generati automaticamente</h3>
-            <p>Recupera la morosità senza stress. Il gestionale prepara le email di sollecito, tu devi solo approvarle.</p>
-            <ul class="feature-list-short">
-              <li>Tono di voce graduale</li>
-              <li>Dettaglio importi in automatico</li>
-              <li>Invio tracciato e confermato</li>
-            </ul>
-          </div>
-          <div class="feature-row__media scroll-reveal" data-delay="1">
-            <div class="workflow">
-              <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle" style="vertical-align: -2px; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Rata 2/2026 scaduta da 15 giorni — interno 7</div>
-              <div class="workflow__msg workflow__msg--ai">
-                <b>✦ Bozza sollecito</b>
-                «Gentile Sig.ra Colombo, le ricordiamo che la rata condominiale n. 2/2026 di €310,00, scaduta il 15/06, non risulta ancora pervenuta…» — Tono: promemoria cortese.
+            <!-- ================= AREA 3: STUDIO & SINISTRI ================= -->
+
+            <!-- Modulo 7: Postbox Studio & Automazione Email -->
+            <div class="feature-row" id="mod-postbox" data-category="studio">
+              <div class="scroll-reveal">
+                <span class="feature-pill-badge">✉️ Smistamento intelligente comunicazioni per condominio</span>
+                <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-inbox" style="vertical-align: -2px; margin-right: 4px;"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg> Postbox Studio</span>
+                <h3>Postbox Studio: le email diventano azioni</h3>
+                <p>Trasforma la casella email dello studio in azioni concrete. Il sistema analizza ogni messaggio in ingresso, assegnandolo automaticamente al condominio pertinente.</p>
+                <ul class="feature-list-short">
+                  <li>Classificazione intelligente dei messaggi e segnalazioni</li>
+                  <li>Lettura ed estrazione automatica degli allegati PDF</li>
+                  <li>Archivio ordinato per condominio, tracciato e ricercabile</li>
+                </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Scopri la Postbox intelligente →</button>
               </div>
-              <div class="workflow__confirm" aria-hidden="true">
-                <span class="ok">✓ Approva e invia</span>
-                <span class="edit">Modifica testo</span>
+              <div class="feature-row__media scroll-reveal" data-delay="1">
+                <div class="workflow" aria-label="Esempio di flusso: elaborazione automatica email">
+                  <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail" style="vertical-align: -2px; margin-right: 4px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> Email da Enel Energia con allegato PDF</div>
+                  <div class="workflow__msg workflow__msg--ai">
+                    <b>✦ Proposta</b>
+                    Bolletta elettrica riconosciuta, Condominio Via Manzoni 14, importo €892,40. Riparto: tabella A (proprietà).
+                  </div>
+                  <div class="workflow__confirm" aria-hidden="true">
+                    <span class="ok" data-action="confirm-demo">✓ Conferma</span>
+                    <span class="edit">Modifica</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Modulo 4: Rendiconto -->
-        <div class="feature-row" id="mod-rendiconto" class="feature-row feature-row--flip">
-          <div class="scroll-reveal">
-            <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text" style="vertical-align: -2px; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Rendiconto</span>
-            <h3>Rendiconto annuale conforme all'art. 1130-bis c.c.</h3>
-            <p>Genera i tre registri obbligatori per l'assemblea con un click, garantendo perfetta conformità di legge.</p>
-            <ul class="feature-list-short">
-              <li>Registro di contabilità (cassa)</li>
-              <li>Riepilogo finanziario</li>
-              <li>Nota sintetica esplicativa</li>
-            </ul>
-          </div>
-          <div class="feature-row__media scroll-reveal" data-delay="1">
-            <div class="workflow">
-              <div class="workflow__msg">▶ Genera rendiconto esercizio 2026</div>
-              <div class="workflow__msg workflow__msg--ai">
-                <b>✦ Proposta</b>
-                Bozza pronta: registro di contabilità (214 movimenti), riepilogo finanziario (saldo €4.120,00), nota sintetica. Ho evidenziato 1 voce anomala: manutenzione +38% rispetto al preventivo.
+            <!-- Modulo 8: Sinistri, Polizze & Passaggio Consegne -->
+            <div class="feature-row feature-row--flip" id="mod-sinistri" data-category="studio">
+              <div class="scroll-reveal">
+                <span class="feature-pill-badge">📄 Inventario e verbale di passaggio consegne immediato</span>
+                <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield" style="vertical-align: -2px; margin-right: 4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Gestione Immobili</span>
+                <h3>Sinistri assicurativi e passaggio consegne</h3>
+                <p>Monitora l'andamento delle pratiche assicurative e genera con un click l'inventario completo e il verbale ufficiale per il passaggio di consegne.</p>
+                <ul class="feature-list-short">
+                  <li>Registro sinistri e perizie centralizzato per immobile</li>
+                  <li>Tracciamento rimborsi e liquidazioni assicurative</li>
+                  <li>Passaggio consegne automatico con verbale PDF pronto per la firma</li>
+                </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Prova la gestione sinistri e consegne →</button>
               </div>
-              <div class="workflow__confirm" aria-hidden="true">
-                <span class="ok">✓ Approva bozza</span>
-                <span class="edit">Apri e modifica</span>
+              <div class="feature-row__media scroll-reveal" data-delay="1">
+                <div class="workflow" aria-label="Esempio di flusso: passaggio di consegne">
+                  <div class="workflow__msg">▶ Genera passaggio consegne</div>
+                  <div class="workflow__msg workflow__msg--ai">
+                    <b>✦ Proposta</b>
+                    Verbale pronto per Via Manzoni 14: 47 documenti inventariati, 3 sinistri aperti, situazione finanziaria aggiornata al 31/12/2026.
+                  </div>
+                  <div class="workflow__confirm" aria-hidden="true">
+                    <span class="ok" data-action="confirm-demo">✓ Scarica PDF</span>
+                    <span class="edit">Rivedi</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Modulo 9: Notifiche & Promemoria Intelligenti -->
-        <div class="feature-row" id="mod-notifiche" class="feature-row">
-          <div class="scroll-reveal">
-            <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bell" style="vertical-align: -2px; margin-right: 4px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Promemoria</span>
-            <h3>Promemoria automatici che non dimenticano nulla</h3>
-            <p>Ricevi avvisi solo quando serve davvero, per scadenze fiscali o rate in ritardo. Mai più dimenticanze.</p>
-            <ul class="feature-list-short">
-              <li>Allarmi F24 personalizzati</li>
-              <li>Notifiche rate scadute</li>
-              <li>Preavviso chiusura esercizio</li>
-            </ul>
-          </div>
-          <div class="feature-row__media scroll-reveal" data-delay="1">
-            <div class="workflow" aria-label="Esempio di flusso: avvisi e notifiche">
-              <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bell" style="vertical-align: -2px; margin-right: 4px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Badge campanella rosso con notifica: 3 notifiche</div>
-              <div class="workflow__msg workflow__msg--ai">
-                <b>✦ Avvisi</b>
-                2 rate scadute da oltre 10 giorni (Via Manzoni 14), 1 Ritenuta F24 da versare entro il 16/08 (€60,00).
+            <!-- Modulo 9: Notifiche & Promemoria Intelligenti -->
+            <div class="feature-row" id="mod-notifiche" data-category="studio">
+              <div class="scroll-reveal">
+                <span class="feature-pill-badge">🔔 Allarmi scadenze F24 e rate per evitare sanzioni</span>
+                <span class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bell" style="vertical-align: -2px; margin-right: 4px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Promemoria & Scadenze</span>
+                <h3>Promemoria automatici che non dimenticano nulla</h3>
+                <p>Ricevi avvisi tempestivi solo quando serve davvero: scadenze fiscali, ritenute F24, chiusura esercizio e rate in ritardo. Mai più dimenticanze.</p>
+                <ul class="feature-list-short">
+                  <li>Allarmi tributi F24 per il 16 del mese successivo</li>
+                  <li>Notifiche rate scadute con link diretto all'anagrafica</li>
+                  <li>Preavviso automatico per la convocazione dell'assemblea</li>
+                </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Esplora il centro notifiche studio →</button>
               </div>
-              <div class="workflow__confirm" aria-hidden="true">
-                <span class="ok">✓ Vedi dettagli</span>
-                <span class="edit">Invia sollecito</span>
+              <div class="feature-row__media scroll-reveal" data-delay="1">
+                <div class="workflow" aria-label="Esempio di flusso: avvisi e notifiche">
+                  <div class="workflow__msg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bell" style="vertical-align: -2px; margin-right: 4px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Badge campanella con 3 notifiche attive</div>
+                  <div class="workflow__msg workflow__msg--ai">
+                    <b>✦ Avvisi</b>
+                    2 rate scadute da oltre 10 giorni (Via Manzoni 14), 1 Ritenuta F24 da versare entro il 16/08 (€60,00).
+                  </div>
+                  <div class="workflow__confirm" aria-hidden="true">
+                    <span class="ok" data-action="confirm-demo">✓ Vedi dettagli</span>
+                    <span class="edit">Invia sollecito</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        </div>
+          </div>
         </div>
       </div>
     </section>

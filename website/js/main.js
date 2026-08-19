@@ -706,25 +706,129 @@
     }
   });
 
+  /* ---------- Features Category Filter & Tabs ---------- */
+  const featureTabs = document.querySelectorAll('.feature-tab');
+  const allFeatureRows = document.querySelectorAll('.feature-row');
+  const sidebarGroups = document.querySelectorAll('.features-sidebar__group');
+
+  function filterFeatures(category) {
+    featureTabs.forEach(tab => {
+      const isMatch = tab.getAttribute('data-filter') === category;
+      tab.classList.toggle('active', isMatch);
+      tab.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    });
+
+    allFeatureRows.forEach(row => {
+      const rowCat = row.getAttribute('data-category');
+      if (category === 'all' || rowCat === category) {
+        row.classList.remove('is-hidden');
+      } else {
+        row.classList.add('is-hidden');
+      }
+    });
+
+    // Filtra anche i gruppi della sidebar se presenti
+    if (sidebarGroups.length > 0) {
+      if (category === 'all') {
+        sidebarGroups.forEach(g => g.style.display = 'block');
+      } else {
+        sidebarGroups.forEach(g => {
+          const links = g.querySelectorAll('a');
+          let hasVisible = false;
+          links.forEach(a => {
+            const href = a.getAttribute('href');
+            const target = document.querySelector(href);
+            if (target && !target.classList.contains('is-hidden')) {
+              hasVisible = true;
+            }
+          });
+          g.style.display = hasVisible ? 'block' : 'none';
+        });
+      }
+    }
+  }
+
+  if (featureTabs.length > 0) {
+    featureTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const cat = tab.getAttribute('data-filter');
+        filterFeatures(cat);
+      });
+    });
+
+    // Check URL query param (es. ?cat=contabilita) o hash (es. #contabilita)
+    const urlParams = new URLSearchParams(window.location.search);
+    const catParam = urlParams.get('cat');
+    const hashParam = window.location.hash.replace('#', '');
+
+    if (catParam && ['contabilita', 'banca', 'studio'].includes(catParam)) {
+      filterFeatures(catParam);
+    } else if (hashParam && ['contabilita', 'banca', 'studio'].includes(hashParam)) {
+      filterFeatures(hashParam);
+    }
+  }
+
+  /* ---------- Interactive Workflow Confirm Feedback ---------- */
+  document.querySelectorAll('[data-action="confirm-demo"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const confirmBox = e.target.closest('.workflow__confirm');
+      if (!confirmBox || confirmBox.classList.contains('is-confirmed')) return;
+
+      const originalHTML = confirmBox.innerHTML;
+      confirmBox.classList.add('is-confirmed');
+      confirmBox.innerHTML = `
+        <div class="workflow-feedback">
+          <span style="font-weight:bold">✓</span> Confermato e registrato in contabilità (0.3s)
+        </div>
+      `;
+
+      setTimeout(() => {
+        confirmBox.innerHTML = originalHTML;
+        confirmBox.classList.remove('is-confirmed');
+        // Riattacca listener se necessario o usa event delegation
+      }, 3500);
+    });
+  });
+
+  // Event delegation per gestire il click anche dopo restore
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="confirm-demo"]');
+    if (btn) {
+      const confirmBox = btn.closest('.workflow__confirm');
+      if (confirmBox && !confirmBox.classList.contains('is-confirmed')) {
+        const originalHTML = confirmBox.innerHTML;
+        confirmBox.classList.add('is-confirmed');
+        confirmBox.innerHTML = `
+          <div class="workflow-feedback">
+            <span style="font-weight:bold">✓</span> Registrato nella contabilità con successo (0.3s)
+          </div>
+        `;
+
+        setTimeout(() => {
+          confirmBox.innerHTML = originalHTML;
+          confirmBox.classList.remove('is-confirmed');
+        }, 3500);
+      }
+    }
+  });
+
   /* ---------- ScrollSpy for Features Sidebar ---------- */
   const featureRows = document.querySelectorAll('.feature-row');
-  const navLinksList = document.querySelectorAll('#features-nav a');
+  const navLinksList = document.querySelectorAll('.features-sidebar a');
 
   if (featureRows.length > 0 && navLinksList.length > 0 && 'IntersectionObserver' in window) {
     const observerOptions = {
       root: null,
-      rootMargin: '-20% 0px -60% 0px', // Attiva l'elemento quando entra nel 20-40% superiore dello schermo
+      rootMargin: '-20% 0px -60% 0px',
       threshold: 0
     };
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && !entry.target.classList.contains('is-hidden')) {
           const id = entry.target.getAttribute('id');
-          // Rimuovi classe active da tutti
           navLinksList.forEach(link => link.classList.remove('active'));
-          // Aggiungi active a quello corrispondente
-          const activeLink = document.querySelector(`#features-nav a[href="#${id}"]`);
+          const activeLink = document.querySelector(`.features-sidebar a[href="#${id}"]`);
           if (activeLink) activeLink.classList.add('active');
         }
       });

@@ -472,14 +472,21 @@
             payload.document = base64;
           }
 
-          const response = await fetch("https://aapksiokakavarwaumwy.supabase.co/functions/v1/gemini-proxy", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CondoFAST-Demo": "true"
-            },
-            body: JSON.stringify(payload)
-          });
+          let response;
+          let attempts = 0;
+          while (attempts < 2) {
+            attempts++;
+            response = await fetch("https://aapksiokakavarwaumwy.supabase.co/functions/v1/gemini-proxy", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CondoFAST-Demo": "true"
+              },
+              body: JSON.stringify(payload)
+            });
+            if (response.ok || response.status === 429) break;
+            if (attempts < 2) await new Promise(r => setTimeout(r, 1000));
+          }
 
           if (!response.ok) {
             const errData = await response.json().catch(() => null);
@@ -516,11 +523,27 @@
           }
 
         } catch (err) {
-          console.error("Errore estrazione AI:", err);
-          alert(`Errore di sistema: ${err.message}. Verifica la console per i dettagli.`);
-          const aiPulse = document.getElementById('ai-pulse');
-          if (aiPulse) aiPulse.style.display = 'none';
-          if (aiHeader) aiHeader.innerHTML = '✦ AI Extraction: Fallita';
+          console.warn("Estrazione live non disponibile, attivazione simulazione guidata:", err);
+          
+          localStorage.setItem('condofast_demo_count', (demoCount + 1).toString());
+          
+          setTimeout(() => {
+            renderExtractedData({
+              condominio: 'Condominio Parco dei Fiori 22',
+              fornitore: fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') || 'Fornitore Servizi S.r.l.',
+              piva: 'IT 09876543210',
+              data: new Date().toLocaleDateString('it-IT'),
+              totale: 854.00,
+              imponibile: 700.00,
+              iva: 154.00,
+              ritenuta4: 28.00,
+              tabella_riparto: 'Tabella A — Proprietà Generale'
+            });
+            const aiHeader = document.getElementById('demo-ai-header');
+            if (aiHeader) {
+              aiHeader.innerHTML = `✦ AI Extraction (Simulazione Offline · Prova ${demoCount + 1} di ${MAX_DEMO_TRIES})`;
+            }
+          }, 600);
         }
       };
       reader.readAsDataURL(file);

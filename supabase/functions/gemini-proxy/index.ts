@@ -274,24 +274,14 @@ serve(async (req) => {
     
     // Modelli di riserva validi in ordine di preferenza per API Gemini v1beta
     const fallbackModels = [
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
       'gemini-1.5-flash-latest',
-      'gemini-1.5-pro-latest',
+      'gemini-1.5-flash',
       'gemini-flash-latest',
+      'gemini-1.5-pro-latest',
       'gemini-pro-latest',
     ]
-
-    const isEquivalentModel = (m1: string, m2: string) => {
-      const norm = (m: string) => {
-        if (m === 'gemini-flash-latest' || m === 'gemini-1.5-flash-latest' || m === 'gemini-1.5-flash' || m === 'gemini-2.0-flash') {
-          return 'flash'
-        }
-        if (m === 'gemini-pro-latest' || m === 'gemini-1.5-pro-latest' || m === 'gemini-1.5-pro') {
-          return 'pro'
-        }
-        return m
-      }
-      return norm(m1) === norm(m2)
-    }
 
     let currentModel = model
     let response: Response | null = null
@@ -302,8 +292,8 @@ serve(async (req) => {
       const key = apiKeys[keyIdx]
       const keyLabel = keyIdx === 0 ? 'Primaria' : `Backup #${keyIdx}`
 
-      // Per la chiave corrente, componi l'elenco di modelli da provare (primo il modello richiesto, poi i fallback)
-      const modelsToTry = [currentModel, ...fallbackModels.filter(m => !isEquivalentModel(m, currentModel))]
+      // Per la chiave corrente, componi l'elenco di modelli da provare
+      const modelsToTry = [currentModel, ...fallbackModels.filter(m => m !== currentModel)]
 
       for (const targetModel of modelsToTry) {
         try {

@@ -2536,4 +2536,106 @@ details.pricing-accordion[open] summary {
   gap: 96px;
 }
 
+/* ============================================================
+   Mobile Sticky CTA Bar (Ottimizzazione Conversione Mobile)
+   Completamente invisibile su Desktop (Zero impatto)
+   ============================================================ */
+.mobile-sticky-cta {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-sticky-cta {
+    display: block !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9990;
+    padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+    background: rgba(13, 15, 20, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
+    transform: translateY(105%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  }
+
+  .mobile-sticky-cta.is-visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .mobile-sticky-cta__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .mobile-sticky-cta__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .mobile-sticky-cta__title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.2;
+  }
+
+  .mobile-sticky-cta__title-prefix {
+    color: #f1f5f9;
+  }
+
+  .mobile-sticky-cta__title-suffix {
+    color: #60a5fa;
+    font-weight: 800;
+  }
+
+  .mobile-sticky-cta__badge {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.8);
+    flex-shrink: 0;
+  }
+
+  .mobile-sticky-cta__sub {
+    font-size: 0.74rem;
+    color: #94a3b8;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-sticky-cta__btn {
+    flex-shrink: 0;
+    padding: 9px 18px !important;
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(79, 142, 247, 0.4) !important;
+    white-space: nowrap;
+    text-decoration: none !important;
+  }
+}
+
 

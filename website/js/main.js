@@ -172,8 +172,56 @@
       reject.addEventListener('click', () => {
         try { localStorage.setItem(CONSENT_KEY, 'rejected'); } catch (e) {}
         banner.classList.remove('is-visible');
+        if (typeof updateMobileCtaState === 'function') setTimeout(updateMobileCtaState, 150);
       });
     }
+  }
+
+  /* ---------- Mobile Sticky CTA Bar (Scroll-aware, Zero Desktop Impact) ---------- */
+  const mobileCta = document.getElementById('mobile-sticky-cta');
+  let updateMobileCtaState = () => {};
+
+  if (mobileCta) {
+    let ticking = false;
+    updateMobileCtaState = () => {
+      const isMobile = window.innerWidth <= 768;
+      const scrolledPastHero = window.scrollY > 320;
+      const isCookieOpen = banner && banner.classList.contains('is-visible');
+
+      if (isMobile && scrolledPastHero && !isCookieOpen) {
+        mobileCta.classList.add('is-visible');
+        mobileCta.setAttribute('aria-hidden', 'false');
+      } else {
+        mobileCta.classList.remove('is-visible');
+        mobileCta.setAttribute('aria-hidden', 'true');
+      }
+      ticking = false;
+    };
+
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateMobileCtaState);
+        ticking = true;
+      }
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateMobileCtaState);
+        ticking = true;
+      }
+    }, { passive: true });
+
+    if (banner) {
+      const acceptBtn = document.getElementById('cookie-accept');
+      if (acceptBtn) {
+        acceptBtn.addEventListener('click', () => {
+          setTimeout(updateMobileCtaState, 150);
+        });
+      }
+    }
+
+    updateMobileCtaState();
   }
 
   /* ---------- Current year in footer ---------- */

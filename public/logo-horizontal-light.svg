@@ -1,4 +1,5 @@
-<svg width="32" height="32" viewBox="6 12 84 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="400" height="100" viewBox="0 0 400 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0, 0)">
 
     <defs>
       <!-- Gradienti 3D facciate -->
@@ -77,4 +78,8 @@
       filter="url(#logoNeonGlow)"
     />
 
+  </g>
+  <text x="108" y="67" font-family="'Sora', system-ui, -apple-system, sans-serif" font-size="48" font-weight="800" letter-spacing="-0.03em">
+    <tspan fill="#0f172a">Condo</tspan><tspan fill="#2563eb">FAST</tspan>
+  </text>
 </svg>

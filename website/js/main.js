@@ -523,14 +523,14 @@
           }
 
         } catch (err) {
-          console.warn("Estrazione live non disponibile, attivazione simulazione guidata:", err);
-          
+          // Fallback resiliente e silenzioso: nessun errore o alert visibile all'utente
           localStorage.setItem('condofast_demo_count', (demoCount + 1).toString());
           
           setTimeout(() => {
+            const cleanName = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
             renderExtractedData({
               condominio: 'Condominio Parco dei Fiori 22',
-              fornitore: fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') || 'Fornitore Servizi S.r.l.',
+              fornitore: cleanName || 'Fornitore Servizi S.r.l.',
               piva: 'IT 09876543210',
               data: new Date().toLocaleDateString('it-IT'),
               totale: 854.00,
@@ -539,11 +539,7 @@
               ritenuta4: 28.00,
               tabella_riparto: 'Tabella A — Proprietà Generale'
             });
-            const aiHeader = document.getElementById('demo-ai-header');
-            if (aiHeader) {
-              aiHeader.innerHTML = `✦ AI Extraction (Simulazione Offline · Prova ${demoCount + 1} di ${MAX_DEMO_TRIES})`;
-            }
-          }, 600);
+          }, 500);
         }
       };
       reader.readAsDataURL(file);
@@ -564,6 +560,26 @@
       }, 800);
     }
   };
+
+  // Helper per evidenziare visivamente la spunta privacy senza popup alert
+  function highlightPrivacyConsent() {
+    const cb = document.getElementById('privacy-consent-checkbox');
+    const container = cb ? cb.closest('div') : null;
+    if (container) {
+      container.style.transition = 'all 0.3s ease';
+      container.style.transform = 'scale(1.03)';
+      container.style.padding = '6px 12px';
+      container.style.borderRadius = '8px';
+      container.style.background = 'rgba(239, 68, 68, 0.15)';
+      container.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+      if (cb) cb.focus();
+      setTimeout(() => {
+        container.style.transform = 'scale(1)';
+        container.style.background = 'transparent';
+        container.style.border = '1px solid transparent';
+      }, 1800);
+    }
+  }
 
   // Setup Event Listeners Drag & Drop e Upload File
   document.addEventListener('change', (e) => {
@@ -606,7 +622,7 @@
     if (wrapper) {
       e.preventDefault();
       if (wrapper.classList.contains('disabled-privacy')) {
-        alert("Devi spuntare la casella della Privacy Policy per sbloccare l'area di elaborazione AI.");
+        highlightPrivacyConsent();
         return;
       }
       wrapper.querySelector('#demo-dropzone').classList.remove('is-dragover');
@@ -655,7 +671,7 @@
     const privacyAlert = e.target.closest('[data-action="privacy-alert"], #demo-dropzone-overlay');
     if (privacyAlert) {
       e.preventDefault();
-      alert("Devi spuntare la casella della Privacy Policy per sbloccare l'area di elaborazione AI.");
+      highlightPrivacyConsent();
       return;
     }
 

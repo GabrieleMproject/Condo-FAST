@@ -1,16 +1,29 @@
 // src/components/PersonaForm.jsx
-import { useState } from 'react'
-import { UserCheck, Key, X } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { UserCheck, Key, X, Sparkles } from 'lucide-react'
+import { useAutoDraft } from '../hooks/useAutoDraft'
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges'
+import { useFormShortcuts } from '../hooks/useFormShortcuts'
+
+const EMPTY_PERSONA = {
+  nome: '', cognome: '', codice_fiscale: '', data_nascita: '',
+  email: '', telefono: '', telefono_alt: '',
+  indirizzo: '', cap: '', citta: '', provincia: '',
+  note: '',
+}
 
 export default function PersonaForm({ ruolo, onSave, onClose }) {
-  const [form, setForm] = useState({
-    nome: '', cognome: '', codice_fiscale: '', data_nascita: '',
-    email: '', telefono: '', telefono_alt: '',
-    indirizzo: '', cap: '', citta: '', provincia: '',
-    note: '',
-  })
+  const [form, setForm] = useState(EMPTY_PERSONA)
+  const originalForm = useRef(EMPTY_PERSONA)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
+
+  const draftKey = `draft_persona_${ruolo || 'generic'}`
+  const { hasDraft, restoreDraft, clearDraft, lastSavedAt } = useAutoDraft(draftKey, form, setForm, true)
+
+  const isDirty = Boolean(form.nome || form.cognome || form.codice_fiscale || form.email || form.telefono)
+  useUnsavedChanges(isDirty && !saving)
+  useFormShortcuts({ onSave: () => handleSave(), onCancel: () => handleClose(), isEnabled: true })
 
   const set = (f, v) => setForm(p => ({ ...p, [f]: v }))
 
@@ -23,13 +36,31 @@ export default function PersonaForm({ ruolo, onSave, onClose }) {
 
   const handleSave = async () => {
     const e = validate()
-    if (Object.keys(e).length) { setErrors(e); return }
+    if (Object.keys(e).length) {
+      setErrors(e)
+      const firstErr = Object.keys(e)[0]
+      if (firstErr) {
+        setTimeout(() => {
+          const el = document.querySelector(`input[name="${firstErr}"], input[value="${form[firstErr]}"]`)
+          if (el) el.focus()
+        }, 50)
+      }
+      return
+    }
     setSaving(true)
     try {
       await onSave(form)
+      if (clearDraft) clearDraft()
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleClose = () => {
+    if (isDirty) {
+      if (!window.confirm('Ci sono dati non salvati per questa persona. Sei sicuro di voler chiudere?')) return
+    }
+    onClose()
   }
 
   return (
@@ -39,10 +70,26 @@ export default function PersonaForm({ ruolo, onSave, onClose }) {
           <h2 style={{ ...ttl, display: 'flex', alignItems: 'center', gap: 8 }}>
             {ruolo === 'proprietario' ? <UserCheck size={18} /> : <Key size={18} />} Aggiungi {ruolo === 'proprietario' ? 'Proprietario' : 'Inquilino'}
           </h2>
-          <button style={cls} onClick={onClose}><X size={18} /></button>
+          <button style={cls} onClick={handleClose}><X size={18} /></button>
         </div>
 
         <div style={body}>
+          {hasDraft && !isDirty && (
+            <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 8, padding: '8px 12px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#3b82f6', fontWeight: 600 }}>
+                <Sparkles size={14} /> È disponibile una bozza per questo {ruolo || 'contatto'}.
+              </span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button type="button" onClick={restoreDraft} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, padding: '3px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                  Ripristina
+                </button>
+                <button type="button" onClick={clearDraft} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '3px 6px', fontSize: 11, cursor: 'pointer' }}>
+                  Elimina
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Dati anagrafici */}
           <Section title="Dati anagrafici">
             <div style={grid2}>

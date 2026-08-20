@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useCondomini } from '../hooks/useCondomini'
+import { useAutoDraft } from '../hooks/useAutoDraft'
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges'
+import { useFormShortcuts } from '../hooks/useFormShortcuts'
+import StickyFormActionBar from './StickyFormActionBar'
+import { RotateCcw, Trash2, Sparkles } from 'lucide-react'
 
 const PROVINCE_IT = [
   'AG','AL','AN','AO','AQ','AR','AP','AT','AV','BA','BT','BL','BN','BG','BI','BO',
@@ -58,6 +63,13 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
   const [activeTab, setActiveTab] = useState('amministrazione')
+
+  const draftKey = !isEdit ? 'draft_condominio_new' : null
+  const { hasDraft, restoreDraft, clearDraft, lastSavedAt } = useAutoDraft(draftKey, form, setForm, !isEdit)
+
+  const isDirty = JSON.stringify(form) !== JSON.stringify(originalForm.current)
+  useUnsavedChanges(isDirty && !saving)
+  useFormShortcuts({ onSave: () => handleSubmit(), onCancel: () => handleClose(), isEnabled: true })
 
   useEffect(() => {
     if (condominio) {
@@ -125,6 +137,16 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
       if (e.nome || e.indirizzo || e.civico || e.cap || e.citta || e.provincia || e.codice_fiscale || e.iban) {
         setActiveTab('anagrafica')
       }
+      const firstErrorKey = Object.keys(e)[0]
+      if (firstErrorKey) {
+        setTimeout(() => {
+          const el = document.querySelector(`[name="${firstErrorKey}"], #${firstErrorKey}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            el.focus()
+          }
+        }, 80)
+      }
       return
     }
 
@@ -157,6 +179,7 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
       } else {
         res = await createCondominio(payload)
       }
+      if (clearDraft) clearDraft()
       if (onSave) onSave(res)
       onClose()
     } catch (err) {
@@ -192,6 +215,22 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
             </svg>
           </button>
         </div>
+
+        {hasDraft && !isEdit && !isDirty && (
+          <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 10, padding: '10px 14px', margin: '0 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#3b82f6', fontWeight: 600 }}>
+              <Sparkles size={16} /> È disponibile una bozza non salvata di un condominio.
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={restoreDraft} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                Ripristina Bozza
+              </button>
+              <button type="button" onClick={clearDraft} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>
+                Elimina
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="form-tabs">
           {TABS.map(tab => (
@@ -399,6 +438,15 @@ export default function CondominiForm({ condominio, onSave, onClose }) {
             {saving ? 'Salvataggio…' : isEdit ? 'Salva modifiche' : 'Crea condominio'}
           </button>
         </div>
+
+        <StickyFormActionBar
+          isDirty={isDirty}
+          isSaving={saving}
+          lastSavedAt={lastSavedAt}
+          onSave={handleSubmit}
+          onCancel={handleClose}
+          saveText={saving ? 'Salvataggio…' : isEdit ? 'Salva modifiche' : 'Crea condominio'}
+        />
       </div>
     </div>
   )

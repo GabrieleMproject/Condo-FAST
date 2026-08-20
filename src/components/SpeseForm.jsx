@@ -3,6 +3,10 @@ import { callGemini, callGeminiDocument } from '../lib/geminiClient'
 import { estraiFattura, fileToBase64, comprimiImmagine, getTipoFile, estraiFileDaZip } from '../lib/fileExtractor'
 import { parseFatturaXmlP7m } from '../lib/xmlFatturaParser'
 import { usePlan } from '../hooks/usePlan'
+import { useAutoDraft } from '../hooks/useAutoDraft'
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges'
+import { useFormShortcuts } from '../hooks/useFormShortcuts'
+import StickyFormActionBar from './StickyFormActionBar'
 import { supabase } from '../lib/supabaseClient'
 import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet, Trash2, ChevronDown, ChevronUp, Layers, FileText, ShieldCheck } from 'lucide-react'
 import AiBadge from './AiBadge'
@@ -273,7 +277,12 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [dragOver, setDragOver] = useState(false)
   const [errFattura, setErrFattura] = useState(null)
   const fileInputRef = useRef()
-  const isMountedRef = useRef(true)
+  const draftKey = (!spesaInEdit && condominioId) ? `draft_spesa_${condominioId}` : null
+  const { hasDraft, restoreDraft, clearDraft, lastSavedAt } = useAutoDraft(draftKey, form, setForm, !spesaInEdit)
+
+  const isDirty = Boolean(form.descrizione || form.importo || form.fornitore || form.numero_fattura || fileCaricato)
+  useUnsavedChanges(isDirty && !saving)
+  useFormShortcuts({ onSave: () => handleSalva(), onCancel: onCancel, isEnabled: true })
 
   useEffect(() => {
     return () => {
@@ -1025,6 +1034,16 @@ Formato JSON:
     }
 
     setErrors(e)
+    const firstErr = Object.keys(e)[0]
+    if (firstErr) {
+      setTimeout(() => {
+        const el = document.querySelector(`[name="${firstErr}"], #${firstErr}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          el.focus()
+        }
+      }, 80)
+    }
     return Object.keys(e).length === 0
   }
 
@@ -1048,6 +1067,7 @@ Formato JSON:
           : {}),
       }))
       await onSave(payload, ripartDaSalvare, fileCaricato, aiDatiEstratti)
+      if (clearDraft) clearDraft()
     } finally {
       setSaving(false)
     }
@@ -1313,6 +1333,23 @@ Formato JSON:
       <h3 style={{ margin: '0 0 24px', color: 'var(--text-primary)', fontSize: 18, fontWeight: 600 }}>
         {spesaInEdit ? 'Modifica spesa' : 'Nuova spesa'}
       </h3>
+
+      {/* ── Banner Bozza automatica ── */}
+      {hasDraft && !spesaInEdit && !form.descrizione && !form.importo && (
+        <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#3b82f6', fontWeight: 600 }}>
+            <Sparkles size={16} /> È disponibile una bozza compilata in precedenza per questa spesa.
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" onClick={restoreDraft} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              Ripristina Bozza
+            </button>
+            <button type="button" onClick={clearDraft} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '5px 8px', fontSize: 12, cursor: 'pointer' }}>
+              Elimina
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Drop zone import fattura ── */}
       {!spesaInEdit && (
@@ -1942,6 +1979,16 @@ Formato JSON:
           </div>
         </div>
       )}
+
+      {/* ── Floating Sticky Action Bar ── */}
+      <StickyFormActionBar
+        isDirty={isDirty}
+        isSaving={saving}
+        lastSavedAt={lastSavedAt}
+        onSave={handleSalva}
+        onCancel={onCancel}
+        saveText={saving ? 'Salvataggio…' : spesaInEdit ? 'Salva modifiche' : 'Salva spesa'}
+      />
     </div>
   )
 }

@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { estraiTabelleMillesimali } from '../lib/fileExtractor';
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
+import { useFormShortcuts } from '../hooks/useFormShortcuts';
+import StickyFormActionBar from './StickyFormActionBar';
 import { 
   Layers, Plus, Trash2, Save, Upload, Download, Search, 
   AlertCircle, X, Check, Edit2, RotateCcw, Scale, Filter, Clock, Calculator
@@ -57,6 +60,12 @@ export default function MillesimiEditor({ condominioId: propId }) {
   const [originali, setOriginali] = useState({});  // snapshot for dirty checking
   const [originalUnita, setOriginalUnita] = useState([]);  // snapshot unita for dirty checking
   const [personeCondominio, setPersoneCondominio] = useState([]); // for reference/read-only owner display
+
+  const isDirty = useMemo(() => {
+    return JSON.stringify(valori) !== JSON.stringify(originali) || JSON.stringify(unita) !== JSON.stringify(originalUnita);
+  }, [valori, originali, unita, originalUnita]);
+
+  useUnsavedChanges(isDirty && !saving, 'Ci sono modifiche non salvate nei millesimi o nelle unità. Vuoi davvero abbandonare la pagina?');
 
   // Selection & UI states
   const [selectedTabellaId, setSelectedTabellaId] = useState(null);
@@ -465,6 +474,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
       setSaving(false);
     }
   }
+
+  useFormShortcuts({ onSave: () => salvaMillesimi(), isEnabled: isDirty && !saving });
 
   // CRUD: Create new empty table
   async function handleCreaTabella() {
@@ -1419,6 +1430,21 @@ export default function MillesimiEditor({ condominioId: propId }) {
           {toast.msg}
         </div>
       )}
+
+      {/* Floating Sticky Action Bar */}
+      <StickyFormActionBar
+        isDirty={isDirty}
+        isSaving={saving}
+        onSave={salvaMillesimi}
+        onCancel={() => {
+          if (window.confirm('Vuoi annullare tutte le modifiche non salvate?')) {
+            setValori(originali);
+            setUnita(originalUnita);
+          }
+        }}
+        saveText={saving ? 'Salvataggio...' : 'Salva Millesimi'}
+        cancelText="Ripristina modifiche"
+      />
     </div>
   );
 }

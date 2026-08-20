@@ -71,6 +71,33 @@ export function AuthProvider({ children }) {
       }
     }
 
+    const checkAndSendWelcomeEmail = async (currentUser) => {
+      if (!currentUser || !currentUser.email) return
+      const storageKey = `condofast_welcome_sent_${currentUser.id}`
+      if (localStorage.getItem(storageKey)) return
+
+      const createdAt = new Date(currentUser.created_at || Date.now()).getTime()
+      const now = Date.now()
+      const isBrandNew = (now - createdAt) < 1000 * 60 * 10 // 10 minuti dalla creazione
+
+      if (isBrandNew) {
+        localStorage.setItem(storageKey, 'true')
+        const nome = currentUser.user_metadata?.full_name 
+          || currentUser.user_metadata?.name 
+          || currentUser.user_metadata?.nome 
+          || currentUser.email.split('@')[0]
+
+        supabase.functions.invoke('invia-welcome-email', {
+          body: {
+            email: currentUser.email,
+            nome: nome
+          }
+        }).catch(err => console.warn('Welcome email non inviata:', err))
+      } else {
+        localStorage.setItem(storageKey, 'true')
+      }
+    }
+
     // Recupera sessione iniziale
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -78,6 +105,7 @@ export function AuthProvider({ children }) {
       setUser(currentUser)
       if (currentUser) {
         setupSessionTracker(currentUser)
+        checkAndSendWelcomeEmail(currentUser)
       }
       setLoading(false)
     })
@@ -90,6 +118,7 @@ export function AuthProvider({ children }) {
       
       if (event === 'SIGNED_IN' && currentUser) {
         setupSessionTracker(currentUser)
+        checkAndSendWelcomeEmail(currentUser)
       } else if (event === 'SIGNED_OUT') {
         isTrackingSession = false // Reset lock
         if (globalChannel) {
@@ -147,8 +176,15 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
+  const updatePassword = async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword,
+    })
+    return { data, error }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInWithGoogle, signOut, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )

@@ -93,3 +93,96 @@ export function wrapEmailHtml({ preheader = '', contentHtml = '' }: { preheader?
 </html>
   `.trim()
 }
+
+/**
+ * 1. Template: Email di Benvenuto (Welcome & Quickstart)
+ */
+export function getWelcomeEmailHtml({ nome = 'Amministratore', confirmationUrl = '', dashboardUrl = 'https://app.condofast.it/dashboard' }: { nome?: string; confirmationUrl?: string; dashboardUrl?: string }): string {
+  const content = `
+    <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 700; color: #0f172a;">
+      Benvenuto su CondoFast, ${nome}! 🚀
+    </h1>
+    <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 24px; color: #475569;">
+      Il tuo account è pronto. Da oggi puoi gestire i tuoi condomini, automatizzare la contabilità con l'Intelligenza Artificiale e redigere i rendiconti in pochi secondi.
+    </p>
+
+    ${confirmationUrl ? `
+    <div style="margin: 28px 0; text-align: center;">
+      <a href="${confirmationUrl}" style="background-color: #2563eb; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 28px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);">
+        Conferma la tua Email ed Entra
+      </a>
+    </div>
+    ` : `
+    <div style="margin: 28px 0; text-align: center;">
+      <a href="${dashboardUrl}" style="background-color: #2563eb; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 28px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);">
+        Vai alla tua Dashboard
+      </a>
+    </div>
+    `}
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+      <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">
+        💡 3 Passi Rapidi per Iniziare:
+      </h3>
+      <table width="100%" border="0" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #475569;">
+            <strong style="color: #2563eb;">1.</strong> Crea o importa il tuo primo condominio
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #475569;">
+            <strong style="color: #2563eb;">2.</strong> Trascina una fattura PDF o estratto conto per la scansione AI
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #475569;">
+            <strong style="color: #2563eb;">3.</strong> Genera il rendiconto di legge A→E con 1 click
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin: 0; font-size: 14px; line-height: 22px; color: #64748b;">
+      Hai domande o vuoi un supporto per la migrazione dal vecchio gestionale? Rispondi direttamente a questa email: il nostro team è a tua disposizione.
+    </p>
+  `
+
+  return wrapEmailHtml({
+    preheader: 'Benvenuto su CondoFast: il tuo account è attivo con 14 giorni di prova gratuita.',
+    contentHtml: content
+  })
+}
+
+/**
+ * 2. Template: Recupero Password (Password Reset)
+ */
+export function getPasswordResetEmailHtml({ resetUrl = '' }: { resetUrl?: string }): string {
+  const content = `
+    <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 700; color: #0f172a;">
+      Reimpostazione della Password 🔐
+    </h1>
+    <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 24px; color: #475569;">
+      Abbiamo ricevuto una richiesta di reimpostazione della password per il tuo account CondoFast. Clicca sul pulsante qui sotto per sceglierne una nuova:
+    </p>
+
+    <div style="margin: 32px 0; text-align: center;">
+      <a href="${resetUrl}" style="background-color: #2563eb; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 10px; display: inline-block; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);">
+        Reimposta Password
+      </a>
+    </div>
+
+    <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 20px; color: #64748b;">
+      Questo link è monouso e scadrà tra <strong>60 minuti</strong> per motivi di sicurezza.
+    </p>
+    <p style="margin: 0; font-size: 13px; line-height: 20px; color: #94a3b8;">
+      Se non hai richiesto tu il ripristino della password, puoi tranquillamente ignorare questo messaggio: il tuo account rimane protetto.
+    </p>
+  `
+
+  return wrapEmailHtml({
+    preheader: 'Richiesta di reimpostazione password per il tuo account CondoFast.',
+    contentHtml: content
+  })
+}
+

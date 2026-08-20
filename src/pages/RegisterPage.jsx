@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import BrandLogo from '../components/BrandLogo';
 
@@ -62,6 +63,14 @@ export default function RegisterPage() {
         }
       );
       if (signUpError) throw signUpError;
+
+      // Inoltro asincrono Welcome Email di benvenuto
+      supabase.functions.invoke('invia-welcome-email', {
+        body: {
+          email: form.email,
+          nome: form.nome
+        }
+      }).catch(err => console.warn('Welcome email non inviata:', err));
 
       navigate('/login?registered=1');
     } catch (err) {

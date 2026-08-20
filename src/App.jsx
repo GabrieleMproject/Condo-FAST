@@ -8,6 +8,7 @@ import FattureFornitoriPage from './pages/FattureFornitoriPage'
 import RiconciliazioniPage from './pages/RiconciliazioniPage'
 import DashboardFinanziaria from './pages/DashboardFinanziaria'
 import SpesePage from './pages/SpesePage'
+import SpeseGlobalPage from './pages/SpeseGlobalPage'
 import PostboxPage from './pages/PostboxPage'
 import StoricoOperazioniPage from './pages/StoricoOperazioniPage'
 import { SpeseQueueProvider } from './contexts/SpeseQueueContext'
@@ -62,6 +63,9 @@ export default function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/ricerca" element={<RicercaPage />} />
                 <Route path="/condomini" element={<CondominiPage />} />
+                <Route path="/spese" element={<SpeseGlobalPage />} />
+                <Route path="/estrattore" element={<SpeseGlobalPage />} />
+                <Route path="/fatture" element={<SpeseGlobalPage />} />
                 <Route path="/anagrafica" element={<AnagraficaPage />} />
                 <Route path="/pronto-intervento" element={<ProntoInterventoPage />} />
                 <Route path="/condomini/:id" element={<CondominiDetailPage />} />

@@ -81,6 +81,7 @@ async function apriPortaleStripe(customerId) {
 const NAV_ITEMS = [
   { path: '/dashboard',          label: 'Dashboard',            icon: LayoutDashboard },
   { path: '/condomini',          label: 'Condomini',             icon: Building2 },
+  { path: '/spese',              label: 'Estrattore & Spese',   icon: Receipt, badge: 'AI' },
   { path: '/anagrafica',         label: 'Anagrafica',            icon: Users },
   { path: '/pronto-intervento',  label: 'Pronto Intervento',     icon: PhoneCall, badge: 'H24' },
   { path: '/comunicazioni',       label: 'Comunicazioni',        icon: Send },

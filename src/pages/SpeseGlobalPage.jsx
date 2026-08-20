@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { estraiFattura, getTipoFile, estraiFileDaZip } from '../lib/fileExtractor'
@@ -31,6 +32,7 @@ const formatSize = (bytes) => {
 
 export default function SpeseGlobalPage() {
   const { user } = useAuth()
+  const location = useLocation()
   const [condomini, setCondomini] = useState([])
   const [loadingCondomini, setLoadingCondomini] = useState(true)
   
@@ -81,6 +83,37 @@ export default function SpeseGlobalPage() {
     }
     fetchCondomini()
   }, [])
+
+  // 1b. Ascolta e gestisce file o fatture passate da GlobalDropzone o da altre pagine
+  useEffect(() => {
+    if (location.state?.extractedFattura) {
+      const incoming = location.state.extractedFattura
+      const tempId = 'incoming_' + Date.now()
+      const matchedCondoId = matchCondominio(incoming, condomini)
+      
+      fetchCondominioDati(matchedCondoId).then(condoDati => {
+        const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
+        const newItem = {
+          id: tempId,
+          file: null,
+          file_path: null,
+          file_name: incoming.fornitore ? `Fattura_${incoming.fornitore.replace(/\s+/g, '_')}.pdf` : 'Fattura_Estratta.pdf',
+          status: 'ready',
+          errorMsg: null,
+          extractedData: incoming,
+          condominioId: matchedCondoId,
+          esercizioId: aperto?.id || null,
+          esercizi: condoDati.esercizi,
+          unita: condoDati.unita,
+          tabelle: condoDati.tabelle,
+          documenti: condoDati.documenti
+        }
+        setQueue(prev => [newItem, ...prev.filter(q => q.id !== tempId)])
+        setActiveQueueId(tempId)
+        toast.success('Dati fattura precaricati nel modulo')
+      })
+    }
+  }, [location.state, condomini])
 
   // Helper per recuperare i dettagli di un condominio selezionato
   const fetchCondominioDati = async (condoId) => {
@@ -297,31 +330,40 @@ export default function SpeseGlobalPage() {
       const targetFiles = files.slice(0, Math.max(1, 20 - queue.length))
 
       for (const file of targetFiles) {
-        // Carica su Supabase Storage (inbox-ricezione)
-        const path = `${user.id}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
-        const { error: uploadErr } = await supabase.storage
-          .from('inbox-ricezione')
-          .upload(path, file, { contentType: file.type })
-        
-        if (uploadErr) throw uploadErr
+        let path = null
+        let newDocId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)
 
-        // Inserisci record in inbox_documenti
-        const { data: newDoc, error: insertErr } = await supabase
-          .from('inbox_documenti')
-          .insert({
-            amministratore_id: user.id,
-            file_path: path,
-            file_name: file.name,
-            stato: 'nuovo'
-          })
-          .select()
-          .single()
+        try {
+          if (user?.id) {
+            path = `${user.id}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+            const { error: uploadErr } = await supabase.storage
+              .from('inbox-ricezione')
+              .upload(path, file, { contentType: file.type || 'application/octet-stream' })
+            
+            if (!uploadErr) {
+              const { data: newDoc, error: insertErr } = await supabase
+                .from('inbox_documenti')
+                .insert({
+                  amministratore_id: user.id,
+                  file_path: path,
+                  file_name: file.name,
+                  stato: 'nuovo'
+                })
+                .select()
+                .single()
 
-        if (insertErr) throw insertErr
+              if (!insertErr && newDoc) {
+                newDocId = newDoc.id
+              }
+            }
+          }
+        } catch (storageErr) {
+          console.warn('[SpeseGlobalPage] Upload storage bypass/fallback su elaborazione locale:', storageErr)
+        }
 
         // Aggiungi elemento alla coda locale come 'analyzing'
         const newItem = {
-          id: newDoc.id,
+          id: newDocId,
           file,
           file_path: path,
           file_name: file.name,
@@ -336,8 +378,8 @@ export default function SpeseGlobalPage() {
           documenti: []
         }
         
-        setQueue(prev => [newItem, ...prev])
-        setActiveQueueId(newDoc.id)
+        setQueue(prev => [newItem, ...prev.filter(q => q.id !== newDocId)])
+        setActiveQueueId(newDocId)
 
         // Esegui estrazione (nativa XML per SDI, o AI per PDF/immagini)
         let estratto = null
@@ -360,19 +402,21 @@ export default function SpeseGlobalPage() {
           selectedEsercizioId = aperto?.id || null
         }
 
-        // Aggiorna DB con i dati estratti
-        await supabase
-          .from('inbox_documenti')
-          .update({
-            stato: 'rilevato',
-            condominio_id: matchedCondoId,
-            dati_estratti: estratto
-          })
-          .eq('id', newDoc.id)
+        // Aggiorna DB con i dati estratti (se presente su DB)
+        if (path && typeof newDocId === 'string' && !newDocId.startsWith('local_')) {
+          await supabase
+            .from('inbox_documenti')
+            .update({
+              stato: 'rilevato',
+              condominio_id: matchedCondoId,
+              dati_estratti: estratto
+            })
+            .eq('id', newDocId)
+        }
 
         // Aggiorna coda locale a 'ready'
         setQueue(prev => prev.map(item => {
-          if (item.id === newDoc.id) {
+          if (item.id === newDocId) {
             return {
               ...item,
               status: 'ready',

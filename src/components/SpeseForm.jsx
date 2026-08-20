@@ -281,11 +281,31 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [dragOver, setDragOver] = useState(false)
   const [errFattura, setErrFattura] = useState(null)
   const fileInputRef = useRef()
-  const draftKey = (!spesaInEdit && condominioId) ? `draft_spesa_${condominioId}` : null
-  const { hasDraft, restoreDraft, clearDraft, lastSavedAt } = useAutoDraft(draftKey, form, setForm, !spesaInEdit)
+  const isDraftEnabled = !spesaInEdit && !fromFattura && !initialAiDatiEstratti
+  const draftKey = (isDraftEnabled && condominioId) ? `draft_spesa_${condominioId}` : null
+  const { hasDraft, restoreDraft, clearDraft, lastSavedAt } = useAutoDraft(draftKey, form, setForm, isDraftEnabled)
+
+  useEffect(() => {
+    if (initialAiDatiEstratti) {
+      const CAT_VALIDE = CATEGORIE.map(c => c.value)
+      const catSpesa = (initialAiDatiEstratti?.categoria && CAT_VALIDE.includes(initialAiDatiEstratti.categoria)) ? initialAiDatiEstratti.categoria : 'ordinaria'
+      setForm(prev => ({
+        ...prev,
+        descrizione: initialAiDatiEstratti.descrizione || prev.descrizione || '',
+        importo: initialAiDatiEstratti.importo_totale != null ? String(initialAiDatiEstratti.importo_totale) : prev.importo || '',
+        data_spesa: initialAiDatiEstratti.data_fattura || prev.data_spesa || new Date().toISOString().split('T')[0],
+        categoria: catSpesa,
+        fornitore: initialAiDatiEstratti.fornitore || prev.fornitore || '',
+        numero_fattura: initialAiDatiEstratti.numero_fattura || prev.numero_fattura || '',
+        note: initialAiDatiEstratti.note || prev.note || '',
+      }))
+      setFatturaImportata(true)
+      setAiDatiEstratti(initialAiDatiEstratti)
+    }
+  }, [initialAiDatiEstratti])
 
   const isDirty = Boolean(form.descrizione || form.importo || form.fornitore || form.numero_fattura || fileCaricato)
-  useUnsavedChanges(isDirty && !saving)
+  useUnsavedChanges(isDirty && !saving && !fromFattura)
   useFormShortcuts({ onSave: () => handleSalva(), onCancel: onCancel, isEnabled: true })
 
   useEffect(() => {
@@ -1983,16 +2003,6 @@ Formato JSON:
           </div>
         </div>
       )}
-
-      {/* ── Floating Sticky Action Bar ── */}
-      <StickyFormActionBar
-        isDirty={isDirty}
-        isSaving={saving}
-        lastSavedAt={lastSavedAt}
-        onSave={handleSalva}
-        onCancel={onCancel}
-        saveText={saving ? 'Salvataggio…' : spesaInEdit ? 'Salva modifiche' : 'Salva spesa'}
-      />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 // src/pages/CondominiPage.jsx
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useCondomini } from '../hooks/useCondomini'
 import CondominiForm from '../components/CondominiForm'
 import { Building2, CheckCircle2, Home, Eye, Edit3, Archive, Trash2, Layers, Grid } from 'lucide-react'
@@ -13,6 +13,7 @@ const STATO_STYLE = {
 export default function CondominiPage() {
   const { condomini, loading, createCondominio, updateCondominio, deleteCondominio, archiviaCondominio } = useCondomini()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [search, setSearch]       = useState('')
   const [filterStato, setFilterStato] = useState('tutti')
@@ -21,6 +22,12 @@ export default function CondominiPage() {
   const [toast, setToast]         = useState(null)
   const [menuOpen, setMenuOpen]   = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+
+  useEffect(() => {
+    if (location.state?.openNew || location.search.includes('nuovo')) {
+      setShowForm(true)
+    }
+  }, [location])
 
   const filtered = useMemo(() => condomini.filter(c => {
     const matchSearch = !search ||

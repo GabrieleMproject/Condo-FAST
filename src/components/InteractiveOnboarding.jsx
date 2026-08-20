@@ -1,584 +1,759 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
+import { usePlan } from '../hooks/usePlan'
 import { toast } from 'react-hot-toast'
-import { estraiFattura, fileToBase64, comprimiImmagine, getTipoFile } from '../lib/fileExtractor'
-import { Building2, UploadCloud, Calculator, ArrowRight, Zap, CheckCircle2, ChevronRight, Loader2, Sparkles, Building, PlayCircle } from 'lucide-react'
+import OnboardingTourModal from './OnboardingTourModal'
+import {
+  Building2,
+  UploadCloud,
+  ArrowRight,
+  Sparkles,
+  CheckCircle2,
+  Image as ImageIcon,
+  Trash2,
+  Loader2,
+  ArrowLeftRight,
+  ShieldCheck,
+  Briefcase,
+  HelpCircle,
+  Mail,
+  Phone,
+  MapPin,
+  FileText
+} from 'lucide-react'
+
+function fileToResizedDataUrl(file, maxW = 400) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width)
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/jpeg', 0.9))
+      }
+      img.onerror = reject
+      img.src = reader.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
 
 export default function InteractiveOnboarding({ onComplete }) {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { profile, updateBranding } = usePlan()
 
-  const [flowState, setFlowState] = useState('CHOICE') // CHOICE, ONBOARDING, SUCCESS
-  const [step, setStep] = useState(1) // 1, 2, 3
+  const [step, setStep] = useState(1) // 1: Profilo Studio, 2: Scelta Gestione Stabili
   const [loading, setLoading] = useState(false)
+  const [showTourModal, setShowTourModal] = useState(false)
 
-  // Dati
-  const [condoName, setCondoName] = useState('')
-  const [condoId, setCondoId] = useState(null)
-  const [esercizioId, setEsercizioId] = useState(null)
-  
-  // Fattura
-  const [fileFattura, setFileFattura] = useState(null)
-  const [datiEstratti, setDatiEstratti] = useState(null)
+  // Campi Form Studio
+  const [studioNome, setStudioNome] = useState(profile?.studio_nome || '')
+  const [ragioneSociale, setRagioneSociale] = useState(profile?.ragione_sociale || '')
+  const [partitaIva, setPartitaIva] = useState(profile?.partita_iva || '')
+  const [codiceFiscale, setCodiceFiscale] = useState(profile?.codice_fiscale || '')
+  const [studioIndirizzo, setStudioIndirizzo] = useState(profile?.studio_indirizzo || '')
+  const [studioTelefono, setStudioTelefono] = useState(profile?.studio_telefono || '')
+  const [studioEmail, setStudioEmail] = useState(profile?.studio_email || user?.email || '')
+  const [studioPec, setStudioPec] = useState(profile?.studio_pec || '')
+  const [logoBase64, setLogoBase64] = useState(profile?.logo_base64 || '')
+  const logoInputRef = useRef(null)
 
-  const handleChoice = (isMigrating) => {
-    if (isMigrating) {
-      navigate('/migrazione')
-    } else {
-      setFlowState('ONBOARDING')
-      setStep(1)
+  useEffect(() => {
+    if (profile) {
+      if (!studioNome && profile.studio_nome) setStudioNome(profile.studio_nome)
+      if (!ragioneSociale && profile.ragione_sociale) setRagioneSociale(profile.ragione_sociale)
+      if (!partitaIva && profile.partita_iva) setPartitaIva(profile.partita_iva)
+      if (!codiceFiscale && profile.codice_fiscale) setCodiceFiscale(profile.codice_fiscale)
+      if (!studioIndirizzo && profile.studio_indirizzo) setStudioIndirizzo(profile.studio_indirizzo)
+      if (!studioTelefono && profile.studio_telefono) setStudioTelefono(profile.studio_telefono)
+      if (!studioEmail && (profile.studio_email || user?.email)) setStudioEmail(profile.studio_email || user?.email || '')
+      if (!studioPec && profile.studio_pec) setStudioPec(profile.studio_pec)
+      if (!logoBase64 && profile.logo_base64) setLogoBase64(profile.logo_base64)
+    }
+  }, [profile, user])
+
+  const onLogoSelected = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      toast.error('Logo: usa formati PNG, JPG o WEBP.')
+      return
+    }
+    try {
+      const dataUrl = await fileToResizedDataUrl(file, 400)
+      setLogoBase64(dataUrl)
+      toast.success('Logo caricato con successo!')
+    } catch {
+      toast.error('Impossibile elaborare il file immagine.')
     }
   }
 
-  const creaCondominioBase = async (e) => {
+  const handleSaveStudio = async (e) => {
     e.preventDefault()
-    if (!condoName.trim()) return toast.error('Inserisci un nome per il condominio')
-    
+    if (!studioNome.trim()) {
+      return toast.error('Inserisci il Nome dello Studio o dell\'Amministratore')
+    }
+
     setLoading(true)
     try {
-      // 1. Crea Condominio
-      const { data: condo, error: condoErr } = await supabase
-        .from('condomini')
-        .insert([{
-          nome: condoName,
-          indirizzo: 'Via di Prova 1',
-          citta: 'Roma',
-          civico: '1',
-          cap: '00100',
-          provincia: 'RM',
-          num_unita: 3,
-          num_scale: 1,
-          amministratore_id: user.id
-        }])
-        .select()
-        .single()
-      if (condoErr) throw condoErr
-      const newCondoId = condo.id
-      setCondoId(newCondoId)
+      const res = await updateBranding({
+        studio_nome: studioNome.trim(),
+        ragione_sociale: ragioneSociale.trim(),
+        partita_iva: partitaIva.trim(),
+        codice_fiscale: codiceFiscale.trim(),
+        studio_indirizzo: studioIndirizzo.trim(),
+        studio_telefono: studioTelefono.trim(),
+        studio_email: studioEmail.trim(),
+        studio_pec: studioPec.trim(),
+        logo_base64: logoBase64 || null,
+      })
 
-      // 2. Crea Tabella Millesimale e Unità base in background
-      const { data: tabMill } = await supabase
-        .from('tabelle_millesimali')
-        .insert([{ condominio_id: newCondoId, nome: 'Proprietà Generale' }])
-        .select().single()
-
-      const unitaPayload = [
-        { condominio_id: newCondoId, numero: '1', scala: 'A', piano: 1, mq: 80, tipo: 'appartamento' },
-        { condominio_id: newCondoId, numero: '2', scala: 'A', piano: 1, mq: 90, tipo: 'appartamento' },
-        { condominio_id: newCondoId, numero: '3', scala: 'B', piano: 2, mq: 100, tipo: 'appartamento' }
-      ]
-      const { data: unitaList } = await supabase.from('unita').insert(unitaPayload).select()
-
-      if (tabMill && unitaList?.length === 3) {
-        await supabase.from('millesimi_unita').insert([
-          { tabella_id: tabMill.id, unita_id: unitaList[0].id, valore: 300 },
-          { tabella_id: tabMill.id, unita_id: unitaList[1].id, valore: 350 },
-          { tabella_id: tabMill.id, unita_id: unitaList[2].id, valore: 350 }
-        ])
-        
-        // Crea Persone di prova
-        const personePayload = [
-          { nome: 'Mario', cognome: 'Rossi', email: 'mario@example.com', amministratore_id: user.id },
-          { nome: 'Luigi', cognome: 'Verdi', email: 'luigi@example.com', amministratore_id: user.id },
-          { nome: 'Giulia', cognome: 'Bianchi', email: 'giulia@example.com', amministratore_id: user.id }
-        ]
-        const { data: personeList } = await supabase.from('persone').insert(personePayload).select()
-        
-        if (personeList?.length === 3) {
-          await supabase.from('occupanti_unita').insert([
-            { unita_id: unitaList[0].id, persona_id: personeList[0].id, ruolo: 'proprietario', attivo: true },
-            { unita_id: unitaList[1].id, persona_id: personeList[1].id, ruolo: 'proprietario', attivo: true },
-            { unita_id: unitaList[2].id, persona_id: personeList[2].id, ruolo: 'proprietario', attivo: true }
-          ])
-        }
-      }
-
-      // 3. Crea Esercizio Corrente
-      const annoCorrente = new Date().getFullYear()
-      const { data: esData } = await supabase.from('esercizi').insert([{
-        condominio_id: newCondoId,
-        anno: annoCorrente,
-        data_inizio: `${annoCorrente}-01-01`,
-        data_fine: `${annoCorrente}-12-31`,
-        stato: 'aperto'
-      }]).select().single()
-      
-      if (esData) setEsercizioId(esData.id)
-
+      if (res?.error) throw res.error
+      toast.success('Dati studio e branding salvati!')
       setStep(2)
     } catch (err) {
       console.error(err)
-      toast.error('Errore durante la creazione del condominio')
+      toast.error('Errore durante il salvataggio: ' + (err.message || 'Riprova'))
     } finally {
       setLoading(false)
     }
-  }
-
-  const elaboraFattura = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setLoading(true)
-    try {
-      // Usa le funzioni reali di fileExtractor
-      let fileToSend = file
-      const info = getTipoFile(file)
-      if (info.isImage) {
-        fileToSend = await comprimiImmagine(file)
-      }
-      
-      const estratto = await estraiFattura(fileToSend)
-      if (estratto) {
-        setDatiEstratti(estratto)
-        setFileFattura(file)
-      } else {
-        toast.error('Dati non rilevati, inserisci i dati manualmente.')
-      }
-    } catch (err) {
-      console.error(err)
-      toast.error('Errore elaborazione fattura con AI')
-    } finally {
-      setLoading(false)
-    }
-  }
-  
-  const salvaFatturaEProcedi = async () => {
-    if (!datiEstratti || !esercizioId) return
-    setLoading(true)
-    try {
-      await supabase.from('spese').insert([{
-        condominio_id: condoId,
-        esercizio_id: esercizioId,
-        descrizione: datiEstratti.descrizione || 'Fattura generica',
-        fornitore: datiEstratti.fornitore || 'Fornitore di prova',
-        importo_totale: datiEstratti.importo || 100,
-        data_spesa: datiEstratti.data || new Date().toISOString().split('T')[0],
-        categoria: 'Manutenzione Ordinaria',
-        criterio: 'millesimi'
-      }])
-      setStep(3)
-    } catch (err) {
-      console.error(err)
-      toast.error('Errore nel salvataggio della fattura')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const completaOnboarding = async () => {
-    setLoading(true)
-    try {
-      // Crea un preventivo e qualche rata fittizia per completare l'effetto WOW
-      const { data: prev } = await supabase.from('preventivo_voci').insert([{
-        esercizio_id: esercizioId,
-        descrizione: 'Spese Ordinarie di Gestione',
-        importo: 3500.00,
-        categoria: 'Gestione',
-        criterio: 'millesimi'
-      }]).select().single()
-
-      if (prev) {
-        await supabase.from('rate').insert([
-          { esercizio_id: esercizioId, data_scadenza: `${new Date().getFullYear()}-03-31`, tipo: 'preventivo' },
-          { esercizio_id: esercizioId, data_scadenza: `${new Date().getFullYear()}-06-30`, tipo: 'preventivo' }
-        ])
-      }
-
-      setFlowState('SUCCESS')
-      setTimeout(() => {
-        if (onComplete) onComplete()
-      }, 3000)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (flowState === 'SUCCESS') {
-    return (
-      <div style={styles.overlay}>
-        <div style={{ ...styles.card, textAlign: 'center', maxWidth: 450 }}>
-          <div style={styles.successIcon}>
-            <CheckCircle2 size={64} style={{ color: '#10b981' }} />
-          </div>
-          <h2 style={{ fontSize: 28, margin: '0 0 12px' }}>Tutto Pronto!</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-            Il tuo gestionale è ora configurato. Goditi la potenza di CondoFAST!
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Loader2 size={24} className="animate-spin" style={{ color: '#7c3aed' }} />
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
     <div style={styles.overlay}>
-      {flowState === 'CHOICE' && (
-        <div style={{ ...styles.card, maxWidth: 500 }}>
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={styles.logoCircle}>
-              <Zap size={32} style={{ color: '#7c3aed' }} />
+      <div style={styles.container}>
+        
+        {/* STEP 1: Profilo Studio & Branding */}
+        {step === 1 && (
+          <div style={styles.card}>
+            {/* Header */}
+            <div style={styles.headerBox}>
+              <div style={styles.stepBadge}>
+                <span>PASSO 1 DI 2</span> · <span>DATI STUDIO & INTESTAZIONE</span>
+              </div>
+              <h1 style={styles.title}>Personalizza il tuo Studio</h1>
+              <p style={styles.subtitle}>
+                Inserisci i dati identificativi e il logo del tuo studio. Verranno utilizzati automaticamente come intestazione ufficiale per tutti i rendiconti PDF, solleciti rate, convocazioni e comunicazioni.
+              </p>
             </div>
-            <h2 style={{ fontSize: 26, margin: '0 0 8px' }}>Benvenuto in CondoFAST!</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 15, margin: 0 }}>
-              Prima di iniziare, dicci una cosa per aiutarti a configurare il gestionale al meglio.
-            </p>
-          </div>
 
-          <div style={styles.choiceGrid}>
-            <button style={styles.choiceCard} onClick={() => handleChoice(true)} className="onboarding-choice-btn">
-              <div style={styles.choiceIcon}><Building size={28} style={{ color: '#3b82f6' }} /></div>
-              <h3 style={{ fontSize: 17, margin: '0 0 4px', color: 'var(--text-primary)' }}>Ho già un software</h3>
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                Voglio migrare i miei condomini (Excel, PDF) con il Wizard Zero Frizione.
-              </p>
-            </button>
+            <form onSubmit={handleSaveStudio} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              
+              {/* Sezione Logo */}
+              <div style={styles.logoSection}>
+                <div style={styles.logoPreviewBox}>
+                  {logoBase64 ? (
+                    <img src={logoBase64} alt="Logo Studio" style={styles.logoImg} />
+                  ) : (
+                    <div style={styles.logoPlaceholder}>
+                      <ImageIcon size={32} color="var(--text-muted)" />
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Nessun logo</span>
+                    </div>
+                  )}
+                </div>
 
-            <button style={styles.choiceCard} onClick={() => handleChoice(false)} className="onboarding-choice-btn">
-              <div style={styles.choiceIcon}><PlayCircle size={28} style={{ color: '#10b981' }} /></div>
-              <h3 style={{ fontSize: 17, margin: '0 0 4px', color: 'var(--text-primary)' }}>Parto da zero</h3>
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                Fammi configurare il mio primo condominio per vedere come funziona.
-              </p>
-            </button>
-          </div>
-          
-          <style dangerouslySetInnerHTML={{__html: `
-            .onboarding-choice-btn:hover {
-              border-color: #7c3aed !important;
-              transform: translateY(-2px);
-              box-shadow: 0 10px 20px -5px rgba(124, 58, 237, 0.1);
-            }
-          `}} />
-        </div>
-      )}
-
-      {flowState === 'ONBOARDING' && (
-        <div style={{ ...styles.card, maxWidth: 600 }}>
-          <div style={styles.progressContainer}>
-            <div style={{ ...styles.progressBar, width: `${(step / 3) * 100}%` }}></div>
-          </div>
-          <div style={styles.stepHeader}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed', letterSpacing: 1, textTransform: 'uppercase' }}>
-              Passo {step} di 3
-            </span>
-          </div>
-
-          {step === 1 && (
-            <form onSubmit={creaCondominioBase}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <Building2 size={28} style={{ color: 'var(--text-primary)' }} />
-                <h2 style={{ fontSize: 24, margin: 0 }}>Il tuo primo Condominio</h2>
-              </div>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Dai un nome al condominio. Creeremo noi in automatico alcune unità immobiliari di prova per farti testare il sistema senza perdite di tempo.
-              </p>
-
-              <div style={{ marginBottom: 24 }}>
-                <label style={styles.label}>Nome del Condominio</label>
-                <input
-                  type="text"
-                  autoFocus
-                  required
-                  placeholder="Es. Condominio Roma Centrale"
-                  value={condoName}
-                  onChange={e => setCondoName(e.target.value)}
-                  style={styles.input}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button type="submit" disabled={loading || !condoName} style={styles.btnPrimary}>
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : 'Continua'} <ArrowRight size={18} />
-                </button>
-              </div>
-            </form>
-          )}
-
-          {step === 2 && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <Sparkles size={28} style={{ color: '#7c3aed' }} />
-                <h2 style={{ fontSize: 24, margin: 0 }}>La Magia dell'Intelligenza Artificiale</h2>
-              </div>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Carica una qualsiasi fattura (PDF o immagine). La nostra AI estrarrà istantaneamente tutti i dati per te. Niente più inserimento manuale.
-              </p>
-
-              {!datiEstratti ? (
-                <div style={styles.uploadArea}>
-                  <UploadCloud size={48} style={{ color: '#a78bfa', marginBottom: 16 }} />
-                  <h3 style={{ margin: '0 0 8px' }}>Carica una fattura di prova</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 16 }}>
-                    Formati supportati: PDF, JPG, PNG
-                  </p>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+                    Logo Ufficiale dello Studio
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.4 }}>
+                    Carica il logo per stampare automaticamente l'intestazione grafica nei consuntivi e bilanci (PNG, JPG, WEBP).
+                  </div>
                   
-                  <input 
-                    type="file" 
-                    id="fattura-onboarding" 
-                    accept=".pdf,image/*" 
-                    onChange={elaboraFattura} 
-                    style={{ display: 'none' }} 
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    style={{ display: 'none' }}
+                    onChange={onLogoSelected}
                   />
-                  
-                  <label htmlFor="fattura-onboarding" style={styles.btnSecondary}>
-                    {loading ? <><Loader2 size={16} className="animate-spin" style={{ marginRight: 8 }}/> Analisi AI in corso...</> : 'Sfoglia File'}
+
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      style={styles.btnSecondarySmall}
+                    >
+                      <UploadCloud size={15} />
+                      {logoBase64 ? 'Cambia Logo' : 'Carica Logo'}
+                    </button>
+                    {logoBase64 && (
+                      <button
+                        type="button"
+                        onClick={() => setLogoBase64('')}
+                        style={{ ...styles.btnSecondarySmall, color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                      >
+                        <Trash2 size={15} />
+                        Rimuovi
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Griglia Campi Form */}
+              <div style={styles.formGrid}>
+                {/* Nome Studio */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={styles.label}>
+                    Nome Studio o Amministratore <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  
-                  <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-color)', textAlign: 'center' }}>
-                    <button type="button" onClick={() => setStep(3)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}>
-                      Salta questo passaggio
-                    </button>
+                  <div style={styles.inputWrapper}>
+                    <Briefcase size={17} style={styles.inputIcon} />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Es. Studio Amministrazioni Rossi / Dott. Mario Rossi"
+                      value={studioNome}
+                      onChange={e => setStudioNome(e.target.value)}
+                      style={styles.input}
+                    />
                   </div>
                 </div>
-              ) : (
-                <div style={styles.extractedDataCard}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <CheckCircle2 size={18} style={{ color: '#10b981' }} /> Dati estratti con successo
-                    </h4>
-                  </div>
-                  
-                  <div style={styles.dataGrid}>
-                    <div style={styles.dataItem}>
-                      <span style={styles.dataLabel}>Fornitore</span>
-                      <span style={styles.dataValue}>{datiEstratti.fornitore || 'N/D'}</span>
-                    </div>
-                    <div style={styles.dataItem}>
-                      <span style={styles.dataLabel}>Importo</span>
-                      <span style={styles.dataValue}>€ {parseFloat(datiEstratti.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div style={styles.dataItem}>
-                      <span style={styles.dataLabel}>Data</span>
-                      <span style={styles.dataValue}>{datiEstratti.data || 'N/D'}</span>
-                    </div>
-                    <div style={styles.dataItem}>
-                      <span style={styles.dataLabel}>Descrizione</span>
-                      <span style={styles.dataValue}>{datiEstratti.descrizione || 'N/D'}</span>
-                    </div>
-                  </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-                    <button onClick={salvaFatturaEProcedi} disabled={loading} style={styles.btnPrimary}>
-                      {loading ? <Loader2 size={18} className="animate-spin" /> : 'Salva e Continua'} <ArrowRight size={18} />
-                    </button>
+                {/* Ragione Sociale */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={styles.label}>Ragione Sociale Azienda (Opzionale se ditta individuale o SRL)</label>
+                  <input
+                    type="text"
+                    placeholder="Es. Gestione Immobili SRL"
+                    value={ragioneSociale}
+                    onChange={e => setRagioneSociale(e.target.value)}
+                    style={styles.inputSimple}
+                  />
+                </div>
+
+                {/* Partita IVA */}
+                <div>
+                  <label style={styles.label}>Partita IVA</label>
+                  <input
+                    type="text"
+                    placeholder="Es. 12345678901"
+                    value={partitaIva}
+                    onChange={e => setPartitaIva(e.target.value)}
+                    style={styles.inputSimple}
+                  />
+                </div>
+
+                {/* Codice Fiscale */}
+                <div>
+                  <label style={styles.label}>Codice Fiscale Amministratore</label>
+                  <input
+                    type="text"
+                    placeholder="Es. RSSMRA80A01H501U"
+                    value={codiceFiscale}
+                    onChange={e => setCodiceFiscale(e.target.value)}
+                    style={styles.inputSimple}
+                  />
+                </div>
+
+                {/* Indirizzo Studio */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={styles.label}>Indirizzo Sede Studio</label>
+                  <div style={styles.inputWrapper}>
+                    <MapPin size={17} style={styles.inputIcon} />
+                    <input
+                      type="text"
+                      placeholder="Es. Via Roma 10, 20121 Milano (MI)"
+                      value={studioIndirizzo}
+                      onChange={e => setStudioIndirizzo(e.target.value)}
+                      style={styles.input}
+                    />
                   </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {step === 3 && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <Calculator size={28} style={{ color: 'var(--text-primary)' }} />
-                <h2 style={{ fontSize: 24, margin: 0 }}>Generazione Preventivo e Rate</h2>
+                {/* Telefono */}
+                <div>
+                  <label style={styles.label}>Telefono Studio / Reperibilità</label>
+                  <div style={styles.inputWrapper}>
+                    <Phone size={17} style={styles.inputIcon} />
+                    <input
+                      type="tel"
+                      placeholder="Es. 02 1234567 / 333 1234567"
+                      value={studioTelefono}
+                      onChange={e => setStudioTelefono(e.target.value)}
+                      style={styles.input}
+                    />
+                  </div>
+                </div>
+
+                {/* Email / PEC */}
+                <div>
+                  <label style={styles.label}>Email Ufficiale / PEC</label>
+                  <div style={styles.inputWrapper}>
+                    <Mail size={17} style={styles.inputIcon} />
+                    <input
+                      type="email"
+                      placeholder="Es. studio@pec.it"
+                      value={studioEmail}
+                      onChange={e => setStudioEmail(e.target.value)}
+                      style={styles.input}
+                    />
+                  </div>
+                </div>
               </div>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Ora che hai registrato una spesa, CondoFAST la ripartisce automaticamente in base ai millesimi. Con un clic generiamo il piano rateale per i tuoi condòmini.
-              </p>
 
-              <div style={styles.ratePreviewCard}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <div style={{ padding: 10, background: 'rgba(124,58,237,0.1)', borderRadius: 8 }}>
-                    <Zap size={24} style={{ color: '#7c3aed' }} />
-                  </div>
-                  <div>
-                    <h4 style={{ margin: '0 0 4px', fontSize: 16, color: 'var(--text-primary)' }}>Automa Rate</h4>
-                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>Il sistema calcolerà le quote per le 3 unità presenti.</p>
-                  </div>
+              {/* Footer Azioni Step 1 */}
+              <div style={styles.actionRow}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13 }}>
+                  <ShieldCheck size={18} color="#10b981" />
+                  <span>Dati salvati in sicurezza sul tuo profilo protetto</span>
                 </div>
-                <div style={{ padding: 16, background: 'var(--app-bg)', borderRadius: 8, border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Totale da ripartire</span>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>€ 3.500,00</div>
-                  </div>
-                  <ChevronRight size={20} style={{ color: 'var(--text-muted)' }} />
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Rate calcolate</span>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: '#10b981' }}>2 rate</div>
-                  </div>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-                <button onClick={completaOnboarding} disabled={loading} style={styles.btnPrimary}>
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : 'Genera Rate e Completa'} <CheckCircle2 size={18} />
+                <button
+                  type="submit"
+                  disabled={loading || !studioNome.trim()}
+                  style={styles.btnPrimary}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Salvataggio...
+                    </>
+                  ) : (
+                    <>
+                      Salva e Continua
+                      <ArrowRight size={18} />
+                    </>
+                  )}
                 </button>
               </div>
+
+            </form>
+          </div>
+        )}
+
+        {/* STEP 2: Scelta Modalità Partenza Condomini */}
+        {step === 2 && (
+          <div style={styles.card}>
+            {/* Header Step 2 */}
+            <div style={styles.headerBox}>
+              <div style={styles.stepBadge}>
+                <span>PASSO 2 DI 2</span> · <span>GESTIONE CONDOMINI</span>
+              </div>
+              <h1 style={styles.title}>Come vuoi iniziare a gestire i tuoi condomini?</h1>
+              <p style={styles.subtitle}>
+                Configurazione completata per <strong style={{ color: 'var(--text-primary)' }}>{studioNome}</strong>. Scegli come preferisci procedere per configurare i tuoi stabili.
+              </p>
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Grid 2 Card di Scelta */}
+            <div style={styles.choiceGrid}>
+              
+              {/* Opzione A: Migrazione AI */}
+              <div style={styles.choiceCard}>
+                <div style={styles.cardHeader}>
+                  <div style={{ ...styles.iconCircle, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+                    <ArrowLeftRight size={28} />
+                  </div>
+                  <span style={styles.badgeMigrazione}>CONSIGLIATO SE GESTISCI GIÀ STABILI</span>
+                </div>
+
+                <h3 style={styles.cardTitle}>Sto migrando da un altro software</h3>
+                <p style={styles.cardDesc}>
+                  Hai già dei condomini su <strong>Danea Domustudio, PGC, Brainware o Excel/PDF</strong>? L'Intelligenza Artificiale di CondoFAST estrae anagrafiche, unità, millesimi e bilanci in 1 click.
+                </p>
+
+                <ul style={styles.featureList}>
+                  <li>
+                    <CheckCircle2 size={16} color="#3b82f6" style={{ flexShrink: 0 }} />
+                    <span>Importazione automatica multi-formato (Excel, CSV, PDF)</span>
+                  </li>
+                  <li>
+                    <CheckCircle2 size={16} color="#3b82f6" style={{ flexShrink: 0 }} />
+                    <span>Estrazione intelligente con verifica anteprima prima del salvataggio</span>
+                  </li>
+                  <li>
+                    <CheckCircle2 size={16} color="#3b82f6" style={{ flexShrink: 0 }} />
+                    <span>Nessun dato duplicato, zero inserimenti manuali</span>
+                  </li>
+                </ul>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/migrazione')}
+                  style={styles.btnCardPrimary}
+                >
+                  <span>Avvia Wizard Migrazione AI</span>
+                  <ArrowRight size={18} />
+                </button>
+              </div>
+
+              {/* Opzione B: Partenza da zero / Nuovo Condominio Reale */}
+              <div style={styles.choiceCard}>
+                <div style={styles.cardHeader}>
+                  <div style={{ ...styles.iconCircle, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                    <Building2 size={28} />
+                  </div>
+                  <span style={styles.badgeNuovo}>CONFIGURAZIONE PULITA</span>
+                </div>
+
+                <h3 style={styles.cardTitle}>Parto da zero / Nuovo Studio</h3>
+                <p style={styles.cardDesc}>
+                  Configura direttamente il tuo primo condominio reale, inserisci i dati catastali e scopri la potenza della gestione automatizzata delle spese e dei rendiconti.
+                </p>
+
+                <ul style={styles.featureList}>
+                  <li>
+                    <CheckCircle2 size={16} color="#10b981" style={{ flexShrink: 0 }} />
+                    <span>Creazione del tuo primo stabile reale senza dati fittizi</span>
+                  </li>
+                  <li>
+                    <CheckCircle2 size={16} color="#10b981" style={{ flexShrink: 0 }} />
+                    <span>Modulo Spese con lettura automatica fatture tramite OCR AI</span>
+                  </li>
+                  <li>
+                    <CheckCircle2 size={16} color="#10b981" style={{ flexShrink: 0 }} />
+                    <span>Rendiconti e consuntivi PDF a norma art. 1130-bis c.c.</span>
+                  </li>
+                </ul>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', marginTop: 'auto' }}>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/condomini', { state: { openNew: true } })}
+                    style={{ ...styles.btnCardPrimary, background: '#10b981' }}
+                  >
+                    <span>+ Crea Primo Condominio</span>
+                    <ArrowRight size={18} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowTourModal(true)}
+                    style={styles.btnCardSecondary}
+                  >
+                    <HelpCircle size={16} />
+                    <span>Guarda Tour Guidato</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Back button to Step 1 */}
+            <div style={{ marginTop: 24, textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  fontFamily: 'Sora, sans-serif'
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                ← Torna indietro e modifica i dati dello studio
+              </button>
+            </div>
+
+          </div>
+        )}
+
+      </div>
+
+      {/* Modale Tour Guidato Onboarding */}
+      <OnboardingTourModal
+        isOpen={showTourModal}
+        onClose={() => setShowTourModal(false)}
+      />
     </div>
   )
 }
 
 const styles = {
   overlay: {
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'var(--app-bg)',
+    minHeight: '100vh',
+    width: '100%',
+    background: 'radial-gradient(ellipse at top, rgba(37,99,235,0.08) 0%, var(--app-bg) 70%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9999,
-    padding: 24
+    padding: '32px 16px',
+    boxSizing: 'border-box',
+    fontFamily: 'Sora, sans-serif',
+  },
+  container: {
+    width: '100%',
+    maxWidth: 860,
   },
   card: {
     background: 'var(--card-bg)',
-    borderRadius: 24,
-    padding: 40,
-    width: '100%',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
     border: '1px solid var(--border-color)',
-    position: 'relative',
-    overflow: 'hidden'
+    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
+    padding: '36px 32px',
+    boxSizing: 'border-box',
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: '50%',
-    background: 'rgba(124,58,237,0.1)',
+  headerBox: {
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  stepBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '4px 12px',
+    borderRadius: 99,
+    background: 'rgba(37,99,235,0.1)',
+    color: '#3b82f6',
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    margin: '0 0 10px 0',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: 'var(--text-secondary)',
+    lineHeight: 1.55,
+    maxWidth: 620,
+    margin: '0 auto',
+  },
+  logoSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 20,
+    padding: 16,
+    borderRadius: 14,
+    background: 'var(--app-bg)',
+    border: '1px solid var(--border-color)',
+  },
+  logoPreviewBox: {
+    width: 76,
+    height: 76,
+    borderRadius: 12,
+    background: 'var(--card-bg)',
+    border: '1px dashed var(--border-color)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: '0 auto 20px',
-    border: '1px solid rgba(124,58,237,0.2)'
+    overflow: 'hidden',
+    flexShrink: 0,
   },
-  choiceGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 16
+  logoImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
   },
-  choiceCard: {
-    background: 'var(--app-bg)',
-    border: '1px solid var(--border-color)',
-    borderRadius: 16,
-    padding: 24,
-    textAlign: 'left',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
+  logoPlaceholder: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'flex-start'
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  choiceIcon: {
-    marginBottom: 16,
-    padding: 12,
-    background: 'var(--card-bg)',
-    borderRadius: 12,
-    border: '1px solid var(--border-color)'
-  },
-  progressContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    background: 'rgba(255,255,255,0.05)'
-  },
-  progressBar: {
-    height: '100%',
-    background: 'linear-gradient(90deg, #7c3aed, #a78bfa)',
-    transition: 'width 0.3s ease'
-  },
-  stepHeader: {
-    marginBottom: 24
+  formGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: 16,
   },
   label: {
     display: 'block',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 600,
     color: 'var(--text-secondary)',
-    marginBottom: 8
+    marginBottom: 6,
+  },
+  inputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: 14,
+    color: 'var(--text-muted)',
+    pointerEvents: 'none',
   },
   input: {
     width: '100%',
-    padding: '14px 16px',
+    padding: '12px 14px 12px 40px',
     background: 'var(--app-bg)',
     border: '1px solid var(--border-color)',
-    borderRadius: 12,
+    borderRadius: 10,
     color: 'var(--text-primary)',
-    fontSize: 16,
+    fontSize: 14,
+    fontFamily: 'Sora, sans-serif',
     outline: 'none',
-    transition: 'border-color 0.2s'
+    boxSizing: 'border-box',
+    transition: 'border-color 0.15s ease',
+  },
+  inputSimple: {
+    width: '100%',
+    padding: '12px 14px',
+    background: 'var(--app-bg)',
+    border: '1px solid var(--border-color)',
+    borderRadius: 10,
+    color: 'var(--text-primary)',
+    fontSize: 14,
+    fontFamily: 'Sora, sans-serif',
+    outline: 'none',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.15s ease',
   },
   btnPrimary: {
     display: 'inline-flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-    background: '#7c3aed',
+    background: '#2563eb',
     color: '#fff',
     border: 'none',
-    padding: '14px 28px',
-    borderRadius: 12,
-    fontSize: 16,
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'background 0.2s'
-  },
-  btnSecondary: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-    background: 'var(--app-bg)',
-    color: 'var(--text-primary)',
-    border: '1px solid var(--border-color)',
-    padding: '12px 24px',
-    borderRadius: 12,
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-  uploadArea: {
-    border: '2px dashed var(--border-color)',
-    borderRadius: 16,
-    padding: '48px 24px',
-    textAlign: 'center',
-    background: 'rgba(255,255,255,0.02)',
-    transition: 'border-color 0.2s, background 0.2s'
-  },
-  extractedDataCard: {
-    background: 'var(--app-bg)',
-    border: '1px solid rgba(16, 185, 129, 0.3)',
-    borderRadius: 16,
-    padding: 24
-  },
-  dataGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 16
-  },
-  dataItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4
-  },
-  dataLabel: {
-    fontSize: 12,
-    color: 'var(--text-secondary)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5
-  },
-  dataValue: {
+    borderRadius: 10,
+    padding: '13px 26px',
     fontSize: 15,
     fontWeight: 600,
-    color: 'var(--text-primary)'
+    fontFamily: 'Sora, sans-serif',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
   },
-  ratePreviewCard: {
+  btnSecondarySmall: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'var(--card-bg)',
+    color: 'var(--text-primary)',
     border: '1px solid var(--border-color)',
-    borderRadius: 16,
-    padding: 24,
-    background: 'rgba(255,255,255,0.02)'
+    borderRadius: 8,
+    padding: '8px 14px',
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: 'Sora, sans-serif',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
   },
-  successIcon: {
-    animation: 'scaleIn 0.5s ease-out forwards'
-  }
+  actionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 16,
+    borderTop: '1px solid var(--border-color)',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  choiceGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: 20,
+    marginTop: 12,
+  },
+  choiceCard: {
+    background: 'var(--app-bg)',
+    borderRadius: 16,
+    border: '1px solid var(--border-color)',
+    padding: 24,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    boxSizing: 'border-box',
+    transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s',
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  iconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeMigrazione: {
+    background: 'rgba(59, 130, 246, 0.12)',
+    color: '#3b82f6',
+    fontSize: 10,
+    fontWeight: 700,
+    padding: '4px 8px',
+    borderRadius: 6,
+    letterSpacing: '0.03em',
+  },
+  badgeNuovo: {
+    background: 'rgba(16, 185, 129, 0.12)',
+    color: '#10b981',
+    fontSize: 10,
+    fontWeight: 700,
+    padding: '4px 8px',
+    borderRadius: 6,
+    letterSpacing: '0.03em',
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    margin: '0 0 8px 0',
+  },
+  cardDesc: {
+    fontSize: 13,
+    color: 'var(--text-secondary)',
+    lineHeight: 1.5,
+    margin: '0 0 16px 0',
+  },
+  featureList: {
+    listStyle: 'none',
+    padding: 0,
+    margin: '0 0 24px 0',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    fontSize: 13,
+    color: 'var(--text-primary)',
+  },
+  btnCardPrimary: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    background: '#2563eb',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 10,
+    padding: '13px 18px',
+    fontSize: 14,
+    fontWeight: 600,
+    fontFamily: 'Sora, sans-serif',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  btnCardSecondary: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    background: 'var(--card-bg)',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: 10,
+    padding: '11px 18px',
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: 'Sora, sans-serif',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
 }

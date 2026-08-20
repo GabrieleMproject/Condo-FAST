@@ -530,61 +530,9 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     return () => clearTimeout(timer)
   }, [condominioId, form.importo, form.numero_fattura, form.fornitore, form.data_spesa, spesaInEdit])
 
-  // Controllo slot Pioneer Marketplace per il fornitore estratto dall'AI
+  // Controllo slot Pioneer Marketplace per il fornitore estratto dall'AI (disabilitato in assenza della tabella fornitori_partner)
   useEffect(() => {
-    let isMounted = true;
-
-    const checkPartnerSlot = async (piva, categoria, provincia) => {
-      if (!piva || !categoria || !provincia) return
-      try {
-        const safePiva = String(piva).replace(/\s+/g, '')
-        const safeCategoria = String(categoria).toLowerCase()
-        const safeProvincia = String(provincia).toUpperCase()
-
-        // 1. Il fornitore è già partner?
-        const { data: existing, error: err1 } = await supabase
-          .from('fornitori_partner')
-          .select('id')
-          .eq('partita_iva', safePiva)
-          .maybeSingle()
-        
-        if (err1 || existing) {
-          if (isMounted) setPartnerSlotFree(false)
-          return
-        }
-
-        // 2. Se non lo è, lo slot territoriale per la sua categoria è già occupato da un altro Pioneer?
-        const { data: slotOccupato, error: err2 } = await supabase
-          .from('fornitori_partner')
-          .select('id')
-          .eq('categoria', safeCategoria)
-          .eq('provincia_esclusiva', safeProvincia)
-          .eq('attivo', true)
-          .maybeSingle()
-
-        if (isMounted) {
-          if (err2 || slotOccupato) {
-            setPartnerSlotFree(false) // Slot occupato, esclusiva non disponibile o errore DB
-          } else {
-            setPartnerPiva(safePiva)
-            setPartnerCategoria(safeCategoria)
-            setPartnerProvincia(safeProvincia)
-            setPartnerSlotFree(true)
-          }
-        }
-      } catch (err) {
-        console.error("Errore controllo partner:", err)
-        if (isMounted) setPartnerSlotFree(false)
-      }
-    }
-
-    if (aiDatiEstratti?.partita_iva_fornitore && aiDatiEstratti?.categoria_fornitore && aiDatiEstratti?.provincia_fornitore) {
-      checkPartnerSlot(aiDatiEstratti.partita_iva_fornitore, aiDatiEstratti.categoria_fornitore, aiDatiEstratti.provincia_fornitore)
-    } else {
-      setPartnerSlotFree(false)
-    }
-
-    return () => { isMounted = false }
+    setPartnerSlotFree(false)
   }, [aiDatiEstratti])
 
   const handleInvitaMarketplace = async () => {

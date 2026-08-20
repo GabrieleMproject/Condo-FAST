@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus, Settings, Link2 } from 'lucide-react';
+import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus, Settings, Link2, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callGemini } from '../lib/geminiClient';
 import { pulisciEdEstraiJson } from '../lib/fileExtractor';
 import { trovaBestMatchFattura } from '../lib/autoMatchingEngine';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
+import { toast } from 'react-hot-toast';
 
 const formattaData = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—');
 
@@ -55,7 +56,7 @@ export default function RiconciliazioniPage() {
     const fatNonRic = fatture.filter(f => !f.riconciliata);
 
     if (movNonRic.length === 0 || fatNonRic.length === 0) {
-      alert('Nessun movimento o fattura da riconciliare.');
+      toast.error('Nessun movimento o fattura aperta da riconciliare.');
       return;
     }
 
@@ -190,7 +191,7 @@ Abbina i movimenti alle fatture.`;
           // Verifica se la quietanza F24 è presente in fattura o f24_deleghe
           const quietanzaPresente = fat?.f24_url || false;
           if (!quietanzaPresente && isMovF24) {
-            alert('Impossibile riconciliare addebito F24 senza quietanza: carica prima il file della quietanza F24 nel sistema (regola del triplo riscontro).');
+            toast.error('Impossibile riconciliare addebito F24 senza quietanza: carica prima il file della quietanza F24 nel sistema (regola del triplo riscontro).');
             return;
           }
         }
@@ -214,8 +215,9 @@ Abbina i movimenti alle fatture.`;
       if (errRic) throw errRic;
 
       await loadAll();
+      toast.success(nuovoStato === 'confermata' ? 'Riconciliazione confermata con successo!' : 'Abbinamento rifiutato');
     } catch (err) {
-      alert('Errore aggiornamento riconciliazione: ' + err.message);
+      toast.error('Errore aggiornamento riconciliazione: ' + err.message);
     }
   }
 

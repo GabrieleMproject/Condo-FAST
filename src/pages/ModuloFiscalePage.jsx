@@ -12,7 +12,8 @@ import { verificaQuadraturaFiscaleRitenute } from '../lib/auditFiscaleEngine'
 import DiagnosiFiscaleModal from '../components/DiagnosiFiscaleModal'
 import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
-import { X, CheckSquare, AlertCircle, Info, Mail, Activity } from 'lucide-react'
+import { X, CheckSquare, AlertCircle, Info, Mail, Activity, Sparkles, Loader2 } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
 const formattaData = (dataStr) => {
   if (!dataStr) return '—';
@@ -58,7 +59,7 @@ export default function ModuloFiscalePage() {
     try {
       const condoTarget = condominioSelezionato ? condomini.find(c => c.id === condominioSelezionato) : condomini[0]
       if (!condoTarget) {
-        alert("Seleziona prima un condominio su cui eseguire la diagnosi.")
+        toast.error("Seleziona prima un condominio su cui eseguire la diagnosi.")
         return
       }
 
@@ -80,7 +81,7 @@ export default function ModuloFiscalePage() {
       setModalDiagnosiOpen(true)
     } catch (e) {
       console.error("Errore diagnosi:", e)
-      alert("Errore durante l'esecuzione della diagnosi: " + e.message)
+      toast.error("Errore durante l'esecuzione della diagnosi: " + e.message)
     } finally {
       setDiagnosiBusy(false)
     }
@@ -116,10 +117,10 @@ export default function ModuloFiscalePage() {
       const { error: invokeErr } = await supabase.functions.invoke('invia-comunicazione', { body: bodyPayload })
       if (invokeErr) throw invokeErr
 
-      alert(`Attestazione quietanza inviata con successo all'indirizzo email ${emailDest}!`)
+      toast.success(`Attestazione quietanza inviata con successo all'indirizzo email ${emailDest}!`)
     } catch (err) {
       console.error("Errore invio quietanza email:", err)
-      alert("Errore durante l'invio dell'email al fornitore: " + err.message)
+      toast.error("Errore durante l'invio dell'email al fornitore: " + err.message)
     } finally {
       setInvioEmailBusyId(null)
     }
@@ -280,18 +281,19 @@ export default function ModuloFiscalePage() {
     }))
 
     if (deleghePagate.length === 0) {
-      alert("Nessun modello F24 pagato (con quietanza registrata) trovato per questo condominio nell'anno selezionato. Impossibile generare il 770.")
+      toast.error("Nessun modello F24 pagato (con quietanza registrata) trovato per questo condominio nell'anno selezionato. Impossibile generare il 770.")
       return
     }
 
     const txt770 = generaTelematico770(condominioInfo, annoSelezionato, deleghePagate, profile)
     scaricaFileTxt(txt770, `770_${condominioInfo.nome.replace(/\s+/g, '_')}_${annoSelezionato}.txt`)
+    toast.success("File telematico 770 generato con successo!")
   }
 
   const handleAvviaExportCBI = () => {
     const idsSelezionati = Object.keys(selezionatiCbi).filter(id => selezionatiCbi[id])
     if (idsSelezionati.length === 0) {
-      alert("Seleziona almeno un F24 da esportare.")
+      toast.error("Seleziona almeno un F24 da esportare.")
       return
     }
 
@@ -310,11 +312,11 @@ export default function ModuloFiscalePage() {
 
   const handleConfermaEGeneraCBI = async () => {
     if (!cbiValidazione || !cbiValidazione.ok) {
-      alert("Impossibile procedere: correggi prima gli errori bloccanti indicati nella diagnostica.")
+      toast.error("Impossibile procedere: correggi prima gli errori bloccanti indicati nella diagnostica.")
       return
     }
     if (!cbiDisclaimerAccettato) {
-      alert("Spunta la casella di conferma e responsabilità per procedere al download.")
+      toast.error("Spunta la casella di conferma e responsabilità per procedere al download.")
       return
     }
 
@@ -334,7 +336,7 @@ export default function ModuloFiscalePage() {
 
     setModalCbiOpen(false)
     await loadData()
-    alert("Distinta F24 CBI generata con successo. Il file è pronto per l'invio nel tuo home banking.")
+    toast.success("Distinta F24 CBI generata con successo! File pronto per l'home banking.")
   }
 
   const handleUploadQuietanza = async (f24Id, file) => {
@@ -372,10 +374,10 @@ export default function ModuloFiscalePage() {
         if (updFattErr) throw updFattErr
       }
 
-      alert('Quietanza registrata e F24 impostato come PAGATO con successo.')
+      toast.success('Quietanza registrata e F24 impostato come PAGATO con successo.')
       await loadData()
     } catch (err) {
-      alert('Errore registrazione quietanza: ' + err.message)
+      toast.error('Errore registrazione quietanza: ' + err.message)
     } finally {
       setF24UploadingId(null)
     }
@@ -391,7 +393,7 @@ export default function ModuloFiscalePage() {
       newTab.location.href = data.signedUrl
     } catch (err) {
       newTab.close()
-      alert('Errore apertura quietanza: ' + err.message)
+      toast.error('Errore apertura quietanza: ' + err.message)
     }
   }
 

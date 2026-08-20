@@ -4,6 +4,7 @@ import {
   User, Clock, Plus, Trash2, Calendar, UserPlus, X, Search, Check, AlertCircle, Mail, Phone, ArrowRightLeft 
 } from 'lucide-react';
 import SintesiSubentroModal from './SintesiSubentroModal';
+import { toast } from 'react-hot-toast';
 
 const formattaData = (dateStr) => {
   if (!dateStr) return '';
@@ -98,7 +99,7 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
   // Create a new person inline
   const handleCreaPersona = async () => {
     if (!newNome.trim() || !newCognome.trim()) {
-      alert('Nome e Cognome sono obbligatori.');
+      toast.error('Nome e Cognome sono obbligatori.');
       return;
     }
     setSaving(true);
@@ -133,8 +134,9 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
       setNewCf('');
       setShowNewPersonForm(false);
       setSearchPersonText('');
+      toast.success('Persona creata e selezionata con successo!');
     } catch (e) {
-      alert('Errore creazione persona: ' + e.message);
+      toast.error('Errore creazione persona: ' + e.message);
     } finally {
       setSaving(false);
     }
@@ -143,16 +145,16 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
   // Save subentry transition
   const handleSalvaSubentro = async () => {
     if (!selectedPersonaId) {
-      alert('Seleziona una persona per il subentro.');
+      toast.error('Seleziona una persona per il subentro.');
       return;
     }
     if (!dataSubentro) {
-      alert('Inserisci la data del subentro.');
+      toast.error('Inserisci la data del subentro.');
       return;
     }
 
     if (currentActive && currentActive.data_inizio && dataSubentro <= currentActive.data_inizio) {
-      alert(`La data di subentro deve essere successiva alla data di inizio dell'attuale occupante (${formattaData(currentActive.data_inizio)}).`);
+      toast.error(`La data di subentro deve essere successiva alla data di inizio dell'attuale occupante (${formattaData(currentActive.data_inizio)}).`);
       return;
     }
 

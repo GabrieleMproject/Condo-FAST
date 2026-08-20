@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
 import { useComunicazioni } from '../hooks/useComunicazioni'
-import { exportSingolaUnitaRatePdfBytes, exportSollecitiMassiviPdf } from '../lib/exportPdf'
-import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone, Building2, Calendar, ChevronRight, ChevronDown } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone, Building2, Calendar, ChevronRight, ChevronDown, Sparkles, Loader2, Plus, Edit3 } from 'lucide-react'
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -61,11 +61,128 @@ export default function RateGridTab({ condominioId, esercizioId: esercizioIdProp
   const [cells, setCells] = useState([])          // rate_unita
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)    // { cell, rata, unita }
+  const [creandoEsercizio, setCreandoEsercizio] = useState(false)
+  const [generandoRate, setGenerandoRate] = useState(false)
 
   const { unita, getProprietario, getInquilino, fetchUnita } = useUnita(condominioId)
   const [configPagante, setConfigPagante] = useState({})
   const [ultimaRiconciliazioneInfo, setUltimaRiconciliazioneInfo] = useState(null)
   const [dismissedBannerProposte, setDismissedBannerProposte] = useState(false)
+
+  const handleCreaEsercizioRapido = async () => {
+    if (!condominioId) return
+    setCreandoEsercizio(true)
+    try {
+      const annoCorrente = new Date().getFullYear()
+      const { data: newEs, error: esErr } = await supabase
+        .from('esercizi')
+        .insert([{
+          condominio_id: condominioId,
+          anno: annoCorrente,
+          data_inizio: `${annoCorrente}-01-01`,
+          data_fine: `${annoCorrente}-12-31`,
+          stato: 'aperto',
+          tipo: 'ordinario'
+        }])
+        .select()
+        .single()
+
+      if (esErr) throw esErr
+      setEsercizi(prev => [newEs, ...prev])
+      setEsercizio(newEs)
+      if (onSelectEsercizio) onSelectEsercizio(newEs.id)
+      toast.success(`Esercizio Ordinario ${annoCorrente} creato con successo!`)
+    } catch (err) {
+      console.error('Errore creazione esercizio:', err)
+      toast.error('Errore durante la creazione dell\'esercizio: ' + err.message)
+    } finally {
+      setCreandoEsercizio(false)
+    }
+  }
+
+  const handleGeneraRateRapide = async (numRate = 4) => {
+    if (!esercizio || !condominioId) return
+    setGenerandoRate(true)
+    try {
+      const anno = esercizio.anno || new Date().getFullYear()
+      const ratePayload = []
+      
+      if (numRate === 12) {
+        const nomiMesi = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+        for (let i = 0; i < 12; i++) {
+          const m = String(i + 1).padStart(2, '0')
+          ratePayload.push({
+            condominio_id: condominioId,
+            esercizio_id: esercizio.id,
+            numero_rata: i + 1,
+            descrizione: `Rata ${i + 1} (${nomiMesi[i]})`,
+            data_scadenza: `${anno}-${m}-15`,
+            importo_totale: 0
+          })
+        }
+      } else if (numRate === 1) {
+        ratePayload.push({
+          condominio_id: condominioId,
+          esercizio_id: esercizio.id,
+          numero_rata: 1,
+          descrizione: 'Rata Unica Annuale',
+          data_scadenza: `${anno}-03-31`,
+          importo_totale: 0
+        })
+      } else {
+        // Default 4 bimestrali
+        const scadenze = [
+          { n: 1, desc: '1ª Rata (Gen-Feb)', data: `${anno}-02-15` },
+          { n: 2, desc: '2ª Rata (Mar-Apr)', data: `${anno}-04-15` },
+          { n: 3, desc: '3ª Rata (Mag-Giu)', data: `${anno}-07-15` },
+          { n: 4, desc: '4ª Rata (Lug-Dic)', data: `${anno}-10-15` },
+        ]
+        scadenze.forEach(s => {
+          ratePayload.push({
+            condominio_id: condominioId,
+            esercizio_id: esercizio.id,
+            numero_rata: s.n,
+            descrizione: s.desc,
+            data_scadenza: s.data,
+            importo_totale: 0
+          })
+        })
+      }
+
+      const { data: createRate, error: rateErr } = await supabase
+        .from('rate')
+        .insert(ratePayload)
+        .select()
+
+      if (rateErr) throw rateErr
+
+      // Crea le celle per ciascuna unità
+      if (unita && unita.length > 0 && createRate && createRate.length > 0) {
+        const cellPayload = []
+        for (const u of unita) {
+          for (const r of createRate) {
+            cellPayload.push({
+              rata_id: r.id,
+              unita_id: u.id,
+              importo: 0,
+              importo_pagato: 0,
+              stato: 'non_pagata'
+            })
+          }
+        }
+        const { error: cellErr } = await supabase.from('rate_unita').insert(cellPayload)
+        if (cellErr) console.warn('Creazione celle rate_unita parziale:', cellErr)
+      }
+
+      await loadGriglia()
+      toast.success(`Piano di ${numRate} rate generato con successo!`)
+    } catch (err) {
+      console.error('Errore generazione piano rate:', err)
+      toast.error('Errore durante la generazione delle rate: ' + err.message)
+    } finally {
+      setGenerandoRate(false)
+    }
+  }
 
   useEffect(() => {
     if (!condominioId) return
@@ -245,7 +362,7 @@ export default function RateGridTab({ condominioId, esercizioId: esercizioIdProp
     if (!dest || !dest.email) {
       const errMsg = `Impossibile inviare il sollecito: il destinatario (${dest ? `${dest.nome} ${dest.cognome}` : 'sconosciuto'}) non ha un indirizzo email configurato.`
       if (!silenzioso) {
-        alert(errMsg);
+        toast.error(errMsg);
       }
       throw new Error(errMsg);
     }
@@ -307,11 +424,11 @@ L'Amministratore`;
       });
 
       if (!silenzioso) {
-        alert(`Sollecito inviato con successo a ${dest.email}`);
+        toast.success(`Sollecito inviato con successo a ${dest.email}`);
       }
     } catch (err) {
       if (!silenzioso) {
-        alert("Errore durante l'invio del sollecito: " + err.message);
+        toast.error("Errore durante l'invio del sollecito: " + err.message);
       } else {
         console.error("Errore invio sollecito:", err.message);
       }
@@ -419,7 +536,7 @@ L'Amministratore`;
       modificato_manualmente: patch.importo !== undefined ? true : cell.modificato_manualmente,
     }
     const { data, error } = await supabase.from('rate_unita').update(upd).eq('id', cell.id).select().single()
-    if (error) { alert('Errore: ' + error.message); return }
+    if (error) { toast.error('Errore aggiornamento rata: ' + error.message); return }
     setCells((prev) => prev.map((c) => (c.id === cell.id ? data : c)))
     setEditing(null)
   }
@@ -571,7 +688,7 @@ L'Amministratore`;
         })
       } catch (pdfErr) {
         console.error("Errore generazione PDF cumulativo:", pdfErr.message)
-        alert("Errore durante la generazione del PDF cumulativo delle stampe.")
+        toast.error("Errore durante la generazione del PDF cumulativo delle stampe.")
       }
     }
 
@@ -586,9 +703,9 @@ L'Amministratore`;
     setInvioMassivoStato(prev => ({ ...prev, inCorso: false }))
     
     if (falliti > 0) {
-      alert(`Invio massivo completato. Riusciti: ${proposteSelezionate.length - falliti}, Falliti: ${falliti}`);
+      toast.error(`Invio massivo completato con anomalie. Riusciti: ${proposteSelezionate.length - falliti}, Falliti: ${falliti}`);
     } else {
-      alert('Tutti i solleciti sono stati elaborati con successo!');
+      toast.success('Tutti i solleciti sono stati elaborati e inviati con successo!');
     }
     setShowProposteModal(false)
   }
@@ -614,8 +731,45 @@ L'Amministratore`;
   if (loading) return <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 32 }}>Caricamento griglia...</div>
 
   if (!esercizio) return (
-    <div style={st.empty}><CreditCard size={32} color="var(--text-muted)" style={{ marginBottom: 10 }} />
-      <p style={{ color: 'var(--text-muted)', margin: 0 }}>Nessun esercizio contabile</p></div>
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%)',
+      border: '1px solid rgba(37, 99, 235, 0.3)',
+      borderRadius: 14,
+      padding: '36px 24px',
+      textAlign: 'center',
+      maxWidth: 580,
+      margin: '40px auto'
+    }}>
+      <Calendar size={40} style={{ margin: '0 auto 12px', color: '#3b82f6' }} />
+      <h3 style={{ margin: '0 0 6px', fontSize: 18, color: 'var(--text-primary)', fontWeight: 700 }}>
+        Nessun esercizio contabile attivo
+      </h3>
+      <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+        Per visualizzare e gestire la griglia delle rate è necessario un esercizio contabile per questo condominio.
+      </p>
+      <button
+        onClick={handleCreaEsercizioRapido}
+        disabled={creandoEsercizio}
+        style={{
+          background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 8,
+          padding: '11px 22px',
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: creandoEsercizio ? 'not-allowed' : 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+          fontFamily: 'Sora, sans-serif'
+        }}
+      >
+        {creandoEsercizio ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Sparkles size={16} />}
+        <span>Crea Esercizio Ordinario {new Date().getFullYear()} in 1-Click</span>
+      </button>
+    </div>
   )
 
   const formattaDataEstesa = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—')
@@ -736,10 +890,88 @@ L'Amministratore`;
       )}
 
       {rate.length === 0 ? (
-        <div style={st.empty}>
-          <CreditCard size={32} color="var(--text-muted)" style={{ marginBottom: 10 }} />
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Nessuna rata generata per l'esercizio {esercizio.anno}</p>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 6 }}>Vai alla scheda Preventivo e genera le rate</p>
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%)',
+          border: '1px solid rgba(37, 99, 235, 0.25)',
+          borderRadius: 14,
+          padding: '32px 24px',
+          textAlign: 'center',
+          maxWidth: 620,
+          margin: '24px auto'
+        }}>
+          <Coins size={38} style={{ margin: '0 auto 12px', color: '#60a5fa' }} />
+          <h3 style={{ margin: '0 0 6px', fontSize: 17, color: 'var(--text-primary)', fontWeight: 700 }}>
+            Nessun piano rate configurato per l'Esercizio {esercizio.anno}
+          </h3>
+          <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            Genera istantaneamente la struttura delle rate e distribuisci le quote senza dover passare dal Preventivo:
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => handleGeneraRateRapide(4)}
+              disabled={generandoRate}
+              style={{
+                background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '9px 16px',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: generandoRate ? 'not-allowed' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontFamily: 'Sora, sans-serif',
+                boxShadow: '0 3px 10px rgba(37, 99, 235, 0.25)'
+              }}
+            >
+              {generandoRate ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Sparkles size={14} />}
+              <span>✨ 4 Rate Bimestrali</span>
+            </button>
+            <button
+              onClick={() => handleGeneraRateRapide(12)}
+              disabled={generandoRate}
+              style={{
+                background: 'var(--card-bg)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 8,
+                padding: '9px 16px',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: generandoRate ? 'not-allowed' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontFamily: 'Sora, sans-serif'
+              }}
+            >
+              <Calendar size={14} style={{ color: '#38bdf8' }} />
+              <span>12 Rate Mensili</span>
+            </button>
+            <button
+              onClick={() => handleGeneraRateRapide(1)}
+              disabled={generandoRate}
+              style={{
+                background: 'var(--card-bg)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 8,
+                padding: '9px 16px',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: generandoRate ? 'not-allowed' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontFamily: 'Sora, sans-serif'
+              }}
+            >
+              <CreditCard size={14} style={{ color: '#a78bfa' }} />
+              <span>Rata Unica Annuale</span>
+            </button>
+          </div>
         </div>
       ) : (
         <div style={st.scrollWrap}>
@@ -893,10 +1125,10 @@ function CellEditor({ cell, rata, unita, getProprietario, getInquilino, configPa
         .update({ nome, cognome, email, telefono })
         .eq('id', activePayer.id);
       if (error) throw error;
-      alert('Anagrafica salvata con successo!');
+      toast.success('Anagrafica salvata con successo!');
       if (fetchUnita) await fetchUnita();
     } catch (err) {
-      alert("Errore durante il salvataggio dell'anagrafica: " + err.message);
+      toast.error("Errore durante il salvataggio dell'anagrafica: " + err.message);
     } finally {
       setSalvandoAnagrafica(false);
     }
@@ -1063,7 +1295,7 @@ function ProposteSollecitoModal({ proposte, condominio, invioMassivoStato, onClo
   const handleSubmit = (e) => {
     e.preventDefault();
     if (selezionati.length === 0) {
-      alert("Seleziona almeno un condomino da sollecitare.");
+      toast.error("Seleziona almeno un condomino da sollecitare.");
       return;
     }
     const proposteSelezionate = proposte

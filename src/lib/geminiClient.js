@@ -1,5 +1,5 @@
 // src/lib/geminiClient.js
-import { supabase } from './supabaseClient';
+import { supabase } from './supabaseClient.js';
 
 // ── Errore specifico per rate limit ──────────────────────────────────────
 export class RateLimitError extends Error {
@@ -56,7 +56,20 @@ async function callEdge(body) {
     if (error.status === 429 || error.message?.includes('429') || error.message?.includes('Troppe richieste')) {
       throw new RateLimitError(60);
     }
-    throw new Error(error.message || 'Errore durante la chiamata AI');
+    
+    // Tentativo di estrazione messaggio dal context di Supabase Functions
+    let errorMsg = error.message || 'Errore durante la chiamata AI';
+    try {
+      if (error.context && typeof error.context.json === 'function') {
+        const bodyErr = await error.context.json();
+        if (bodyErr?.error) {
+          errorMsg = typeof bodyErr.error === 'string' ? bodyErr.error : bodyErr.error.message || errorMsg;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(errorMsg);
   }
 
   if (data?.error) {
@@ -78,7 +91,7 @@ async function callEdge(body) {
  * @throws {RateLimitError} se il rate limit è raggiunto
  */
 export async function callGemini(prompt, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 2500, system, jsonMode, jsonSchema } = opts;
+  const { funzione, condominio_id, maxTokens = 4000, system, jsonMode, jsonSchema } = opts;
 
   const data = await callEdge({
     type:      'text',
@@ -110,7 +123,7 @@ export async function callGemini(prompt, opts = {}) {
  * @param {object} [opts]
  */
 export async function callGeminiWithHistory(messages, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 2500, system, jsonMode, jsonSchema } = opts;
+  const { funzione, condominio_id, maxTokens = 4000, system, jsonMode, jsonSchema } = opts;
 
   const data = await callEdge({
     type:     'history',
@@ -142,7 +155,7 @@ export async function callGeminiWithHistory(messages, opts = {}) {
  * NB: il path vision NON inoltra `system` → il chiamante accorpa system+user nel prompt.
  */
 export async function callGeminiVision(prompt, base64Image, mediaType, opts = {}) {
-  const { funzione, condominio_id, maxTokens = 1000, jsonMode, jsonSchema } = opts;
+  const { funzione, condominio_id, maxTokens = 4000, jsonMode, jsonSchema } = opts;
 
   const data = await callEdge({
     type:      'vision',
@@ -184,7 +197,7 @@ export async function callGeminiVision(prompt, base64Image, mediaType, opts = {}
  */
 export async function callGeminiDocument(prompt, base64Document, opts = {}) {
   const {
-    funzione, condominio_id, maxTokens = 1000, system,
+    funzione, condominio_id, maxTokens = 4000, system,
     mediaType = 'application/pdf', jsonMode, jsonSchema
   } = opts;
 

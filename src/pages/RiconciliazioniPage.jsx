@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Bot, Check, X, AlertTriangle, Calendar, Building2, Lightbulb, CheckCircle2, XCircle, User, RefreshCw, Plus, Settings, Link2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callGemini } from '../lib/geminiClient';
+import { pulisciEdEstraiJson } from '../lib/fileExtractor';
 import { trovaBestMatchFattura } from '../lib/autoMatchingEngine';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
 
@@ -130,9 +131,14 @@ ${JSON.stringify(fattureRimanenti.map(f => ({
 
 Abbina i movimenti alle fatture.`;
 
-        const risposta = await callGemini(userPrompt, { system: systemPrompt, maxTokens: 2048, funzione: 'riconcilia_uscite', condominio_id: condominioId });
-        const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
-        const suggerimentiAi = JSON.parse(clean);
+        const risposta = await callGemini(userPrompt, {
+          system: systemPrompt,
+          maxTokens: 4000,
+          funzione: 'riconcilia_uscite',
+          condominio_id: condominioId,
+          jsonMode: true,
+        });
+        const suggerimentiAi = pulisciEdEstraiJson(risposta, true);
 
         if (Array.isArray(suggerimentiAi)) {
           suggerimentiAi.forEach(s => {

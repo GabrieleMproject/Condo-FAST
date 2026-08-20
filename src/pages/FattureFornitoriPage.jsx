@@ -213,7 +213,7 @@ export default function FattureFornitoriPage() {
           setUploadProgress(`${prefix}Estrazione nativa XML SDI (0ms)...`);
           try {
             const resXml = await parseFatturaXmlP7m(file);
-            datiAI = resXml.dati;
+            datiAI = resXml?.dati || resXml;
           } catch (xmlErr) {
             console.warn(`File XML ${file.name} non conforme a fattura:`, xmlErr.message);
             continue;

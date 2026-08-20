@@ -3,8 +3,8 @@
 
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { ArrowRightLeft, Plus, Edit3, Trash2, Home, Key, X, AlertTriangle, CheckCircle2, XCircle, Search, ClipboardList, Check } from 'lucide-react'
 import { callGemini } from '../lib/geminiClient'
+import { pulisciEdEstraiJson } from '../lib/fileExtractor'
 
 function renderDiffIcon(iconName, color, size = 20) {
   switch (iconName) {
@@ -196,15 +196,10 @@ Se non identifichi operazioni chiare, restituisci [].`
       const raw = await callGemini(prompt, {
         funzione: 'aggiornamento_anagrafica',
         condominio_id: condominioId,
-        maxTokens: 2000
+        maxTokens: 3000,
+        jsonMode: true,
       })
-      const parsed = JSON.parse(
-        raw.trim()
-          .replace(/^```json\s*/i, '')
-          .replace(/^```\s*/i, '')
-          .replace(/```\s*$/i, '')
-          .trim()
-      )
+      const parsed = pulisciEdEstraiJson(raw, true)
       if (!Array.isArray(parsed)) throw new Error('Risposta non valida')
       if (parsed.length === 0) {
         setError('Nessuna modifica rilevata. Prova ad essere più specifico (es: "dal 01/03/2025 int.4 nuovo proprietario Mario Rossi").')

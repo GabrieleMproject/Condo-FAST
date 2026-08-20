@@ -9,7 +9,8 @@
 import ExcelJS  from 'exceljs';
 import mammoth  from 'mammoth';
 import JSZip    from 'jszip';
-import { callGemini, callGeminiVision, callGeminiDocument } from './geminiClient';
+import { callGemini, callGeminiVision, callGeminiDocument } from './geminiClient.js';
+import { parseFatturaXmlP7m } from './xmlFatturaParser.js';
 
 /**
  * Applica pre-processing grafico tramite Canvas JavaScript per migliorare nitidezza,
@@ -100,7 +101,7 @@ async function withAutoRetry(fn, maxRetries = 2) {
       const isJsonError = err instanceof SyntaxError || err.message?.includes('JSON');
       
       if (!isRateLimit && !isJsonError) {
-        // Se non è un errore "guaribile" o temporaneo, scartiamo subito
+        // Se non è un errore temporaneo o di parsing, rilancia subito
         throw err;
       }
       
@@ -118,28 +119,74 @@ async function withAutoRetry(fn, maxRetries = 2) {
   }
 }
 
-function pulisciEdEstraiJson(risposta, isArray = false) {
+/**
+ * Normalizza qualsiasi formato numerico (stringa o numero) in float JavaScript valido
+ */
+export function pulisciNumero(val) {
+  if (typeof val === 'number') return isNaN(val) ? null : val;
+  if (!val && val !== 0) return null;
+  let s = String(val).trim();
+  // Rimuovi simboli valuta, spazi, apici
+  s = s.replace(/[€$£\s'"`]/g, '');
+  // Formato italiano 1.234,56 o 1.234.567,89
+  if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(s)) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (/^-?\d+,\d+$/.test(s)) {
+    // Formato 123,45
+    s = s.replace(',', '.');
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+/**
+ * Normalizza stringhe data in formato standard ISO YYYY-MM-DD
+ */
+export function pulisciData(val) {
+  if (!val || typeof val !== 'string') return null;
+  const s = val.trim();
+  // GG/MM/AAAA o GG-MM-AAAA -> YYYY-MM-DD
+  const itMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (itMatch) {
+    return `${itMatch[3]}-${itMatch[2].padStart(2, '0')}-${itMatch[1].padStart(2, '0')}`;
+  }
+  // YYYY-MM-DD o YYYY-MM-DDT...
+  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+  return s;
+}
+
+export function pulisciEdEstraiJson(risposta, isArray = false) {
   const rawStr = String(risposta || '').trim();
   
-  // TENTATIVO 1: Parsing diretto (Gemini API jsonMode spesso restituisce un JSON perfetto, non tocchiamolo)
-  let cleanRawStr = rawStr.replace(/```json\s*|\s*```/g, '').trim();
+  // TENTATIVO 1: Parsing diretto (Gemini API jsonMode spesso restituisce un JSON perfetto)
+  let cleanRawStr = rawStr.replace(/^```json\s*|^```\s*|\s*```$/gi, '').trim();
   try {
     const directParsed = JSON.parse(cleanRawStr);
     return arricchisciConAvvisi(directParsed);
-  } catch (directErr) {
-    // Il parsing pulito ha fallito, proviamo con le euristiche di recupero
+  } catch {
+    // Continua con euristiche avanzate di recupero
   }
 
   // TENTATIVO 2: Euristiche di recupero aggressivo
   const regex = isArray ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
   const match = rawStr.match(regex);
   let clean = match ? match[0] : cleanRawStr;
+
+  // Se non c'è match completo o se la stringa è troncata a metà:
+  if (!match) {
+    const startIdx = isArray ? rawStr.indexOf('[') : rawStr.indexOf('{');
+    if (startIdx !== -1) {
+      clean = rawStr.substring(startIdx);
+    }
+  }
   
   // Forza chiavi senza virgolette ad avere virgolette doppie (es: { fornitore: ... } -> { "fornitore": ... })
   clean = clean.replace(/([{,]\s*)([a-zA-Z0-9_-]+)\s*:/g, '$1"$2":');
   
-  // Converti valori con virgolette singole in virgolette doppie (solo se non contengono l'apostrofo all'interno, per evitare rotture come "L'Oasi")
-  // NOTA: evitiamo di usare regex distruttive su apici interni, convertiamo solo : '...' -> : "..."
+  // Converti valori con virgolette singole in virgolette doppie se non creano problemi
   clean = clean.replace(/:\s*'([^']*)'/g, ': "$1"');
   
   // Rimuovi virgolette orfane su righe separate prima della chiusura parentesi graffa
@@ -148,7 +195,53 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
   // Rimuovi virgole pendenti (trailing commas)
   clean = clean.replace(/,\s*\}/g, '}').replace(/,\s*\]/g, ']');
 
-  // Bilancia le parentesi graffe per tagliare caratteri spuri extra alla fine (es: }})
+  // Auto-riparazione di parentesi non chiuse (per risposte AI troncate al limite token)
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  let isEscaped = false;
+
+  for (let i = 0; i < clean.length; i++) {
+    const char = clean[i];
+    if (inString) {
+      if (char === '\\' && !isEscaped) {
+        isEscaped = true;
+      } else {
+        if (char === '"' && !isEscaped) {
+          inString = false;
+        }
+        isEscaped = false;
+      }
+    } else {
+      if (char === '"') {
+        inString = true;
+      } else if (char === '{') {
+        openBraces++;
+      } else if (char === '}') {
+        if (openBraces > 0) openBraces--;
+      } else if (char === '[') {
+        openBrackets++;
+      } else if (char === ']') {
+        if (openBrackets > 0) openBrackets--;
+      }
+    }
+  }
+
+  // Se siamo rimasti dentro una stringa non chiusa, chiudiamola
+  if (inString) {
+    clean += '"';
+  }
+  // Chiudiamo tutti i bracket e le graffe rimaste aperte in ordine inverso
+  while (openBrackets > 0) {
+    clean += ']';
+    openBrackets--;
+  }
+  while (openBraces > 0) {
+    clean += '}';
+    openBraces--;
+  }
+
+  // Bilancia per tagliare caratteri spuri extra alla fine (es: }})
   clean = clean.trim();
   if (!isArray && clean.startsWith('{') && clean.endsWith('}')) {
     let braceCount = 0;
@@ -172,17 +265,17 @@ function pulisciEdEstraiJson(risposta, isArray = false) {
     const parsed = JSON.parse(clean);
     return arricchisciConAvvisi(parsed);
   } catch (err) {
-    console.error('[pulisciEdEstraiJson] Parsing fallito anche dopo euristiche.', err);
+    console.error('[pulisciEdEstraiJson] Parsing fallito anche dopo euristiche.', err, '\nTesto grezzo:', rawStr);
     throw err;
   }
 }
 
 /**
- * Aggiunge i warning di pertinenza/congruenza (se restituiti dal modello)
+ * Aggiunge i warning di pertinenza/congruenza e preserva is_valido
  */
 function arricchisciConAvvisi(parsed) {
   if (!parsed || typeof parsed !== 'object') return parsed;
-  if (!('is_valido' in parsed) && !('is_valido_per_slot' in parsed) && !('congruenza_condominio' in parsed)) return parsed;
+  if (Array.isArray(parsed)) return parsed;
 
   const isValidoSlot = parsed.is_valido !== false && parsed.is_valido_per_slot !== false;
   const pertine = parsed.congruenza_condominio;
@@ -204,12 +297,18 @@ function arricchisciConAvvisi(parsed) {
 
   let resData = parsed.dati !== undefined ? parsed.dati : parsed;
   
-  if (warningPertinenza) {
-    if (resData && typeof resData === 'object') {
-      resData._warningPertinenza = warningPertinenza;
-    } else {
-      resData = { dati: resData, _warningPertinenza: warningPertinenza };
-    }
+  if (resData && typeof resData === 'object' && !Array.isArray(resData)) {
+    if ('is_valido' in parsed) resData.is_valido = parsed.is_valido;
+    if (parsed.motivo_errore) resData.motivo_errore = parsed.motivo_errore;
+    if (parsed.tipo_documento_rilevato) resData.tipo_documento_rilevato = parsed.tipo_documento_rilevato;
+    if (warningPertinenza) resData._warningPertinenza = warningPertinenza;
+  } else if (!resData) {
+    resData = {
+      is_valido: parsed.is_valido ?? false,
+      motivo_errore: parsed.motivo_errore || 'Nessun dato estratto',
+      tipo_documento_rilevato: parsed.tipo_documento_rilevato || 'sconosciuto',
+      _warningPertinenza: warningPertinenza
+    };
   }
 
   return resData;
@@ -444,13 +543,19 @@ async function preparaContenuto(file) {
 
     case 'csv':
     case 'txt':
+    case 'xml':
+    case 'p7m':
       return { contenuto: await fileToText(file), isVisual: false };
 
     case 'image':
       return { contenuto: await fileToBase64(file), isVisual: true, mediaType: file.type || 'image/jpeg' };
 
     default:
-      throw new Error(`Formato file non supportato: ${file.name}`);
+      try {
+        return { contenuto: await fileToText(file), isVisual: false };
+      } catch {
+        throw new Error(`Formato file non supportato: ${file.name}`);
+      }
   }
 }
 
@@ -577,15 +682,56 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
       ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema })
       : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_movimenti', maxTokens: 8000, jsonMode: true, jsonSchema });
 
-    return pulisciEdEstraiJson(risposta, true);
+    const parsed = pulisciEdEstraiJson(risposta, false);
+    
+    // Normalizzazione robusta dell'oggetto movimenti
+    let result = parsed;
+    if (Array.isArray(parsed)) {
+      result = { movimenti: parsed, is_valido: true };
+    } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.dati?.movimenti)) {
+      result = parsed.dati;
+      if ('is_valido' in parsed) result.is_valido = parsed.is_valido;
+      if (parsed.motivo_errore) result.motivo_errore = parsed.motivo_errore;
+      if (parsed._warningPertinenza) result._warningPertinenza = parsed._warningPertinenza;
+    }
+
+    if (result && typeof result === 'object') {
+      if (result.saldo_iniziale != null) result.saldo_iniziale = pulisciNumero(result.saldo_iniziale);
+      if (result.saldo_finale != null) result.saldo_finale = pulisciNumero(result.saldo_finale);
+      if (result.data_saldo_iniziale) result.data_saldo_iniziale = pulisciData(result.data_saldo_iniziale);
+      if (result.data_saldo_finale) result.data_saldo_finale = pulisciData(result.data_saldo_finale);
+      if (result.periodo_da) result.periodo_da = pulisciData(result.periodo_da);
+      if (result.periodo_a) result.periodo_a = pulisciData(result.periodo_a);
+
+      if (Array.isArray(result.movimenti)) {
+        result.movimenti = result.movimenti.map(m => {
+          const numImp = pulisciNumero(m.importo) ?? 0;
+          return {
+            ...m,
+            importo: numImp,
+            saldo: pulisciNumero(m.saldo),
+            data: pulisciData(m.data) || m.data,
+            tipo: m.tipo || (numImp >= 0 ? 'entrata' : 'uscita')
+          };
+        });
+      }
+    }
+    return result;
   });
 }
 
 // ─── FATTURA FORNITORE: Estrai dati da fattura ────────────────────────────────
 export async function estraiFattura(file, condominioCorrente = null) {
-  await validaFilePreVolo(file, 15); // max 15MB per fatture e scontrini
+  await validaFilePreVolo(file, 25); // max 25MB per fatture e scontrini
   if (!validaMimeType(file)) {
-    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, DOCX, JPG, PNG o XLSX.`);
+    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XML, P7M, DOCX, JPG, PNG o XLSX.`);
+  }
+
+  // Se è una fattura elettronica SDI (.xml o .p7m), usa direttamente il parser nativo senza chiamare l'AI
+  const tipoDoc = getTipoFile(file);
+  if (tipoDoc === 'xml' || tipoDoc === 'p7m') {
+    const resXml = await parseFatturaXmlP7m(file);
+    return resXml?.dati || resXml;
   }
 
   const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
@@ -684,7 +830,19 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
       ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema })
       : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema });
 
-    return pulisciEdEstraiJson(risposta, false);
+    const parsed = pulisciEdEstraiJson(risposta, false);
+    if (parsed && typeof parsed === 'object') {
+      if (parsed.importo_totale != null) parsed.importo_totale = pulisciNumero(parsed.importo_totale);
+      if (parsed.importo_iva != null) parsed.importo_iva = pulisciNumero(parsed.importo_iva);
+      if (parsed.importo_netto != null) parsed.importo_netto = pulisciNumero(parsed.importo_netto);
+      if (parsed.aliquota_iva != null) parsed.aliquota_iva = pulisciNumero(parsed.aliquota_iva);
+      if (parsed.imponibile_ritenuta != null) parsed.imponibile_ritenuta = pulisciNumero(parsed.imponibile_ritenuta);
+      if (parsed.aliquota_ritenuta_percentuale != null) parsed.aliquota_ritenuta_percentuale = pulisciNumero(parsed.aliquota_ritenuta_percentuale);
+      if (parsed.importo_ritenuta != null) parsed.importo_ritenuta = pulisciNumero(parsed.importo_ritenuta);
+      if (parsed.data_fattura) parsed.data_fattura = pulisciData(parsed.data_fattura);
+      if (parsed.data_scadenza) parsed.data_scadenza = pulisciData(parsed.data_scadenza);
+    }
+    return parsed;
   });
 }
 
@@ -786,7 +944,18 @@ Regole sul SEGNO del saldo (CRUCIALE — rispetta i segni del prospetto):
       ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema })
       : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_saldi_consuntivo', maxTokens: 3000, jsonMode: true, jsonSchema });
 
-    return pulisciEdEstraiJson(risposta, false);
+    const parsed = pulisciEdEstraiJson(risposta, false);
+    if (parsed && typeof parsed === 'object') {
+      if (parsed.anno != null) parsed.anno = pulisciNumero(parsed.anno);
+      if (parsed.saldo_cassa_finale != null) parsed.saldo_cassa_finale = pulisciNumero(parsed.saldo_cassa_finale);
+      if (Array.isArray(parsed.saldi_unita)) {
+        parsed.saldi_unita = parsed.saldi_unita.map(u => ({
+          ...u,
+          saldo: pulisciNumero(u.saldo) ?? 0
+        }));
+      }
+    }
+    return parsed;
   });
 }// ── Estrae il PROFILO/struttura del modello consuntivo dell'amministratore ──
 // Ritorna { etichette_categorie, ordine_categorie, sezioni:{...flags}, note, motivazione_condofast }.
@@ -925,7 +1094,9 @@ REGOLE CRITICHE PER I CONTATTI (EVITA ERRORI O OMISSIONI):
     }
 
     const parsed = pulisciEdEstraiJson(raw, false);
-    return Array.isArray(parsed) ? parsed : [];
+    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed?.dati)) return parsed.dati;
+    return [];
   });
 }
 
@@ -1013,7 +1184,15 @@ Se nel documento è presente una tabella con più colonne millesimali (es. colon
     }
 
     const parsed = pulisciEdEstraiJson(raw, false);
-    return parsed?.tabelle && Array.isArray(parsed.tabelle) ? parsed.tabelle : [];
+    const tabelle = parsed?.tabelle || (Array.isArray(parsed) ? parsed : []);
+    return (tabelle || []).map(tab => ({
+      ...tab,
+      righe: (tab.righe || []).map(r => ({
+        ...r,
+        valore: pulisciNumero(r.valore) ?? 0,
+        superficie_mq: pulisciNumero(r.superficie_mq)
+      }))
+    }));
   });
 }
 

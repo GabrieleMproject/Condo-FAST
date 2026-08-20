@@ -3,6 +3,7 @@ import { useDocumenti } from '../hooks/useDocumenti'
 import { usePlan } from '../hooks/usePlan'
 import UpgradeTeaserModal from './UpgradeTeaserModal'
 import { callGemini } from '../lib/geminiClient'
+import { pulisciEdEstraiJson } from '../lib/fileExtractor'
 import { 
   FileSignature, Search, Sparkles, Paperclip, CheckCircle2, 
   AlertTriangle, Trash2, Calendar, FileText, Loader2, X, Plus,
@@ -343,21 +344,21 @@ Formato JSON atteso:
       // 4. Chiamata a Gemini
       const rispostaRaw = await callGemini(userPrompt, {
         system: systemPrompt,
-        maxTokens: 1500,
+        maxTokens: 2500,
         funzione: 'ricerca_verbali_ai',
-        condominio_id: condominioId
+        condominio_id: condominioId,
+        jsonMode: true,
       });
 
       // 5. Parsing del JSON
       let result;
       try {
-        const cleanJson = rispostaRaw.replace(/```json|```/g, '').trim();
-        result = JSON.parse(cleanJson);
+        result = pulisciEdEstraiJson(rispostaRaw, false);
       } catch (err) {
         console.error('Errore parsing JSON risposta Gemini:', err, rispostaRaw);
         result = {
           risposta: rispostaRaw,
-          trovato: rispostaRaw.toLowerCase().includes('non ho trovato') ? false : true,
+          trovato: !rispostaRaw.toLowerCase().includes('non ho trovato'),
           riferimenti: []
         };
       }

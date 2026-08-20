@@ -351,30 +351,30 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
 
         if (tipo === 'xml' || tipo === 'p7m') {
           const resXml = await parseFatturaXmlP7m(item.file)
-          estratto = resXml.dati
+          estratto = resXml?.dati || resXml
         } else {
           fileCompresso = await comprimiImmagine(item.file)
           estratto = await estraiFattura(fileCompresso)
         }
 
         const CAT_VALIDE = CATEGORIE.map(c => c.value)
-        const catSpesa = CAT_VALIDE.includes(estratto.categoria) ? estratto.categoria : 'ordinaria'
+        const catSpesa = (estratto?.categoria && CAT_VALIDE.includes(estratto.categoria)) ? estratto.categoria : 'ordinaria'
 
-        const trovata = trovaTabellaFuzzy(tabelleAssociate, estratto.descrizione || estratto.fornitore, 'millesimi')
+        const trovata = trovaTabellaFuzzy(tabelleAssociate, estratto?.descrizione || estratto?.fornitore, 'millesimi')
         const defaultTabella = tabelleAssociate.find(t => !t.id.startsWith('doc_'))?.id || tabelleAssociate[0]?.id || ''
         const tabId = trovata?.id || defaultTabella
 
         const formItem = {
-          descrizione: estratto.descrizione || item.form.descrizione,
-          importo: estratto.importo_totale != null ? String(estratto.importo_totale) : '',
-          data_spesa: estratto.data_fattura || item.form.data_spesa,
-          fornitore: estratto.fornitore || '',
-          numero_fattura: estratto.numero_fattura || '',
+          descrizione: estratto?.descrizione || item.form.descrizione,
+          importo: estratto?.importo_totale != null ? String(estratto.importo_totale) : '',
+          data_spesa: estratto?.data_fattura || item.form.data_spesa,
+          fornitore: estratto?.fornitore || '',
+          numero_fattura: estratto?.numero_fattura || '',
           categoria: catSpesa,
           criterio: 'millesimi',
           tabella_millesimale_id: tabId,
           percentuale_millesimi: 100,
-          note: estratto.note || '',
+          note: estratto?.note || '',
         }
 
         const initialRipartizioni = calcolaRipartizioniBatch(formItem.importo, formItem.criterio, formItem.tabella_millesimale_id, formItem.percentuale_millesimi, {}, unita, tabelleAssociate)

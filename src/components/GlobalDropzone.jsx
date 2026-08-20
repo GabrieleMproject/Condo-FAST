@@ -98,7 +98,7 @@ export default function GlobalDropzone() {
       let estratto = null
       if (info === 'xml' || info === 'p7m') {
         const resXml = await parseFatturaXmlP7m(fileToSend)
-        estratto = resXml.dati
+        estratto = resXml?.dati || resXml
       } else {
         if (info === 'image') {
           fileToSend = await comprimiImmagine(fileToSend)
@@ -106,11 +106,12 @@ export default function GlobalDropzone() {
         estratto = await estraiFattura(fileToSend)
       }
       
-      if (estratto && estratto.is_valido !== false) {
+      if (estratto && estratto.is_valido !== false && (estratto.fornitore || estratto.importo_totale != null || estratto.descrizione)) {
         setExtractedData(estratto)
         toast.success('Dati estratti con successo!')
       } else {
-        toast.error('Documento non riconosciuto come fattura.')
+        const motivo = estratto?.motivo_errore || estratto?._warningPertinenza?.slotErrato?.motivo || 'Documento non riconosciuto come fattura.'
+        toast.error(motivo)
         setIsModalOpen(false)
       }
     } catch (err) {

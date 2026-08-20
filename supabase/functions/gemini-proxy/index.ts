@@ -72,9 +72,9 @@ function getModel(funzione?: string): string {
     'struttura_tabella_millesimale'
   ];
   if (funzione && proFunctions.includes(funzione)) {
-    return 'gemini-pro-latest';
+    return 'gemini-1.5-pro-latest';
   }
-  return 'gemini-flash-latest';
+  return 'gemini-2.0-flash';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -275,12 +275,11 @@ serve(async (req) => {
     // Modelli di riserva validi in ordine di preferenza per API Gemini v1beta
     const fallbackModels = [
       'gemini-2.0-flash',
-      'gemini-2.0-flash-lite',
       'gemini-1.5-flash-latest',
       'gemini-1.5-flash',
-      'gemini-flash-latest',
+      'gemini-2.0-flash-lite',
       'gemini-1.5-pro-latest',
-      'gemini-pro-latest',
+      'gemini-1.5-pro',
     ]
 
     let currentModel = model
@@ -297,7 +296,7 @@ serve(async (req) => {
 
       for (const targetModel of modelsToTry) {
         try {
-          const res = await fetch(
+          let res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${key}`,
             {
               method: 'POST',
@@ -306,11 +305,36 @@ serve(async (req) => {
             }
           )
 
+          // Fallback resiliente: se 400 con responseSchema, prova senza responseSchema
+          if (!res.ok && res.status === 400 && geminiPayload.generationConfig?.responseSchema) {
+            console.warn(`[gemini-proxy] 400 con responseSchema su ${targetModel}. Riprovo in pura jsonMode...`)
+            const relaxedPayload = {
+              ...geminiPayload,
+              generationConfig: {
+                ...geminiPayload.generationConfig,
+                responseMimeType: 'application/json',
+              }
+            }
+            delete relaxedPayload.generationConfig.responseSchema
+
+            const relaxedRes = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${key}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(relaxedPayload),
+              }
+            )
+            if (relaxedRes.ok) {
+              res = relaxedRes
+            }
+          }
+
           if (res.ok) {
             response = res
             currentModel = targetModel
             if (targetModel !== model || keyIdx > 0) {
-              console.log(`[gemini-proxy] Failover riuscito! Chiave: ${keyLabel}, Modello: ${targetModel}`)
+              console.log(`[gemini-proxy] Chiamata riuscita! Chiave: ${keyLabel}, Modello: ${targetModel}`)
             }
             break keyLoop
           } else {
@@ -327,8 +351,8 @@ serve(async (req) => {
             errorsLog.push(`[Key ${keyLabel} - ${targetModel}] Status ${res.status}: ${errText.slice(0, 120)}`)
 
             if (!isQuotaOrUnavailable && res.status >= 400 && res.status < 500 && res.status !== 429 && res.status !== 404) {
-              // Errore client 4xx diverso da rate limit (es. bad request) -> non ha senso provare altre chiavi per lo stesso payload
-              break keyLoop
+              // Prova comunque prossimo modello in caso di incompatibilità specifica del modello
+              continue
             }
           }
         } catch (callErr: any) {

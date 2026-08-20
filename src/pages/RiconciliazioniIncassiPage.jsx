@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Bot, Check, X, AlertTriangle, Lightbulb, CheckCircle2, XCircle, Calendar, User, RefreshCw, UserPlus, Settings, Banknote, Link2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { callGemini } from '../lib/geminiClient';
+import { pulisciEdEstraiJson } from '../lib/fileExtractor';
 import WizardRiconciliazioneModal from '../components/WizardRiconciliazioneModal';
 import toast from 'react-hot-toast';
 
@@ -190,11 +191,11 @@ Abbina i bonifici alle celle.`;
         maxTokens: 4000,
         funzione: 'riconcilia_incassi',
         condominio_id: condominioId,
+        jsonMode: true,
       });
 
-      const clean = risposta.replace(/```json\n?|\n?```/g, '').trim();
-      let suggerimenti = JSON.parse(clean);
-      if (!Array.isArray(suggerimenti)) suggerimenti = [];
+      const parsed = pulisciEdEstraiJson(risposta, true);
+      let suggerimenti = Array.isArray(parsed) ? parsed : [];
       suggerimenti = suggerimenti.filter(s => (s.confidence_score ?? 0) >= 30 && s.movimento_id && s.rata_unita_id);
 
       if (suggerimenti.length > 0) {

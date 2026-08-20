@@ -265,12 +265,16 @@ export default function SpeseGlobalPage() {
   const matchCondominio = (datiEstratti, condominiList) => {
     if (!datiEstratti || !condominiList || condominiList.length === 0) return null
 
-    // Pulisci il codice fiscale per confronto esatto (solo cifre)
-    const cfEstratto = String(datiEstratti.condominio_destinatario_codice_fiscale || '').replace(/\D/g, '')
-    if (cfEstratto) {
+    // Confronto Codice Fiscale (sia numerico 11 cifre sia alfanumerico 16 caratteri)
+    const rawCF = String(datiEstratti.condominio_destinatario_codice_fiscale || '').replace(/[\s.-]/g, '').toUpperCase()
+    if (rawCF) {
       const trovatoCF = condominiList.find(c => {
-        const cfCondo = String(c.codice_fiscale || '').replace(/\D/g, '')
-        return cfCondo && cfCondo === cfEstratto
+        const cfCondo = String(c.codice_fiscale || '').replace(/[\s.-]/g, '').toUpperCase()
+        if (!cfCondo) return false
+        if (cfCondo === rawCF) return true
+        const numCondo = cfCondo.replace(/\D/g, '')
+        const numEstratto = rawCF.replace(/\D/g, '')
+        return numCondo && numEstratto && numCondo === numEstratto
       })
       if (trovatoCF) return trovatoCF.id
     }
@@ -381,12 +385,11 @@ export default function SpeseGlobalPage() {
         setQueue(prev => [newItem, ...prev.filter(q => q.id !== newDocId)])
         setActiveQueueId(newDocId)
 
-        // Esegui estrazione (nativa XML per SDI, o AI per PDF/immagini)
         let estratto = null
         const tipoDoc = getTipoFile(file)
         if (tipoDoc === 'xml' || tipoDoc === 'p7m') {
           const resXml = await parseFatturaXmlP7m(file)
-          estratto = resXml.dati
+          estratto = resXml?.dati || resXml
         } else {
           estratto = await estraiFattura(file)
         }

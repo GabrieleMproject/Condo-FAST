@@ -101,3 +101,25 @@ gantt
 *   Tutti i controlli sui dati sono deterministici. L'AI propone, l'amministratore conferma.
 *   **Helper RLS:** Tutte le query su tabelle sensibili devono essere protette da RLS basate su `amministratore_id` tramite la funzione PostgreSQL `user_owns_condominio(condominio_id)`.
 *   I collaboratori ereditano i limiti del piano dell'amministratore titolare del servizio e vedono solo i condomini a loro esplicitamente associati tramite la tabella `collaboratori_condomini`.
+
+---
+
+## 5. Monetizzazione FinTech, Hub SDI & Accordi di Partnership
+
+### A. Integrazione Hub SDI & Abbattimento Costi AI
+* **Provider:** Aruba Business / Namirial (Codice Destinatario 7 cifre `KRRH6B9` / canale dedicato).
+* **Conservazione Digitale:** AgID decennale inclusa tramite DocFly/Partner con manleva totale.
+* **Pricing:** Incluso nativamente nel canone SaaS. Il parsing algoritmico a costo zero degli XML abbatte i costi di inferenza AI dell'80%.
+
+### B. Open Banking (PSD2) & Accordi Bancari
+* **Tecnologia:** Gateway Open Banking (Fabrick / CBI Globe) per sincronizzazione notturna estratti conto e pagamenti PISP 1-Click.
+* **Monetizzazione:** Bounty/Referral fee da 50€ a 150€ per nuovo conto corrente condominiale aperto + accordi annuali di co-marketing/esclusiva con grandi istituti (Intesa Sanpaolo / UniCredit).
+
+### C. Embedded Marketplace & Sponsor Network
+* Monetizzazione ad alto margine su canoni annuali di presenza esclusiva e lead generation per fornitori certificati (Assicurazioni fabbricato, Energia/Gas parti comuni, Ascensori).
+* Contratti annuali a 12 mesi con canoni a scaglioni di crescita (legati al numero di condomini attivi).
+
+### D. Accordo Strategico Studio Gemelli (Term Sheet 5% - 10k€)
+* **Investimento:** € 10.000,00 + IVA una tantum per Licenza Founder a vita + Opzione/Diritto di partecipazione al 5% nella NewCo CondoFast (95% in capo a M Project SRL).
+* **Provvigioni Referral:** 50 € / 100 € / 150 € all'anno per cliente attivo portato, fino all'efficacia dell'ingresso societario.
+

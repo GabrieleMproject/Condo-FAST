@@ -152,7 +152,7 @@ export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, d
           const res = await callGeminiDocument(
             `Estrai la tabella millesimale associando le quote al seguente elenco di unità del condominio:\n${JSON.stringify(unita.map(u => ({ id: u.id, numero: u.numero, scala: u.scala, piano: u.piano, tipo: u.tipo })))}\n\nRestituisci ESCLUSIVAMENTE un oggetto JSON: { "nome_tabella": "${tab.nome}", "tipo": "generale", "unita_millesimi": [ { "unita_id": "uuid", "valore": 123.45 } ] }`,
             base64,
-            { maxTokens: 2000, mediaType: 'application/pdf', funzione: 'estrai_tabella_millesimale', condominio_id: condominioId }
+            { maxTokens: 4000, mediaType: 'application/pdf', funzione: 'estrai_tabella_millesimale', condominio_id: condominioId }
           )
           testo = res || ''
         }
@@ -177,9 +177,10 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   "unita_millesimi": [
     { "unita_id": "uuid_dell_unita", "valore": 125.50 }
   ]
-}`
+}
+`
 
-      const responseText = await callGemini(prompt, { maxTokens: 2500, funzione: 'struttura_tabella_millesimale', condominio_id: condominioId })
+      const responseText = await callGemini(prompt, { maxTokens: 4000, funzione: 'struttura_tabella_millesimale', condominio_id: condominioId })
       const cleanJson = responseText.replace(/```json/gi, '').replace(/```/g, '').trim()
       const parsed = JSON.parse(cleanJson)
 
@@ -1002,7 +1003,7 @@ Formato JSON:
         system: systemPrompt,
         funzione: 'criterio_spesa',
         condominio_id: condominioId,
-        maxTokens: 1000,
+        maxTokens: 4000,
       })
       const clean = risposta.replace(/```json|```/g, '').trim()
       const sug = JSON.parse(clean)

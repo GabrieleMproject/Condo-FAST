@@ -877,7 +877,7 @@ Tabelle millesimali disponibili: ${tabelleMillesimali?.map(t => t.nome).join(', 
 ${testoRegolamento ? `Regolamento condominiale:\n${testoRegolamento.substring(0, 3000)}` : 'Nessun regolamento disponibile. Usa il Codice Civile.'}`;
 
   return await withAutoRetry(async () => {
-    const risposta = await callGemini(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 1500, jsonMode: true, jsonSchema });
+    const risposta = await callGemini(userPrompt, { system: systemPrompt, funzione: 'criterio_ripartizione', maxTokens: 4000, jsonMode: true, jsonSchema });
     return pulisciEdEstraiJson(risposta, false);
   });
 }

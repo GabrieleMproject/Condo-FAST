@@ -7,23 +7,30 @@ const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 const supabase = createClient(url, key)
 
 async function test() {
-  const candidateCols = [
-    'id', 'email', 'full_name', 'nome', 'cognome', 'ragione_sociale', 'ruolo', 'role',
-    'avatar_url', 'created_at', 'onboarding_state', 'onboarding_step', 'onboarding_completed',
-    'has_completed_onboarding', 'settings', 'studio_nome', 'partita_iva', 'codice_fiscale'
+  const functionsToTest = [
+    { funzione: 'estrai_fattura', prompt: 'Estrai dati da questa fattura' },
+    { funzione: 'criterio_spesa', prompt: 'Descrizione: Pulizia scale. Quale tabella millesimale usare?' },
+    { funzione: 'criterio_ripartizione', prompt: 'Descrizione: Manutenzione ascensore. Quale tabella millesimale?' }
   ]
 
-  const existingCols = []
-  for (const col of candidateCols) {
-    const { error } = await supabase.from('profiles').select(col).limit(1)
-    if (!error) {
-      existingCols.push(col)
-    } else {
-      console.log(`Profile column ${col} FAIL:`, error.message)
-    }
+  for (const fn of functionsToTest) {
+    const res = await fetch('https://btlxynwpcoiodvwvbnbe.supabase.co/functions/v1/gemini-proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CondoFAST-Demo': 'true'
+      },
+      body: JSON.stringify({
+        prompt: fn.prompt,
+        funzione: fn.funzione,
+        maxTokens: 4000,
+        max_tokens: 4000
+      })
+    })
+    const data = await res.json()
+    console.log(`Funzione ${fn.funzione}: Status=${res.status}, modelUsed=${data.modelUsed}, finishReason=${data.finishReason}`)
+    console.log(`Response preview:`, data.content?.[0]?.text?.substring(0, 100))
   }
-
-  console.log('\nValid columns on profiles:', existingCols)
 }
 
 test()

@@ -178,6 +178,7 @@
         <p class="lead reveal" data-delay="2">CondoFAST è il gestionale condominiale sviluppato per amministratori professionisti. L'assistente AI estrae dati, prepara registrazioni contabili e riparti, ma ogni operazione entra a sistema solo con la tua approvazione esplicita. 100% conforme all'art. 1130-bis c.c. e Legge 220/2012.</p>
         <div style="margin-top:24px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;" class="reveal" data-delay="3">
           <a class="btn btn--primary" href="https://condofast.app/register">Inizia la prova gratuita di 14 giorni →</a>
+          <button class="btn btn--ghost" data-open-modal="modal-demo-ai" type="button">✦ Prova Estrattore Fatture AI</button>
           <button class="btn btn--ghost" data-open-modal="modal-roi-calc" type="button">Calcola Risparmio ROI</button>
         </div>
       </div>
@@ -255,6 +256,7 @@
                   <li>Riparto millesimale integrato automatico</li>
                   <li>Proposte sempre modificabili dall'amministratore</li>
                 </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Prova l'estrazione con una tua fattura →</button>
               </div>
               <div class="feature-row__media scroll-reveal" data-delay="1">
                 <div class="workflow" aria-label="Esempio di flusso: l'AI propone una registrazione e l'amministratore conferma">
@@ -311,6 +313,7 @@
                   <li>Calcolo ritenute d'acconto 4% istantaneo</li>
                   <li>Scadenzario tributi F24 per il 16 del mese</li>
                 </ul>
+                <button class="btn-module-demo" data-open-modal="modal-demo-ai" type="button">✦ Testa la lettura fatture e ritenute F24 →</button>
               </div>
               <div class="feature-row__media scroll-reveal" data-delay="1">
                 <div class="workflow">
@@ -686,23 +689,20 @@
         <h3 id="modal-demo-title-f" style="font-size:1.65rem;font-weight:800;margin-top:6px;color:#fff">Carica qualsiasi Fattura o Scontrino</h3>
         <p style="color:var(--muted);font-size:0.92rem;margin-top:4px">Trascina o seleziona una tua fattura (PDF, PNG, JPG) per testare l'estrazione contabile ed il riparto millesimale immediato:</p>
       </div>
-      <div class="demo-dropzone-wrapper disabled-privacy" id="demo-dropzone-wrapper">
-        <div class="demo-dropzone disabled-privacy" id="demo-dropzone">
+      <!-- AREA DRAG & DROP FATTURA / SCONTRINO UTENTE (SUBITO ATTIVA) -->
+      <div class="demo-dropzone-wrapper" id="demo-dropzone-wrapper">
+        <div class="demo-dropzone" id="demo-dropzone">
           <input type="file" id="user-doc-input" accept=".pdf,.png,.jpg,.jpeg,.webp">
           <div class="scanner-line" id="scanner-line"></div>
           <div class="dropzone-icon">✦</div>
           <div style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:4px">Trascina qui la tua Fattura o Scontrino di Prova</div>
           <div style="color:var(--muted);font-size:0.85rem">Oppure <span style="color:var(--accent);text-decoration:underline">fai clic qui per selezionare un file dal tuo dispositivo</span></div>
-          <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF e Immagini fino a 15 MB · Nessun dato è salvato o usato per addestramenti. (10 prove gratuite incluse)</div>
+          <div style="margin-top:10px;font-size:0.75rem;color:#64748b">Supporta PDF e Immagini fino a 15 MB · 10 prove gratuite incluse</div>
         </div>
-        <div class="demo-dropzone-overlay" id="demo-dropzone-overlay" data-action="privacy-alert"></div>
       </div>
 
-      <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <input type="checkbox" id="privacy-consent-checkbox" style="accent-color:var(--accent);width:16px;height:16px">
-        <label for="privacy-consent-checkbox" style="font-size:0.85rem;color:var(--text-color);margin:0;cursor:pointer;line-height:1.4">
-          Ho letto e accetto i <a href="privacy.html" style="color:var(--accent);text-decoration:underline">Termini e Privacy Policy</a> per l'elaborazione temporanea del documento a scopo dimostrativo.
-        </label>
+      <div style="margin-top: 10px; text-align: center; font-size: 0.8rem; color: var(--muted); line-height: 1.4;">
+        <strong style="color: var(--text);">Conformità GDPR (Art. 13):</strong> Il documento viene elaborato temporaneamente in memoria per la sola dimostrazione AI e non viene memorizzato né usato per addestramento. <a href="privacy.html" target="_blank" style="color:var(--accent);text-decoration:underline">Informativa Privacy</a>.
       </div>
 
       <div style="text-align:center;margin-top:14px">

@@ -2,7 +2,16 @@
 
 export function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || '';
-  const allowedOrigins = ['https://condofast.app', 'https://www.condofast.app', 'https://condofast.it', 'https://www.condofast.it', 'http://localhost:8080', 'http://localhost:5173'];
+  const allowedOrigins = [
+    'https://condofast.app',
+    'https://www.condofast.app',
+    'https://condofast.it',
+    'https://www.condofast.it',
+    'https://mprojectsrl.it',
+    'https://www.mprojectsrl.it',
+    'http://localhost:8080',
+    'http://localhost:5173'
+  ];
   
   // ATTENZIONE: Rimossa la wildcard *.vercel.app per ragioni di sicurezza. Solo domini espliciti permessi.
   const isAllowed = allowedOrigins.includes(origin);

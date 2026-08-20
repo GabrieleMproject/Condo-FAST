@@ -107,7 +107,7 @@ export default function DashboardPage() {
         // 3. Carica fatture fornitori
         const fatData = handleDbResult(await supabase
           .from('fatture_fornitori')
-          .select('id, condominio_id, importo_totale, stato, ritenuta_acconto, data_pagamento, ritenuta_pagata, fornitore'))
+          .select('id, condominio_id, importo_totale, stato, ritenuta_acconto, data_fattura, f24_url, fornitore'))
 
         // 4. Carica saldi cassa (ordinati per data_movimento decrescente per prendere il più recente)
         const saldoData = handleDbResult(await supabase
@@ -216,10 +216,10 @@ export default function DashboardPage() {
 
         const f24Pendenti = (fatData || []).filter(f => {
           if (!f.ritenuta_acconto || parseFloat(f.ritenuta_acconto) <= 0) return false
-          if (f.ritenuta_pagata === true) return false
+          if (f.f24_url) return false
           if (f.stato !== 'pagata') return false
 
-          const dataPag = f.data_pagamento ? new Date(f.data_pagamento) : null
+          const dataPag = f.data_fattura ? new Date(f.data_fattura) : null
           if (!dataPag || isNaN(dataPag)) return false
           return dataPag.getMonth() === mesePrecedente && dataPag.getFullYear() === annoPrecedente
         })

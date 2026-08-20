@@ -77,14 +77,14 @@ export function useNotifiche() {
         { data: esercizi },
         { data: movimenti },
       ] = await Promise.all([
-        // F24: fatture con ritenuta, pagate, F24 non ancora presentato
+        // F24: fatture con ritenuta, F24 non ancora quietanzato
         settings.f24_ritenute?.enabled
           ? supabase
               .from('fatture_fornitori')
-              .select('id, condominio_id, ritenuta_acconto, stato, ritenuta_pagata, data_pagamento')
+              .select('id, condominio_id, ritenuta_acconto, stato, data_fattura, f24_url')
               .in('condominio_id', condominiIds)
               .gt('ritenuta_acconto', 0)
-              .neq('ritenuta_pagata', true)
+              .is('f24_url', null)
           : Promise.resolve({ data: [] }),
 
         // Rate scadute non pagate
@@ -127,7 +127,8 @@ export function useNotifiche() {
       const dati = {
         fatture: (fatture || []).map(f => ({
           ...f,
-          f24_presentato: f.ritenuta_pagata,
+          f24_presentato: !!f.f24_url,
+          data_pagamento: f.data_fattura,
           condomini: { nome: condominiMap.get(f.condominio_id) || 'Condominio' }
         })),
         rateUnita: (rateUnita || []).map(ru => ({

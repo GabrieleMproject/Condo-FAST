@@ -118,30 +118,9 @@ export function useMasterclass() {
         // Fallback silente
       }
     }
-
-    async function fetchFromDb() {
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('onboarding_state')
-          .eq('id', user.id)
-          .single()
-
-        if (profile?.onboarding_state) {
-          const state = profile.onboarding_state
-          if (state.currentStep !== undefined) setCurrentStep(state.currentStep)
-          if (state.completedSteps) setCompletedSteps(state.completedSteps)
-          if (state.isGuidanceActive !== undefined) setIsGuidanceActive(state.isGuidanceActive)
-        }
-      } catch (err) {
-        console.error('Errore nel recupero dello stato masterclass da DB:', err)
-      }
-    }
-
-    fetchFromDb()
   }, [user])
 
-  // Salva i progressi su DB e localStorage ad ogni cambio di stato
+  // Salva i progressi su localStorage ad ogni cambio di stato
   const saveProgress = useCallback(async (newStep, newCompleted, newActiveState) => {
     if (!user) return
     const stepToSave = newStep !== undefined ? newStep : currentStep
@@ -158,19 +137,6 @@ export function useMasterclass() {
     // Salva in localStorage per reattività istantanea
     localStorage.setItem(`condofast_masterclass_${user.id}`, JSON.stringify(payload))
     localStorage.setItem(`condosmart_masterclass_${user.id}`, JSON.stringify(payload))
-
-    // Salva su Supabase DB in background
-    setSavingProgress(true)
-    try {
-      await supabase
-        .from('profiles')
-        .update({ onboarding_state: payload })
-        .eq('id', user.id)
-    } catch (err) {
-      console.error('Errore durante il salvataggio dei progressi Masterclass su DB:', err)
-    } finally {
-      setSavingProgress(false)
-    }
   }, [user, currentStep, completedSteps, isGuidanceActive])
 
   // Marca uno step come completato e passa al successivo

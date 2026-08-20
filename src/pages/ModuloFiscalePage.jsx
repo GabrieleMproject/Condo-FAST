@@ -227,7 +227,7 @@ export default function ModuloFiscalePage() {
   const ritenutePagateList = useMemo(() => {
     return fatture.filter(f => {
       if (f.stato !== 'pagata') return false
-      if (!f.ritenuta_pagata) {
+      if (!f.f24_url) {
         // Fallback: se l'F24 abbinato risulta pagato, consideriamo la ritenuta pagata
         const abb = abbinamenti.find(a => a.fattura_id === f.id)
         if (abb) {
@@ -239,7 +239,7 @@ export default function ModuloFiscalePage() {
       return true
     }).filter(f => {
       if (condominioSelezionato && f.condominio_id !== condominioSelezionato) return false
-      const annoPagamento = f.data_pagamento ? f.data_pagamento.substring(0, 4) : null
+      const annoPagamento = (f.data_fattura || '').substring(0, 4)
       return annoPagamento === annoSelezionato
     })
   }, [fatture, abbinamenti, f24Deleghe, condominioSelezionato, annoSelezionato])
@@ -366,7 +366,6 @@ export default function ModuloFiscalePage() {
       if (collegateIds.length > 0) {
         const { error: updFattErr } = await supabase.from('fatture_fornitori')
           .update({ 
-            ritenuta_pagata: true,
             f24_url: path
           })
           .in('id', collegateIds)

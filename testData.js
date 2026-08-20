@@ -7,11 +7,23 @@ const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 const supabase = createClient(url, key)
 
 async function test() {
-  const { data: profiles, error: err1 } = await supabase.from('profiles').select('id, email').limit(10)
-  const { data: condomini, error: err2 } = await supabase.from('condomini').select('id, nome').limit(10)
-  
-  console.log("Profiles:", profiles?.length || 0, err1?.message)
-  console.log("Condomini:", condomini?.length || 0, err2?.message)
+  const candidateCols = [
+    'id', 'email', 'full_name', 'nome', 'cognome', 'ragione_sociale', 'ruolo', 'role',
+    'avatar_url', 'created_at', 'onboarding_state', 'onboarding_step', 'onboarding_completed',
+    'has_completed_onboarding', 'settings', 'studio_nome', 'partita_iva', 'codice_fiscale'
+  ]
+
+  const existingCols = []
+  for (const col of candidateCols) {
+    const { error } = await supabase.from('profiles').select(col).limit(1)
+    if (!error) {
+      existingCols.push(col)
+    } else {
+      console.log(`Profile column ${col} FAIL:`, error.message)
+    }
+  }
+
+  console.log('\nValid columns on profiles:', existingCols)
 }
 
 test()

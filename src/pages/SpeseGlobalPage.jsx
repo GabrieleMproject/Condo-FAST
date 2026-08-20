@@ -645,12 +645,7 @@ export default function SpeseGlobalPage() {
         stato: 'attesa',
         pdf_url: newPath,
         ai_dati_estratti: aiDatiEstratti,
-        imponibile_ritenuta: aiDatiEstratti?.imponibile_ritenuta || 0.00,
-        aliquota_ritenuta_percentuale: aiDatiEstratti?.aliquota_ritenuta_percentuale || 0.00,
-        importo_ritenuta: aiDatiEstratti?.importo_ritenuta || 0.00,
-        ritenuta_acconto: aiDatiEstratti?.importo_ritenuta || 0.00,
-        codice_tributo_f24: aiDatiEstratti?.codice_tributo_f24 || null,
-        data_pagamento: null,
+        ritenuta_acconto: aiDatiEstratti?.importo_ritenuta || 0.00
       }
 
       const { error: invoiceErr } = await supabase.from('fatture_fornitori').insert(datiFattura)

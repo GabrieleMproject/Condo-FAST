@@ -48,8 +48,19 @@ async function logAiCall({ funzione, condominio_id, inputTokens, outputTokens })
 
 // ── Helper condiviso: chiama la Edge Function ─────────────────────────────
 async function callEdge(body) {
+  const tokenLimit = body.maxTokens || body.max_tokens || 8192;
+  const isProFunction = ['ricerca_verbali_ai', 'criterio_ripartizione', 'struttura_tabella_millesimale'].includes(body.funzione);
+  const preferredModel = isProFunction ? 'gemini-1.5-pro-latest' : 'gemini-2.0-flash';
+
+  const payload = {
+    ...body,
+    maxTokens: tokenLimit,
+    max_tokens: tokenLimit,
+    model: body.model || preferredModel
+  };
+
   const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-    body,
+    body: payload,
   });
 
   if (error) {

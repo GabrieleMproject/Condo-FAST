@@ -97,11 +97,11 @@ async function withAutoRetry(fn, maxRetries = 2) {
     try {
       return await fn();
     } catch (err) {
-      const isRateLimit = err.name === 'RateLimitError' || err.message?.toLowerCase().includes('429');
-      const isJsonError = err instanceof SyntaxError || err.message?.includes('JSON');
+      const isRateLimit = err.name === 'RateLimitError' || err.message?.toLowerCase().includes('429') || err.message?.toLowerCase().includes('troppe richieste');
+      const isTransient = err instanceof SyntaxError || err.message?.includes('JSON') || err.message?.includes('token') || err.message?.includes('Edge Function error') || err.message?.includes('500') || err.message?.includes('503');
       
-      if (!isRateLimit && !isJsonError) {
-        // Se non è un errore temporaneo o di parsing, rilancia subito
+      if (!isRateLimit && !isTransient) {
+        // Se non è un errore temporaneo, rilancia subito
         throw err;
       }
       
@@ -171,17 +171,8 @@ export function pulisciEdEstraiJson(risposta, isArray = false) {
   }
 
   // TENTATIVO 2: Euristiche di recupero aggressivo
-  const regex = isArray ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
-  const match = rawStr.match(regex);
-  let clean = match ? match[0] : cleanRawStr;
-
-  // Se non c'è match completo o se la stringa è troncata a metà:
-  if (!match) {
-    const startIdx = isArray ? rawStr.indexOf('[') : rawStr.indexOf('{');
-    if (startIdx !== -1) {
-      clean = rawStr.substring(startIdx);
-    }
-  }
+  const startIdx = isArray ? cleanRawStr.indexOf('[') : cleanRawStr.indexOf('{');
+  let clean = startIdx !== -1 ? cleanRawStr.substring(startIdx) : cleanRawStr;
   
   // Forza chiavi senza virgolette ad avere virgolette doppie (es: { fornitore: ... } -> { "fornitore": ... })
   clean = clean.replace(/([{,]\s*)([a-zA-Z0-9_-]+)\s*:/g, '$1"$2":');
@@ -196,8 +187,7 @@ export function pulisciEdEstraiJson(risposta, isArray = false) {
   clean = clean.replace(/,\s*\}/g, '}').replace(/,\s*\]/g, ']');
 
   // Auto-riparazione di parentesi non chiuse (per risposte AI troncate al limite token)
-  let openBraces = 0;
-  let openBrackets = 0;
+  const closingStack = [];
   let inString = false;
   let isEscaped = false;
 
@@ -216,13 +206,15 @@ export function pulisciEdEstraiJson(risposta, isArray = false) {
       if (char === '"') {
         inString = true;
       } else if (char === '{') {
-        openBraces++;
+        closingStack.push('}');
       } else if (char === '}') {
-        if (openBraces > 0) openBraces--;
+        const lastIdx = closingStack.lastIndexOf('}');
+        if (lastIdx !== -1) closingStack.splice(lastIdx, 1);
       } else if (char === '[') {
-        openBrackets++;
+        closingStack.push(']');
       } else if (char === ']') {
-        if (openBrackets > 0) openBrackets--;
+        const lastIdx = closingStack.lastIndexOf(']');
+        if (lastIdx !== -1) closingStack.splice(lastIdx, 1);
       }
     }
   }
@@ -231,15 +223,18 @@ export function pulisciEdEstraiJson(risposta, isArray = false) {
   if (inString) {
     clean += '"';
   }
-  // Chiudiamo tutti i bracket e le graffe rimaste aperte in ordine inverso
-  while (openBrackets > 0) {
-    clean += ']';
-    openBrackets--;
+
+  // Rimuovi eventuali virgole o due punti pendenti prima di chiudere strutture
+  clean = clean.trim().replace(/,\s*$/, '').replace(/:\s*$/, ': null');
+
+  // Chiudiamo tutti i bracket e le graffe rimaste aperte in ordine LIFO inverso esatto
+  while (closingStack.length > 0) {
+    clean = clean.trim().replace(/,\s*$/, '');
+    clean += closingStack.pop();
   }
-  while (openBraces > 0) {
-    clean += '}';
-    openBraces--;
-  }
+
+  // Rimuovi eventuali virgole pendenti interne residue
+  clean = clean.replace(/,\s*\}/g, '}').replace(/,\s*\]/g, ']');
 
   // Bilancia per tagliare caratteri spuri extra alla fine (es: }})
   clean = clean.trim();

@@ -323,13 +323,12 @@ export default function SpeseGlobalPage() {
     return null
   }
 
-  // 5. Caricamento File manuale e analisi AI (aggiorna DB)
+  // 5. Caricamento File manuale e analisi AI (elaborazione locale immediata)
   const handleFilesAdded = async (fileList) => {
     const rawFiles = Array.from(fileList)
     if (rawFiles.length === 0) return
 
     setProcessing(true)
-    let shouldFetchDb = false
     try {
       const files = []
       for (const f of rawFiles) {
@@ -349,49 +348,13 @@ export default function SpeseGlobalPage() {
       const targetFiles = files.slice(0, Math.max(1, 20 - queue.length))
 
       for (const file of targetFiles) {
-        let path = null
-        let newDocId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)
-
-        try {
-          if (user?.id) {
-            path = `${user.id}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
-            const { error: uploadErr } = await supabase.storage
-              .from('inbox-ricezione')
-              .upload(path, file, { contentType: file.type || 'application/octet-stream' })
-            
-            if (!uploadErr) {
-              const { data: newDoc, error: insertErr } = await supabase
-                .from('inbox_documenti')
-                .insert({
-                  amministratore_id: user.id,
-                  file_path: path,
-                  file_name: file.name,
-                  stato: 'nuovo'
-                })
-                .select()
-                .single()
-
-              if (!insertErr && newDoc) {
-                newDocId = newDoc.id
-                shouldFetchDb = true
-              } else {
-                path = null
-              }
-            } else {
-              console.warn('[SpeseGlobalPage] Upload bucket inbox-ricezione non riuscito (fallback elaborazione locale):', uploadErr.message)
-              path = null
-            }
-          }
-        } catch (storageErr) {
-          console.warn('[SpeseGlobalPage] Upload storage bypass/fallback su elaborazione locale:', storageErr)
-          path = null
-        }
+        const newDocId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)
 
         // Aggiungi elemento alla coda locale come 'analyzing'
         const newItem = {
           id: newDocId,
           file,
-          file_path: path,
+          file_path: null,
           file_name: file.name,
           status: 'analyzing',
           errorMsg: null,
@@ -408,35 +371,43 @@ export default function SpeseGlobalPage() {
         setActiveQueueId(newDocId)
 
         let estratto = null
-        const tipoDoc = getTipoFile(file)
-        if (tipoDoc === 'xml' || tipoDoc === 'p7m') {
-          const resXml = await parseFatturaXmlP7m(file)
-          estratto = resXml?.dati || resXml
-        } else {
-          estratto = await estraiFattura(file)
+        try {
+          const tipoDoc = getTipoFile(file)
+          if (tipoDoc === 'xml' || tipoDoc === 'p7m') {
+            const resXml = await parseFatturaXmlP7m(file)
+            estratto = resXml?.dati || resXml
+          } else {
+            estratto = await estraiFattura(file)
+          }
+        } catch (itemErr) {
+          console.warn('[SpeseGlobalPage] Errore estrazione AI automatica, fallback su compilazione manuale:', itemErr)
+          estratto = {
+            fornitore: '',
+            data_fattura: new Date().toISOString().split('T')[0],
+            importo_totale: 0,
+            descrizione: file.name.replace(/\.[^/.]+$/, ''),
+            categoria: 'ordinaria'
+          }
+          toast.error(`Estrazione automatica non completata per ${file.name}. Puoi inserire i dati manualmente.`)
         }
 
-        const matchedCondoId = matchCondominio(estratto, condomini)
-        
+        // Determina il miglior condominio candidato
+        let targetCondoId = matchCondominio(estratto, condomini)
+        if (!targetCondoId && condomini.length === 1) {
+          targetCondoId = condomini[0].id
+        }
+
         let condoDati = { esercizi: [], unita: [], tabelle: [], documenti: [] }
         let selectedEsercizioId = null
         
-        if (matchedCondoId) {
-          condoDati = await fetchCondominioDati(matchedCondoId)
-          const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
-          selectedEsercizioId = aperto?.id || null
-        }
-
-        // Aggiorna DB con i dati estratti (se presente su DB)
-        if (path && typeof newDocId === 'string' && !newDocId.startsWith('local_')) {
-          await supabase
-            .from('inbox_documenti')
-            .update({
-              stato: 'rilevato',
-              condominio_id: matchedCondoId,
-              dati_estratti: estratto
-            })
-            .eq('id', newDocId)
+        if (targetCondoId) {
+          try {
+            condoDati = await fetchCondominioDati(targetCondoId)
+            const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
+            selectedEsercizioId = aperto?.id || null
+          } catch (cErr) {
+            console.error('Errore recupero dati condominio:', cErr)
+          }
         }
 
         // Aggiorna coda locale a 'ready'
@@ -446,7 +417,7 @@ export default function SpeseGlobalPage() {
               ...item,
               status: 'ready',
               extractedData: estratto,
-              condominioId: matchedCondoId,
+              condominioId: targetCondoId,
               esercizioId: selectedEsercizioId,
               esercizi: condoDati.esercizi,
               unita: condoDati.unita,
@@ -463,9 +434,6 @@ export default function SpeseGlobalPage() {
       toast.error('Impossibile elaborare il file: ' + err.message)
     } finally {
       setProcessing(false)
-      if (shouldFetchDb) {
-        fetchQueue()
-      }
     }
   }
 
@@ -1083,7 +1051,7 @@ export default function SpeseGlobalPage() {
                   documenti={activeItem.documenti}
                   fromFattura={true}
                   prefillData={null}
-                  initialFile={null} // Il file è già salvato su storage, non serve caricarlo di nuovo da client
+                  initialFile={activeItem.file || null}
                   initialAiDatiEstratti={activeItem.extractedData}
                   onSave={(payload, ripartizioni, file, ai) => handleSaveSpesaGlobale(activeItem.id, payload, ripartizioni, file, ai)}
                   onCancel={() => setActiveQueueId(null)}

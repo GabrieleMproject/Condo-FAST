@@ -10,11 +10,24 @@ async function test() {
         'X-CondoFAST-Demo': 'true'
       },
       body: JSON.stringify({
-        prompt: 'test pdf extraction',
+        prompt: 'Analizza questa fattura ed estrai i dati in JSON.',
         type: 'document',
         document: dummyPdf,
         mediaType: 'application/pdf',
-        model: 'gemini-flash-latest'
+        jsonMode: true,
+        jsonSchema: {
+          type: "OBJECT",
+          properties: {
+            is_valido: { type: "BOOLEAN" },
+            dati: {
+              type: "OBJECT",
+              properties: {
+                fornitore: { type: "STRING" }
+              }
+            }
+          },
+          required: ["is_valido"]
+        }
       })
     });
     

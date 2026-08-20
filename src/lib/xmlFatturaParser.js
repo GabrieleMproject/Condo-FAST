@@ -85,12 +85,28 @@ export async function parseFatturaXmlP7m(file) {
   const cessionario = getTag(xmlDoc, 'CessionarioCommittente');
   let condoNome = null;
   let condoCf = null;
+  let condoIndirizzo = null;
+  let condoCitta = null;
+  let condoCap = null;
+  let condoProvincia = null;
   if (cessionario) {
     const anagrafica = getTag(cessionario, 'Anagrafica');
     if (anagrafica) {
       condoNome = getVal(anagrafica, 'Denominazione') || [getVal(anagrafica, 'Nome'), getVal(anagrafica, 'Cognome')].filter(Boolean).join(' ');
     }
     condoCf = getVal(cessionario, 'CodiceFiscale');
+
+    const sede = getTag(cessionario, 'Sede');
+    if (sede) {
+      condoIndirizzo = getVal(sede, 'Indirizzo');
+      const civico = getVal(sede, 'NumeroCivico');
+      if (civico && condoIndirizzo && !condoIndirizzo.includes(civico)) {
+        condoIndirizzo = `${condoIndirizzo} ${civico}`;
+      }
+      condoCitta = getVal(sede, 'Comune');
+      condoCap = getVal(sede, 'CAP');
+      condoProvincia = getVal(sede, 'Provincia');
+    }
   }
 
   // 6. Estrazione Dati Generali Documento
@@ -196,6 +212,10 @@ export async function parseFatturaXmlP7m(file) {
       codice_tributo_f24: codiceTributoF24,
       condominio_destinatario_nome: condoNome,
       condominio_destinatario_codice_fiscale: condoCf,
+      condominio_destinatario_indirizzo: condoIndirizzo,
+      condominio_destinatario_citta: condoCitta,
+      condominio_destinatario_cap: condoCap,
+      condominio_destinatario_provincia: condoProvincia,
       fonte_estrazione: 'sdi_xml_nativo'
     }
   };

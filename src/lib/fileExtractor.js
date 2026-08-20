@@ -765,7 +765,11 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
      - "codice_tributo_f24":
        - "1019" per contratti d'appalto condominio (4%).
        - "1020" per contratti d'opera (4%).
-       - "1040" per compensi professionisti / lavoro autonomo (20%).`;
+       - "1040" per compensi professionisti / lavoro autonomo (20%).
+6. CONDOMINIO COMMITTENTE / DESTINATARIO:
+   - Estrai la ragione sociale completa del condominio committente ("condominio_destinatario_nome").
+   - Estrai il Codice Fiscale del condominio ("condominio_destinatario_codice_fiscale").
+   - Estrai l'indirizzo civico ("condominio_destinatario_indirizzo"), il Comune ("condominio_destinatario_citta"), il CAP ("condominio_destinatario_cap") e la Provincia ("condominio_destinatario_provincia").`;
 
   const jsonSchema = {
     type: "OBJECT",
@@ -802,9 +806,12 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
           aliquota_ritenuta_percentuale: { type: "NUMBER" },
           importo_ritenuta: { type: "NUMBER" },
           codice_tributo_f24: { type: "STRING", nullable: true, description: "1019, 1020 o 1040" },
-          condominio_destinatario_nome: { type: "STRING", nullable: true },
-          condominio_destinatario_codice_fiscale: { type: "STRING", nullable: true },
-          condominio_destinatario_indirizzo: { type: "STRING", nullable: true }
+          condominio_destinatario_nome: { type: "STRING", nullable: true, description: "Nome o ragione sociale del Condominio committente" },
+          condominio_destinatario_codice_fiscale: { type: "STRING", nullable: true, description: "Codice Fiscale del Condominio" },
+          condominio_destinatario_indirizzo: { type: "STRING", nullable: true, description: "Via/Piazza e numero civico del Condominio" },
+          condominio_destinatario_citta: { type: "STRING", nullable: true, description: "Città/Comune del Condominio" },
+          condominio_destinatario_cap: { type: "STRING", nullable: true, description: "CAP a 5 cifre del Condominio" },
+          condominio_destinatario_provincia: { type: "STRING", nullable: true, description: "Sigla Provincia 2 lettere del Condominio (es. MI, RM)" }
         },
         required: [
           "fornitore", "data_fattura", "importo_totale", "descrizione", "categoria"

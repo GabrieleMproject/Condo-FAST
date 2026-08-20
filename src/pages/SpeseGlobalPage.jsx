@@ -89,9 +89,22 @@ export default function SpeseGlobalPage() {
     if (location.state?.extractedFattura) {
       const incoming = location.state.extractedFattura
       const tempId = 'incoming_' + Date.now()
-      const matchedCondoId = matchCondominio(incoming, condomini)
+      let matchedCondoId = matchCondominio(incoming, condomini)
+      const isNuovo = !matchedCondoId
+      if (!matchedCondoId) {
+        matchedCondoId = '__NEW_CONDO__'
+      }
+
+      const nuovoDati = {
+        nome: incoming?.condominio_destinatario_nome || 'Nuovo Condominio da Fattura',
+        codice_fiscale: incoming?.condominio_destinatario_codice_fiscale || '',
+        indirizzo: incoming?.condominio_destinatario_indirizzo || '',
+        citta: incoming?.condominio_destinatario_citta || '',
+        cap: incoming?.condominio_destinatario_cap || '',
+        provincia: incoming?.condominio_destinatario_provincia || '',
+      }
       
-      fetchCondominioDati(matchedCondoId).then(condoDati => {
+      fetchCondominioDati(matchedCondoId !== '__NEW_CONDO__' ? matchedCondoId : null).then(condoDati => {
         const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
         const newItem = {
           id: tempId,
@@ -102,6 +115,8 @@ export default function SpeseGlobalPage() {
           errorMsg: null,
           extractedData: incoming,
           condominioId: matchedCondoId,
+          isNuovoCondominio: isNuovo,
+          nuovoCondominioDati: nuovoDati,
           esercizioId: aperto?.id || null,
           esercizi: condoDati.esercizi,
           unita: condoDati.unita,
@@ -110,7 +125,7 @@ export default function SpeseGlobalPage() {
         }
         setQueue(prev => [newItem, ...prev.filter(q => q.id !== tempId)])
         setActiveQueueId(tempId)
-        toast.success('Dati fattura precaricati nel modulo')
+        toast.success(isNuovo ? 'Nuovo condominio rilevato dalla fattura' : 'Dati fattura precaricati nel modulo')
       })
     }
   }, [location.state, condomini])
@@ -393,14 +408,24 @@ export default function SpeseGlobalPage() {
 
         // Determina il miglior condominio candidato
         let targetCondoId = matchCondominio(estratto, condomini)
-        if (!targetCondoId && condomini.length === 1) {
-          targetCondoId = condomini[0].id
+        const isNuovo = !targetCondoId
+        if (!targetCondoId) {
+          targetCondoId = '__NEW_CONDO__'
+        }
+
+        const nuovoCondoDati = {
+          nome: estratto?.condominio_destinatario_nome || 'Nuovo Condominio da Fattura',
+          codice_fiscale: estratto?.condominio_destinatario_codice_fiscale || '',
+          indirizzo: estratto?.condominio_destinatario_indirizzo || '',
+          citta: estratto?.condominio_destinatario_citta || '',
+          cap: estratto?.condominio_destinatario_cap || '',
+          provincia: estratto?.condominio_destinatario_provincia || '',
         }
 
         let condoDati = { esercizi: [], unita: [], tabelle: [], documenti: [] }
         let selectedEsercizioId = null
         
-        if (targetCondoId) {
+        if (targetCondoId && targetCondoId !== '__NEW_CONDO__') {
           try {
             condoDati = await fetchCondominioDati(targetCondoId)
             const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
@@ -418,6 +443,8 @@ export default function SpeseGlobalPage() {
               status: 'ready',
               extractedData: estratto,
               condominioId: targetCondoId,
+              isNuovoCondominio: isNuovo,
+              nuovoCondominioDati: nuovoCondoDati,
               esercizioId: selectedEsercizioId,
               esercizi: condoDati.esercizi,
               unita: condoDati.unita,
@@ -453,6 +480,26 @@ export default function SpeseGlobalPage() {
   const handleCondominioChange = async (itemId, condoId) => {
     setQueue(prev => prev.map(item => item.id === itemId ? { ...item, status: 'updating_data' } : item))
     
+    if (condoId === '__NEW_CONDO__') {
+      setQueue(prev => prev.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            status: 'ready',
+            condominioId: '__NEW_CONDO__',
+            isNuovoCondominio: true,
+            esercizioId: null,
+            esercizi: [],
+            unita: [],
+            tabelle: [],
+            documenti: []
+          }
+        }
+        return item
+      }))
+      return
+    }
+
     const condoDati = await fetchCondominioDati(condoId)
     const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
 
@@ -462,6 +509,7 @@ export default function SpeseGlobalPage() {
           ...item,
           status: 'ready',
           condominioId: condoId,
+          isNuovoCondominio: false,
           esercizioId: aperto?.id || null,
           esercizi: condoDati.esercizi,
           unita: condoDati.unita,
@@ -476,7 +524,7 @@ export default function SpeseGlobalPage() {
     if (itemId && !String(itemId).startsWith('local_')) {
       await supabase
         .from('inbox_documenti')
-        .update({ condominio_id: condoId || null })
+        .update({ condominio_id: (condoId && condoId !== '__NEW_CONDO__') ? condoId : null })
         .eq('id', itemId)
     }
   }
@@ -522,7 +570,7 @@ export default function SpeseGlobalPage() {
   }
 
   // 8. Salvataggio ed Inserimento Spesa + Fattura
-  const handleSaveSpesaGlobale = async (itemId, payload, ripartizioni, fileCaricato, aiDatiEstratti) => {
+  const handleSaveSpesaGlobale = async (itemId, payload, ripartizioni, fileCaricato, aiDatiEstratti, nuovoCondoInfo) => {
     const item = queue.find(q => q.id === itemId)
     if (!item) return
 
@@ -530,19 +578,90 @@ export default function SpeseGlobalPage() {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
 
+      let finalCondominioId = item.condominioId
+      let finalEsercizioId = item.esercizioId
+      let isNewCondoCreated = false
+      let createdCondoName = ''
+
+      // Se si tratta di un nuovo condominio non censito
+      if (finalCondominioId === '__NEW_CONDO__' || !finalCondominioId || nuovoCondoInfo) {
+        const condoNome = (nuovoCondoInfo?.nome || item.nuovoCondominioDati?.nome || item.extractedData?.condominio_destinatario_nome || 'Nuovo Condominio da Fattura').trim()
+        const condoCf = (nuovoCondoInfo?.codice_fiscale || item.nuovoCondominioDati?.codice_fiscale || item.extractedData?.condominio_destinatario_codice_fiscale || '').trim() || null
+        const condoIndirizzo = (nuovoCondoInfo?.indirizzo || item.nuovoCondominioDati?.indirizzo || item.extractedData?.condominio_destinatario_indirizzo || '').trim() || null
+        const condoCitta = (nuovoCondoInfo?.citta || item.nuovoCondominioDati?.citta || item.extractedData?.condominio_destinatario_citta || '').trim() || null
+        const condoCap = (nuovoCondoInfo?.cap || item.nuovoCondominioDati?.cap || item.extractedData?.condominio_destinatario_cap || '').trim() || null
+        const condoProvincia = (nuovoCondoInfo?.provincia || item.nuovoCondominioDati?.provincia || item.extractedData?.condominio_destinatario_provincia || '').trim() || null
+
+        // 1. Inserisci il nuovo record in condomini
+        const { data: newCondo, error: condoErr } = await supabase
+          .from('condomini')
+          .insert([{
+            nome: condoNome,
+            codice_fiscale: condoCf,
+            indirizzo: condoIndirizzo,
+            citta: condoCitta,
+            cap: condoCap,
+            provincia: condoProvincia,
+            amministratore_id: currentUser.id,
+            user_id: currentUser.id,
+            stato: 'attivo'
+          }])
+          .select()
+          .single()
+
+        if (condoErr) throw new Error(`Creazione condominio non riuscita: ${condoErr.message}`)
+        
+        finalCondominioId = newCondo.id
+        createdCondoName = newCondo.nome
+        isNewCondoCreated = true
+
+        // 2. Crea l'esercizio contabile per il condominio (anno della spesa o anno corrente)
+        const annoSpesa = new Date(payload.data_spesa || Date.now()).getFullYear() || new Date().getFullYear()
+        const { data: newEs, error: esErr } = await supabase
+          .from('esercizi')
+          .insert([{
+            condominio_id: newCondo.id,
+            anno: annoSpesa,
+            data_inizio: `${annoSpesa}-01-01`,
+            data_fine: `${annoSpesa}-12-31`,
+            stato: 'aperto',
+            tipo: 'ordinario'
+          }])
+          .select()
+          .single()
+
+        if (!esErr && newEs) {
+          finalEsercizioId = newEs.id
+        }
+
+        // 3. Crea la tabella millesimale generale di default
+        await supabase
+          .from('tabelle_millesimali')
+          .insert([{
+            condominio_id: newCondo.id,
+            nome: 'Tabella Generale (Proprietà)',
+            tipo_lavoro: 'generale',
+            descrizione: 'Tabella generale predefinita generata automaticamente'
+          }])
+          .catch(e => console.warn('[SpeseGlobalPage] Creazione tabella default bypassata:', e))
+
+        // 4. Aggiorna l'elenco condomini in stato globale
+        setCondomini(prev => [...prev, newCondo].sort((a, b) => a.nome.localeCompare(b.nome)))
+      }
+
       // a. Crea spesa condominiale
       const { data: nuovaSpesa, error: spesaErr } = await supabase
         .from('spese')
         .insert([{
-          condominio_id: item.condominioId,
-          esercizio_id: item.esercizioId,
+          condominio_id: finalCondominioId,
+          esercizio_id: finalEsercizioId,
           descrizione: payload.descrizione,
           importo: payload.importo,
           data_spesa: payload.data_spesa,
           categoria: payload.categoria,
           tipo_lavoro: payload.tipo_lavoro,
           criterio: payload.criterio,
-          tabella_millesimale_id: payload.tabella_millesimale_id,
+          tabella_millesimale_id: payload.tabella_millesimale_id || null,
           percentuale_millesimi: payload.percentuale_millesimi,
           fornitore: payload.fornitore,
           numero_fattura: payload.numero_fattura,
@@ -556,25 +675,27 @@ export default function SpeseGlobalPage() {
       if (spesaErr) throw spesaErr
       const spesaId = nuovaSpesa.id
 
-      // b. Registra ripartizioni
-      const righeRipartizioni = ripartizioni.map(r => ({
-        spesa_id: spesaId,
-        unita_id: r.unita_id,
-        importo: r.importo,
-        millesimi_usati: r.millesimi_usati || null,
-        override_manuale: r.override_manuale || false,
-        importo_override: r.importo_override || null
-      }))
+      // b. Registra ripartizioni (se presenti)
+      if (ripartizioni && ripartizioni.length > 0) {
+        const righeRipartizioni = ripartizioni.map(r => ({
+          spesa_id: spesaId,
+          unita_id: r.unita_id,
+          importo: r.importo,
+          millesimi_usati: r.millesimi_usati || null,
+          override_manuale: r.override_manuale || false,
+          importo_override: r.importo_override || null
+        }))
 
-      const { error: ripErr } = await supabase.from('ripartizioni').insert(righeRipartizioni)
-      if (ripErr) throw ripErr
+        const { error: ripErr } = await supabase.from('ripartizioni').insert(righeRipartizioni)
+        if (ripErr) console.warn('[SpeseGlobalPage] Inserimento ripartizioni non riuscito:', ripErr.message)
+      }
 
       // c. Gestione file e fattura fornitore
       let newPath = null
       const rawFileToUpload = fileCaricato || item.file
       if (rawFileToUpload) {
         try {
-          newPath = `${currentUser.id}/${item.condominioId}/${Date.now()}_${(item.file_name || rawFileToUpload.name).replace(/\s+/g, '_')}`
+          newPath = `${currentUser.id}/${finalCondominioId}/${Date.now()}_${(item.file_name || rawFileToUpload.name).replace(/\s+/g, '_')}`
           const { error: uploadErr } = await supabase.storage
             .from('fatture')
             .upload(newPath, rawFileToUpload, { contentType: rawFileToUpload.type || 'application/octet-stream' })
@@ -593,7 +714,7 @@ export default function SpeseGlobalPage() {
             .download(item.file_path)
 
           if (!downloadErr && fileData) {
-            newPath = `${currentUser.id}/${item.condominioId}/${Date.now()}_${item.file_name.replace(/\s+/g, '_')}`
+            newPath = `${currentUser.id}/${finalCondominioId}/${Date.now()}_${item.file_name.replace(/\s+/g, '_')}`
             await supabase.storage
               .from('fatture')
               .upload(newPath, fileData, { contentType: fileData.type })
@@ -629,7 +750,7 @@ export default function SpeseGlobalPage() {
 
       // Crea il record in fatture_fornitori
       const datiFattura = {
-        condominio_id: item.condominioId,
+        condominio_id: finalCondominioId,
         user_id: currentUser.id,
         spesa_id: spesaId,
         fornitore: payload.fornitore || 'Fornitore sconosciuto',
@@ -655,7 +776,7 @@ export default function SpeseGlobalPage() {
       if (itemId && !String(itemId).startsWith('local_')) {
         await supabase
           .from('inbox_documenti')
-          .update({ stato: 'inserito', spesa_id: spesaId })
+          .update({ stato: 'inserito', spesa_id: spesaId, condominio_id: finalCondominioId })
           .eq('id', itemId)
       }
 
@@ -669,7 +790,11 @@ export default function SpeseGlobalPage() {
         setActiveQueueId(null)
       }
       
-      toast.success('Spesa e fattura registrate correttamente!')
+      if (isNewCondoCreated) {
+        toast.success(`✨ Condominio "${createdCondoName}" creato con successo e spesa registrata!`)
+      } else {
+        toast.success('Spesa e fattura registrate correttamente!')
+      }
     } catch (err) {
       console.error('Errore durante il salvataggio:', err)
       toast.error('Errore durante il salvataggio: ' + err.message)
@@ -968,7 +1093,7 @@ export default function SpeseGlobalPage() {
                     Condominio Destinatario
                   </label>
                   <select
-                    value={activeItem.condominioId || ''}
+                    value={activeItem.condominioId || '__NEW_CONDO__'}
                     disabled={saving}
                     onChange={(e) => handleCondominioChange(activeItem.id, e.target.value)}
                     style={{
@@ -978,22 +1103,26 @@ export default function SpeseGlobalPage() {
                       opacity: saving ? 0.6 : 1
                     }}
                   >
-                    <option value="">-- Seleziona condominio --</option>
-                    {condomini.map(c => (
-                      <option key={c.id} value={c.id}>{c.nome}</option>
-                    ))}
+                    <option value="__NEW_CONDO__">
+                      ✨ [Nuovo Condominio] {activeItem.nuovoCondominioDati?.nome || activeItem.extractedData?.condominio_destinatario_nome || 'Crea da dati fattura'}
+                    </option>
+                    <optgroup label="Condomini Esistenti">
+                      {condomini.map(c => (
+                        <option key={c.id} value={c.id}>{c.nome}</option>
+                      ))}
+                    </optgroup>
                   </select>
-                  {!activeItem.condominioId && (
-                    <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <AlertTriangle size={10} /> Seleziona un condominio per procedere
+                  {(!activeItem.condominioId || activeItem.condominioId === '__NEW_CONDO__') && (
+                    <div style={{ color: '#7c3aed', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                      <Sparkles size={11} /> Nuovo condominio non censito: verrà creato automaticamente.
                     </div>
                   )}
-                  {activeItem.condominioId && !activeItem.extractedData?.condominio_destinatario_nome && (
+                  {activeItem.condominioId && activeItem.condominioId !== '__NEW_CONDO__' && !activeItem.extractedData?.condominio_destinatario_nome && (
                     <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 4 }}>
                       Condominio non rilevato in fattura, abbinamento manuale.
                     </div>
                   )}
-                  {activeItem.condominioId && activeItem.extractedData?.condominio_destinatario_nome && (
+                  {activeItem.condominioId && activeItem.condominioId !== '__NEW_CONDO__' && activeItem.extractedData?.condominio_destinatario_nome && (
                     <div style={{ color: '#10b981', fontSize: 10, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={10} /> Rilevato in fattura: "{activeItem.extractedData.condominio_destinatario_nome}"
                     </div>
@@ -1007,16 +1136,16 @@ export default function SpeseGlobalPage() {
                   <select
                     value={activeItem.esercizioId || ''}
                     onChange={(e) => handleEsercizioChange(activeItem.id, e.target.value)}
-                    disabled={saving || !activeItem.condominioId || activeItem.esercizi.length === 0}
+                    disabled={saving || !activeItem.condominioId || activeItem.condominioId === '__NEW_CONDO__' || activeItem.esercizi.length === 0}
                     style={{
                       width: '100%', background: 'var(--card-bg)', color: 'var(--text-primary)',
                       border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 10px',
                       fontSize: 13, fontFamily: 'Sora, sans-serif',
-                      opacity: (saving || !activeItem.condominioId || activeItem.esercizi.length === 0) ? 0.6 : 1
+                      opacity: (saving || !activeItem.condominioId || activeItem.condominioId === '__NEW_CONDO__' || activeItem.esercizi.length === 0) ? 0.6 : 1
                     }}
                   >
-                    {!activeItem.condominioId ? (
-                      <option value="">Scegli prima il condominio</option>
+                    {(!activeItem.condominioId || activeItem.condominioId === '__NEW_CONDO__') ? (
+                      <option value="">Creazione automatica esercizio corrente</option>
                     ) : activeItem.esercizi.length === 0 ? (
                       <option value="">Nessun esercizio presente</option>
                     ) : (
@@ -1027,7 +1156,7 @@ export default function SpeseGlobalPage() {
                       ))
                     )}
                   </select>
-                  {activeItem.condominioId && activeItem.esercizi.length === 0 && (
+                  {activeItem.condominioId && activeItem.condominioId !== '__NEW_CONDO__' && activeItem.esercizi.length === 0 && (
                     <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <AlertTriangle size={10} /> Configura almeno un esercizio in contabilità per questo condominio.
                     </div>
@@ -1036,19 +1165,31 @@ export default function SpeseGlobalPage() {
               </div>
 
               {/* Form Dettaglio Spese */}
-              {activeItem.condominioId && activeItem.esercizioId ? (
+              {activeItem.condominioId === '__NEW_CONDO__' || !activeItem.condominioId || (activeItem.condominioId && activeItem.esercizioId) ? (
                 <SpeseForm
-                  key={`${activeItem.id}_${activeItem.condominioId}_${activeItem.esercizioId}`}
+                  key={`${activeItem.id}_${activeItem.condominioId || 'new'}_${activeItem.esercizioId || 'new'}`}
                   esercizioId={activeItem.esercizioId}
-                  condominioId={activeItem.condominioId}
-                  tabelle={activeItem.tabelle}
-                  unita={activeItem.unita}
-                  documenti={activeItem.documenti}
+                  condominioId={activeItem.condominioId !== '__NEW_CONDO__' ? activeItem.condominioId : null}
+                  tabelle={activeItem.tabelle || []}
+                  unita={activeItem.unita || []}
+                  documenti={activeItem.documenti || []}
                   fromFattura={true}
+                  isNuovoCondominio={activeItem.condominioId === '__NEW_CONDO__' || !activeItem.condominioId || activeItem.isNuovoCondominio}
+                  nuovoCondominioDati={activeItem.nuovoCondominioDati || {
+                    nome: activeItem.extractedData?.condominio_destinatario_nome || 'Nuovo Condominio da Fattura',
+                    codice_fiscale: activeItem.extractedData?.condominio_destinatario_codice_fiscale || '',
+                    indirizzo: activeItem.extractedData?.condominio_destinatario_indirizzo || '',
+                    citta: activeItem.extractedData?.condominio_destinatario_citta || '',
+                    cap: activeItem.extractedData?.condominio_destinatario_cap || '',
+                    provincia: activeItem.extractedData?.condominio_destinatario_provincia || '',
+                  }}
+                  onNuovoCondominioChange={(updated) => {
+                    setQueue(prev => prev.map(q => q.id === activeItem.id ? { ...q, nuovoCondominioDati: updated } : q))
+                  }}
                   prefillData={null}
                   initialFile={activeItem.file || null}
                   initialAiDatiEstratti={activeItem.extractedData}
-                  onSave={(payload, ripartizioni, file, ai) => handleSaveSpesaGlobale(activeItem.id, payload, ripartizioni, file, ai)}
+                  onSave={(payload, ripartizioni, file, ai, nuovoCondo) => handleSaveSpesaGlobale(activeItem.id, payload, ripartizioni, file, ai, nuovoCondo)}
                   onCancel={() => setActiveQueueId(null)}
                 />
               ) : (

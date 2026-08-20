@@ -7,10 +7,22 @@ const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 const supabase = createClient(url, key)
 
 async function test() {
-  const { data, error } = await supabase.from('fornitori_partner').select('id').limit(1)
-  console.log('fornitori_partner result:', { data, error })
-}
+  const candidateCols = [
+    'id', 'nome', 'codice_fiscale', 'indirizzo', 'cap', 'citta', 'comune', 'provincia',
+    'amministratore_id', 'user_id', 'stato', 'iban', 'note', 'created_at'
+  ]
 
-test()
+  const existingCols = []
+  for (const col of candidateCols) {
+    const { error } = await supabase.from('condomini').select(col).limit(1)
+    if (!error) {
+      existingCols.push(col)
+    } else {
+      console.log(`Condomini column ${col} FAIL:`, error.message)
+    }
+  }
+
+  console.log('\nValid columns on condomini:', existingCols)
+}
 
 test()

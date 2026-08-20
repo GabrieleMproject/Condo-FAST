@@ -8,7 +8,7 @@ import { useUnsavedChanges } from '../hooks/useUnsavedChanges'
 import { useFormShortcuts } from '../hooks/useFormShortcuts'
 import StickyFormActionBar from './StickyFormActionBar'
 import { supabase } from '../lib/supabaseClient'
-import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet, Trash2, ChevronDown, ChevronUp, Layers, FileText, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Receipt, AlertTriangle, Bot, Sparkles, Check, Scale, Split, Loader2, FileSpreadsheet, Trash2, ChevronDown, ChevronUp, Layers, FileText, ShieldCheck, Building2 } from 'lucide-react'
 import AiBadge from './AiBadge'
 
 const CATEGORIE = [
@@ -115,7 +115,25 @@ const calcolaRipartizioniBatch = (importoVal, criterio, tabellaId, percentualeMi
   })
 }
 
-export default function SpeseForm({ esercizioId, condominioId, tabelle, unita, documenti, spesaInEdit, onSave, onSaveBatch, onCancel, fromFattura = false, prefillData = null, onRefreshTabelle = null, initialFile = null, initialAiDatiEstratti = null }) {
+export default function SpeseForm({
+  esercizioId,
+  condominioId,
+  tabelle,
+  unita,
+  documenti,
+  spesaInEdit,
+  onSave,
+  onSaveBatch,
+  onCancel,
+  fromFattura = false,
+  prefillData = null,
+  onRefreshTabelle = null,
+  initialFile = null,
+  initialAiDatiEstratti = null,
+  isNuovoCondominio = false,
+  nuovoCondominioDati = null,
+  onNuovoCondominioChange = null,
+}) {
   const [strutturandoDoc, setStrutturandoDoc] = useState(false)
 
   const tabelleAssociate = useMemo(() => {
@@ -229,6 +247,24 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     }
   }
 
+  // Stato del Nuovo Condominio rilevato dalla fattura
+  const [nuovoCondoState, setNuovoCondoState] = useState(() => ({
+    nome: nuovoCondominioDati?.nome || initialAiDatiEstratti?.condominio_destinatario_nome || 'Nuovo Condominio da Fattura',
+    codice_fiscale: nuovoCondominioDati?.codice_fiscale || initialAiDatiEstratti?.condominio_destinatario_codice_fiscale || '',
+    indirizzo: nuovoCondominioDati?.indirizzo || initialAiDatiEstratti?.condominio_destinatario_indirizzo || '',
+    citta: nuovoCondominioDati?.citta || initialAiDatiEstratti?.condominio_destinatario_citta || '',
+    cap: nuovoCondominioDati?.cap || initialAiDatiEstratti?.condominio_destinatario_cap || '',
+    provincia: nuovoCondominioDati?.provincia || initialAiDatiEstratti?.condominio_destinatario_provincia || '',
+  }))
+
+  const handleNuovoCondoField = (k, v) => {
+    setNuovoCondoState(prev => {
+      const next = { ...prev, [k]: v }
+      if (onNuovoCondominioChange) onNuovoCondominioChange(next)
+      return next
+    })
+  }
+
   const [form, setForm] = useState(() => {
     const CAT_VALIDE = CATEGORIE.map(c => c.value)
     const catSpesa = (initialAiDatiEstratti?.categoria && CAT_VALIDE.includes(initialAiDatiEstratti.categoria)) ? initialAiDatiEstratti.categoria : 'ordinaria'
@@ -240,7 +276,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
       data_spesa: initialAiDatiEstratti?.data_fattura || new Date().toISOString().split('T')[0],
       categoria: catSpesa,
       tipo_lavoro: 'ordinario',
-      criterio: 'millesimi',
+      criterio: isNuovoCondominio ? 'quota_fissa' : 'millesimi',
       tabella_millesimale_id: '',
       percentuale_millesimi: 100,
       fornitore: initialAiDatiEstratti?.fornitore || '',
@@ -256,7 +292,6 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [importiManuali, setImportiManuali] = useState({})
   const [fileCaricato, setFileCaricato] = useState(initialFile || null)
   const [aiDatiEstratti, setAiDatiEstratti] = useState(initialAiDatiEstratti || null)
-
 
   const [showAiModal, setShowAiModal] = useState(false)
   const [loadingAi, setLoadingAi] = useState(false)
@@ -983,12 +1018,19 @@ Formato JSON:
     if (!form.descrizione.trim()) e.descrizione = 'Campo obbligatorio'
     if (!form.importo || parseFloat(form.importo) <= 0) e.importo = 'Inserisci un importo valido'
     if (!form.data_spesa) e.data_spesa = 'Campo obbligatorio'
-    if (form.criterio !== 'quota_fissa' && form.criterio !== 'manuale' && !form.tabella_millesimale_id)
-      e.tabella = 'Seleziona una tabella millesimale'
-    if (form.criterio === 'manuale' && Math.abs(scartoManuale) > 0.01)
-      e.manuale = `La somma degli importi (€${totaleRipartito.toFixed(2)}) deve corrispondere al totale (€${(parseFloat(form.importo) || 0).toFixed(2)}). Scarto: €${scartoManuale.toFixed(2)}`
-    if (ripartizioni.length === 0)
-      e.ripartizioni = 'Impossibile ripartire la spesa: verifica che la tabella millesimale selezionata contenga valori validi.'
+    
+    if (!isNuovoCondominio) {
+      if (form.criterio !== 'quota_fissa' && form.criterio !== 'manuale' && !form.tabella_millesimale_id)
+        e.tabella = 'Seleziona una tabella millesimale'
+      if (form.criterio === 'manuale' && Math.abs(scartoManuale) > 0.01)
+        e.manuale = `La somma degli importi (€${totaleRipartito.toFixed(2)}) deve corrispondere al totale (€${(parseFloat(form.importo) || 0).toFixed(2)}). Scarto: €${scartoManuale.toFixed(2)}`
+      if (ripartizioni.length === 0)
+        e.ripartizioni = 'Impossibile ripartire la spesa: verifica che la tabella millesimale selezionata contenga valori validi.'
+    } else {
+      if (!nuovoCondoState.nome?.trim()) {
+        e.nuovoCondoNome = 'Inserisci il nome del nuovo condominio'
+      }
+    }
     
     if (duplicateWarning && !forceSave) {
       e.duplicate = 'Rilevato potenziale duplicato. Conferma con il checkbox sotto per salvare comunque.'
@@ -1027,7 +1069,7 @@ Formato JSON:
           ? { override_manuale: true, importo_override: r.importo_override ?? r.importo }
           : {}),
       }))
-      await onSave(payload, ripartDaSalvare, fileCaricato, aiDatiEstratti)
+      await onSave(payload, ripartDaSalvare, fileCaricato, aiDatiEstratti, isNuovoCondominio ? nuovoCondoState : null)
       if (clearDraft) clearDraft()
     } finally {
       setSaving(false)
@@ -1390,6 +1432,92 @@ Formato JSON:
             <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
           </div>
 
+        </div>
+      )}
+
+      {/* ── Nuovo Condominio Rilevato da Fattura ── */}
+      {isNuovoCondominio && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(59, 130, 246, 0.06))',
+          border: '1px solid rgba(124, 58, 237, 0.35)',
+          borderRadius: 12,
+          padding: '16px 20px',
+          marginBottom: 24,
+          boxShadow: '0 4px 16px rgba(124, 58, 237, 0.08)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#7c3aed', fontWeight: 600, fontSize: 14 }}>
+              <Building2 size={18} />
+              <span>Nuovo Condominio Rilevato da Fattura</span>
+              <span style={{ fontSize: 11, background: '#7c3aed22', color: '#7c3aed', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
+                NON PRESENTE NEL GESTIONALE
+              </span>
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Verrà creato automaticamente al salvataggio
+            </span>
+          </div>
+
+          <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-secondary)' }}>
+            I dati anagrafici del condominio destinatario sono stati estratti automaticamente dalla fattura. Puoi verificarli o modificarli prima di salvare.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Nome Condominio *</label>
+              <input
+                value={nuovoCondoState.nome || ''}
+                onChange={e => handleNuovoCondoField('nome', e.target.value)}
+                placeholder="Es. Condominio Stella Alpina"
+                style={{ ...inputStyle, fontSize: 13, borderColor: errors.nuovoCondoNome ? '#ef4444' : 'var(--border-color)' }}
+              />
+              {errors.nuovoCondoNome && (
+                <div style={{ color: '#ef4444', fontSize: 11, marginTop: 3 }}>{errors.nuovoCondoNome}</div>
+              )}
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Codice Fiscale</label>
+              <input
+                value={nuovoCondoState.codice_fiscale || ''}
+                onChange={e => handleNuovoCondoField('codice_fiscale', e.target.value)}
+                placeholder="Es. 97812340581"
+                style={{ ...inputStyle, fontSize: 13 }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Indirizzo</label>
+              <input
+                value={nuovoCondoState.indirizzo || ''}
+                onChange={e => handleNuovoCondoField('indirizzo', e.target.value)}
+                placeholder="Es. Via Roma 10"
+                style={{ ...inputStyle, fontSize: 13 }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Città / CAP / Prov</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  value={nuovoCondoState.citta || ''}
+                  onChange={e => handleNuovoCondoField('citta', e.target.value)}
+                  placeholder="Città"
+                  style={{ ...inputStyle, flex: 2, fontSize: 13 }}
+                />
+                <input
+                  value={nuovoCondoState.cap || ''}
+                  onChange={e => handleNuovoCondoField('cap', e.target.value)}
+                  placeholder="CAP"
+                  style={{ ...inputStyle, width: 65, fontSize: 13 }}
+                />
+                <input
+                  value={nuovoCondoState.provincia || ''}
+                  onChange={e => handleNuovoCondoField('provincia', e.target.value.toUpperCase())}
+                  placeholder="PR"
+                  maxLength={2}
+                  style={{ ...inputStyle, width: 50, fontSize: 13, textTransform: 'uppercase' }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1786,12 +1914,38 @@ Formato JSON:
           onClick={handleSalva}
           disabled={saving}
           style={{
-            background: saving ? '#1e3a6e' : '#2563eb', color: '#fff', border: 'none',
-            borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 600,
-            cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Sora, sans-serif'
+            background: saving
+              ? '#1e3a6e'
+              : isNuovoCondominio
+              ? 'linear-gradient(135deg, #7c3aed, #4f46e5)'
+              : '#2563eb',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            padding: '10px 24px',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: saving ? 'not-allowed' : 'pointer',
+            fontFamily: 'Sora, sans-serif',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: isNuovoCondominio ? '0 4px 14px rgba(124, 58, 237, 0.4)' : 'none'
           }}
         >
-          {saving ? 'Salvataggio...' : 'Salva spesa'}
+          {saving ? (
+            <>
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+              <span>Salvataggio...</span>
+            </>
+          ) : isNuovoCondominio ? (
+            <>
+              <Sparkles size={16} />
+              <span>Crea condominio e salva spesa</span>
+            </>
+          ) : (
+            <span>{spesaInEdit ? 'Salva modifiche' : 'Salva spesa'}</span>
+          )}
         </button>
       </div>
 

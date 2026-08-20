@@ -8,7 +8,7 @@
 
 ## 1. DEFINIZIONI ED IDENTIFICAZIONE DEI CONTRAENTI
 
-- **Fornitore del Servizio:** **M PROJECT S.R.L.** (di seguito indicata come **"M PROJECT SRL"**, **"CondoFAST"** o **"Fornitore"**), con sede legale in `[INSERIRE SEDE LEGALE]`, P.IVA / C.F. `[INSERIRE P.IVA / CF]`, PEC: `[INSERIRE EMAIL PEC]`, Email Assistenza: `supporto@condofast.it`.
+- **Fornitore del Servizio:** **M PROJECT S.R.L.** (di seguito indicata come **"M PROJECT SRL"**, **"CondoFAST"** o **"Fornitore"**), con sede legale in Via Civati 23, 22031 Albavilla (CO), P.IVA / C.F. 04314510134, PEC: `infomproject@pec.it`, Email Assistenza: `supporto@condofast.it`.
 - **Cliente / Utente:** L’Amministratore di Condominio (persona fisica o società di amministrazione condominiale) o lo Studio Professionale registrato sulla Piattaforma che utilizza il Servizio nell'esercizio della propria attività professionale o imprenditoriale (Trattamento B2B).
 - **Condominio:** L'ente di gestione o fabbricato amministrato dal Cliente ed inserito sulla Piattaforma.
 - **Piattaforma / Servizio:** Il software gestionale in modalità Software-as-a-Service (SaaS) accessibile all'indirizzo web di CondoFAST, inclusivo delle funzionalità di gestione contabile, ripartizione millesimale, lettura documentale tramite Intelligenza Artificiale (OCR), estrazione dati, riconciliazione bancaria, generazione documenti PDF ed email marketing.

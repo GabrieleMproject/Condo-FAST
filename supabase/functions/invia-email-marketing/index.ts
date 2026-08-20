@@ -1,4 +1,5 @@
 import { getCorsHeaders } from '../_shared/cors.ts'
+import { wrapEmailHtml } from '../_shared/emailTemplate.ts'
 // supabase/functions/invia-email-marketing/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -73,6 +74,8 @@ serve(async (req) => {
       const batch = destinatari.slice(i, i + batchSize)
       const promesse = batch.map(async (email) => {
         try {
+          const finalHtml = messaggio.includes('<html') ? messaggio : wrapEmailHtml({ preheader: oggetto, contentHtml: messaggio })
+
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
@@ -83,7 +86,7 @@ serve(async (req) => {
               from: `${fromName} <${fromEmail}>`,
               to: [email],
               subject: oggetto,
-              html: messaggio,
+              html: finalHtml,
               reply_to: 'supporto@condofast.it',
             }),
           })

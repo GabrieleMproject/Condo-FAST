@@ -1766,6 +1766,83 @@ p { margin: 0 0 1em; }
 .roi-slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
 }
+.roi-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 640px) {
+  .roi-hero-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.roi-hero-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 22px;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.roi-hero-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+.roi-hero-card--time {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(37, 99, 235, 0.04) 100%);
+  border-color: rgba(6, 182, 212, 0.35);
+}
+.roi-hero-card--money {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(37, 99, 235, 0.04) 100%);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+.roi-hero-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+.roi-hero-card--time .roi-hero-tag {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.roi-hero-card--money .roi-hero-tag {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+.roi-hero-num {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+.roi-hero-unit {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.roi-hero-sub {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #93c5fd;
+  margin-bottom: 6px;
+}
+.roi-hero-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
 .roi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1778,7 +1855,7 @@ p { margin: 0 0 1em; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 20px 16px;
+  padding: 16px 14px;
   text-align: center;
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
@@ -1787,7 +1864,7 @@ p { margin: 0 0 1em; }
   border-color: var(--accent);
 }
 .roi-kpi-num {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 800;
   background: var(--gradient);
   -webkit-background-clip: text;
@@ -1796,9 +1873,18 @@ p { margin: 0 0 1em; }
   margin-bottom: 4px;
 }
 .roi-kpi-lbl {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--muted);
   line-height: 1.35;
+}
+.roi-disclaimer {
+  font-size: 0.76rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 18px;
+  opacity: 0.85;
+  line-height: 1.45;
+  padding: 0 10px;
 }
 
 /* Dropzone Privacy Consent */

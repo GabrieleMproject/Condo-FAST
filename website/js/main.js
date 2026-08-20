@@ -230,30 +230,24 @@
   });
 
   /* ---------- Calcolatore ROI Interattivo ---------- */
-  const roiSlider = document.getElementById('roi-condo-slider');
-  const roiValDisplay = document.getElementById('roi-condo-val');
-  const roiHoursDisplay = document.getElementById('roi-hours-val');
-  const roiSavingsDisplay = document.getElementById('roi-savings-val');
-  const roiCostPerCondoDisplay = document.getElementById('roi-cost-condo-val');
-  const roiReportTimeDisplay = document.getElementById('roi-report-time-val');
-  const roiReconDisplay = document.getElementById('roi-recon-val');
-  const roiInvoicesDisplay = document.getElementById('roi-invoices-val');
-  const roiPlanBadge = document.getElementById('roi-plan-badge');
-
   function updateRoiCalculator(condoCount) {
-    if (!roiValDisplay) return;
-    const count = parseInt(condoCount, 10) || 30;
-    roiValDisplay.textContent = count;
+    const count = parseInt(condoCount, 10) || 35;
+    
+    // Aggiorna tutti i display del valore dello slider
+    document.querySelectorAll('.roi-slider-val, #roi-condo-val').forEach(el => {
+      el.textContent = count;
+    });
 
     // Calcoli deterministici realistici per uno studio amministrativo
-    const hoursSaved = Math.round(count * 0.8);
+    const hoursMonth = Math.round(count * 0.8);
+    const hoursYear = hoursMonth * 12;
     const savingsYear = Math.round(count * 135);
+    const savingsMonth = Math.round(savingsYear / 12);
     
-    // Nuovi KPI:
-    // 1. Spunta estratti conto: Manuale (25 min/condominio) -> 2 min/condominio con AI (mensile)
+    // Spunta estratti conto: Manuale (25 min/condominio) -> 2 min/condominio con AI (mensile)
     const manualReconHours = Math.round((count * 25) / 60); 
     const aiReconHours = Math.max(1, Math.round((count * 2) / 60)); 
-    // 2. Fatture inserite in automatico: stima di ~15 fatture/mese a condominio = 180 all'anno
+    // Fatture inserite in automatico: stima di ~15 fatture/mese a condominio = 180 all'anno
     const invoicesProcessedYear = count * 180;
     
     let planCost = 59;
@@ -266,28 +260,48 @@
       planName = 'Studio';
     }
     const costPerCondo = (planCost / count).toFixed(2).replace('.', ',');
-
     const reportDays = count > 80 ? '3 Giorni' : '2 Giorni';
 
-    if (roiHoursDisplay) roiHoursDisplay.textContent = hoursSaved + ' Ore';
-    if (roiSavingsDisplay) roiSavingsDisplay.textContent = '€ ' + savingsYear.toLocaleString('it-IT');
-    if (roiCostPerCondoDisplay) roiCostPerCondoDisplay.textContent = '€ ' + costPerCondo;
-    if (roiReportTimeDisplay) roiReportTimeDisplay.textContent = reportDays;
+    // Hero KPI 1: Tempo risparmiato (Annuo + Mensile)
+    document.querySelectorAll('#roi-hours-year-val').forEach(el => {
+      el.innerHTML = hoursYear.toLocaleString('it-IT') + ' Ore <span class="roi-hero-unit">/ anno</span>';
+    });
+    document.querySelectorAll('#roi-hours-val').forEach(el => {
+      el.textContent = '~' + hoursMonth + ' ore risparmiate ogni mese';
+    });
+
+    // Hero KPI 2: Denaro risparmiato (Annuo + Mensile)
+    document.querySelectorAll('#roi-savings-val').forEach(el => {
+      el.innerHTML = '€ ' + savingsYear.toLocaleString('it-IT') + ' <span class="roi-hero-unit">/ anno</span>';
+    });
+    document.querySelectorAll('#roi-savings-month-val').forEach(el => {
+      el.textContent = '~€ ' + savingsMonth.toLocaleString('it-IT') + ' risparmiati al mese';
+    });
     
-    if (roiReconDisplay) {
-      roiReconDisplay.innerHTML = `<span style="text-decoration:line-through;opacity:0.5;font-size:1.1rem;margin-right:8px">${manualReconHours}h</span><span style="color:#22c55e">${aiReconHours}h</span>`;
-    }
-    if (roiInvoicesDisplay) {
-      roiInvoicesDisplay.textContent = invoicesProcessedYear.toLocaleString('it-IT');
-    }
-    if (roiPlanBadge) {
-      roiPlanBadge.textContent = planName;
-    }
+    // Metriche di Dettaglio
+    document.querySelectorAll('#roi-cost-condo-val').forEach(el => {
+      el.textContent = '€ ' + costPerCondo;
+    });
+    document.querySelectorAll('#roi-report-time-val').forEach(el => {
+      el.textContent = reportDays;
+    });
+    document.querySelectorAll('#roi-recon-val').forEach(el => {
+      el.innerHTML = `<span style="text-decoration:line-through;opacity:0.5;font-size:1.1rem;margin-right:8px">${manualReconHours}h</span><span style="color:#22c55e">${aiReconHours}h</span>`;
+    });
+    document.querySelectorAll('#roi-invoices-val').forEach(el => {
+      el.textContent = invoicesProcessedYear.toLocaleString('it-IT');
+    });
+    document.querySelectorAll('#roi-plan-badge').forEach(el => {
+      el.textContent = planName;
+    });
   }
 
-  if (roiSlider) {
-    roiSlider.addEventListener('input', (e) => updateRoiCalculator(e.target.value));
-    updateRoiCalculator(roiSlider.value);
+  const roiSliders = document.querySelectorAll('.roi-slider, #roi-condo-slider');
+  if (roiSliders.length > 0) {
+    roiSliders.forEach(slider => {
+      slider.addEventListener('input', (e) => updateRoiCalculator(e.target.value));
+    });
+    updateRoiCalculator(roiSliders[0].value);
   }
 
   const MAX_DEMO_TRIES = 10;

@@ -515,13 +515,13 @@
 
   <!-- ============ MODALE POP-UP: CALCOLATORE ROI ============ -->
   <div class="modal-overlay" id="modal-roi-calc" role="dialog" aria-modal="true" aria-labelledby="modal-roi-title">
-    <div class="modal-container" style="max-width:800px">
+    <div class="modal-container" style="max-width:840px">
       <button type="button" class="modal-close" data-close-modal aria-label="Chiudi modale">✕</button>
 
       <div class="roi-modal-content">
-        <span class="eyebrow">Simulatore Risparmio</span>
-        <h3 id="modal-roi-title" style="font-size:1.7rem;font-weight:800;margin-top:6px;color:#fff">Calcola il Risparmio per il tuo Studio</h3>
-        <p style="color:var(--muted);font-size:0.95rem;margin-top:4px">Sposta lo slider con il numero di condomini gestiti:</p>
+        <span class="eyebrow">Simulatore Risparmio & ROI</span>
+        <h3 id="modal-roi-title" style="font-size:1.75rem;font-weight:800;margin-top:6px;color:#fff">Calcola il Risparmio per il tuo Studio</h3>
+        <p style="color:var(--muted);font-size:0.95rem;margin-top:4px">Sposta lo slider con il numero di condomini gestiti per stimare il recupero di tempo e budget:</p>
 
         <div class="roi-slider-container">
           <div class="roi-slider-label">
@@ -529,32 +529,41 @@
           </div>
           <input type="range" min="5" max="200" step="5" value="35" class="roi-slider" id="roi-condo-slider" aria-label="Numero condomini gestiti">
           
-          <!-- Elemento per il Piano Consigliato -->
           <div style="text-align:center; margin-top:16px; margin-bottom:4px; font-weight:600; font-size:0.95rem; color:#fff;" id="roi-recommended-plan">
-            Piano Consigliato: <span style="background:rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.3); padding:4px 10px; border-radius:20px; color:#d4af37; margin-left:6px;" id="roi-plan-badge">Base</span>
+            Piano Consigliato: <span style="background:rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.3); padding:4px 12px; border-radius:20px; color:#d4af37; margin-left:6px;" id="roi-plan-badge">Base</span>
           </div>
         </div>
 
+        <!-- 2 HERO KPI: RISPARMIO ANNUO TEMPO & DENARO -->
+        <div class="roi-hero-grid">
+          <div class="roi-hero-card roi-hero-card--time">
+            <div class="roi-hero-tag">Tempo Risparmiato</div>
+            <div class="roi-hero-num" id="roi-hours-year-val">336 Ore <span class="roi-hero-unit">/ anno</span></div>
+            <div class="roi-hero-sub" id="roi-hours-val">~28 ore risparmiate ogni mese</div>
+            <div class="roi-hero-desc">Ore di lavoro operativo recuperate su registrazioni, quadratura e burocrazia.</div>
+          </div>
+
+          <div class="roi-hero-card roi-hero-card--money">
+            <div class="roi-hero-tag">Denaro Risparmiato</div>
+            <div class="roi-hero-num" id="roi-savings-val">€ 4.725 <span class="roi-hero-unit">/ anno</span></div>
+            <div class="roi-hero-sub" id="roi-savings-month-val">~€ 394 risparmiati al mese</div>
+            <div class="roi-hero-desc">Valore economico del tempo operativo risparmiato al netto dell'abbonamento.</div>
+          </div>
+        </div>
+
+        <!-- 4 METRICHE DI DETTAGLIO -->
         <div class="roi-grid">
           <div class="roi-kpi-card">
-            <div class="roi-kpi-num" id="roi-hours-val">28 Ore</div>
-            <div class="roi-kpi-lbl">Ore risparmiate ogni mese</div>
+            <div class="roi-kpi-num" id="roi-recon-val"><span style="text-decoration:line-through;opacity:0.5;font-size:1.1rem;margin-right:8px">15h</span><span style="color:#22c55e">1h</span></div>
+            <div class="roi-kpi-lbl">Spunta Estratti Conto (Mese)</div>
           </div>
           <div class="roi-kpi-card">
             <div class="roi-kpi-num" id="roi-report-time-val">2 Giorni</div>
             <div class="roi-kpi-lbl">Tempo chiusura consuntivo</div>
           </div>
           <div class="roi-kpi-card">
-            <div class="roi-kpi-num" id="roi-recon-val"><span style="text-decoration:line-through;opacity:0.5;font-size:1.1rem;margin-right:8px">15h</span><span style="color:#22c55e">1h</span></div>
-            <div class="roi-kpi-lbl">Spunta Estratti Conto (Mese)</div>
-          </div>
-          <div class="roi-kpi-card">
             <div class="roi-kpi-num" id="roi-invoices-val">6.300</div>
             <div class="roi-kpi-lbl">Fatture auto-registrate / Anno</div>
-          </div>
-          <div class="roi-kpi-card">
-            <div class="roi-kpi-num" id="roi-savings-val">€ 4.725</div>
-            <div class="roi-kpi-lbl">Risparmio stimato all'anno</div>
           </div>
           <div class="roi-kpi-card">
             <div class="roi-kpi-num" id="roi-cost-condo-val">€ 1,69</div>
@@ -562,11 +571,12 @@
           </div>
         </div>
 
-        <div style="font-size:0.75rem; color:var(--muted); text-align:center; margin-top:16px; opacity:0.8;">
-          * I valori mostrati sono stime indicative basate sulle medie di settore e sull'efficienza teorica dell'automazione. Il risparmio effettivo può variare in base all'organizzazione dello studio.
+        <!-- NOTA ASTERISCO CHIARA E CONFORME -->
+        <div class="roi-disclaimer">
+          * I valori mostrati sono stime indicative e orientative calcolate su medie di settore (tempo medio per registrazione fattura, quadratura estratti conto e redazione consuntivo art. 1130-bis c.c.). Il risparmio effettivo in tempo e denaro può variare in base alla specifica organizzazione e operatività del proprio studio.
         </div>
 
-        <div style="margin-top:30px;display:flex;justify-content:center;gap:12px">
+        <div style="margin-top:26px;display:flex;justify-content:center;gap:12px">
           <a href="https://condofast.app/register" class="btn btn--primary">Inizia la prova gratuita di 14 giorni →</a>
         </div>
       </div>

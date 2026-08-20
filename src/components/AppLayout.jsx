@@ -795,6 +795,9 @@ export default function AppLayout() {
   };
 
   const handleSignOut = () => {
+    setDrawerOpen(false);
+    setIsEditing(false);
+    setIsMobileMenuOpen(false);
     setShowLogoutConfirm(true);
   };
 
@@ -1770,14 +1773,22 @@ export default function AppLayout() {
 
       {/* Modale Conferma Logout */}
       {showLogoutConfirm && (
-        <div className="modal-overlay">
+        <div 
+          className="modal-overlay" 
+          style={{ zIndex: 10001 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLogoutConfirm(false);
+            }
+          }}
+        >
           <div className="modal-box" style={{ maxWidth: 400, textAlign: 'center', padding: '24px 16px' }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#ef4444' }}>
               <LogOut size={28} />
             </div>
             <h2 style={{ fontSize: 20, margin: '0 0 12px 0', color: 'var(--text-primary)' }}>Uscita dall'account</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 24px 0', lineHeight: 1.5 }}>
-              Sei sicuro di voler uscire da CondoSmart?
+              Sei sicuro di voler uscire da CondoFast?
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
               <button 

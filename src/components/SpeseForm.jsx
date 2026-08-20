@@ -228,22 +228,26 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     }
   }
 
-  const [form, setForm] = useState({
-    esercizio_id: esercizioId,
-    condominio_id: condominioId,
-    descrizione: '',
-    importo: '',
-    data_spesa: new Date().toISOString().split('T')[0],
-    categoria: 'ordinaria',
-    tipo_lavoro: 'ordinario',
-    criterio: 'millesimi',
-    tabella_millesimale_id: '',
-    percentuale_millesimi: 100,
-    fornitore: '',
-    numero_fattura: '',
-    note: '',
-    suggerimento_ai: null,
-    criterio_override: false,
+  const [form, setForm] = useState(() => {
+    const CAT_VALIDE = CATEGORIE.map(c => c.value)
+    const catSpesa = (initialAiDatiEstratti?.categoria && CAT_VALIDE.includes(initialAiDatiEstratti.categoria)) ? initialAiDatiEstratti.categoria : 'ordinaria'
+    return {
+      esercizio_id: esercizioId,
+      condominio_id: condominioId,
+      descrizione: initialAiDatiEstratti?.descrizione || '',
+      importo: initialAiDatiEstratti?.importo_totale != null ? String(initialAiDatiEstratti.importo_totale) : '',
+      data_spesa: initialAiDatiEstratti?.data_fattura || new Date().toISOString().split('T')[0],
+      categoria: catSpesa,
+      tipo_lavoro: 'ordinario',
+      criterio: 'millesimi',
+      tabella_millesimale_id: '',
+      percentuale_millesimi: 100,
+      fornitore: initialAiDatiEstratti?.fornitore || '',
+      numero_fattura: initialAiDatiEstratti?.numero_fattura || '',
+      note: initialAiDatiEstratti?.note || '',
+      suggerimento_ai: null,
+      criterio_override: false,
+    }
   })
 
   const [ripartizioni, setRipartizioni] = useState([])

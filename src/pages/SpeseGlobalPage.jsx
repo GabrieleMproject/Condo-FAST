@@ -147,7 +147,10 @@ export default function SpeseGlobalPage() {
         .in('stato', ['nuovo', 'rilevato', 'da_smistare'])
         .order('data_ricezione', { ascending: false })
       
-      if (error) throw error
+      if (error) {
+        console.warn('Recupero inbox_documenti non riuscito o tabella assente:', error.message)
+        return
+      }
 
       // Raccogli condominio_id unici
       const uniqueCondoIds = [...new Set((data || []).map(doc => doc.condominio_id).filter(Boolean))]
@@ -188,12 +191,18 @@ export default function SpeseGlobalPage() {
         }
       })
       
-      setQueue(mapped)
-      
-      // Imposta il primo elemento attivo se non ce n'è nessuno selezionato
-      if (mapped.length > 0 && !activeQueueId) {
-        setActiveQueueId(mapped[0].id)
-      }
+      setQueue(prev => {
+        // Preserva sempre gli elementi caricati localmente (drag&drop) non ancora salvati nel DB
+        const localItems = prev.filter(item => String(item.id).startsWith('local_') || item.file != null)
+        const dbIds = new Set(mapped.map(m => m.id))
+        const unpersistedLocal = localItems.filter(item => !dbIds.has(item.id))
+        const combined = [...unpersistedLocal, ...mapped]
+        
+        if (combined.length > 0 && !activeQueueId) {
+          setActiveQueueId(combined[0].id)
+        }
+        return combined
+      })
     } catch (err) {
       console.error('Errore recupero coda inbox:', err)
     } finally {
@@ -233,12 +242,16 @@ export default function SpeseGlobalPage() {
 
     if (activeItem.file) {
       // Caricato localmente tramite drag & drop (non ancora nel DB)
-      setActiveFileUrl(URL.createObjectURL(activeItem.file))
-      return
+      const objUrl = URL.createObjectURL(activeItem.file)
+      setActiveFileUrl(objUrl)
+      return () => {
+        URL.revokeObjectURL(objUrl)
+      }
     }
 
     if (activeItem.file_path) {
       // Caricato da Storage remoto
+      let isMounted = true
       const getSignedUrl = async () => {
         setLoadingFileUrl(true)
         try {
@@ -246,18 +259,19 @@ export default function SpeseGlobalPage() {
             .from('inbox-ricezione')
             .createSignedUrl(activeItem.file_path, 900) // 15 minuti
           
-          if (!error && data?.signedUrl) {
+          if (!error && data?.signedUrl && isMounted) {
             setActiveFileUrl(data.signedUrl)
           }
         } catch (err) {
-          console.error('Errore recupero Signed URL per anteprima:', err)
+          console.warn('Recupero Signed URL per anteprima non riuscito:', err)
         } finally {
-          setLoadingFileUrl(false)
+          if (isMounted) setLoadingFileUrl(false)
         }
       }
       getSignedUrl()
+      return () => { isMounted = false }
     }
-  }, [activeQueueId])
+  }, [activeQueueId, activeItem?.id, activeItem?.file, activeItem?.file_path])
 
 
 
@@ -315,6 +329,7 @@ export default function SpeseGlobalPage() {
     if (rawFiles.length === 0) return
 
     setProcessing(true)
+    let shouldFetchDb = false
     try {
       const files = []
       for (const f of rawFiles) {
@@ -358,11 +373,18 @@ export default function SpeseGlobalPage() {
 
               if (!insertErr && newDoc) {
                 newDocId = newDoc.id
+                shouldFetchDb = true
+              } else {
+                path = null
               }
+            } else {
+              console.warn('[SpeseGlobalPage] Upload bucket inbox-ricezione non riuscito (fallback elaborazione locale):', uploadErr.message)
+              path = null
             }
           }
         } catch (storageErr) {
           console.warn('[SpeseGlobalPage] Upload storage bypass/fallback su elaborazione locale:', storageErr)
+          path = null
         }
 
         // Aggiungi elemento alla coda locale come 'analyzing'
@@ -434,13 +456,16 @@ export default function SpeseGlobalPage() {
           }
           return item
         }))
+        setActiveQueueId(newDocId)
       }
     } catch (err) {
       console.error('Errore caricamento o estrazione AI:', err)
       toast.error('Impossibile elaborare il file: ' + err.message)
     } finally {
       setProcessing(false)
-      fetchQueue() // Ricarica la coda dal DB per sicurezza
+      if (shouldFetchDb) {
+        fetchQueue()
+      }
     }
   }
 
@@ -479,11 +504,13 @@ export default function SpeseGlobalPage() {
       return item
     }))
 
-    // Salva la preferenza di condominio sul DB
-    await supabase
-      .from('inbox_documenti')
-      .update({ condominio_id: condoId || null })
-      .eq('id', itemId)
+    // Salva la preferenza di condominio sul DB se presente
+    if (itemId && !String(itemId).startsWith('local_')) {
+      await supabase
+        .from('inbox_documenti')
+        .update({ condominio_id: condoId || null })
+        .eq('id', itemId)
+    }
   }
 
   const handleEsercizioChange = (itemId, esId) => {
@@ -506,14 +533,16 @@ export default function SpeseGlobalPage() {
     try {
       // Elimina il file da storage se presente
       if (item.file_path) {
-        await supabase.storage.from('inbox-ricezione').remove([item.file_path])
+        supabase.storage.from('inbox-ricezione').remove([item.file_path]).catch(() => {})
       }
 
-      // Imposta stato scartato sul database (soft delete)
-      await supabase
-        .from('inbox_documenti')
-        .update({ stato: 'scartato' })
-        .eq('id', itemId)
+      // Imposta stato scartato sul database (soft delete) se presente su DB
+      if (itemId && !String(itemId).startsWith('local_')) {
+        await supabase
+          .from('inbox_documenti')
+          .update({ stato: 'scartato' })
+          .eq('id', itemId)
+      }
 
       setQueue(prev => prev.filter(q => q.id !== itemId))
       if (activeQueueId === itemId) {
@@ -573,82 +602,99 @@ export default function SpeseGlobalPage() {
       if (ripErr) throw ripErr
 
       // c. Gestione file e fattura fornitore
-      if (item.file_path) {
-        // Scarica il file dal bucket temporaneo 'inbox-ricezione'
-        const { data: fileData, error: downloadErr } = await supabase.storage
-          .from('inbox-ricezione')
-          .download(item.file_path)
-
-        if (downloadErr) throw downloadErr
-
-        // Copia il file nel bucket ufficiale 'fatture'
-        const newPath = `${currentUser.id}/${item.condominioId}/${Date.now()}_${item.file_name.replace(/\s+/g, '_')}`
-        const { error: uploadErr } = await supabase.storage
-          .from('fatture')
-          .upload(newPath, fileData, { contentType: fileData.type })
-
-        if (uploadErr) throw uploadErr
-
-        // Elimina file dal bucket temporaneo
-        await supabase.storage.from('inbox-ricezione').remove([item.file_path])
-
-        // Cerca fornitore_id
-        let fornitoreId = null
+      let newPath = null
+      const rawFileToUpload = fileCaricato || item.file
+      if (rawFileToUpload) {
         try {
-          const { data: fornitoriList } = await supabase
-            .from('fornitori')
-            .select('id, ragione_sociale, partita_iva, codice_fiscale')
-          
-          if (fornitoriList && fornitoriList.length > 0) {
-            const pIvaClean = (aiDatiEstratti?.partita_iva_fornitore || '').replace(/\s+/g, '')
-            if (pIvaClean) {
-              const trovato = fornitoriList.find(f => f.partita_iva === pIvaClean || f.codice_fiscale === pIvaClean)
-              if (trovato) fornitoreId = trovato.id
-            } else {
-              const nomeClean = (payload.fornitore || '').trim().toLowerCase()
-              const trovato = fornitoriList.find(f => f.ragione_sociale.toLowerCase() === nomeClean)
-              if (trovato) fornitoreId = trovato.id
-            }
+          newPath = `${currentUser.id}/${item.condominioId}/${Date.now()}_${(item.file_name || rawFileToUpload.name).replace(/\s+/g, '_')}`
+          const { error: uploadErr } = await supabase.storage
+            .from('fatture')
+            .upload(newPath, rawFileToUpload, { contentType: rawFileToUpload.type || 'application/octet-stream' })
+          if (uploadErr) {
+            console.warn('[SpeseGlobalPage] Salvataggio storage fattura non riuscito:', uploadErr.message)
+            newPath = null
           }
-        } catch (fornErr) {
-          console.error('Errore ricerca fornitore:', fornErr)
+        } catch (sErr) {
+          console.warn('[SpeseGlobalPage] Upload fattura bypassed:', sErr)
+          newPath = null
         }
+      } else if (item.file_path) {
+        try {
+          const { data: fileData, error: downloadErr } = await supabase.storage
+            .from('inbox-ricezione')
+            .download(item.file_path)
 
-        // Crea il record in fatture_fornitori
-        const datiFattura = {
-          condominio_id: item.condominioId,
-          user_id: currentUser.id,
-          spesa_id: spesaId,
-          fornitore: payload.fornitore || 'Fornitore sconosciuto',
-          fornitore_id: fornitoreId,
-          numero_fattura: payload.numero_fattura || null,
-          data_fattura: payload.data_spesa,
-          data_scadenza: aiDatiEstratti?.data_scadenza || payload.data_spesa,
-          importo_totale: payload.importo,
-          importo_iva: aiDatiEstratti?.importo_iva || 0,
-          importo_netto: aiDatiEstratti?.importo_netto || (payload.importo - (aiDatiEstratti?.importo_iva || 0)),
-          descrizione: payload.descrizione || '',
-          categoria: payload.categoria || 'altro',
-          stato: 'attesa',
-          pdf_url: newPath,
-          ai_dati_estratti: aiDatiEstratti,
-          imponibile_ritenuta: aiDatiEstratti?.imponibile_ritenuta || 0.00,
-          aliquota_ritenuta_percentuale: aiDatiEstratti?.aliquota_ritenuta_percentuale || 0.00,
-          importo_ritenuta: aiDatiEstratti?.importo_ritenuta || 0.00,
-          ritenuta_acconto: aiDatiEstratti?.importo_ritenuta || 0.00,
-          codice_tributo_f24: aiDatiEstratti?.codice_tributo_f24 || null,
-          data_pagamento: null,
+          if (!downloadErr && fileData) {
+            newPath = `${currentUser.id}/${item.condominioId}/${Date.now()}_${item.file_name.replace(/\s+/g, '_')}`
+            await supabase.storage
+              .from('fatture')
+              .upload(newPath, fileData, { contentType: fileData.type })
+            
+            supabase.storage.from('inbox-ricezione').remove([item.file_path]).catch(() => {})
+          }
+        } catch (sErr) {
+          console.warn('[SpeseGlobalPage] Spostamento storage bypassed:', sErr)
         }
-
-        const { error: invoiceErr } = await supabase.from('fatture_fornitori').insert(datiFattura)
-        if (invoiceErr) throw invoiceErr
       }
 
-      // d. Aggiorna record inbox_documenti a 'inserito'
-      await supabase
-        .from('inbox_documenti')
-        .update({ stato: 'inserito', spesa_id: spesaId })
-        .eq('id', itemId)
+      // Cerca fornitore_id
+      let fornitoreId = null
+      try {
+        const { data: fornitoriList } = await supabase
+          .from('fornitori')
+          .select('id, ragione_sociale, partita_iva, codice_fiscale')
+        
+        if (fornitoriList && fornitoriList.length > 0) {
+          const pIvaClean = (aiDatiEstratti?.partita_iva_fornitore || '').replace(/\s+/g, '')
+          if (pIvaClean) {
+            const trovato = fornitoriList.find(f => f.partita_iva === pIvaClean || f.codice_fiscale === pIvaClean)
+            if (trovato) fornitoreId = trovato.id
+          } else {
+            const nomeClean = (payload.fornitore || '').trim().toLowerCase()
+            const trovato = fornitoriList.find(f => f.ragione_sociale.toLowerCase() === nomeClean)
+            if (trovato) fornitoreId = trovato.id
+          }
+        }
+      } catch (fornErr) {
+        console.error('Errore ricerca fornitore:', fornErr)
+      }
+
+      // Crea il record in fatture_fornitori
+      const datiFattura = {
+        condominio_id: item.condominioId,
+        user_id: currentUser.id,
+        spesa_id: spesaId,
+        fornitore: payload.fornitore || 'Fornitore sconosciuto',
+        fornitore_id: fornitoreId,
+        numero_fattura: payload.numero_fattura || null,
+        data_fattura: payload.data_spesa,
+        data_scadenza: aiDatiEstratti?.data_scadenza || payload.data_spesa,
+        importo_totale: payload.importo,
+        importo_iva: aiDatiEstratti?.importo_iva || 0,
+        importo_netto: aiDatiEstratti?.importo_netto || (payload.importo - (aiDatiEstratti?.importo_iva || 0)),
+        descrizione: payload.descrizione || '',
+        categoria: payload.categoria || 'altro',
+        stato: 'attesa',
+        pdf_url: newPath,
+        ai_dati_estratti: aiDatiEstratti,
+        imponibile_ritenuta: aiDatiEstratti?.imponibile_ritenuta || 0.00,
+        aliquota_ritenuta_percentuale: aiDatiEstratti?.aliquota_ritenuta_percentuale || 0.00,
+        importo_ritenuta: aiDatiEstratti?.importo_ritenuta || 0.00,
+        ritenuta_acconto: aiDatiEstratti?.importo_ritenuta || 0.00,
+        codice_tributo_f24: aiDatiEstratti?.codice_tributo_f24 || null,
+        data_pagamento: null,
+      }
+
+      const { error: invoiceErr } = await supabase.from('fatture_fornitori').insert(datiFattura)
+      if (invoiceErr) console.warn('[SpeseGlobalPage] Inserimento fatture_fornitori non riuscito:', invoiceErr.message)
+
+      // d. Aggiorna record inbox_documenti a 'inserito' se presente
+      if (itemId && !String(itemId).startsWith('local_')) {
+        await supabase
+          .from('inbox_documenti')
+          .update({ stato: 'inserito', spesa_id: spesaId })
+          .eq('id', itemId)
+      }
 
       // Rimuovi dalla coda locale ed imposta il successivo
       setQueue(prev => prev.filter(q => q.id !== itemId))

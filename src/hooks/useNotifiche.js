@@ -55,15 +55,19 @@ export function useNotifiche() {
     try {
       const settings = profile?.notification_settings || {}
 
-      // Pre-fetch IDs condomini dell'amministratore (necessario per il .in() su esercizi).
-      // Estratto prima di Promise.all per evitare await annidato che rompe la parallelizzazione.
-      let condominiIds = []
-      if (settings.esercizio_in_scadenza?.enabled) {
-        const { data: cData } = await supabase
-          .from('condomini')
-          .select('id')
-          .eq('amministratore_id', user.id)
-        condominiIds = (cData || []).map(c => c.id)
+      // Pre-fetch condomini dell'amministratore per mapping nomi e filtro id
+      const { data: cData } = await supabase
+        .from('condomini')
+        .select('id, nome')
+        .eq('amministratore_id', user.id)
+
+      const condominiList = cData || []
+      const condominiMap = new Map(condominiList.map(c => [c.id, c.nome]))
+      const condominiIds = condominiList.map(c => c.id)
+
+      if (condominiIds.length === 0) {
+        setNotifiche([])
+        return
       }
 
       // Query parallele read-only sui dati necessari
@@ -77,7 +81,8 @@ export function useNotifiche() {
         settings.f24_ritenute?.enabled
           ? supabase
               .from('fatture_fornitori')
-              .select('id, condominio_id, ritenuta_acconto, stato, ritenuta_pagata, data_pagamento, condomini(nome)')
+              .select('id, condominio_id, ritenuta_acconto, stato, ritenuta_pagata, data_pagamento')
+              .in('condominio_id', condominiIds)
               .gt('ritenuta_acconto', 0)
               .neq('ritenuta_pagata', true)
           : Promise.resolve({ data: [] }),
@@ -91,19 +96,19 @@ export function useNotifiche() {
                 rate:rata_id(
                   id, data_scadenza,
                   esercizi(
-                    id, anno, condominio_id,
-                    condomini(nome)
+                    id, anno, condominio_id
                   )
                 )
               `)
+              .in('condominio_id', condominiIds)
               .neq('stato', 'pagata')
           : Promise.resolve({ data: [] }),
 
-        // Esercizi aperti con data_fine (usa condominiIds pre-calcolati fuori da Promise.all)
-        settings.esercizio_in_scadenza?.enabled && condominiIds.length > 0
+        // Esercizi aperti con data_fine
+        settings.esercizio_in_scadenza?.enabled
           ? supabase
               .from('esercizi')
-              .select('id, anno, condominio_id, data_fine, condomini(nome)')
+              .select('id, anno, condominio_id, data_fine')
               .not('data_fine', 'is', null)
               .in('condominio_id', condominiIds)
           : Promise.resolve({ data: [] }),
@@ -112,21 +117,40 @@ export function useNotifiche() {
         settings.movimenti_non_riconciliati?.enabled
           ? supabase
               .from('estratto_conto')
-              .select('id, condominio_id, data_movimento, importo, riconciliato, condomini(nome)')
+              .select('id, condominio_id, data_movimento, importo, riconciliato')
+              .in('condominio_id', condominiIds)
               .eq('riconciliato', false)
               .not('data_movimento', 'is', null)
           : Promise.resolve({ data: [] }),
       ])
 
       const dati = {
-        fatture: (fatture || []).map(f => ({ ...f, f24_presentato: f.ritenuta_pagata })),
+        fatture: (fatture || []).map(f => ({
+          ...f,
+          f24_presentato: f.ritenuta_pagata,
+          condomini: { nome: condominiMap.get(f.condominio_id) || 'Condominio' }
+        })),
         rateUnita: (rateUnita || []).map(ru => ({
           ...ru,
           scadenza: ru.rate?.data_scadenza,
           dovuto: ru.importo,
+          rate: {
+            ...ru.rate,
+            esercizi: {
+              ...ru.rate?.esercizi,
+              condomini: { nome: condominiMap.get(ru.condominio_id || ru.rate?.esercizi?.condominio_id) || 'Condominio' }
+            }
+          }
         })),
-        esercizi: esercizi || [],
-        movimenti: (movimenti || []).map(m => ({ ...m, data: m.data_movimento })),
+        esercizi: (esercizi || []).map(e => ({
+          ...e,
+          condomini: { nome: condominiMap.get(e.condominio_id) || 'Condominio' }
+        })),
+        movimenti: (movimenti || []).map(m => ({
+          ...m,
+          data: m.data_movimento,
+          condomini: { nome: condominiMap.get(m.condominio_id) || 'Condominio' }
+        })),
       }
 
       const calcolate = calcolaNotifiche(settings, dati, new Date())

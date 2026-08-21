@@ -636,15 +636,18 @@ export default function SpeseGlobalPage() {
         }
 
         // 3. Crea la tabella millesimale generale di default
-        await supabase
-          .from('tabelle_millesimali')
-          .insert([{
-            condominio_id: newCondo.id,
-            nome: 'Tabella Generale (Proprietà)',
-            tipo_lavoro: 'generale',
-            descrizione: 'Tabella generale predefinita generata automaticamente'
-          }])
-          .catch(e => console.warn('[SpeseGlobalPage] Creazione tabella default bypassata:', e))
+        try {
+          await supabase
+            .from('tabelle_millesimali')
+            .insert([{
+              condominio_id: newCondo.id,
+              nome: 'Tabella Generale (Proprietà)',
+              tipo_lavoro: 'generale',
+              descrizione: 'Tabella generale predefinita generata automaticamente'
+            }])
+        } catch (e) {
+          console.warn('[SpeseGlobalPage] Creazione tabella default bypassata:', e)
+        }
 
         // 4. Aggiorna l'elenco condomini in stato globale
         setCondomini(prev => [...prev, newCondo].sort((a, b) => a.nome.localeCompare(b.nome)))

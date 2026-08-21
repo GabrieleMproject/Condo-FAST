@@ -1554,7 +1554,7 @@ Formato JSON:
 
         <div>
           <label style={labelStyle}>
-            Importo (€) * {fatturaImportata && <AiBadge />}
+            Importo (€) *
           </label>
           <input
             type="number" step="0.01" min="0"
@@ -1689,7 +1689,7 @@ Formato JSON:
 
         <div>
           <label style={labelStyle}>
-            Fornitore {fatturaImportata && <AiBadge />}
+            Fornitore
           </label>
           <input style={inputStyle} placeholder="Es. Rossi Ascensori Srl"
             value={form.fornitore} onChange={e => setField('fornitore', e.target.value)} />
@@ -1724,7 +1724,7 @@ Formato JSON:
 
         <div>
           <label style={labelStyle}>
-            N. Fattura {fatturaImportata && <AiBadge />}
+            N. Fattura
           </label>
           <input style={inputStyle} placeholder="Es. 2024/0042"
             value={form.numero_fattura} onChange={e => setField('numero_fattura', e.target.value)} />

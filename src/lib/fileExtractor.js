@@ -831,10 +831,10 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
 
   return await withAutoRetry(async () => {
     const risposta = isVisual
-      ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema })
+      ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'estrai_fattura', maxTokens: 8192, jsonMode: true, jsonSchema })
       : isPdf
-      ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema })
-      : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 4000, jsonMode: true, jsonSchema });
+      ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 8192, jsonMode: true, jsonSchema })
+      : await callGemini(userPrompt, { system: systemPrompt, funzione: 'estrai_fattura', maxTokens: 8192, jsonMode: true, jsonSchema });
 
     const parsed = pulisciEdEstraiJson(risposta, false);
     if (parsed && typeof parsed === 'object') {

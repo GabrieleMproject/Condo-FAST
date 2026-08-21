@@ -81,7 +81,7 @@ export function useNotifiche() {
         settings.f24_ritenute?.enabled
           ? supabase
               .from('fatture_fornitori')
-              .select('id, condominio_id, ritenuta_acconto, importo_ritenuta, stato, data_fattura, data_pagamento, f24_url, f24_presentato')
+              .select('id, condominio_id, ritenuta_acconto, stato, data_fattura, f24_url')
               .in('condominio_id', condominiIds)
               .eq('stato', 'pagata')
               .is('f24_url', null)

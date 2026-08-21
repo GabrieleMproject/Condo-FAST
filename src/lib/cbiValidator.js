@@ -88,6 +88,11 @@ export function validaDelegheCbi(deleghe, profile) {
     const iban = delega.condominio?.iban;
     const cfCondo = delega.condominio?.codice_fiscale;
 
+    // Controllo Sicurezza Anti-Doppio Pagamento
+    if (delega.stato === 'pagato' || delega.quietanza_url) {
+      errors.push(`[${condoNome}] ATTENZIONE DOPPIO PAGAMENTO: La delega F24 del ${delega.data_scadenza || ''} risulta già pagata o provvista di quietanza.`);
+    }
+
     // Validation IBAN Condominio
     if (!iban) {
       errors.push(`[${condoNome}] Mancante IBAN di addebito del condominio.`);

@@ -798,6 +798,7 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
           numero_fattura: { type: "STRING", nullable: true },
           data_fattura: { type: "STRING", description: "YYYY-MM-DD" },
           data_scadenza: { type: "STRING", nullable: true, description: "YYYY-MM-DD" },
+          iban_fornitore: { type: "STRING", nullable: true, description: "IBAN bancario del fornitore per il bonifico indicato sul documento (es. IT...)" },
           importo_totale: { type: "NUMBER" },
           importo_iva: { type: "NUMBER" },
           importo_netto: { type: "NUMBER" },

@@ -88,14 +88,19 @@ export function trovaBestMatchFattura(movimento, fatture = []) {
       }
     }
 
-    // 2. Verifica IBAN del Fornitore
-    const ibanFornitore = (f.iban || f.fornitore_iban || f.fornitore_rel?.iban || '').replace(/\s+/g, '').toLowerCase();
+    // 2. Verifica IBAN (Priorità: IBAN indicato sulla singola fattura, fallback: anagrafica fornitore)
+    const ibanFatturaDoc = (f.iban || f.iban_fornitore || f.iban_accredito || '').replace(/\s+/g, '').toLowerCase();
+    const ibanAnagrafica = (f.fornitore_rel?.iban || f.fornitore_iban || '').replace(/\s+/g, '').toLowerCase();
+    const ibanFornitore = ibanFatturaDoc || ibanAnagrafica;
+
     if (ibanFornitore && ibanFornitore.length >= 15) {
       const causaleSenzaSpazi = (movimento.causale || '').replace(/\s+/g, '').toLowerCase();
-      if (causaleSenzaSpazi.includes(ibanFornitore) || (ibanFornitore.length >= 10 && causaleSenzaSpazi.includes(ibanFornitore.substring(5, 20)))) {
+      const matchIban = causaleSenzaSpazi.includes(ibanFornitore) || (ibanFornitore.length >= 10 && causaleSenzaSpazi.includes(ibanFornitore.substring(5, 20)));
+      
+      if (matchIban) {
         score += 35;
         hasIbanMatch = true;
-        motivi.push(`IBAN fornitore riconosciuto`);
+        motivi.push(ibanFatturaDoc ? `IBAN specifico della fattura riconosciuto` : `IBAN fornitore riconosciuto`);
       }
     }
 

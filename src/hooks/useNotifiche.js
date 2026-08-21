@@ -77,13 +77,13 @@ export function useNotifiche() {
         { data: esercizi },
         { data: movimenti },
       ] = await Promise.all([
-        // F24: fatture con ritenuta, F24 non ancora quietanzato
+        // F24: fatture con ritenuta, pagate e senza quietanza F24 abbinata
         settings.f24_ritenute?.enabled
           ? supabase
               .from('fatture_fornitori')
-              .select('id, condominio_id, ritenuta_acconto, stato, data_fattura, f24_url')
+              .select('id, condominio_id, ritenuta_acconto, importo_ritenuta, stato, data_fattura, data_pagamento, f24_url, f24_presentato')
               .in('condominio_id', condominiIds)
-              .gt('ritenuta_acconto', 0)
+              .eq('stato', 'pagata')
               .is('f24_url', null)
           : Promise.resolve({ data: [] }),
 

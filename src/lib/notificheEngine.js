@@ -37,13 +37,14 @@ export function calcolaF24Ritenute(settings, fatture, oggi = new Date()) {
   const mesePrecedente = meseCorrente === 0 ? 11 : meseCorrente - 1
   const annoPrecedente = meseCorrente === 0 ? annoCorrente - 1 : annoCorrente
 
-  // Fatture pagate nel mese precedente con ritenuta e F24 non ancora presentato
+  // Fatture pagate nel mese precedente con ritenuta e quietanza F24 non ancora caricata/abbinata
   const fattureConRitenuta = fatture.filter(f => {
-    if (!f.ritenuta_acconto || parseFloat(f.ritenuta_acconto) <= 0) return false
-    if (f.f24_presentato === true) return false
+    const importoRit = parseFloat(f.importo_ritenuta || f.ritenuta_acconto || 0)
+    if (importoRit <= 0) return false
+    if (f.f24_presentato === true || f.f24_url) return false
     if (f.stato !== 'pagata') return false
 
-    // Verifica che la data di pagamento sia nel mese precedente
+    // Verifica che la data di pagamento effettivo ricada nel mese precedente
     const dataPag = f.data_pagamento ? new Date(f.data_pagamento) : null
     if (!dataPag || isNaN(dataPag)) return false
     return dataPag.getMonth() === mesePrecedente && dataPag.getFullYear() === annoPrecedente
@@ -52,7 +53,7 @@ export function calcolaF24Ritenute(settings, fatture, oggi = new Date()) {
   if (fattureConRitenuta.length === 0) return []
 
   const totaleRitenute = fattureConRitenuta.reduce(
-    (s, f) => s + parseFloat(f.ritenuta_acconto || 0), 0
+    (s, f) => s + parseFloat(f.importo_ritenuta || f.ritenuta_acconto || 0), 0
   )
 
   // Raggruppa per condominio
@@ -68,7 +69,7 @@ export function calcolaF24Ritenute(settings, fatture, oggi = new Date()) {
       }
     }
     perCondominio[cid].count++
-    perCondominio[cid].totale += parseFloat(f.ritenuta_acconto || 0)
+    perCondominio[cid].totale += parseFloat(f.importo_ritenuta || f.ritenuta_acconto || 0)
   })
 
   return Object.values(perCondominio).map(({ condominioId, condominioNome, count, totale }) => {

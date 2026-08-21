@@ -180,11 +180,16 @@ export async function parseFatturaXmlP7m(file) {
   // 10. Estrazione Dati Pagamento (Scadenza e IBAN)
   const datiPagamento = getTag(xmlDoc, 'DettaglioPagamento');
   let dataScadenza = null;
+  let ibanFattura = null;
 
   if (datiPagamento) {
     dataScadenza = getVal(datiPagamento, 'DataScadenzaPagamento');
     if (dataScadenza && dataScadenza.includes('T')) {
       dataScadenza = dataScadenza.split('T')[0];
+    }
+    ibanFattura = getVal(datiPagamento, 'IBAN') || getVal(datiPagamento, 'Iban');
+    if (ibanFattura) {
+      ibanFattura = ibanFattura.replace(/\s+/g, '').toUpperCase();
     }
   }
 
@@ -200,6 +205,8 @@ export async function parseFatturaXmlP7m(file) {
       numero_fattura: numeroFattura || null,
       data_fattura: dataFattura || new Date().toISOString().split('T')[0],
       data_scadenza: dataScadenza || null,
+      iban: ibanFattura,
+      iban_fornitore: ibanFattura,
       importo_totale: parseFloat(totaleFattura.toFixed(2)),
       importo_netto: parseFloat(importoNetto.toFixed(2)),
       importo_iva: parseFloat(importoIva.toFixed(2)),

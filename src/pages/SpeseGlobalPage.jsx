@@ -31,6 +31,8 @@ const formatSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+const isUUID = (id) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
 export default function SpeseGlobalPage() {
   const { user } = useAuth()
   const location = useLocation()
@@ -256,8 +258,8 @@ export default function SpeseGlobalPage() {
       })
       
       setQueue(prev => {
-        // Preserva sempre gli elementi caricati localmente (drag&drop) non ancora salvati nel DB
-        const localItems = prev.filter(item => String(item.id).startsWith('local_') || item.file != null)
+        // Preserva sempre gli elementi non ancora salvati nel DB (local_ o incoming_)
+        const localItems = prev.filter(item => !isUUID(item.id) || item.file != null)
         const dbIds = new Set(mapped.map(m => m.id))
         const unpersistedLocal = localItems.filter(item => !dbIds.has(item.id))
         const combined = [...unpersistedLocal, ...mapped]
@@ -520,7 +522,7 @@ export default function SpeseGlobalPage() {
     }))
 
     // Salva la preferenza di condominio sul DB se presente
-    if (itemId && !String(itemId).startsWith('local_')) {
+    if (itemId && isUUID(itemId)) {
       await supabase
         .from('inbox_documenti')
         .update({ condominio_id: (condoId && condoId !== '__NEW_CONDO__') ? condoId : null })
@@ -552,7 +554,7 @@ export default function SpeseGlobalPage() {
       }
 
       // Imposta stato scartato sul database (soft delete) se presente su DB
-      if (itemId && !String(itemId).startsWith('local_')) {
+      if (itemId && isUUID(itemId)) {
         await supabase
           .from('inbox_documenti')
           .update({ stato: 'scartato' })
@@ -775,7 +777,7 @@ export default function SpeseGlobalPage() {
       if (invoiceErr) console.warn('[SpeseGlobalPage] Inserimento fatture_fornitori non riuscito:', invoiceErr.message)
 
       // d. Aggiorna record inbox_documenti a 'inserito' se presente
-      if (itemId && !String(itemId).startsWith('local_')) {
+      if (itemId && isUUID(itemId)) {
         await supabase
           .from('inbox_documenti')
           .update({ stato: 'inserito', spesa_id: spesaId, condominio_id: finalCondominioId })

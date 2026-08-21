@@ -1536,3 +1536,223 @@ REGOLE CRITICHE PER IL NOME DEL TAG:
     return Array.isArray(parsed?.tags) ? parsed.tags : [];
   });
 }
+
+/**
+ * Motore Universale di Analisi, Classificazione e Routing Documentale (Universal AI Dropzone).
+ * Analizza qualsiasi file (PDF, XML, P7M, immagini, Excel, Word) e determina l'azione esatta
+ * nel gestionale, estraendo tutti i metadati pertinenti per l'esecuzione in 1 click.
+ */
+export async function analizzaEClassificaDocumentoUniversale(file, condominioCorrente = null) {
+  if (!validaMimeType(file)) {
+    throw new Error(`Tipo file non consentito: ${file.name}. Usa PDF, XML, P7M, XLSX, DOCX, CSV, JPG o PNG.`);
+  }
+
+  // 1. Controllo nativo per fatture elettroniche XML / P7M (0ms, 100% deterministico)
+  const infoTipo = getTipoFile(file);
+  if (infoTipo === 'xml' || infoTipo === 'p7m') {
+    try {
+      const resXml = await parseFatturaXmlP7m(file);
+      const datiFatt = resXml?.dati || resXml;
+      return {
+        tipo_documento: 'fattura_spesa',
+        titolo_rilevato: `Fattura ${datiFatt.numero_fattura || ''} - ${datiFatt.fornitore || 'Fornitore'}`,
+        condominio_destinatario: datiFatt.condominio_destinatario_nome || null,
+        condominio_destinatario_codice_fiscale: datiFatt.condominio_destinatario_codice_fiscale || null,
+        condominio_destinatario_indirizzo: datiFatt.condominio_destinatario_indirizzo || null,
+        condominio_destinatario_citta: datiFatt.condominio_destinatario_citta || null,
+        condominio_destinatario_cap: datiFatt.condominio_destinatario_cap || null,
+        condominio_destinatario_provincia: datiFatt.condominio_destinatario_provincia || null,
+        dati_estratti: {
+          fornitore: datiFatt.fornitore,
+          partita_iva_fornitore: datiFatt.partita_iva_fornitore,
+          importo_totale: datiFatt.importo_totale,
+          importo_netto: datiFatt.importo_netto,
+          importo_iva: datiFatt.importo_iva,
+          importo_ritenuta: datiFatt.importo_ritenuta,
+          aliquota_ritenuta: datiFatt.aliquota_ritenuta,
+          data_fattura: datiFatt.data_fattura,
+          data_scadenza: datiFatt.data_scadenza,
+          numero_fattura: datiFatt.numero_fattura,
+          descrizione: datiFatt.descrizione,
+          categoria: datiFatt.categoria,
+          tipo_lavoro: datiFatt.tipo_lavoro || 'ordinario',
+          criterio_ripartizione: datiFatt.criterio_ripartizione || 'millesimi'
+        },
+        azione_suggerita: {
+          label: '✨ Registra Spesa / Fattura',
+          tipo: 'fattura_spesa',
+          route: '/spese',
+          icon: 'Receipt',
+          descrizione: 'Inserimento automatico nei costi del condominio con calcolo ripartizioni'
+        },
+        raw_extraction: datiFatt
+      };
+    } catch (e) {
+      console.warn('[analizzaEClassificaDocumentoUniversale] Fallback da XML parser:', e);
+    }
+  }
+
+  // 2. Analisi multimodale universale tramite Gemini
+  const { contenuto, isVisual, isPdf, mediaType } = await preparaContenuto(file);
+
+  const systemPrompt = `Sei l'Intelligenza Artificiale centrale di classificazione e analisi documentale di CondoFast, gestionale per amministratori di condominio italiani.
+Il tuo compito è esaminare il documento allegato, identificare CON CERTEZZA la sua tipologia operativa ed estrarre i dati essenziali.
+
+CATEGORIE DI DOCUMENTI RICONOSCIUTE (assegna una di queste 7 categorie):
+1. 'fattura_spesa': Fattura commerciale, nota di debito, parcella professionale, bolletta (energia elettrica, gas, acqua, telecomunicazioni), scontrino, ricevuta fiscale per lavori, beni o servizi resi al condominio o allo stabile.
+2. 'estratto_conto': Estratto conto bancario o postale, lista movimenti di conto corrente, scalare trimestrale.
+3. 'verbale_assemblea': Verbale di assemblea condominiale (ordinaria o straordinaria), delibere assembleari, regolamento di condominio approvato.
+4. 'tabella_millesimale': Tabella dei millesimi di proprietà generale, ascensore, riscaldamento, scale o prospetto quote.
+5. 'f24_quietanza': Modello F24 quietanzato, ricevuta telematica di versamento dell'Agenzia delle Entrate, delega bancaria F24 (es. codici tributo 1019, 1040, 1038, IMU).
+6. 'anagrafica': Registro anagrafe condominiale, elenco condòmini, tabella residenti/occupanti/proprietari/inquilini.
+7. 'documento_generale': Polizza assicurativa fabbricato, contratto di manutenzione/appalto, certificato di conformità/CPI, preventivo di spesa, perizia tecnica, lettera o comunicazione generica.
+
+REGOLE CRITICHE:
+- Se il documento contiene importi e fornitore/bolletta, classificalo SEMPRE come 'fattura_spesa'.
+- Per le FATTURE/SPESE: estrai fornitore, importo totale con decimali, data fattura ISO YYYY-MM-DD, numero fattura, descrizione, e l'anagrafica del condominio committente/destinatario (nome, CF, indirizzo, città, CAP, PR).
+- Per gli ESTRATTI CONTO: estrai nome banca, IBAN rilevato, periodo di riferimento e numero approssimativo di movimenti.
+- Per i VERBALI: estrai data assemblea ISO, tipo assemblea (ordinaria/straordinaria), delibere approvate ed eventuali importi di spesa approvati.
+- Per le TABELLE MILLESIMI: estrai nome tabella e numero di unità elencate.
+- Per gli F24: estrai data pagamento ISO, codice tributo principale, importo versato, protocollo telematico se visibile.
+- Normalizza tutti i numeri in formato decimale puro (es. 1250.50).`;
+
+  const jsonSchema = {
+    type: "OBJECT",
+    properties: {
+      tipo_documento: { 
+        type: "STRING", 
+        description: "Uno tra: 'fattura_spesa', 'estratto_conto', 'verbale_assemblea', 'tabella_millesimale', 'f24_quietanza', 'anagrafica', 'documento_generale'" 
+      },
+      titolo_rilevato: { type: "STRING", description: "Breve titolo parlante es. 'Fattura 45/2025 Enel Energia' o 'Estratto Conto Intesa Q2 2025'" },
+      condominio_destinatario_nome: { type: "STRING", nullable: true },
+      condominio_destinatario_codice_fiscale: { type: "STRING", nullable: true },
+      condominio_destinatario_indirizzo: { type: "STRING", nullable: true },
+      condominio_destinatario_citta: { type: "STRING", nullable: true },
+      condominio_destinatario_cap: { type: "STRING", nullable: true },
+      condominio_destinatario_provincia: { type: "STRING", nullable: true },
+      
+      // Metadati specifici
+      fornitore: { type: "STRING", nullable: true },
+      partita_iva_fornitore: { type: "STRING", nullable: true },
+      codice_fiscale_fornitore: { type: "STRING", nullable: true },
+      numero_documento: { type: "STRING", nullable: true },
+      data_documento: { type: "STRING", nullable: true },
+      data_scadenza: { type: "STRING", nullable: true },
+      importo_totale: { type: "NUMBER", nullable: true },
+      importo_netto: { type: "NUMBER", nullable: true },
+      importo_iva: { type: "NUMBER", nullable: true },
+      importo_ritenuta: { type: "NUMBER", nullable: true },
+      aliquota_ritenuta: { type: "NUMBER", nullable: true },
+      descrizione: { type: "STRING", nullable: true },
+      categoria_consigliata: { type: "STRING", nullable: true },
+      tipo_lavoro_consigliato: { type: "STRING", nullable: true },
+      banca_o_iban: { type: "STRING", nullable: true },
+      note: { type: "STRING", nullable: true }
+    },
+    required: ["tipo_documento", "titolo_rilevato"]
+  };
+
+  const userPrompt = (isVisual || isPdf)
+    ? 'Classifica questo documento per il gestionale condominiale ed estrai tutti i dati necessari.'
+    : `Classifica questo documento per il gestionale condominiale ed estrai tutti i dati necessari.\n\nTesto del documento:\n${String(contenuto).substring(0, 30000)}`;
+
+  return await withAutoRetry(async () => {
+    const raw = isVisual
+      ? await callGeminiVision(`${systemPrompt}\n\n${userPrompt}`, contenuto, mediaType, { funzione: 'classifica_universale', maxTokens: 4000, jsonMode: true, jsonSchema })
+      : isPdf
+      ? await callGeminiDocument(userPrompt, contenuto, { system: systemPrompt, funzione: 'classifica_universale', maxTokens: 4000, jsonMode: true, jsonSchema })
+      : await callGemini(userPrompt, { system: systemPrompt, funzione: 'classifica_universale', maxTokens: 4000, jsonMode: true, jsonSchema });
+
+    const parsed = pulisciEdEstraiJson(raw, false) || {};
+    
+    // Normalizzazione categoria rilevata
+    let tipo = parsed.tipo_documento || 'fattura_spesa';
+    if (!['fattura_spesa', 'estratto_conto', 'verbale_assemblea', 'tabella_millesimale', 'f24_quietanza', 'anagrafica', 'documento_generale'].includes(tipo)) {
+      tipo = (parsed.fornitore || parsed.importo_totale != null || parsed.numero_documento) ? 'fattura_spesa' : 'documento_generale';
+    }
+
+    const azioniMap = {
+      fattura_spesa: {
+        label: '✨ Registra Spesa / Fattura',
+        tipo: 'fattura_spesa',
+        route: '/spese',
+        icon: 'Receipt',
+        descrizione: 'Inserimento nei costi del condominio e calcolo ripartizioni'
+      },
+      estratto_conto: {
+        label: '✨ Vai a Riconciliazioni Bancarie',
+        tipo: 'estratto_conto',
+        route: '/condomini',
+        icon: 'Landmark',
+        descrizione: 'Importa movimenti bancari e riconcilia con fatture e quote condòmini'
+      },
+      verbale_assemblea: {
+        label: '✨ Archivia Verbale di Assemblea',
+        tipo: 'verbale_assemblea',
+        route: '/condomini',
+        icon: 'FileText',
+        descrizione: 'Salva con estrazione automatica delle delibere e ricerca AI'
+      },
+      tabella_millesimale: {
+        label: '✨ Importa Tabella nei Millesimi',
+        tipo: 'tabella_millesimale',
+        route: '/condomini',
+        icon: 'Scale',
+        descrizione: 'Assegna i valori millesimali alle unità immobiliari'
+      },
+      f24_quietanza: {
+        label: '✨ Registra nel Modulo Fiscale',
+        tipo: 'f24_quietanza',
+        route: '/modulo-fiscale',
+        icon: 'ShieldCheck',
+        descrizione: 'Abbina la quietanza alle ritenute d\'acconto e deleghe F24'
+      },
+      anagrafica: {
+        label: '✨ Importa Anagrafica Condòmini',
+        tipo: 'anagrafica',
+        route: '/condomini',
+        icon: 'Users',
+        descrizione: 'Popola il registro anagrafe con proprietari, inquilini e unità'
+      },
+      documento_generale: {
+        label: '✨ Archivia nei Documenti',
+        tipo: 'documento_generale',
+        route: '/condomini',
+        icon: 'Archive',
+        descrizione: 'Cataloga con tag automatici nell\'archivio documentale'
+      }
+    };
+
+    return {
+      tipo_documento: tipo,
+      titolo_rilevato: parsed.titolo_rilevato || file.name,
+      condominio_destinatario: parsed.condominio_destinatario_nome || null,
+      condominio_destinatario_codice_fiscale: parsed.condominio_destinatario_codice_fiscale || null,
+      condominio_destinatario_indirizzo: parsed.condominio_destinatario_indirizzo || null,
+      condominio_destinatario_citta: parsed.condominio_destinatario_citta || null,
+      condominio_destinatario_cap: parsed.condominio_destinatario_cap || null,
+      condominio_destinatario_provincia: parsed.condominio_destinatario_provincia || null,
+      dati_estratti: {
+        fornitore: parsed.fornitore || null,
+        partita_iva_fornitore: parsed.partita_iva_fornitore || null,
+        codice_fiscale_fornitore: parsed.codice_fiscale_fornitore || null,
+        numero_fattura: parsed.numero_documento || null,
+        data_fattura: parsed.data_documento || null,
+        data_scadenza: parsed.data_scadenza || null,
+        importo_totale: parsed.importo_totale != null ? Number(parsed.importo_totale) : null,
+        importo_netto: parsed.importo_netto != null ? Number(parsed.importo_netto) : null,
+        importo_iva: parsed.importo_iva != null ? Number(parsed.importo_iva) : 0,
+        importo_ritenuta: parsed.importo_ritenuta != null ? Number(parsed.importo_ritenuta) : 0,
+        aliquota_ritenuta: parsed.aliquota_ritenuta != null ? Number(parsed.aliquota_ritenuta) : 4,
+        descrizione: parsed.descrizione || parsed.titolo_rilevato || '',
+        categoria: parsed.categoria_consigliata || 'ordinaria',
+        tipo_lavoro: parsed.tipo_lavoro_consigliato || 'ordinario',
+        criterio_ripartizione: 'millesimi',
+        banca_o_iban: parsed.banca_o_iban || null,
+        note: parsed.note || ''
+      },
+      azione_suggerita: azioniMap[tipo] || azioniMap.fattura_spesa,
+      raw_extraction: parsed
+    };
+  });
+}

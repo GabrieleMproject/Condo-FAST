@@ -348,6 +348,31 @@ export default function ConsuntivoTab({ condominioId, esercizioId: esercizioIdPr
 
           {/* D cassa */}
           <Card title="D — Situazione di cassa">
+            {(() => {
+              const isQuadraturaOk = Math.abs(data.cassa.scartoQuadratura || 0) <= 0.02;
+              return (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: isQuadraturaOk ? '#10b98115' : '#f59e0b15',
+                  border: isQuadraturaOk ? '1px solid #10b98130' : '1px solid #f59e0b30',
+                  borderRadius: 10, padding: '10px 14px', marginBottom: 12, flexWrap: 'wrap', gap: 8
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {isQuadraturaOk ? (
+                      <CheckCircle2 size={16} color="#10b981" />
+                    ) : (
+                      <AlertTriangle size={16} color="#f59e0b" />
+                    )}
+                    <span style={{ fontSize: 13, fontWeight: 700, color: isQuadraturaOk ? '#10b981' : '#d97706' }}>
+                      {isQuadraturaOk ? '✓ Pareggio di Cassa Verificato al Centesimo' : '⚠️ Scarto di Quadratura da Verificare'}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    Saldo Iniziale ({eur(data.cassa.saldoInizCassa)}) + Entrate ({eur(data.cassa.entrate)}) − Uscite ({eur(data.cassa.uscite)}) = {eur(data.cassa.saldoFinaleCassa)}
+                  </span>
+                </div>
+              );
+            })()}
             <Table head={['Voce', 'Importo']} alignRight={[1]}
               rows={[
                 ['Saldo cassa iniziale', eur(data.cassa.saldoInizCassa)],

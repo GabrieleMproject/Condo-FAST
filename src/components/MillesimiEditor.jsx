@@ -7,7 +7,7 @@ import { useFormShortcuts } from '../hooks/useFormShortcuts';
 import StickyFormActionBar from './StickyFormActionBar';
 import { 
   Layers, Plus, Trash2, Save, Upload, Download, Search, 
-  AlertCircle, X, Check, Edit2, RotateCcw, Scale, Filter, Clock, Calculator
+  AlertCircle, X, Check, Edit2, RotateCcw, Scale, Filter, Clock, Calculator, Sparkles
 } from 'lucide-react';
 import StoricoOccupantiModal from './StoricoOccupantiModal';
 import DiagnosticaAllineamento from './DiagnosticaAllineamento';
@@ -373,6 +373,35 @@ export default function MillesimiEditor({ condominioId: propId }) {
       nuoviValori[`${u.id}_${selectedTabellaId}`] = 0;
     });
     setValori(nuoviValori);
+  }
+
+  // Action: Auto-livella la discrepanza centesimale per raggiungere esattamente 1000.00 millesimi
+  function autoLivellaArrotondamenti() {
+    if (!selectedTabellaId || unita.length === 0) return;
+    const sommaAttuale = getSommaTabella(selectedTabellaId);
+    const discrepanza = parseFloat((1000 - sommaAttuale).toFixed(4));
+    if (Math.abs(discrepanza) < 0.0001) {
+      showToast('La tabella è già perfettamente bilanciata a 1000.00 ‰!', 'success');
+      return;
+    }
+    // Trova l'unità con il valore più alto per assorbire l'arrotondamento
+    const unitaValorizzate = unita.filter(u => (parseFloat(valori[`${u.id}_${selectedTabellaId}`]) || 0) > 0);
+    if (unitaValorizzate.length === 0) {
+      showToast('Nessuna unità con valore millesimale inserito.', 'error');
+      return;
+    }
+    const targetUnita = unitaValorizzate.reduce((prev, curr) => 
+      (parseFloat(valori[`${curr.id}_${selectedTabellaId}`]) || 0) > (parseFloat(valori[`${prev.id}_${selectedTabellaId}`]) || 0) ? curr : prev
+    , unitaValorizzate[0]);
+
+    const valPrec = parseFloat(valori[`${targetUnita.id}_${selectedTabellaId}`]) || 0;
+    const valNuovo = parseFloat((valPrec + discrepanza).toFixed(4));
+    
+    setValori(prev => ({
+      ...prev,
+      [`${targetUnita.id}_${selectedTabellaId}`]: valNuovo
+    }));
+    showToast(`✨ Quadratura completata: arrotondamento di ${discrepanza > 0 ? '+' : ''}${discrepanza} ‰ livellato su Unità ${targetUnita.numero || targetUnita.id}! Somma: 1000.00 ‰`, 'success');
   }
 
   // CRUD: Rename Table
@@ -1006,15 +1035,34 @@ export default function MillesimiEditor({ condominioId: propId }) {
                   {(() => {
                     const somma = getSommaTabella(selectedTabellaId);
                     const ok = Math.abs(somma - 1000) <= 0.01;
+                    const canAutoLevel = !ok && Math.abs(somma - 1000) <= 5 && unita.length > 0;
                     return (
-                      <div style={{
-                        ...styles.statusBadge,
-                        background: ok ? '#10b98115' : '#ef444415',
-                        border: ok ? '1px solid #10b98130' : '1px solid #ef444430',
-                        color: ok ? '#34d399' : '#f87171',
-                      }}>
-                        {ok ? <Check size={13} style={{ marginRight: 5 }} /> : <AlertCircle size={13} style={{ marginRight: 5 }} />}
-                        Somma: {somma.toFixed(2)} ‰ {ok ? '(Bilanciata)' : '(Dev\'essere 1000)'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{
+                          ...styles.statusBadge,
+                          background: ok ? '#10b98115' : '#ef444415',
+                          border: ok ? '1px solid #10b98130' : '1px solid #ef444430',
+                          color: ok ? '#34d399' : '#f87171',
+                        }}>
+                          {ok ? <Check size={13} style={{ marginRight: 5 }} /> : <AlertCircle size={13} style={{ marginRight: 5 }} />}
+                          Somma: {somma.toFixed(2)} ‰ {ok ? '✓ (Quadratura 1000,00 ‰)' : '(Dev\'essere 1000,00 ‰)'}
+                        </div>
+                        {canAutoLevel && (
+                          <button
+                            type="button"
+                            onClick={autoLivellaArrotondamenti}
+                            style={{
+                              background: 'linear-gradient(135deg, #10b981, #059669)',
+                              color: '#fff', border: 'none', borderRadius: 20,
+                              padding: '5px 12px', fontSize: 11, fontWeight: 700,
+                              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
+                              boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)'
+                            }}
+                            title="Auto-livella la discrepanza centesimale per raggiungere esattamente 1000.00 millesimi"
+                          >
+                            <Sparkles size={12} /> Auto-Livella a 1000 ‰
+                          </button>
+                        )}
                       </div>
                     );
                   })()}

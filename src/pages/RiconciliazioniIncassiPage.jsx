@@ -597,6 +597,35 @@ function AbbinamentoIncassoCard({ ab, onConferma, onRifiuta }) {
             <span>Residuo {euro(residuo)}</span>
             <span style={{ color: '#2563eb', fontWeight: 700 }}>assegna {euro(ab.importo_assegnato)}</span>
           </div>
+          {(() => {
+            const movImp = Math.abs(mov?.importo || 0);
+            const diff = r2(movImp - residuo);
+            if (Math.abs(diff) < 0.01) {
+              return (
+                <div style={{ marginTop: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', background: '#16a34a15', border: '1px solid #16a34a30', padding: '2px 8px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Check size={11} /> Quadratura Esatta 100%
+                  </span>
+                </div>
+              );
+            } else if (diff < 0) {
+              return (
+                <div style={{ marginTop: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#d97706', background: '#f59e0b15', border: '1px solid #f59e0b30', padding: '2px 8px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    ⏳ Acconto Parziale (Residuo: {euro(Math.abs(diff))})
+                  </span>
+                </div>
+              );
+            } else {
+              return (
+                <div style={{ marginTop: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', background: '#2563eb15', border: '1px solid #2563eb30', padding: '2px 8px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    ⚠️ Sovra-versamento (+{euro(diff)} a credito)
+                  </span>
+                </div>
+              );
+            }
+          })()}
         </div>
       </div>
 

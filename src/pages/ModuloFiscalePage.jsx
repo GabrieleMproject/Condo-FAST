@@ -470,12 +470,62 @@ export default function ModuloFiscalePage() {
       </div>
 
       {/* Disclaimer Fiscale */}
-      <div style={{ background: '#f59e0b10', border: '1px solid #f59e0b30', borderRadius: 10, padding: '12px 16px', margin: '0 24px 16px 24px', fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <div style={{ background: '#f59e0b10', border: '1px solid #f59e0b30', borderRadius: 10, padding: '12px 16px', margin: '0 24px 12px 24px', fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
         <ShieldAlert size={18} color="#f59e0b" style={{ flexShrink: 0, marginTop: 2 }} />
         <span>
           <b>Disclaimer di Responsabilità Fiscale:</b> CondoFast opera esclusivamente come software di calcolo ed elaborazione dati. La responsabilità legale per la correttezza, la validazione, l'invio telematico degli adempimenti (F24, 770, CU) e il rispetto delle scadenze di legge in qualità di Sostituto d'Imposta ricade in via esclusiva sull'Amministratore del Condominio.
         </span>
       </div>
+
+      {/* Card di Quadratura Matematica Ritenute / F24 */}
+      {quadratura770 && quadratura770.status !== 'in_attesa' && (
+        <div style={{
+          background: quadratura770.status === 'conforme' ? '#10b98110' : '#ef444410',
+          border: quadratura770.status === 'conforme' ? '1px solid #10b98130' : '1px solid #ef444430',
+          borderRadius: 10,
+          padding: '12px 16px',
+          margin: '0 24px 16px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 12
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {quadratura770.status === 'conforme' ? (
+              <CheckCircle2 size={20} color="#10b981" style={{ flexShrink: 0 }} />
+            ) : (
+              <AlertTriangle size={20} color="#ef4444" style={{ flexShrink: 0 }} />
+            )}
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: quadratura770.status === 'conforme' ? '#10b981' : '#ef4444' }}>
+                {quadratura770.status === 'conforme' ? '✓ Quadratura Fiscale 100% Verificata (Fatture ↔ F24)' : '⚠️ Discrepanza Ritenute / Versamenti F24'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                {quadratura770.messaggio}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Ritenute Fatture: <strong style={{ color: 'var(--text-primary)' }}>€ {quadratura770.totaleRitenuteFatture.toFixed(2)}</strong> · F24 Pagati: <strong style={{ color: '#10b981' }}>€ {quadratura770.totaleF24Pagati.toFixed(2)}</strong>
+            </div>
+            {quadratura770.status !== 'conforme' && (
+              <button
+                type="button"
+                onClick={() => setTabAttivo('f24')}
+                style={{
+                  background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6,
+                  padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: 6
+                }}
+              >
+                <Sparkles size={12} /> Genera F24 Mancante
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tabs di Navigazione */}
       <div style={styles.tabsContainer}>

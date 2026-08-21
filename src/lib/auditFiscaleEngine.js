@@ -39,6 +39,7 @@ export function verificaQuadraturaFiscaleRitenute(fatture = [], delegheF24 = [])
   if (differenza <= 0.02) { // Tolleranza 2 centesimi per arrotondamenti di calcolo
     return {
       status: 'conforme',
+      tipoDiscrepanza: 'nessuna',
       totaleRitenuteFatture,
       totaleF24Pagati,
       differenza: 0,
@@ -46,11 +47,27 @@ export function verificaQuadraturaFiscaleRitenute(fatture = [], delegheF24 = [])
     }
   }
 
+  // Versamento IN DIFETTO (Versato meno del dovuto)
+  if (totaleF24Pagati < totaleRitenuteFatture) {
+    return {
+      status: 'discrepanza',
+      tipoDiscrepanza: 'difetto',
+      totaleRitenuteFatture,
+      totaleF24Pagati,
+      differenza,
+      messaggio: `Versamento IN DIFETTO di € ${differenza.toFixed(2)}: risultano ritenute dovute per € ${totaleRitenuteFatture.toFixed(2)} a fronte di € ${totaleF24Pagati.toFixed(2)} versati con F24.`,
+      azioneConsigliata: `Genera un F24 integrativo tramite Ravvedimento Operoso (art. 13 D.Lgs. 472/97) versando la quota mancante di € ${differenza.toFixed(2)} unitamente alle sanzioni ridotte (codice 8911) e agli interessi legali (codice 1992).`
+    }
+  }
+
+  // Versamento IN ECCESSO (Versato più del dovuto)
   return {
     status: 'discrepanza',
+    tipoDiscrepanza: 'eccesso',
     totaleRitenuteFatture,
     totaleF24Pagati,
     differenza,
-    messaggio: `Discrepanza di € ${differenza.toFixed(2)} tra il totale ritenute nelle fatture (€ ${totaleRitenuteFatture.toFixed(2)}) e gli F24 versati (€ ${totaleF24Pagati.toFixed(2)}). Riconcilia prima della consegna del 770.`
+    messaggio: `Versamento IN ECCESSO di € ${differenza.toFixed(2)}: sono stati versati € ${totaleF24Pagati.toFixed(2)} con F24 rispetto a € ${totaleRitenuteFatture.toFixed(2)} di ritenute effettivamente maturate sulle fatture.`,
+    azioneConsigliata: `L'eccedenza di € ${differenza.toFixed(2)} costituisce un credito d'imposta per il Condominio, utilizzabile in compensazione diretta nelle prossime deleghe F24 (Sezione Erario - Importi a credito compensati) oppure mediante istanza di rimborso all'Agenzia delle Entrate.`
   }
 }

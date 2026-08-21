@@ -84,7 +84,7 @@ const calcolaRipartizioniBatch = (importoVal, criterio, tabellaId, percentualeMi
   }
 
   if (criterio === 'quota_fissa') {
-    const quota = importo / unitaList.length
+    const quota = importo / (unitaList.length || 1)
     return unitaList.map(u => ({
       unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
       importo: Math.round(quota * 100) / 100, millesimi: null,
@@ -674,7 +674,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
     if (!importo) return
 
     if (form.criterio === 'quota_fissa') {
-      const quota = importo / unita.length
+      const quota = importo / (unita.length || 1)
       setRipartizioni(unita.map(u => ({
         unita_id: u.id, interno: u.numero, scala: u.scala, piano: u.piano,
         importo: Math.round(quota * 100) / 100, millesimi: null,
@@ -1116,7 +1116,7 @@ Formato JSON:
             <div style={{ height: 6, width: '100%', background: 'var(--app-bg)', borderRadius: 3, overflow: 'hidden' }}>
               <div style={{
                 height: '100%',
-                width: `${(completati.length / codaFatture.length) * 100}%`,
+                width: `${(completati.length / (codaFatture.length || 1)) * 100}%`,
                 background: 'linear-gradient(90deg, #3b82f6, #7c3aed)',
                 transition: 'width 0.3s ease'
               }} />

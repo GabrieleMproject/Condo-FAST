@@ -56,7 +56,7 @@ const DOC_TYPE_META = {
     badgeColor: '#16a34a',
     icon: ShieldCheck,
     primaryAction: '✨ Registra nel Modulo Fiscale',
-    route: '/modulo-fiscale',
+    route: '/fiscale',
     actionDesc: 'Registra il pagamento F24 e aggiorna le ritenute d\'acconto'
   },
   anagrafica: {
@@ -226,7 +226,7 @@ export default function GlobalDropzone() {
       navigate('/condomini', { state: { estrattoContoFile: currentFile } })
       toast.success('Seleziona il condominio per avviare la riconciliazione bancaria')
     } else if (result.tipo_documento === 'f24_quietanza') {
-      navigate('/modulo-fiscale', { state: { quietanzaF24: result.dati_estratti, file: currentFile } })
+      navigate('/fiscale', { state: { quietanzaF24: result.dati_estratti, file: currentFile } })
       toast.success('Pronto per l\'abbinamento quietanza nel Modulo Fiscale')
     } else if (result.tipo_documento === 'anagrafica') {
       navigate('/anagrafica', { state: { anagraficaImport: result.raw_extraction } })

@@ -85,6 +85,76 @@ export default function SpeseGlobalPage() {
     fetchCondomini()
   }, [])
 
+  // Helper per recuperare i dettagli di un condominio selezionato
+  const fetchCondominioDati = async (condoId) => {
+    if (!condoId) return { tabelle: [], unita: [], documenti: [], esercizi: [] }
+    try {
+      const [resEsercizi, resUnita, resTabelle, resDocumenti] = await Promise.all([
+        supabase.from('esercizi').select('*').eq('condominio_id', condoId).order('anno', { ascending: false }),
+        supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condoId),
+        supabase.from('tabelle_millesimali').select('*, millesimi_unita(*)').eq('condominio_id', condoId),
+        supabase.from('documenti_condominio').select('*').eq('condominio_id', condoId)
+      ])
+      return {
+        esercizi: resEsercizi.data || [],
+        unita: resUnita.data || [],
+        tabelle: resTabelle.data || [],
+        documenti: resDocumenti.data || []
+      }
+    } catch (err) {
+      console.error('Errore caricamento dettagli condominio:', err)
+      return { tabelle: [], unita: [], documenti: [], esercizi: [] }
+    }
+  }
+
+  // Algoritmo di matching del condominio
+  const matchCondominio = (datiEstratti, condominiList) => {
+    if (!datiEstratti || !condominiList || condominiList.length === 0) return null
+
+    // Confronto Codice Fiscale (sia numerico 11 cifre sia alfanumerico 16 caratteri)
+    const rawCF = String(datiEstratti.condominio_destinatario_codice_fiscale || '').replace(/[\s.-]/g, '').toUpperCase()
+    if (rawCF) {
+      const trovatoCF = condominiList.find(c => {
+        const cfCondo = String(c.codice_fiscale || '').replace(/[\s.-]/g, '').toUpperCase()
+        if (!cfCondo) return false
+        if (cfCondo === rawCF) return true
+        const numCondo = cfCondo.replace(/\D/g, '')
+        const numEstratto = rawCF.replace(/\D/g, '')
+        return numCondo && numEstratto && numCondo === numEstratto
+      })
+      if (trovatoCF) return trovatoCF.id
+    }
+
+    // Matching fuzzy sul nome del condominio
+    const nomeEstratto = String(datiEstratti.condominio_destinatario_nome || '').trim().toLowerCase()
+    if (nomeEstratto && nomeEstratto.length > 3) {
+      const paroleChiave = nomeEstratto
+        .replace(/condominio/g, '')
+        .split(/[\s,.-]+/)
+        .filter(w => w.length > 2 && !['cond', 'condo', 'condominio', 'studio', 'amministrazione'].includes(w))
+      
+      if (paroleChiave.length > 0) {
+        const trovatoNome = condominiList.find(c => {
+          const nomeCondo = String(c.nome || '').toLowerCase()
+          return paroleChiave.some(p => nomeCondo.includes(p))
+        })
+        if (trovatoNome) return trovatoNome.id
+      }
+    }
+
+    // Matching sull'indirizzo
+    const indirizzoEstratto = String(datiEstratti.condominio_destinatario_indirizzo || '').trim().toLowerCase()
+    if (indirizzoEstratto && indirizzoEstratto.length > 5) {
+      const trovatoInd = condominiList.find(c => {
+        const indCondo = String(c.indirizzo || '').toLowerCase()
+        return indCondo && (indirizzoEstratto.includes(indCondo) || indCondo.includes(indirizzoEstratto))
+      })
+      if (trovatoInd) return trovatoInd.id
+    }
+
+    return null
+  }
+
   // 1b. Ascolta e gestisce file o fatture passate da GlobalDropzone o da altre pagine
   useEffect(() => {
     if (location.state?.extractedFattura) {
@@ -130,28 +200,6 @@ export default function SpeseGlobalPage() {
       })
     }
   }, [location.state, condomini])
-
-  // Helper per recuperare i dettagli di un condominio selezionato
-  const fetchCondominioDati = async (condoId) => {
-    if (!condoId) return { tabelle: [], unita: [], documenti: [], esercizi: [] }
-    try {
-      const [resEsercizi, resUnita, resTabelle, resDocumenti] = await Promise.all([
-        supabase.from('esercizi').select('*').eq('condominio_id', condoId).order('anno', { ascending: false }),
-        supabase.from('unita').select('id, numero, scala, piano, tipo').eq('condominio_id', condoId),
-        supabase.from('tabelle_millesimali').select('*, millesimi_unita(*)').eq('condominio_id', condoId),
-        supabase.from('documenti_condominio').select('*').eq('condominio_id', condoId)
-      ])
-      return {
-        esercizi: resEsercizi.data || [],
-        unita: resUnita.data || [],
-        tabelle: resTabelle.data || [],
-        documenti: resDocumenti.data || []
-      }
-    } catch (err) {
-      console.error('Errore caricamento dettagli condominio:', err)
-      return { tabelle: [], unita: [], documenti: [], esercizi: [] }
-    }
-  }
 
   // 2. Caricamento Coda da Database (inbox_documenti in stato nuovo, rilevato, da_smistare)
   const fetchQueue = async () => {
@@ -288,56 +336,6 @@ export default function SpeseGlobalPage() {
       return () => { isMounted = false }
     }
   }, [activeQueueId, activeItem?.id, activeItem?.file, activeItem?.file_path])
-
-
-
-  // Algoritmo di matching del condominio
-  const matchCondominio = (datiEstratti, condominiList) => {
-    if (!datiEstratti || !condominiList || condominiList.length === 0) return null
-
-    // Confronto Codice Fiscale (sia numerico 11 cifre sia alfanumerico 16 caratteri)
-    const rawCF = String(datiEstratti.condominio_destinatario_codice_fiscale || '').replace(/[\s.-]/g, '').toUpperCase()
-    if (rawCF) {
-      const trovatoCF = condominiList.find(c => {
-        const cfCondo = String(c.codice_fiscale || '').replace(/[\s.-]/g, '').toUpperCase()
-        if (!cfCondo) return false
-        if (cfCondo === rawCF) return true
-        const numCondo = cfCondo.replace(/\D/g, '')
-        const numEstratto = rawCF.replace(/\D/g, '')
-        return numCondo && numEstratto && numCondo === numEstratto
-      })
-      if (trovatoCF) return trovatoCF.id
-    }
-
-    // Matching fuzzy sul nome del condominio
-    const nomeEstratto = String(datiEstratti.condominio_destinatario_nome || '').trim().toLowerCase()
-    if (nomeEstratto && nomeEstratto.length > 3) {
-      const paroleChiave = nomeEstratto
-        .replace(/condominio/g, '')
-        .split(/[\s,.-]+/)
-        .filter(w => w.length > 2 && !['cond', 'condo', 'condominio', 'studio', 'amministrazione'].includes(w))
-      
-      if (paroleChiave.length > 0) {
-        const trovatoNome = condominiList.find(c => {
-          const nomeCondo = String(c.nome || '').toLowerCase()
-          return paroleChiave.some(p => nomeCondo.includes(p))
-        })
-        if (trovatoNome) return trovatoNome.id
-      }
-    }
-
-    // Matching sull'indirizzo
-    const indirizzoEstratto = String(datiEstratti.condominio_destinatario_indirizzo || '').trim().toLowerCase()
-    if (indirizzoEstratto && indirizzoEstratto.length > 5) {
-      const trovatoInd = condominiList.find(c => {
-        const indCondo = String(c.indirizzo || '').toLowerCase()
-        return indCondo && (indirizzoEstratto.includes(indCondo) || indCondo.includes(indirizzoEstratto))
-      })
-      if (trovatoInd) return trovatoInd.id
-    }
-
-    return null
-  }
 
   // 5. Caricamento File manuale e analisi AI (elaborazione locale immediata)
   const handleFilesAdded = async (fileList) => {

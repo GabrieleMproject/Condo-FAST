@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { Landmark, Download, FileSpreadsheet, Building2, User, Calendar, CheckCircle2, AlertTriangle, FileText, Upload, ChevronRight, ExternalLink, Monitor, ShieldCheck, ShieldAlert, PlayCircle } from 'lucide-react'
+import { Landmark, Download, FileSpreadsheet, Building2, User, Calendar, CheckCircle2, AlertTriangle, FileText, Upload, ChevronRight, ExternalLink, Monitor, ShieldCheck, ShieldAlert, PlayCircle, Calculator, Send, MailCheck, Archive } from 'lucide-react'
 import { exportBozzaCU, exportQuietanzaFornitore, generaPdfQuietanzaBase64 } from '../lib/exportFiscale'
+import { exportDossierFiscaleRevisori } from '../lib/exportDossierFiscale'
 import { generaCbiF24 } from '../lib/cbiGenerator'
 import { generaTelematicoCU, generaTelematico770 } from '../lib/fiscaleTelematico'
 import { validaDelegheCbi } from '../lib/cbiValidator'
+import { calcolaCreditiCondominio } from '../lib/creditiFiscaleEngine'
 import PlanGate from '../components/PlanGate'
 import ScadenzarioWidget from '../components/ScadenzarioWidget'
 import { eseguiDiagnosiConformitaFiscale } from '../lib/diagnosiFiscaleEngine'
 import { verificaQuadraturaFiscaleRitenute } from '../lib/auditFiscaleEngine'
 import DiagnosiFiscaleModal from '../components/DiagnosiFiscaleModal'
+import RavvedimentoModal from '../components/RavvedimentoModal'
+import CassettoCreditiWidget from '../components/CassettoCreditiWidget'
 import { usePlan } from '../hooks/usePlan'
 import { useWatermark } from '../hooks/useWatermark'
 import { X, CheckSquare, AlertCircle, Info, Mail, Activity, Sparkles, Loader2 } from 'lucide-react'
@@ -22,6 +27,7 @@ const formattaData = (dataStr) => {
 };
 
 export default function ModuloFiscalePage() {
+  const location = useLocation()
   const { profile } = usePlan()
   const { checkWatermark, WatermarkModal } = useWatermark()
   const [condomini, setCondomini] = useState([])
@@ -32,11 +38,25 @@ export default function ModuloFiscalePage() {
   const [abbinamenti, setAbbinamenti] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Intercetta arrivo di quietanza F24 dalla Dropzone Globale
+  useEffect(() => {
+    if (location.state?.quietanzaF24 || location.state?.file) {
+      setTabAttivo('f24')
+      toast.success("Documento F24 ricevuto: seleziona la delega 'Registra Pagamento' per confermare l'abbinamento.", { duration: 6000 })
+    }
+  }, [location.state])
+
   // Filtri e Tabs
   const [tabAttivo, setTabAttivo] = useState('cu_770') // cu_770 | f24 | quietanze
   const [annoSelezionato, setAnnoSelezionato] = useState(new Date().getFullYear().toString())
   const [condominioSelezionato, setCondominioSelezionato] = useState('')
   
+  // Modale Ravvedimento Operoso & Invio Massivo CU
+  const [modalRavvedimentoOpen, setModalRavvedimentoOpen] = useState(false)
+  const [ravvedimentoDefaultData, setRavvedimentoDefaultData] = useState({})
+  const [invioCuMassivoBusy, setInvioCuMassivoBusy] = useState(false)
+  const [invioCuProgresso, setInvioCuProgresso] = useState('')
+
   // Selezione e Validazione Checkout per CBI massivo
   const [selezionatiCbi, setSelezionatiCbi] = useState({}) // f24Id -> boolean
   const [f24UploadingId, setF24UploadingId] = useState(null)
@@ -245,7 +265,99 @@ export default function ModuloFiscalePage() {
     })
   }, [fatture, abbinamenti, f24Deleghe, condominioSelezionato, annoSelezionato])
 
+  // --- LOGICA CASSETTO CREDITI ERARIO CONDOMINIALE ---
+  const creditiCondominio = useMemo(() => {
+    const delegheCondo = f24Deleghe.filter(d => !condominioSelezionato || d.condominio_id === condominioSelezionato)
+    const fattureCondo = fatture.filter(f => !condominioSelezionato || f.condominio_id === condominioSelezionato)
+    return calcolaCreditiCondominio(delegheCondo, fattureCondo)
+  }, [f24Deleghe, fatture, condominioSelezionato])
+
   // --- ESPORTAZIONI ED AZIONI ---
+  
+  const handleApriRavvedimento = (datiPrefill = {}) => {
+    setRavvedimentoDefaultData({
+      condominio_id: condominioSelezionato || condomini[0]?.id || '',
+      importo: datiPrefill.differenza || datiPrefill.importo || 100,
+      codice_tributo: datiPrefill.codice_tributo || '1019',
+      data_scadenza: datiPrefill.data_scadenza || new Date(new Date().setMonth(new Date().getMonth() - 1, 16)).toISOString().split('T')[0]
+    })
+    setModalRavvedimentoOpen(true)
+  }
+
+  const handleExportDossierRevisori = (cId) => {
+    checkWatermark((withWatermark) => {
+      const targetId = cId || condominioSelezionato || condomini[0]?.id
+      const condoTarget = condomini.find(c => c.id === targetId)
+      if (!condoTarget) {
+        toast.error("Seleziona prima un condominio.")
+        return
+      }
+
+      exportDossierFiscaleRevisori({
+        condominio: condoTarget,
+        anno: annoSelezionato,
+        fatture: fatture.filter(f => f.condominio_id === condoTarget.id),
+        delegheF24: f24Deleghe.filter(d => d.condominio_id === condoTarget.id),
+        abbinamenti,
+        tributi,
+        profile,
+        withWatermark
+      })
+      toast.success("Dossier Fiscale Asseverato PDF esportato con successo!")
+    })
+  }
+
+  const handleInviaCuMassive = async (cId) => {
+    const targetMap = datiRaggruppatiCU[cId]
+    if (!targetMap) return
+    const listaFornitori = Object.values(targetMap)
+    if (listaFornitori.length === 0) return
+
+    setInvioCuMassivoBusy(true)
+    setInvioCuProgresso(`Preparazione CU per ${listaFornitori.length} fornitori...`)
+    
+    let inviate = 0
+    let fallite = 0
+
+    try {
+      const condoTarget = condomini.find(c => c.id === cId)
+      for (let i = 0; i < listaFornitori.length; i++) {
+        const item = listaFornitori[i]
+        const email = item.fornitore?.email
+        setInvioCuProgresso(`Invio CU (${i + 1}/${listaFornitori.length}): ${item.fornitore.ragione_sociale}...`)
+
+        if (!email) {
+          fallite++
+          continue
+        }
+
+        try {
+          const { base64Data, filename } = generaPdfQuietanzaBase64(condoTarget, item.fornitore, item.fatture, null, profile)
+          const bodyPayload = {
+            condominio_id: cId,
+            destinatari: [{ email, nome: item.fornitore.ragione_sociale }],
+            oggetto: `Certificazione Unica ${annoSelezionato} - ${condoTarget?.nome || 'Condominio'}`,
+            messaggio: `Spettabile ${item.fornitore.ragione_sociale},\n\nIn allegato trasmettiamo la Certificazione Unica sintetica per le ritenute d'acconto operate dal ${condoTarget?.nome || 'Condominio'} nell'anno d'imposta ${annoSelezionato}.\n\nCordiali Saluti,\n${profile?.ragione_sociale || 'L\'Amministrazione'}`,
+            tipo: 'email',
+            allegati: [{ filename: `CU_${annoSelezionato}_${item.fornitore.ragione_sociale.replace(/\s+/g, '_')}.pdf`, content: base64Data, contentType: 'application/pdf' }]
+          }
+          const { error: sendErr } = await supabase.functions.invoke('invia-comunicazione', { body: bodyPayload })
+          if (sendErr) throw sendErr
+          inviate++
+        } catch (e) {
+          console.warn("Invio CU fallito per", item.fornitore?.ragione_sociale, e)
+          fallite++
+        }
+      }
+
+      toast.success(`Invio massivo CU completato: ${inviate} inviate con successo${fallite > 0 ? `, ${fallite} senza email o fallite` : ''}.`)
+    } catch (err) {
+      toast.error("Errore durante l'invio massivo: " + err.message)
+    } finally {
+      setInvioCuMassivoBusy(false)
+      setInvioCuProgresso('')
+    }
+  }
   
   const handleExportPdfCU = (cId) => {
     checkWatermark((withWatermark) => {
@@ -440,14 +552,28 @@ export default function ModuloFiscalePage() {
             <p style={styles.subtitle}>Gestione Ritenute d'Acconto, F24 Cumulativi (CBI) e invii telematici Agenzia delle Entrate</p>
           </div>
         </div>
-        <button
-          onClick={handleAvviaDiagnosiFiscale}
-          disabled={diagnosiBusy}
-          style={{ ...styles.btnActionPrimary, background: '#10b981', padding: '10px 16px', fontSize: 13.5 }}
-        >
-          <Activity size={18} />
-          {diagnosiBusy ? 'Diagnosi in corso...' : 'Diagnosi Conformità Fiscale'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => handleExportDossierRevisori()}
+            style={{ ...styles.btnAction, background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <Archive size={16} style={{ color: '#3b82f6' }} /> Dossier Revisori (PDF)
+          </button>
+          <button
+            onClick={() => handleApriRavvedimento()}
+            style={{ ...styles.btnAction, background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <Calculator size={16} style={{ color: '#f59e0b' }} /> Calcola Ravvedimento F24
+          </button>
+          <button
+            onClick={handleAvviaDiagnosiFiscale}
+            disabled={diagnosiBusy}
+            style={{ ...styles.btnActionPrimary, background: '#10b981', padding: '10px 16px', fontSize: 13.5 }}
+          >
+            <Activity size={18} />
+            {diagnosiBusy ? 'Diagnosi in corso...' : 'Diagnosi Conformità Fiscale'}
+          </button>
+        </div>
       </div>
 
       {/* Toolbar Filtri */}
@@ -597,7 +723,14 @@ export default function ModuloFiscalePage() {
                               <Building2 size={20} color="#94a3b8" />
                               <h2 style={styles.sectionTitle}>{condName}</h2>
                             </div>
-                            <div style={{ display: 'flex', gap: 10 }}>
+                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                              <button onClick={() => handleInviaCuMassive(cId)} disabled={invioCuMassivoBusy} style={{ ...styles.btnActionPrimary, background: '#8b5cf6', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                {invioCuMassivoBusy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                {invioCuMassivoBusy ? (invioCuProgresso || 'Invio in corso...') : 'Invia CU ai Fornitori (Email/PEC)'}
+                              </button>
+                              <button onClick={() => handleExportDossierRevisori(cId)} style={styles.btnAction}>
+                                <Archive size={14} style={{ color: '#3b82f6' }} /> Dossier Revisori PDF
+                              </button>
                               <button onClick={() => handleExportPdfCU(cId)} style={styles.btnAction}>
                                 <Download size={14} /> PDF Bozza CU
                               </button>
@@ -783,6 +916,14 @@ export default function ModuloFiscalePage() {
                   <b>Gestione F24:</b> Nei piani Base e Studio puoi monitorare lo Scadenzario F24 e registrare i pagamenti effettuati. L'esportazione del tracciato telematico massivo <b>CBI F24</b> per l'Home Banking è inclusa nel piano Professional.
                 </span>
               </div>
+
+              {/* Cassetto Crediti Erario Condominiale */}
+              <CassettoCreditiWidget
+                creditoDisponibile={creditiCondominio.totaleCreditoDisponibile}
+                listaCrediti={creditiCondominio.listaCrediti}
+                condominioId={condominioSelezionato || condomini[0]?.id}
+                onRefresh={loadData}
+              />
 
               {/* Scadenzario Timeline Widget */}
               <ScadenzarioWidget deleghe={f24Deleghe} />
@@ -1118,6 +1259,15 @@ export default function ModuloFiscalePage() {
         onClose={() => setModalDiagnosiOpen(false)}
         condominioNome={condomini.find(c => c.id === condominioSelezionato)?.nome || 'Condominio'}
         diagnosiResult={diagnosiResult}
+      />
+
+      {/* MODALE RAVVEDIMENTO OPEROSO F24 */}
+      <RavvedimentoModal
+        isOpen={modalRavvedimentoOpen}
+        onClose={() => setModalRavvedimentoOpen(false)}
+        defaultData={ravvedimentoDefaultData}
+        condomini={condomini}
+        onSuccess={loadData}
       />
     </div>
   )

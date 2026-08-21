@@ -343,7 +343,8 @@ export default function MillesimiEditor({ condominioId: propId }) {
     const confirmText = `Vuoi distribuire equamente 1000 millesimi tra le ${unitaFiltrate.length} unità visibili? Questo imposterà tutte le altre unità (non filtrate) a 0.`;
     if (!window.confirm(confirmText)) return;
 
-    const quotaArrotondata = parseFloat((1000 / unitaFiltrate.length).toFixed(2));
+    const count = unitaFiltrate.length || 1;
+    const quotaArrotondata = parseFloat((1000 / count).toFixed(2));
     const nuoviValori = { ...valori };
 
     // Reset ALL units of the condominio for this table to 0 first

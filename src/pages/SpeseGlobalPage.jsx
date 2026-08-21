@@ -18,7 +18,8 @@ import {
   RefreshCw,
   X,
   Receipt,
-  Eye
+  Eye,
+  Sparkles
 } from 'lucide-react'
 
 // Helper per formattare la dimensione del file

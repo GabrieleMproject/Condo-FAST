@@ -295,7 +295,7 @@ serve(async (req) => {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(geminiPayload),
-              signal: AbortSignal.timeout(10000), // Max 10 secondi per singola chiamata
+              signal: AbortSignal.timeout(22000), // Max 22 secondi per singola chiamata
             }
           )
 
@@ -317,7 +317,7 @@ serve(async (req) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(relaxedPayload),
-                signal: AbortSignal.timeout(10000),
+                signal: AbortSignal.timeout(22000),
               }
             )
             if (relaxedRes.ok) {
@@ -337,7 +337,7 @@ serve(async (req) => {
             errorsLog.push(`[Key ${keyLabel} - ${targetModel}] Status ${res.status}: ${errText.slice(0, 120)}`)
           }
         } catch (callErr: any) {
-          errorsLog.push(`[Key ${keyLabel} - ${targetModel}] ${callErr?.name === 'TimeoutError' ? 'Timeout 10s' : callErr?.message || 'Network error'}`)
+          errorsLog.push(`[Key ${keyLabel} - ${targetModel}] ${callErr?.name === 'TimeoutError' ? 'Timeout 22s' : callErr?.message || 'Network error'}`)
         }
       }
     }

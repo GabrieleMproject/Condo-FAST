@@ -445,13 +445,13 @@ export default function SpeseGlobalPage() {
             const resXml = await parseFatturaXmlP7m(file)
             estratto = resXml?.dati || resXml
           } else {
-            // Timeout di sicurezza per evitare blocchi infiniti dell'interfaccia (max 15s)
+            // Timeout di sicurezza per evitare blocchi infiniti dell'interfaccia (max 50s)
             const timeoutPromise = new Promise((_, reject) => {
               setTimeout(() => {
-                const err = new Error('Tempo limite estrazione AI superato (15s)')
+                const err = new Error('Tempo limite estrazione AI superato (50s)')
                 err.name = 'TimeoutError'
                 reject(err)
-              }, 15000)
+              }, 50000)
             })
             estratto = await Promise.race([estraiFattura(file), timeoutPromise])
           }

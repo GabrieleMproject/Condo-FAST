@@ -47,7 +47,7 @@ async function logAiCall({ funzione, condominio_id, inputTokens, outputTokens })
 }
 
 // ── Helper: Timeout per promesse ──────────────────────────────────────────
-function withTimeout(promise, ms = 20000, errorMsg = 'Tempo di risposta AI scaduto (timeout)') {
+function withTimeout(promise, ms = 50000, errorMsg = 'Tempo di risposta AI scaduto (timeout 50s)') {
   let timer
   const timeoutPromise = new Promise((_, reject) => {
     timer = setTimeout(() => {
@@ -67,7 +67,7 @@ async function callEdge(body) {
   const tokenLimit = body.maxTokens || body.max_tokens || 8192;
   const isProFunction = ['ricerca_verbali_ai', 'criterio_ripartizione', 'struttura_tabella_millesimale'].includes(body.funzione);
   const preferredModel = isProFunction ? 'gemini-1.5-pro-latest' : 'gemini-2.0-flash';
-  const timeoutMs = body.timeoutMs || 20000;
+  const timeoutMs = body.timeoutMs || 50000;
 
   const payload = {
     ...body,

@@ -438,38 +438,26 @@ export default function SpeseGlobalPage() {
         setQueue(prev => [newItem, ...prev.filter(q => q.id !== newDocId)])
         setActiveQueueId(newDocId)
 
-        let estratto = null
-        try {
-          const tipoDoc = getTipoFile(file)
-          if (tipoDoc === 'xml' || tipoDoc === 'p7m') {
-            const resXml = await parseFatturaXmlP7m(file)
-            estratto = resXml?.dati || resXml
-          } else {
-            // Timeout di sicurezza per evitare blocchi infiniti dell'interfaccia (max 50s)
-            const timeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => {
-                const err = new Error('Tempo limite estrazione AI superato (50s)')
-                err.name = 'TimeoutError'
-                reject(err)
-              }, 50000)
-            })
-            estratto = await Promise.race([estraiFattura(file), timeoutPromise])
+          let estratto = null
+          try {
+            const tipoDoc = getTipoFile(file)
+            if (tipoDoc === 'xml' || tipoDoc === 'p7m') {
+              const resXml = await parseFatturaXmlP7m(file)
+              estratto = resXml?.dati || resXml
+            } else {
+              estratto = await estraiFattura(file)
+            }
+          } catch (itemErr) {
+            console.warn('[SpeseGlobalPage] Estrazione AI non completata, sblocco manuale:', itemErr.message)
+            estratto = {
+              fornitore: '',
+              data_fattura: new Date().toISOString().split('T')[0],
+              importo_totale: 0,
+              descrizione: file.name.replace(/\.[^/.]+$/, ''),
+              categoria: 'ordinaria'
+            }
+            toast.error(`Estrazione non riuscita per ${file.name}. Puoi inserire i dati manualmente.`)
           }
-        } catch (itemErr) {
-          console.warn('[SpeseGlobalPage] Estrazione AI non completata o timeout, sblocco manuale:', itemErr.message)
-          estratto = {
-            fornitore: '',
-            data_fattura: new Date().toISOString().split('T')[0],
-            importo_totale: 0,
-            descrizione: file.name.replace(/\.[^/.]+$/, ''),
-            categoria: 'ordinaria'
-          }
-          if (itemErr.name === 'TimeoutError' || itemErr.message?.includes('Tempo limite')) {
-            toast.error(`⏱️ Tempo limite AI per ${file.name}: sbloccata compilazione manuale.`)
-          } else {
-            toast.error(`Estrazione non riuscita per ${file.name}. Inserimento manuale attivo.`)
-          }
-        }
 
         // Determina il miglior condominio candidato
         let targetCondoId = matchCondominio(estratto, condomini)

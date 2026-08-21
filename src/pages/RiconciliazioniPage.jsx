@@ -221,6 +221,110 @@ Abbina i movimenti alle fatture.`;
     }
   }
 
+  // ─── Self-Healing: Registra Spesa Rapida & Riconcilia in 1-Click da Movimento Orfano ───
+  const [creandoSpesaId, setCreandoSpesaId] = useState(null);
+
+  async function handleCreaSpesaERiconciliaRapido(mov) {
+    setCreandoSpesaId(mov.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utente non autenticato');
+
+      // 1. Recupera o crea esercizio aperto per l'anno del movimento
+      const annoMov = parseInt(mov.data_movimento?.substring(0, 4) || new Date().getFullYear());
+      let { data: es } = await supabase
+        .from('esercizi')
+        .select('id')
+        .eq('condominio_id', condominioId)
+        .eq('anno', annoMov)
+        .maybeSingle();
+
+      if (!es) {
+        const { data: newEs, error: esErr } = await supabase
+          .from('esercizi')
+          .insert([{
+            condominio_id: condominioId,
+            anno: annoMov,
+            data_inizio: `${annoMov}-01-01`,
+            data_fine: `${annoMov}-12-31`,
+            stato: 'aperto',
+            tipo: 'ordinario'
+          }])
+          .select('id')
+          .single();
+        if (!esErr && newEs) es = newEs;
+      }
+
+      // 2. Inserisce la spesa
+      const importoPositivo = Math.abs(parseFloat(mov.importo || 0));
+      const { data: nuovaSpesa, error: spesaErr } = await supabase
+        .from('spese')
+        .insert([{
+          condominio_id: condominioId,
+          esercizio_id: es?.id || null,
+          descrizione: mov.causale || 'Spesa registrata da movimento bancario',
+          importo: importoPositivo,
+          data_spesa: mov.data_movimento,
+          categoria: 'ordinaria',
+          tipo_lavoro: 'ordinario',
+          criterio: 'millesimi'
+        }])
+        .select()
+        .single();
+
+      if (spesaErr) throw spesaErr;
+
+      // 3. Inserisce fatture_fornitori collegata
+      const { data: nuovaFattura, error: fattErr } = await supabase
+        .from('fatture_fornitori')
+        .insert([{
+          condominio_id: condominioId,
+          fornitore: mov.fornitore_rilevato || 'Fornitore Bancario',
+          data_fattura: mov.data_movimento,
+          importo_totale: importoPositivo,
+          importo_netto: importoPositivo,
+          descrizione: mov.causale || 'Spesa da estratto conto',
+          stato: 'pagata',
+          riconciliata: true,
+          data_pagamento: mov.data_movimento,
+          user_id: user.id
+        }])
+        .select()
+        .single();
+
+      if (fattErr) throw fattErr;
+
+      // 4. Aggiorna il movimento come riconciliato
+      const { error: movErr } = await supabase
+        .from('estratto_conto')
+        .update({ riconciliato: true })
+        .eq('id', mov.id);
+
+      if (movErr) throw movErr;
+
+      // 5. Crea record di riconciliazione confermata
+      await supabase.from('riconciliazioni').insert([{
+        condominio_id: condominioId,
+        user_id: user.id,
+        movimento_id: mov.id,
+        fattura_id: nuovaFattura.id,
+        confidence_score: 100,
+        metodo: 'auto_match_rapido',
+        stato: 'confermata',
+        confermata_at: new Date().toISOString(),
+        note: 'Registrata e riconciliata istantaneamente dal movimento orfano'
+      }]);
+
+      await loadAll();
+      toast.success('✨ Spesa registrata e movimento riconciliato in 1-Click!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Errore durante la registrazione rapida: ' + err.message);
+    } finally {
+      setCreandoSpesaId(null);
+    }
+  }
+
   // ─── Filtro ──────────────────────────────────────────────────
   const ricFiltrate = filtroStato ? riconciliazioni.filter(r => r.stato === filtroStato) : riconciliazioni;
 
@@ -325,6 +429,8 @@ Abbina i movimenti alle fatture.`;
               <MovimentoOrfanoCard
                 key={m.id}
                 mov={m}
+                isBusy={creandoSpesaId === m.id}
+                onCreaRapido={() => handleCreaSpesaERiconciliaRapido(m)}
                 onInserisci={() => navigate(`/condomini/${condominioId}/spese`, { state: { prefillSpesa: { importo: Math.abs(m.importo), data_spesa: m.data_movimento, descrizione: m.causale || '', fornitore: m.fornitore_rilevato || '' } } })}
               />
             ))}
@@ -561,29 +667,58 @@ const styles = {
   btnAction: { background: 'linear-gradient(135deg, #2563eb, #3b82f6)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' },
 };
 
-function MovimentoOrfanoCard({ mov, onInserisci }) {
+function MovimentoOrfanoCard({ mov, isBusy, onCreaRapido, onInserisci }) {
   return (
-    <div style={{ ...styles.card, borderColor: '#ef444440', background: '#ef444408', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div>
+    <div style={{ ...styles.card, borderColor: '#ef444440', background: '#ef444408', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+      <div style={{ flex: 1, minWidth: 260 }}>
         <div style={{ fontSize: 11, color: '#f87171', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <AlertTriangle size={14} /> MOVIMENTO IN USCITA SENZA FATTURA
+          <AlertTriangle size={14} /> MOVIMENTO IN USCITA NON ANCORA REGISTRATO A FATTURA
         </div>
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{mov.causale || '—'}</div>
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {formattaData(mov.data_movimento)}</span>
           <span>·</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <Building2 size={12} /> {mov.fornitore_rilevato || 'Fornitore non rilevato'}
+            <Building2 size={12} /> {mov.fornitore_rilevato || 'Fornitore Bancario'}
           </span>
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <span style={{ color: '#ef4444', fontWeight: 700, fontSize: 18 }}>
           -€ {Math.abs(mov.importo || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
         </span>
-        <button style={styles.btnAction} onClick={onInserisci}>
+        <button 
+          style={{
+            ...styles.btnAction,
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
+            cursor: isBusy ? 'not-allowed' : 'pointer',
+            opacity: isBusy ? 0.7 : 1
+          }} 
+          disabled={isBusy}
+          onClick={onCreaRapido}
+        >
+          {isBusy ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Creazione in corso...
+            </span>
+          ) : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Sparkles size={14} /> Registra Spesa & Riconcilia (1-Click)
+            </span>
+          )}
+        </button>
+        <button 
+          style={{
+            ...styles.btnAction,
+            background: 'transparent',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-secondary)'
+          }} 
+          onClick={onInserisci}
+        >
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Plus size={14} /> Inserisci Spesa / Fattura
+            <Plus size={14} /> Dettagli...
           </span>
         </button>
       </div>

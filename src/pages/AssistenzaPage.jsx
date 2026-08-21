@@ -149,15 +149,6 @@ export default function AssistenzaPage() {
     setChatInput('')
   }
 
-  useEffect(() => {
-    fetchTickets()
-  }, [])
-
-  useEffect(() => {
-    // Autoscroll chat
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chatHistory, isTyping])
-
   const fetchTickets = async () => {
     setLoadingTickets(true)
     try {
@@ -174,6 +165,15 @@ export default function AssistenzaPage() {
       setLoadingTickets(false)
     }
   }
+
+  useEffect(() => {
+    fetchTickets()
+  }, [])
+
+  useEffect(() => {
+    // Autoscroll chat
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatHistory, isTyping])
 
   const handleChatSubmit = async (e) => {
     e.preventDefault()

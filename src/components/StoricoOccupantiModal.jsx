@@ -38,12 +38,6 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
   const [newTelefono, setNewTelefono] = useState('');
   const [newCf, setNewCf] = useState('');
 
-  useEffect(() => {
-    if (unita?.id) {
-      loadData();
-    }
-  }, [unita?.id, ruolo]);
-
   const loadData = async () => {
     setLoading(true);
     setErrorMsg('');
@@ -55,7 +49,7 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
           id, ruolo, attivo, data_inizio, data_fine, created_at,
           persone (id, nome, cognome, email, telefono, codice_fiscale)
         `)
-        .eq('unita_id', unita.id)
+        .eq('unita_id', unita?.id)
         .eq('ruolo', ruolo)
         .order('data_inizio', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
@@ -79,6 +73,12 @@ export default function StoricoOccupantiModal({ unita, ruolo, onClose, onSaved }
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (unita?.id) {
+      loadData();
+    }
+  }, [unita?.id, ruolo]);
 
   // Filter people list based on search text
   const filteredPersone = useMemo(() => {

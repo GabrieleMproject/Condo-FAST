@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { AlertTriangle, Bot, Edit3, Trash2, Info, FileSpreadsheet, Scale, Split, Plus, Pencil, Receipt, Calendar, CreditCard } from 'lucide-react'
+import { AlertTriangle, Bot, Edit3, Trash2, Info, FileSpreadsheet, Scale, Split, Pencil, Receipt, Calendar, CreditCard } from 'lucide-react'
 import { useSpese } from '../hooks/useSpese'
 import { useEsercizi } from '../hooks/useEsercizi'
 import { useMillesimi } from '../hooks/useMillesimi'
@@ -35,8 +35,8 @@ export default function SpesePage() {
   const [condominio, setCondominio] = useState(null)
   const [subentriAlert, setSubentriAlert] = useState([])
 
-  const { esercizi, loading: loadEsercizi, fetch: fetchEsercizi, crea: creaEsercizio, aggiorna: aggiornaEsercizio } = useEsercizi(condominioId)
-  const { spese, loading: loadSpese, fetch: fetchSpese, crea: creaSpesa, aggiorna: aggiornaSpesa, elimina, segnalaSubentro } = useSpese(condominioId, esercizioAttivo?.id)
+  const { esercizi, fetch: fetchEsercizi, crea: creaEsercizio, aggiorna: aggiornaEsercizio } = useEsercizi(condominioId)
+  const { spese, loading: loadSpese, fetch: fetchSpese, crea: creaSpesa, aggiorna: aggiornaSpesa, elimina } = useSpese(condominioId, esercizioAttivo?.id)
   const { tabelle, fetch: fetchTabelle } = useMillesimi(condominioId)
   const { documenti, fetch: fetchDocumenti } = useDocumenti(condominioId)
 

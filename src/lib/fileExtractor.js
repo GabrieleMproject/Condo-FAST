@@ -756,17 +756,20 @@ REGOLE CRITICHE PER L'ESTRAZIONE UNIVERSALE MULTI-LAYOUT:
    - Sintetizza l'oggetto dei lavori o servizi in "descrizione".
    - Assegna una categoria coerente tra: "manutenzione", "pulizie", "utenze", "assicurazione", "amministrazione", "altro".
 5. REGOLE RITENUTA D'ACCONTO E CODICE TRIBUTO F24:
-   - Se la fattura riguarda "utenze" (acqua, luce, gas, telefonia), "assicurazione", o acquisto beni, la ritenuta NON si applica (imponibile 0, aliquota 0, importo 0, codice tributo null).
-   - Se il fornitore è in Regime Forfettario o dei Minimi (dicitura "operazione senza applicazione della ritenuta d'acconto"), la ritenuta è 0.00.
-   - Negli altri casi (prestazioni di servizi, ditte edili, giardinieri, ascensoristi, professionisti):
-     - "imponibile_ritenuta": solitamente coincide con l'importo netto o compenso.
-     - "aliquota_ritenuta_percentuale": 4.00 per ditte/appalti (pulizie, edilizia, manutenzioni) o 20.00 per professionisti/prestazioni d'opera.
-     - "importo_ritenuta": (imponibile_ritenuta * aliquota / 100).
-     - "codice_tributo_f24":
-       - "1019" per contratti d'appalto condominio (4%).
-       - "1020" per contratti d'opera (4%).
-       - "1040" per compensi professionisti / lavoro autonomo (20%).
-6. CONDOMINIO COMMITTENTE / DESTINATARIO:
+   - Se la fattura riguarda "utenze" (acqua, luce, gas, telefonia), "assicurazione", o acquisto di soli beni/merci (senza posa in opera o manodopera), la ritenuta NON si applica: "imponibile_ritenuta": 0.00, "aliquota_ritenuta_percentuale": 0.00, "importo_ritenuta": 0.00, "codice_tributo_f24": null.
+   - Se il fornitore è in Regime Forfettario o dei Minimi (dicitura "operazione senza applicazione della ritenuta d'acconto ai sensi dell'art. 1 comma 67 L. 190/2014"), la ritenuta NON si applica: "imponibile_ritenuta": 0.00, "aliquota_ritenuta_percentuale": 0.00, "importo_ritenuta": 0.00, "codice_tributo_f24": null.
+   - Per contratti di appalto, manutenzioni, pulizie, giardinaggio, ascensori, edilizia (art. 25-ter DPR 600/73):
+     - "imponibile_ritenuta": imponibile netto della prestazione.
+     - "aliquota_ritenuta_percentuale": 4.00.
+     - "importo_ritenuta": (imponibile_ritenuta * 0.04).
+     - "codice_tributo_f24": "1019" (se ditta individuale/società di persone IRPEF) o "1020" (se società di capitali IRES srl/spa).
+   - Per prestazioni di lavoro autonomo / liberi professionisti con parcella (avvocati, geometri, architetti, commercialisti, periti, amministratori) (art. 25 DPR 600/73):
+     - "imponibile_ritenuta": compenso professionale netto (esclusa cassa previdenza se non soggetta).
+     - "aliquota_ritenuta_percentuale": 20.00.
+     - "importo_ritenuta": (imponibile_ritenuta * 0.20).
+     - "codice_tributo_f24": "1040".
+   - Altre casistiche (es. provvigioni agenti/mediatori): aliquota indicata espressamente in fattura (es. 23% o codice "1038").
+   - Se la ritenuta non è presente sul documento o il fornitore non è soggetto, imposta sempre 0.00.
    - Estrai la ragione sociale completa del condominio committente ("condominio_destinatario_nome").
    - Estrai il Codice Fiscale del condominio ("condominio_destinatario_codice_fiscale").
    - Estrai l'indirizzo civico ("condominio_destinatario_indirizzo"), il Comune ("condominio_destinatario_citta"), il CAP ("condominio_destinatario_cap") e la Provincia ("condominio_destinatario_provincia").`;

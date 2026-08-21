@@ -22,6 +22,15 @@ function normalizzaTesto(str) {
  * @param {Array<object>} fatture - Lista fatture del condominio non ancora abbinate/pagate
  * @returns {object|null} { fattura, score, motivoMatch } oppure null se nessun match affidabile
  */
+/**
+ * Cerca la migliore proposta di fattura abbinabile a un movimento di uscita bancario.
+ * Gestisce sia importo lordo sia netto a pagare (al netto della ritenuta d'acconto),
+ * verifica IBAN fornitore, numero fattura e corrispondenza anagrafica.
+ * 
+ * @param {object} movimento - Oggetto movimento bancario ({ importo, causale, fornitore_rilevato, data_movimento })
+ * @param {Array<object>} fatture - Lista fatture del condominio non ancora abbinate/pagate
+ * @returns {object|null} { fattura, score, isPerfectMatch, motivoMatch } oppure null se nessun match affidabile
+ */
 export function trovaBestMatchFattura(movimento, fatture = []) {
   if (!movimento || Math.abs(Number(movimento.importo) || 0) === 0 || !fatture?.length) {
     return null;
@@ -35,14 +44,33 @@ export function trovaBestMatchFattura(movimento, fatture = []) {
   let maxScore = 0;
 
   for (const f of fatture) {
-    const importoFatt = Math.abs(Number(f.importo_totale));
-    const diffImporto = Math.abs(importoMov - importoFatt);
+    const importoFattTotale = Math.abs(Number(f.importo_totale) || 0);
+    const ritenuta = Math.abs(Number(f.importo_ritenuta || f.ritenuta_acconto || 0));
+    const nettoAPagare = Math.max(0, importoFattTotale - ritenuta);
 
-    // Se l'importo differisce di più di 0.05€, scarta (per le uscite contabili serve precisione)
-    if (diffImporto > 0.05) continue;
+    const diffTotale = Math.abs(importoMov - importoFattTotale);
+    const diffNetto = Math.abs(importoMov - nettoAPagare);
 
-    let score = 50; // Base score per la corrispondenza esatta dell'importo
-    const motivi = ['Importo coincidente'];
+    // Determina se l'importo coincide con il totale fattura o con il netto a pagare
+    const matchTotale = diffTotale <= 0.05;
+    const matchNetto = ritenuta > 0 && diffNetto <= 0.05;
+
+    // Se l'importo differisce sia dal totale che dal netto a pagare, scarta
+    if (!matchTotale && !matchNetto) continue;
+
+    let score = 50; // Base score per la corrispondenza dell'importo
+    const motivi = [];
+    
+    if (matchNetto) {
+      motivi.push(`Importo netto coincidente (€ ${nettoAPagare.toFixed(2)}, ritenuta € ${ritenuta.toFixed(2)})`);
+      score += 10;
+    } else {
+      motivi.push(`Importo totale coincidente (€ ${importoFattTotale.toFixed(2)})`);
+    }
+
+    let hasNumFatturaMatch = false;
+    let hasIbanMatch = false;
+    let hasFornitoreMatch = false;
 
     // 1. Verifica Numero Fattura nella causale bancaria
     if (f.numero_fattura) {
@@ -50,24 +78,51 @@ export function trovaBestMatchFattura(movimento, fatture = []) {
       const numDigitsOnly = numClean.replace(/[^0-9]/g, '');
 
       if (numClean && numClean.length >= 2 && causaleNorm.includes(numClean)) {
-        score += 40;
-        motivi.push(`N. fattura "${f.numero_fattura}" presente in causale`);
+        score += 35;
+        hasNumFatturaMatch = true;
+        motivi.push(`N. fattura "${f.numero_fattura}" in causale`);
       } else if (numDigitsOnly && numDigitsOnly.length >= 3 && causaleNorm.includes(numDigitsOnly)) {
-        score += 30;
-        motivi.push(`N. fattura "${numDigitsOnly}" trovato in causale`);
+        score += 25;
+        hasNumFatturaMatch = true;
+        motivi.push(`N. fattura "${numDigitsOnly}" in causale`);
       }
     }
 
-    // 2. Verifica Ragione Sociale Fornitore nella causale o nel fornitore rilevato
-    const fornitoreFattNorm = normalizzaTesto(f.fornitore);
+    // 2. Verifica IBAN del Fornitore
+    const ibanFornitore = (f.iban || f.fornitore_iban || f.fornitore_rel?.iban || '').replace(/\s+/g, '').toLowerCase();
+    if (ibanFornitore && ibanFornitore.length >= 15) {
+      const causaleSenzaSpazi = (movimento.causale || '').replace(/\s+/g, '').toLowerCase();
+      if (causaleSenzaSpazi.includes(ibanFornitore) || (ibanFornitore.length >= 10 && causaleSenzaSpazi.includes(ibanFornitore.substring(5, 20)))) {
+        score += 35;
+        hasIbanMatch = true;
+        motivi.push(`IBAN fornitore riconosciuto`);
+      }
+    }
+
+    // 3. Verifica Ragione Sociale Fornitore
+    const fornitoreFattNorm = normalizzaTesto(f.fornitore || f.fornitore_rel?.ragione_sociale);
     if (fornitoreFattNorm && fornitoreFattNorm.length >= 3) {
       const paroleFornitore = fornitoreFattNorm.split(' ').filter(p => p.length > 2 && !['srl', 'spa', 'snc', 'sas', 'soc', 'coop', 'ditta'].includes(p));
       
       const paroleMatch = paroleFornitore.filter(p => causaleNorm.includes(p) || fornitoreMovNorm.includes(p));
       if (paroleMatch.length > 0) {
         score += Math.min(30, paroleMatch.length * 15);
-        motivi.push(`Fornitore "${f.fornitore}" riconosciuto in causale`);
+        hasFornitoreMatch = true;
+        motivi.push(`Fornitore "${f.fornitore}" in causale`);
       }
+    }
+
+    // Quadratura Perfetta Deterministica (100% certezza)
+    // Se importo è esatto E c'è almeno (Fornitore + N. Fattura) OPPURE (Fornitore + IBAN) OPPURE (N. Fattura + IBAN)
+    const isPerfectMatch = (matchTotale || matchNetto) && (
+      (hasFornitoreMatch && hasNumFatturaMatch) ||
+      (hasFornitoreMatch && hasIbanMatch) ||
+      (hasNumFatturaMatch && hasIbanMatch)
+    );
+
+    if (isPerfectMatch) {
+      score = 100;
+      motivi.unshift('Quadratura perfetta 100%');
     }
 
     if (score > maxScore && score >= 60) {
@@ -75,6 +130,7 @@ export function trovaBestMatchFattura(movimento, fatture = []) {
       bestMatch = {
         fattura: f,
         score,
+        isPerfectMatch,
         motivoMatch: motivi.join(' • ')
       };
     }

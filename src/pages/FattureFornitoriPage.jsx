@@ -846,11 +846,18 @@ function EditFattura({ data, onChange, onSave, onCancel, spese, fornitori }) {
         <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Codice Tributo F24</label>
         <select value={data.codice_tributo_f24 || ''} onChange={e => upd('codice_tributo_f24', e.target.value)}
           style={{ width: '100%', background: 'var(--app-bg)', border: '1px solid var(--border-color)', borderRadius: 7, padding: '7px 10px', color: 'var(--text-primary)', fontFamily: "'Sora', sans-serif", fontSize: 13 }}>
-          <option value="">Nessuno</option>
-          <option value="1019">1019 (Contratti d'appalto - 4%)</option>
-          <option value="1020">1020 (Contratti d'opera - 4%)</option>
-          <option value="1040">1040 (Lavoro autonomo - 20%)</option>
+          <option value="">Nessuno (Esente / Forfettario / Beni)</option>
+          <option value="1019">1019 (Contratti d'appalto - 4% IRPEF)</option>
+          <option value="1020">1020 (Contratti d'opera - 4% IRES)</option>
+          <option value="1040">1040 (Lavoro autonomo / Professionisti - 20%)</option>
+          <option value="1038">1038 (Provvigioni agenti / mediatori)</option>
         </select>
+      </div>
+      <div>
+        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Netto a Pagare al Fornitore (Bonifico)</label>
+        <div style={{ padding: '7px 10px', background: 'var(--card-bg)', border: '1px dashed var(--border-color)', borderRadius: 7, color: '#10b981', fontWeight: 600, fontSize: 13 }}>
+          € {Math.max(0, (parseFloat(data.importo_totale) || 0) - (parseFloat(data.importo_ritenuta) || 0)).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
       </div>
       <div>
         <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Stato</label>

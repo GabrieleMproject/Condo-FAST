@@ -272,27 +272,20 @@ serve(async (req) => {
     // Lista ordinata di chiavi API da tentare (Primaria -> Backup se disponibile)
     const apiKeys = [primaryKey, backupKey].filter(Boolean) as string[]
     
-    // Modelli di riserva validi in ordine di preferenza per API Gemini v1beta
-    const fallbackModels = [
-      'gemini-2.0-flash',
-      'gemini-1.5-flash-latest',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-1.5-pro-latest',
-      'gemini-1.5-pro',
-    ]
+    // Modello veloce di fallback per non superare il timeout di Supabase
+    const fallbackModels = ['gemini-2.0-flash', 'gemini-1.5-flash']
 
     let currentModel = model
     let response: Response | null = null
     const errorsLog: string[] = []
 
-    // Ciclo di tentativo a due livelli: Chiavi API x Modelli
+    // Ciclo rapido: prova chiave primaria (modello richiesto + 1 fallback veloce), poi backup se presente
     keyLoop: for (let keyIdx = 0; keyIdx < apiKeys.length; keyIdx++) {
       const key = apiKeys[keyIdx]
       const keyLabel = keyIdx === 0 ? 'Primaria' : `Backup #${keyIdx}`
 
-      // Per la chiave corrente, componi l'elenco di modelli da provare
-      const modelsToTry = [currentModel, ...fallbackModels.filter(m => m !== currentModel)]
+      // Per non superare i 15 secondi totali, testiamo solo il modello richiesto ed un fallback rapido
+      const modelsToTry = [currentModel, ...fallbackModels.filter(m => m !== currentModel)].slice(0, 2)
 
       for (const targetModel of modelsToTry) {
         try {
@@ -302,6 +295,7 @@ serve(async (req) => {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(geminiPayload),
+              signal: AbortSignal.timeout(10000), // Max 10 secondi per singola chiamata
             }
           )
 
@@ -323,6 +317,7 @@ serve(async (req) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(relaxedPayload),
+                signal: AbortSignal.timeout(10000),
               }
             )
             if (relaxedRes.ok) {
@@ -339,24 +334,10 @@ serve(async (req) => {
             break keyLoop
           } else {
             const errText = await res.clone().text().catch(() => '')
-            const isQuotaOrUnavailable =
-              res.status === 429 ||
-              res.status === 503 ||
-              errText.includes('Quota exceeded') ||
-              errText.includes('RESOURCE_EXHAUSTED') ||
-              errText.includes('rate-limits') ||
-              errText.includes('UNAVAILABLE') ||
-              errText.includes('high demand')
-
             errorsLog.push(`[Key ${keyLabel} - ${targetModel}] Status ${res.status}: ${errText.slice(0, 120)}`)
-
-            if (!isQuotaOrUnavailable && res.status >= 400 && res.status < 500 && res.status !== 429 && res.status !== 404) {
-              // Prova comunque prossimo modello in caso di incompatibilità specifica del modello
-              continue
-            }
           }
         } catch (callErr: any) {
-          errorsLog.push(`[Key ${keyLabel} - ${targetModel}] Eccezione: ${callErr?.message || 'Network error'}`)
+          errorsLog.push(`[Key ${keyLabel} - ${targetModel}] ${callErr?.name === 'TimeoutError' ? 'Timeout 10s' : callErr?.message || 'Network error'}`)
         }
       }
     }

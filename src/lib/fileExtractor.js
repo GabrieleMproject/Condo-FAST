@@ -97,6 +97,11 @@ async function withAutoRetry(fn, maxRetries = 2) {
     try {
       return await fn();
     } catch (err) {
+      if (err.name === 'TimeoutError' || err.message?.includes('Tempo limite AI superato')) {
+        // Se è andato in timeout, non ritentare per non bloccare l'interfaccia
+        throw err;
+      }
+
       const isRateLimit = err.name === 'RateLimitError' || err.message?.toLowerCase().includes('429') || err.message?.toLowerCase().includes('troppe richieste');
       const isTransient = err instanceof SyntaxError || err.message?.includes('JSON') || err.message?.includes('token') || err.message?.includes('Edge Function error') || err.message?.includes('500') || err.message?.includes('503');
       

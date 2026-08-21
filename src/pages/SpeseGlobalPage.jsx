@@ -339,7 +339,59 @@ export default function SpeseGlobalPage() {
     }
   }, [activeQueueId, activeItem?.id, activeItem?.file, activeItem?.file_path])
 
-  // 5. Caricamento File manuale e analisi AI (elaborazione locale immediata)
+  // Helper per sbloccare immediatamente l'inserimento manuale se l'AI è lenta o in timeout
+  const handleSkipAi = async (itemId) => {
+    const item = queue.find(q => q.id === itemId)
+    if (!item) return
+    const fallbackData = {
+      fornitore: '',
+      data_fattura: new Date().toISOString().split('T')[0],
+      importo_totale: 0,
+      descrizione: (item.file_name || 'Documento').replace(/\.[^/.]+$/, ''),
+      categoria: 'ordinaria'
+    }
+    
+    let targetCondoId = matchCondominio(fallbackData, condomini) || '__NEW_CONDO__'
+    const isNuovo = targetCondoId === '__NEW_CONDO__'
+
+    const nuovoCondoDati = {
+      nome: 'Nuovo Condominio da Fattura',
+      codice_fiscale: '',
+      indirizzo: '',
+      citta: '',
+      cap: '',
+      provincia: '',
+    }
+
+    let condoDati = { esercizi: [], unita: [], tabelle: [], documenti: [] }
+    let selectedEsercizioId = null
+    if (targetCondoId && targetCondoId !== '__NEW_CONDO__') {
+      try {
+        condoDati = await fetchCondominioDati(targetCondoId)
+        const aperto = condoDati.esercizi.find(e => e.stato === 'aperto') || condoDati.esercizi[0]
+        selectedEsercizioId = aperto?.id || null
+      } catch (cErr) {
+        console.error('Errore recupero dati condominio:', cErr)
+      }
+    }
+
+    setQueue(prev => prev.map(q => q.id === itemId ? {
+      ...q,
+      status: 'ready',
+      extractedData: fallbackData,
+      condominioId: targetCondoId,
+      isNuovoCondominio: isNuovo,
+      nuovoCondominioDati: nuovoCondoDati,
+      esercizioId: selectedEsercizioId,
+      esercizi: condoDati.esercizi,
+      unita: condoDati.unita,
+      tabelle: condoDati.tabelle,
+      documenti: condoDati.documenti
+    } : q))
+    toast.success('Passato all\'inserimento manuale rapido.')
+  }
+
+  // 5. Caricamento File manuale e analisi AI (elaborazione locale immediata con timeout di sicurezza)
   const handleFilesAdded = async (fileList) => {
     const rawFiles = Array.from(fileList)
     if (rawFiles.length === 0) return
@@ -393,10 +445,18 @@ export default function SpeseGlobalPage() {
             const resXml = await parseFatturaXmlP7m(file)
             estratto = resXml?.dati || resXml
           } else {
-            estratto = await estraiFattura(file)
+            // Timeout di sicurezza per evitare blocchi infiniti dell'interfaccia (max 15s)
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => {
+                const err = new Error('Tempo limite estrazione AI superato (15s)')
+                err.name = 'TimeoutError'
+                reject(err)
+              }, 15000)
+            })
+            estratto = await Promise.race([estraiFattura(file), timeoutPromise])
           }
         } catch (itemErr) {
-          console.warn('[SpeseGlobalPage] Errore estrazione AI automatica, fallback su compilazione manuale:', itemErr)
+          console.warn('[SpeseGlobalPage] Estrazione AI non completata o timeout, sblocco manuale:', itemErr.message)
           estratto = {
             fornitore: '',
             data_fattura: new Date().toISOString().split('T')[0],
@@ -404,7 +464,11 @@ export default function SpeseGlobalPage() {
             descrizione: file.name.replace(/\.[^/.]+$/, ''),
             categoria: 'ordinaria'
           }
-          toast.error(`Estrazione automatica non completata per ${file.name}. Puoi inserire i dati manualmente.`)
+          if (itemErr.name === 'TimeoutError' || itemErr.message?.includes('Tempo limite')) {
+            toast.error(`⏱️ Tempo limite AI per ${file.name}: sbloccata compilazione manuale.`)
+          } else {
+            toast.error(`Estrazione non riuscita per ${file.name}. Inserimento manuale attivo.`)
+          }
         }
 
         // Determina il miglior condominio candidato
@@ -895,13 +959,13 @@ export default function SpeseGlobalPage() {
                   return (
                     <div
                       key={item.id}
-                      onClick={() => item.status !== 'analyzing' && setActiveQueueId(item.id)}
+                      onClick={() => setActiveQueueId(item.id)}
                       style={{
                         padding: 12,
                         borderRadius: 8,
                         background: isActive ? 'rgba(124,58,237,0.04)' : 'var(--app-bg)',
                         border: `1px solid ${isActive ? '#7c3aed' : 'var(--border-color)'}`,
-                        cursor: item.status === 'analyzing' ? 'not-allowed' : 'pointer',
+                        cursor: 'pointer',
                         transition: 'all 0.15s',
                         position: 'relative'
                       }}
@@ -998,10 +1062,42 @@ export default function SpeseGlobalPage() {
               <p style={{ margin: 0, fontSize: 13 }}>Seleziona una fattura in Postbox dalla lista a sinistra per procedere con la ripartizione.</p>
             </div>
           ) : activeItem.status === 'analyzing' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '500px', color: 'var(--text-muted)' }}>
-              <Loader2 size={36} style={{ animation: 'spin 1s linear infinite', color: '#7c3aed', marginBottom: 12 }} />
-              <h3 style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: 16, fontWeight: 600 }}>Lettura documento con AI...</h3>
-              <p style={{ margin: 0, fontSize: 13 }}>Google Gemini sta estraendo i dati contabili ed il condominio di destinazione.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '480px', color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>
+              <div style={{
+                width: 60, height: 60, borderRadius: '50%',
+                background: 'rgba(124,58,237,0.1)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', marginBottom: 16
+              }}>
+                <Loader2 size={30} style={{ animation: 'spin 1s linear infinite', color: '#7c3aed' }} />
+              </div>
+              <h3 style={{ margin: '0 0 8px', color: 'var(--text-primary)', fontSize: 17, fontWeight: 700 }}>
+                Analisi documento con AI in corso...
+              </h3>
+              <p style={{ margin: '0 0 24px', fontSize: 13, maxWidth: 440, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Google Gemini sta estraendo i dati contabili ed il condominio di destinazione. Se il documento è complesso o il servizio AI è occupato, puoi saltare l'attesa.
+              </p>
+              
+              <button
+                type="button"
+                onClick={() => handleSkipAi(activeItem.id)}
+                style={{
+                  background: 'rgba(124, 58, 237, 0.12)',
+                  border: '1px solid rgba(124, 58, 237, 0.35)',
+                  color: '#a78bfa',
+                  padding: '10px 22px',
+                  borderRadius: 10,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: 'all 0.2s',
+                  fontFamily: 'Sora, sans-serif'
+                }}
+              >
+                <Sparkles size={15} /> Non vuoi attendere? Compila subito a mano →
+              </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column' }}>

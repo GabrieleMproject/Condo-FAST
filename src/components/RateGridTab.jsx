@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
 import { useComunicazioni } from '../hooks/useComunicazioni'
+import { exportSingolaUnitaRatePdfBytes, exportSollecitiMassiviPdf } from '../lib/exportPdf'
 import { toast } from 'react-hot-toast'
 import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone, Building2, Calendar, ChevronRight, ChevronDown, Sparkles, Loader2, Plus, Edit3, ShieldAlert } from 'lucide-react'
 

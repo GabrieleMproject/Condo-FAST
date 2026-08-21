@@ -5,6 +5,21 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { callGemini } from '../lib/geminiClient'
 import { pulisciEdEstraiJson } from '../lib/fileExtractor'
+import {
+  ArrowRightLeft,
+  Plus,
+  Edit3,
+  Trash2,
+  Check,
+  Home,
+  Key,
+  X,
+  ClipboardList,
+  Search,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle
+} from 'lucide-react'
 
 function renderDiffIcon(iconName, color, size = 20) {
   switch (iconName) {

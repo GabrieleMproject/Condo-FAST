@@ -317,6 +317,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   const [dragOver, setDragOver] = useState(false)
   const [errFattura, setErrFattura] = useState(null)
   const fileInputRef = useRef()
+  const isMountedRef = useRef(true)
   const isDraftEnabled = !spesaInEdit && !fromFattura && !initialAiDatiEstratti
   const draftKey = (isDraftEnabled && condominioId) ? `draft_spesa_${condominioId}` : null
   const { hasDraft, restoreDraft, clearDraft, lastSavedAt } = useAutoDraft(draftKey, form, setForm, isDraftEnabled)
@@ -345,6 +346,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido di questa struttura:
   useFormShortcuts({ onSave: () => handleSalva(), onCancel: onCancel, isEnabled: true })
 
   useEffect(() => {
+    isMountedRef.current = true
     return () => {
       isMountedRef.current = false
     }

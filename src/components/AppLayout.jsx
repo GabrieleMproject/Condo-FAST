@@ -719,6 +719,7 @@ export default function AppLayout() {
   const [studioTelefono, setStudioTelefono] = useState('');
   const [studioEmail, setStudioEmail] = useState('');
   const [studioPec, setStudioPec] = useState('');
+  const [studioContatti, setStudioContatti] = useState('');
   const [logoBase64, setLogoBase64] = useState('');
   const [ragioneSociale, setRagioneSociale] = useState('');
   const [partitaIva, setPartitaIva] = useState('');
@@ -731,6 +732,7 @@ export default function AppLayout() {
     setStudioTelefono(profile?.studio_telefono || '');
     setStudioEmail(profile?.studio_email || '');
     setStudioPec(profile?.studio_pec || '');
+    setStudioContatti(profile?.studio_contatti || '');
     setLogoBase64(profile?.logo_base64 || '');
     setRagioneSociale(profile?.ragione_sociale || '');
     setPartitaIva(profile?.partita_iva || '');
@@ -747,6 +749,7 @@ export default function AppLayout() {
         studio_telefono: studioTelefono,
         studio_email: studioEmail,
         studio_pec: studioPec,
+        studio_contatti: studioContatti,
         logo_base64: logoBase64,
         ragione_sociale: ragioneSociale,
         partita_iva: partitaIva,

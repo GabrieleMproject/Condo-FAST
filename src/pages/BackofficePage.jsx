@@ -103,114 +103,114 @@ export default function BackofficePage() {
     attivo: true
   })
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      setCriticalError(null)
-      try {
-        // 1. Utenti & Statistiche tramite RPC
-        const { data: prof, error: profErr } = await supabase
-          .rpc('get_utenti_statistiche')
-        
-        if (profErr) {
-          console.error("ERRORE RPC GET_UTENTI_STATISTICHE:", profErr);
-          throw profErr;
-        }
-        setUtenti(prof || [])
-
-        // 2. Ticket di assistenza
-        const { data: tick, error: tickErr } = await supabase
-          .from('tickets_assistenza')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (tickErr) throw tickErr
-        setTickets(tick || [])
-
-        // 3. Campagne Referral
-        const { data: camp, error: campErr } = await supabase
-          .from('referral_campaigns')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (campErr) throw campErr
-        setCampagne(camp || [])
-
-        // 4. Referrals
-        const { data: refs, error: refsErr } = await supabase
-          .from('referrals')
-          .select(`
-            *,
-            referrer:profiles!referrer_id(id, email, nome, cognome),
-            referred:profiles!referred_id(id, email, nome, cognome),
-            campaign:referral_campaigns(nome, codice_campagna)
-          `)
-          .order('created_at', { ascending: false })
-
-        if (refsErr) throw refsErr
-        setReferrals(refs || [])
-
-        // 5. Knowledge Base
-        const { data: kb, error: kbErr } = await supabase
-          .from('assistenza_knowledge')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (kbErr) throw kbErr
-        setKnowledgeList(kb || [])
-
-        // 6. Log Chat Assistenza (Supervisione RLHF)
-        const { data: chatLogs, error: chatErr } = await supabase
-          .from('chat_assistenza_logs')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(50)
-
-        if (!chatErr && chatLogs) {
-          setChatLogsAll(chatLogs)
-        }
-
-        // 7. Audit Logs recenti
-        const { data: audit, error: auditErr } = await supabase
-          .from('audit_logs')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(20)
-
-        if (!auditErr && audit) {
-          setAuditLogs(audit)
-        }
-
-        // 8. Log Chiamate AI per monitoraggio token e costi
-        const { data: aiCallData, error: aiErr } = await supabase
-          .from('ai_call_log')
-          .select('*')
-          .order('timestamp', { ascending: false })
-          .limit(200)
-
-        if (!aiErr && aiCallData) {
-          setAiLogs(aiCallData)
-        }
-
-        // 9. Fornitori Partner, Match Logs e Richieste Preventivo
-        try {
-          const pList = await fetchFornitoriPartner()
-          setPartnerList(pList)
-          const mLogs = await fetchPartnerMatchLogs()
-          setPartnerMatchLogs(mLogs)
-          const rList = await fetchRichiestePreventivo()
-          setRichiestePreventivoList(rList)
-        } catch (pErr) {
-          console.warn("Dati partner non ancora presenti o schema in inizializzazione:", pErr.message)
-        }
-
-      } catch (err) {
-        toast.error('Errore caricamento dati: ' + err.message)
-      } finally {
-        setLoading(false)
+  const fetchData = async () => {
+    setLoading(true)
+    setCriticalError(null)
+    try {
+      // 1. Utenti & Statistiche tramite RPC
+      const { data: prof, error: profErr } = await supabase
+        .rpc('get_utenti_statistiche')
+      
+      if (profErr) {
+        console.error("ERRORE RPC GET_UTENTI_STATISTICHE:", profErr);
+        throw profErr;
       }
-    }
+      setUtenti(prof || [])
 
+      // 2. Ticket di assistenza
+      const { data: tick, error: tickErr } = await supabase
+        .from('tickets_assistenza')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (tickErr) throw tickErr
+      setTickets(tick || [])
+
+      // 3. Campagne Referral
+      const { data: camp, error: campErr } = await supabase
+        .from('referral_campaigns')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (campErr) throw campErr
+      setCampagne(camp || [])
+
+      // 4. Referrals
+      const { data: refs, error: refsErr } = await supabase
+        .from('referrals')
+        .select(`
+          *,
+          referrer:profiles!referrer_id(id, email, nome, cognome),
+          referred:profiles!referred_id(id, email, nome, cognome),
+          campaign:referral_campaigns(nome, codice_campagna)
+        `)
+        .order('created_at', { ascending: false })
+
+      if (refsErr) throw refsErr
+      setReferrals(refs || [])
+
+      // 5. Knowledge Base
+      const { data: kb, error: kbErr } = await supabase
+        .from('assistenza_knowledge')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (kbErr) throw kbErr
+      setKnowledgeList(kb || [])
+
+      // 6. Log Chat Assistenza (Supervisione RLHF)
+      const { data: chatLogs, error: chatErr } = await supabase
+        .from('chat_assistenza_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (!chatErr && chatLogs) {
+        setChatLogsAll(chatLogs)
+      }
+
+      // 7. Audit Logs recenti
+      const { data: audit, error: auditErr } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (!auditErr && audit) {
+        setAuditLogs(audit)
+      }
+
+      // 8. Log Chiamate AI per monitoraggio token e costi
+      const { data: aiCallData, error: aiErr } = await supabase
+        .from('ai_call_log')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(200)
+
+      if (!aiErr && aiCallData) {
+        setAiLogs(aiCallData)
+      }
+
+      // 9. Fornitori Partner, Match Logs e Richieste Preventivo
+      try {
+        const pList = await fetchFornitoriPartner()
+        setPartnerList(pList)
+        const mLogs = await fetchPartnerMatchLogs()
+        setPartnerMatchLogs(mLogs)
+        const rList = await fetchRichiestePreventivo()
+        setRichiestePreventivoList(rList)
+      } catch (pErr) {
+        console.warn("Dati partner non ancora presenti o schema in inizializzazione:", pErr.message)
+      }
+
+    } catch (err) {
+      toast.error('Errore caricamento dati: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchData()
   }, [])
 

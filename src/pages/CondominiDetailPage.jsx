@@ -1,5 +1,6 @@
 // src/pages/CondominiDetailPage.jsx
 import ConsuntivoTab from '../components/ConsuntivoTab'
+import MorositaTab from '../components/MorositaTab'
 import { FileBarChart } from 'lucide-react'   // se non già importato un'icona; in alternativa riusa Wallet/FileText
 import RateGridTab from '../components/RateGridTab'
 import PreventivoSection from '../components/PreventivoSection'
@@ -80,8 +81,9 @@ const MACRO_GROUPS = [
     tabs: [
       { id: 'finanze',    label: 'Gestione Finanze', icon: Wallet },
       { id: 'preventivo', label: 'Preventivo & Saldi', icon: ClipboardList },
-      { id: 'consuntivo', label: 'Consuntivo', icon: FileText },
       { id: 'rate',       label: 'Rate',       icon: CreditCard },
+      { id: 'morosita',   label: 'Morosità & Solleciti', icon: ShieldAlert },
+      { id: 'consuntivo', label: 'Consuntivo', icon: FileText },
     ]
   },
   { 
@@ -199,6 +201,22 @@ export default function CondominiDetailPage() {
   
   const [modalPrivacyOpen, setModalPrivacyOpen] = useState(false)
   const { spotlightTarget } = useMasterclass()
+  const location = useLocation()
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const tabParam = params.get('tab')
+    if (tabParam === 'morosita') {
+      setActiveGroup('contabilita')
+      setActiveTab('morosita')
+    } else if (tabParam) {
+      const foundGroup = MACRO_GROUPS.find(g => g.tabs.some(t => t.id === tabParam))
+      if (foundGroup) {
+        setActiveGroup(foundGroup.id)
+        setActiveTab(tabParam)
+      }
+    }
+  }, [location.search])
 
   useEffect(() => {
     if (spotlightTarget) {
@@ -484,6 +502,7 @@ export default function CondominiDetailPage() {
               anagrafica: 'tab-anagrafica-unita',
               preventivo: 'tab-preventivo-rate',
               rate: 'tab-preventivo-rate',
+              morosita: 'tab-morosita',
               verbali: 'tab-verbali-assemblea',
               sinistri: 'tab-sinistri',
               finanze: 'tab-estratto-conto'
@@ -619,6 +638,8 @@ export default function CondominiDetailPage() {
         {activeTab === 'consuntivo' && <ConsuntivoTab condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
 
         {activeTab === 'rate' && <RateGridTab condominioId={c.id} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
+
+        {activeTab === 'morosita' && <MorositaTab condominioId={c.id} condominio={c} esercizioId={esercizioId} esercizioAttivo={esercizioAttivo} onSelectEsercizio={setEsercizioId} />}
 
         {activeTab === 'verbali' && <AssembleeTab condominioId={c.id} />}
 

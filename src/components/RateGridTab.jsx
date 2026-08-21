@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useUnita } from '../hooks/useUnita'
 import { useComunicazioni } from '../hooks/useComunicazioni'
 import { toast } from 'react-hot-toast'
-import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone, Building2, Calendar, ChevronRight, ChevronDown, Sparkles, Loader2, Plus, Edit3 } from 'lucide-react'
+import { CreditCard, X, CheckCircle2, Coins, Mail, Megaphone, Building2, Calendar, ChevronRight, ChevronDown, Sparkles, Loader2, Plus, Edit3, ShieldAlert } from 'lucide-react'
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
 const eur = (n) => `€${(Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -865,15 +865,27 @@ L'Amministratore`;
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
             <Megaphone size={20} style={{ color: '#fbbf24', flexShrink: 0 }} />
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 14 }}>Solleciti Consigliati</div>
+              <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 14 }}>Solleciti & Morosità Rilevati</div>
               <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 2 }}>
-                Rilevate {rateScaduteDa10Giorni.length} unità con rate scadute da oltre 10 giorni.
+                Rilevate {rateScaduteDa10Giorni.length} unità con rate scadute. Calcola interessi legali e genera solleciti o diffide legali in 1-Click.
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate(`/condomini/${condominioId}?tab=morosita`)}
+              style={{
+                ...st.btnProposte,
+                background: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <ShieldAlert size={14} /> Modulo Morosità & Diffide Legali
+            </button>
             <button onClick={() => setShowProposteModal(true)} style={st.btnProposte}>
-              Visualizza Proposte ({rateScaduteDa10Giorni.length})
+              Solleciti Rapidi ({rateScaduteDa10Giorni.length})
             </button>
             <button 
               onClick={() => setDismissedBannerProposte(true)}

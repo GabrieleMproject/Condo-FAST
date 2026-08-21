@@ -207,186 +207,402 @@ export async function exportAnagraficaPdf({ condominio, persone }, withWatermark
   doc.save(`Anagrafica_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
 }
 
-// ─── Genera PDF Sollecito Singola Unità (restituisce base64) ──────────
-export async function exportSingolaUnitaRatePdfBytes({ condominio, esercizio, rate, cells, unita, proprietario }, withWatermark = false) {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  let y = disegnaIntestazione(doc, condominio, esercizio, 'SOLLECITO DI PAGAMENTO QUOTE');
+// ─── Generatore Lettera di Sollecito & Diffida Legale a 3 Livelli (PDF) ──────────
+export function disegnaLetteraSollecitoPagina(doc, {
+  condominio,
+  esercizio,
+  unita,
+  destinatario,
+  morositaUnita,
+  livello = 1,
+  studioProfile = {},
+  opzioniOverride = {},
+  withWatermark = false
+}) {
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const annoEs = esercizio?.anno || new Date().getFullYear();
+  const dataRif = opzioniOverride.dataRiferimento ? new Date(opzioniOverride.dataRiferimento) : new Date();
 
-  // Dati condomino (in alto a sinistra, sotto l'intestazione)
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...DARK);
-  doc.text('Spett.le Condomino:', 14, y);
+  // 1. Intestazione Studio / Branding
+  doc.setDrawColor(...BLU); doc.setLineWidth(0.5); doc.line(12, 36, W - 12, 36);
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...BLU);
+  doc.text('CONDOFAST', 14, 12);
+  
+  const studioNome = studioProfile?.ragione_sociale || studioProfile?.studio_nome || 'Studio Amministrazione Condominiale';
+  doc.setFontSize(13); doc.setTextColor(...DARK);
+  doc.text(studioNome, 14, 19);
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
+  const infoStudio = [];
+  if (studioProfile?.studio_indirizzo) infoStudio.push(studioProfile.studio_indirizzo);
+  if (studioProfile?.partita_iva) infoStudio.push(`P.IVA: ${studioProfile.partita_iva}`);
+  if (studioProfile?.codice_fiscale) infoStudio.push(`C.F.: ${studioProfile.codice_fiscale}`);
+  if (studioProfile?.studio_telefono) infoStudio.push(`Tel: ${studioProfile.studio_telefono}`);
+  if (studioProfile?.studio_pec) infoStudio.push(`PEC: ${studioProfile.studio_pec}`);
+  else if (studioProfile?.studio_email) infoStudio.push(`Email: ${studioProfile.studio_email}`);
+
+  doc.text(infoStudio.slice(0, 2).join('  ·  '), 14, 25);
+  doc.text(infoStudio.slice(2).join('  ·  '), 14, 30);
+
+  // Titolo Documento a Destra
   doc.setFont('helvetica', 'bold');
-  const nomeCompleto = `${proprietario?.cognome || ''} ${proprietario?.nome || ''}`.trim() || 'Condòmino';
-  doc.text(nomeCompleto, 14, y + 5);
-  doc.setFont('helvetica', 'normal');
-  const alignmentText = unita?.scala ? `Scala ${unita.scala}, ` : '';
-  doc.text(`Unità Immobiliare: ${alignmentText}Interno ${unita?.numero || '—'}`, 14, y + 10);
+  if (livello === 3) {
+    doc.setFontSize(10.5); doc.setTextColor(185, 28, 28); // Rosso scuro
+    doc.text('DIFFIDA AD ADEMPIERE', W - 14, 16, { align: 'right' });
+    doc.setFontSize(8); doc.setTextColor(...DARK);
+    doc.text('Ex Art. 1219 c.c. & Art. 63 Disp. Att. c.c.', W - 14, 22, { align: 'right' });
+  } else if (livello === 2) {
+    doc.setFontSize(10.5); doc.setTextColor(217, 119, 6); // Ambra scuro
+    doc.text('2° SOLLECITO DI PAGAMENTO', W - 14, 16, { align: 'right' });
+    doc.setFontSize(8); doc.setTextColor(...DARK);
+    doc.text('Con Costituzione in Mora & Spese', W - 14, 22, { align: 'right' });
+  } else {
+    doc.setFontSize(10.5); doc.setTextColor(...BLU);
+    doc.text('SOLLECITO DI PAGAMENTO QUOTE', W - 14, 16, { align: 'right' });
+    doc.setFontSize(8); doc.setTextColor(...DARK);
+    doc.text('Promemoria Scadenze Esercizio', W - 14, 22, { align: 'right' });
+  }
 
-  y += 22;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
+  doc.text(`Condominio: ${condominio?.nome || 'Condominio'}`, W - 14, 27, { align: 'right' });
+  doc.text(`Data: ${dataRif.toLocaleDateString('it-IT')}`, W - 14, 32, { align: 'right' });
 
-  // Lettera di sollecito
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...BLU);
-  doc.text('Oggetto: Sollecito pagamento rate condominiali scadute', 14, y);
-  
-  y += 8;
+  let y = 43;
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
-  const cellMap = {};
-  (cells || []).forEach(c => { cellMap[c.rata_id] = c; });
-  const rateSorted = [...(rate || [])].sort((a, b) => (a.numero_rata || 0) - (b.numero_rata || 0));
+  // 2. Dati Destinatario (Box Elegante a Destra / Centro)
+  const nomeDest = `${destinatario?.cognome || ''} ${destinatario?.nome || ''}`.trim() || 'Condòmino';
+  const scalaText = unita?.scala ? `Scala ${unita.scala}, ` : '';
+  const pianoText = unita?.piano != null ? `Piano ${unita.piano}, ` : '';
+  const unitLabel = `${scalaText}${pianoText}Interno ${unita?.numero || '—'}`;
 
-  const dovuto = (cells || []).reduce((s, r) => s + parseFloat(r.importo || 0), 0);
-  const pagato = (cells || []).reduce((s, r) => s + parseFloat(r.importo_pagato || 0), 0);
-  const insoluto = dovuto - pagato;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(...LINEA_BORDO);
+  doc.roundedRect(14, y, W - 28, 20, 2, 2, 'FD');
 
-  const testoLettera = `Dalle nostre scritture contabili relative alla gestione condominiale in corso, risulta che ad oggi per la S.V. non è stato regolarizzato il pagamento delle rate di seguito elencate.
-  
-La invitiamo a verificare il riepilogo finanziario ed a provvedere al saldo delle quote insolute il prima possibile tramite bonifico bancario sul conto corrente del condominio.
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...DARK);
+  doc.text('Spett.le Condòmino / Destinatario:', 18, y + 5.5);
+  doc.setFontSize(10); doc.setTextColor(...BLU);
+  doc.text(nomeDest, 18, y + 11);
 
-Riepilogo quote per l'esercizio:
-- Totale dovuto: ${fmtEuro(dovuto)}
-- Totale versato ad oggi: ${fmtEuro(pagato)}
-- Saldo residuo da versare: ${fmtEuro(insoluto)}`;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...DARK);
+  const destCf = destinatario?.codice_fiscale ? `C.F.: ${destinatario.codice_fiscale}` : '';
+  const destResidenza = destinatario?.residenza_indirizzo || destinatario?.indirizzo
+    ? `Residenza: ${destinatario.residenza_indirizzo || destinatario.indirizzo} (${destinatario.residenza_comune || destinatario.citta || ''})`
+    : '';
+  const infoDest = [destCf, destResidenza].filter(Boolean).join('  ·  ');
+  if (infoDest) {
+    doc.text(infoDest, 18, y + 16);
+  }
 
-  const splitText = doc.splitTextToSize(testoLettera, 180);
-  doc.text(splitText, 14, y);
-  y += splitText.length * 5 + 6;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...DARK);
+  doc.text(`Unità: ${unitLabel}`, W - 18, y + 11, { align: 'right' });
+  if (condominio?.codice_fiscale) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRIGIO);
+    doc.text(`C.F. Condominio: ${condominio.codice_fiscale}`, W - 18, y + 16, { align: 'right' });
+  }
 
-  // Tabella delle rate
-  const body = rateSorted.map(r => {
-    const cell = cellMap[r.id];
-    if (!cell) return null;
-    return [
-      r.descrizione || `Rata ${r.numero_rata}`,
-      fmtData(r.data_scadenza),
-      fmtEuro(cell.importo),
-      fmtEuro(cell.importo_pagato),
-      fmtEuro(parseFloat(cell.importo || 0) - parseFloat(cell.importo_pagato || 0)),
-      cell.stato === 'pagata' ? 'Pagata' : cell.stato === 'sovra_pagata' ? 'Sovra-versata' : cell.stato === 'parziale' ? 'Parziale' : 'Scaduta/Non pagata'
-    ];
-  }).filter(Boolean);
+  y += 26;
+
+  // 3. Oggetto della Lettera
+  let oggettoDoc = '';
+  if (livello === 3) {
+    oggettoDoc = `OGGETTO: DIFFIDA AD ADEMPIERE E COSTITUZIONE IN MORA EX ART. 1219 C.C. ED ART. 63 DISP. ATT. C.C. - ESERCIZIO ${annoEs}`;
+  } else if (livello === 2) {
+    oggettoDoc = `OGGETTO: 2° SOLLECITO DI PAGAMENTO QUOTE CONDOMINIALI CON COSTITUZIONE IN MORA - ESERCIZIO ${annoEs}`;
+  } else {
+    oggettoDoc = `OGGETTO: Sollecito bonario pagamento rate condominiali scadute - Esercizio ${annoEs}`;
+  }
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5);
+  doc.setTextColor(livello === 3 ? 185 : (livello === 2 ? 180 : 37), livello === 3 ? 28 : (livello === 2 ? 83 : 99), livello === 3 ? 28 : (livello === 2 ? 9 : 235));
+  doc.text(oggettoDoc, 14, y);
+
+  y += 6;
+
+  // 4. Testo Introduttivo
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...DARK);
+  let testoIntro = '';
+  if (livello === 3) {
+    testoIntro = `In nome e per conto del ${condominio?.nome || 'Condominio'}, si formula formale atto di diffida ad adempiere e costituzione in mora. Dalle verifiche contabili ufficiali, per l'unità immobiliare sopra indicata permangono tuttora insolute le seguenti rate:`;
+  } else if (livello === 2) {
+    testoIntro = `Facendo seguito al precedente avviso e constatato il mancato riscontro, si trasmette il riepilogo aggiornato delle rate insolute per l'unità ${unitLabel} con addebito delle spese di gestione pratica e calcolo degli interessi maturati ad oggi:`;
+  } else {
+    testoIntro = `Dalle nostre scritture contabili relative alla gestione condominiale in corso (${condominio?.nome || 'Condominio'}), risulta che ad oggi per la S.V. non è stato regolarizzato il pagamento delle rate di seguito elencate. La invitiamo a verificare il seguente riepilogo:`;
+  }
+
+  const splitIntro = doc.splitTextToSize(testoIntro, W - 28);
+  doc.text(splitIntro, 14, y);
+  y += splitIntro.length * 4.2 + 2;
+
+  // 5. Dati Rate & Calcoli
+  const rateDettaglio = morositaUnita?.rateScaduteList || morositaUnita?.rateDettaglio || [];
+  const tassoPercentuale = opzioniOverride.tassoPercentuale ?? morositaUnita?.tassoApplicato ?? 2.50;
+  const speseApplicate = opzioniOverride.speseApplicate ?? morositaUnita?.speseApplicate ?? 0.00;
+  const capInsoluto = morositaUnita?.totaleCapitaleInsoluto || rateDettaglio.reduce((s, r) => s + (parseFloat(r.capitaleInsoluto || r.importo || 0)), 0);
+  const intMaturati = morositaUnita?.totaleInteressiMaturati || rateDettaglio.reduce((s, r) => s + (parseFloat(r.interesseMaturato || 0)), 0);
+  const totRichiesto = Math.round((capInsoluto + intMaturati + speseApplicate + Number.EPSILON) * 100) / 100;
+  const giorniTermine = opzioniOverride.giorniTermine ?? morositaUnita?.giorniTermine ?? (livello === 3 ? 7 : 10);
+  const iban = opzioniOverride.iban || condominio?.iban || '';
+
+  // Tabella autoTable
+  const bodyTable = rateDettaglio.map(r => [
+    r.descrizione || `Rata ${r.numeroRata || r.numero_rata || 1}`,
+    fmtData(r.dataScadenza || r.data_scadenza),
+    fmtEuro(r.capitaleInsoluto ?? (parseFloat(r.importo || 0) - parseFloat(r.importo_pagato || 0))),
+    r.giorniRitardo > 0 ? `${r.giorniRitardo} gg` : '0 gg',
+    fmtEuro(r.interesseMaturato || 0),
+    fmtEuro(r.totaleRataConInteressi ?? ((parseFloat(r.capitaleInsoluto || r.importo || 0)) + (parseFloat(r.interesseMaturato || 0))))
+  ]);
 
   autoTable(doc, {
     startY: y,
-    head: [['Rata / Descrizione', 'Scadenza', 'Dovuto', 'Pagato', 'Insoluto', 'Stato']],
-    body,
+    head: [['Rata / Descrizione', 'Scadenza', 'Quota Capitale', 'Ritardo', `Interessi (${tassoPercentuale}%)`, 'Totale Rata']],
+    body: bodyTable,
     theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 3, textColor: [20, 20, 20], fillColor: [255, 255, 255], lineColor: LINEA_BORDO },
-    headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold' },
+    styles: { font: 'helvetica', fontSize: 8, cellPadding: 2.5, textColor: DARK, lineColor: LINEA_BORDO },
+    headStyles: {
+      fillColor: livello === 3 ? [153, 27, 27] : (livello === 2 ? [180, 83, 9] : BLU),
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 8
+    },
+    columnStyles: {
+      0: { cellWidth: 'auto' },
+      1: { halign: 'center', cellWidth: 24 },
+      2: { halign: 'right', cellWidth: 28, fontStyle: 'bold' },
+      3: { halign: 'center', cellWidth: 20 },
+      4: { halign: 'right', cellWidth: 26 },
+      5: { halign: 'right', cellWidth: 28, fontStyle: 'bold' }
+    },
     alternateRowStyles: { fillColor: SFONDO_ALT },
     margin: { left: 14, right: 14 }
   });
 
-  const finalY = doc.lastAutoTable.finalY + 12;
+  y = doc.lastAutoTable.finalY + 5;
 
-  // Se è presente l'IBAN del condominio, scriviamolo nel PDF
-  if (condominio?.iban) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
-    doc.text('Coordinate per il pagamento (IBAN Condominiale):', 14, finalY);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...BLU);
-    doc.text(condominio.iban, 14, finalY + 5);
+  // 6. Box Quadratura Contabile & Totale
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(...LINEA_BORDO);
+  const boxHeight = speseApplicate > 0 || intMaturati > 0 ? 22 : 16;
+  doc.roundedRect(14, y, W - 28, boxHeight, 2, 2, 'FD');
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...DARK);
+  doc.text(`Totale Quote Capitale Insolute: ${fmtEuro(capInsoluto)}`, 18, y + 5.5);
+  
+  if (intMaturati > 0 || speseApplicate > 0) {
+    const vociAccessorie = [];
+    if (intMaturati > 0) vociAccessorie.push(`Interessi di Mora maturati (${tassoPercentuale}%): ${fmtEuro(intMaturati)}`);
+    if (speseApplicate > 0) vociAccessorie.push(`Spese Gestione Pratica / Sollecito: ${fmtEuro(speseApplicate)}`);
+    doc.text(vociAccessorie.join('   |   '), 18, y + 10.5);
   }
 
-  aggiungiFooter(doc);
-  applyWatermark(doc, withWatermark);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
+  doc.setTextColor(livello === 3 ? 185 : (livello === 2 ? 180 : 15), livello === 3 ? 28 : (livello === 2 ? 83 : 23), livello === 3 ? 28 : (livello === 2 ? 9 : 42));
+  doc.text(`TOTALE COMPLESSIVO DA VERSARE: ${fmtEuro(totRichiesto)}`, 18, y + (speseApplicate > 0 || intMaturati > 0 ? 17.5 : 12));
+
+  y += boxHeight + 6;
+
+  // 7. Clausola Perentoria & Avvertenze Legali
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...DARK);
   
-  // Restituiamo il PDF in formato stringa base64 (senza intestazione data:application/pdf;base64,)
-  const pdfOutput = doc.output('datauristring');
-  const base64 = pdfOutput.split(',')[1];
-  return base64;
+  if (livello === 3) {
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(153, 27, 27);
+    doc.text(`INTIMAZIONE E DIFFIDA AD ADEMPIERE:`, 14, y);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(...DARK);
+    const textDiffida = `La S.V. è formalmente diffidata e intimata a versare l'importo di ${fmtEuro(totRichiesto)} entro e non oltre il termine perentorio di ${giorniTermine} (sette) giorni dal ricevimento della presente.\n\nAVVERTIMENTO EX ART. 63 DISP. ATT. C.C.: In difetto, si procederà senza ulteriore preavviso al ricorso per DECRETO INGIUNTIVO PROVVISORIAMENTE ESECUTIVO (art. 63 c. 1) con addebito integrale di spese legali e perizia, nonché alla SOSPENSIONE DEI SERVIZI COMUNI suscettibili di godimento separato (art. 63 c. 3).`;
+    const splitDiffida = doc.splitTextToSize(textDiffida, W - 28);
+    doc.text(splitDiffida, 14, y + 4.5);
+    y += splitDiffida.length * 3.7 + 5;
+  } else if (livello === 2) {
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(180, 83, 9);
+    doc.text(`TERMINE DI PAGAMENTO:`, 14, y);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(...DARK);
+    const textMora = `La presente vale quale formale atto di costituzione in mora ex art. 1219 c.c. La invitiamo a saldare l'importo entro e non oltre ${giorniTermine} giorni. Decorso tale termine, la pratica verrà trasmessa al legale per la tutela coattiva del credito in sede giudiziale.`;
+    const splitMora = doc.splitTextToSize(textMora, W - 28);
+    doc.text(splitMora, 14, y + 4.5);
+    y += splitMora.length * 3.7 + 5;
+  } else {
+    const textBonario = `Certi che si tratti di una mera svista contabile, La invitiamo a voler provvedere al versamento del saldo entro ${giorniTermine} giorni dal ricevimento della presente. (Se ha già provveduto al pagamento, La preghiamo di considerare nullo il presente avviso).`;
+    const splitBonario = doc.splitTextToSize(textBonario, W - 28);
+    doc.text(splitBonario, 14, y);
+    y += splitBonario.length * 3.7 + 5;
+  }
+
+  // 8. Box Coordinate Bancarie (IBAN)
+  if (iban) {
+    doc.setFillColor(239, 246, 255);
+    doc.setDrawColor(191, 219, 254);
+    doc.roundedRect(14, y, W - 28, 16, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...BLU);
+    doc.text('Coordinate Bancarie per il Bonifico:', 18, y + 4.5);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...DARK);
+    doc.text(`Intestato a: ${condominio?.nome || 'Condominio'}`, 18, y + 9);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(29, 78, 216);
+    doc.text(`IBAN: ${iban}`, 18, y + 13.5);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...DARK);
+    doc.text(`Causale: Saldo quote esercizio ${annoEs} - Unità ${unita?.numero || ''} ${nomeDest}`, W - 18, y + 13.5, { align: 'right' });
+
+    y += 20;
+  } else {
+    y += 4;
+  }
+
+  // 9. Firma Amministratore
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...DARK);
+  doc.text(`Luogo e Data: ${condominio?.citta || 'Lì'}, ${dataRif.toLocaleDateString('it-IT')}`, 14, y + 4);
+  doc.text('L\'Amministrazione Condominiale', W - 18, y + 4, { align: 'right' });
+  doc.setFont('helvetica', 'bold');
+  doc.text(studioNome, W - 18, y + 9, { align: 'right' });
+
+  // Footer & Watermark
+  applyWatermark(doc, withWatermark);
 }
 
-// ─── Genera e scarica un PDF cumulativo di sollecito per più unità ──────────
-export async function exportSollecitiMassiviPdf({ condominio, esercizio, rate, proposte }, withWatermark = false) {
+// ─── Genera PDF Sollecito Singola Unità (restituisce base64 per email) ──────────
+export async function exportLetteraSollecitoPdfBytes({
+  condominio,
+  esercizio,
+  unita,
+  destinatario,
+  morositaUnita,
+  livello = 1,
+  studioProfile = {},
+  opzioniOverride = {}
+}, withWatermark = false) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  
-  proposte.forEach((p, index) => {
-    if (index > 0) {
+  disegnaLetteraSollecitoPagina(doc, {
+    condominio,
+    esercizio,
+    unita,
+    destinatario,
+    morositaUnita,
+    livello,
+    studioProfile,
+    opzioniOverride,
+    withWatermark
+  });
+  aggiungiFooter(doc);
+
+  const pdfOutput = doc.output('datauristring');
+  return pdfOutput.split(',')[1];
+}
+
+// ─── Genera e Scarica PDF Sollecito Singola Unità ──────────
+export function exportLetteraSollecitoPdf({
+  condominio,
+  esercizio,
+  unita,
+  destinatario,
+  morositaUnita,
+  livello = 1,
+  studioProfile = {},
+  opzioniOverride = {}
+}, withWatermark = false) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  disegnaLetteraSollecitoPagina(doc, {
+    condominio,
+    esercizio,
+    unita,
+    destinatario,
+    morositaUnita,
+    livello,
+    studioProfile,
+    opzioniOverride,
+    withWatermark
+  });
+  aggiungiFooter(doc);
+
+  const prefisso = livello === 3 ? 'Diffida_Legale' : (livello === 2 ? '2_Sollecito' : 'Sollecito_Bonario');
+  const nomeFile = `${prefisso}_Unita_${unita?.numero || 'Generica'}_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`;
+  doc.save(nomeFile);
+}
+
+// ─── Genera e Scarica Fascicolo PDF Cumulativo Morosità (Più Unità) ──────────
+export function exportFascicoloMorositaPdf({
+  condominio,
+  esercizio,
+  listaMorosi = [],
+  studioProfile = {},
+  opzioniOverride = {}
+}, withWatermark = false) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  listaMorosi.forEach((m, idx) => {
+    if (idx > 0) {
       doc.addPage();
     }
-    
-    const { unita, destinatario, cells } = p;
-    let y = disegnaIntestazione(doc, condominio, esercizio, 'SOLLECITO DI PAGAMENTO QUOTE');
-    
-    // Dati condomino
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...DARK);
-    doc.text('Spett.le Condomino:', 14, y);
-    doc.setFont('helvetica', 'bold');
-    const nomeCompleto = `${destinatario?.cognome || ''} ${destinatario?.nome || ''}`.trim() || 'Condòmino';
-    doc.text(nomeCompleto, 14, y + 5);
-    doc.setFont('helvetica', 'normal');
-    const alignmentText = unita?.scala ? `Scala ${unita.scala}, ` : '';
-    doc.text(`Unità Immobiliare: ${alignmentText}Interno ${unita?.numero || '—'}`, 14, y + 10);
-    
-    y += 22;
-    
-    // Lettera
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...BLU);
-    doc.text('Oggetto: Sollecito pagamento rate condominiali scadute', 14, y);
-    
-    y += 8;
-    
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
-    const cellMap = {};
-    (cells || []).forEach(c => { cellMap[c.rata_id] = c; });
-    const rateSorted = [...(rate || [])].sort((a, b) => (a.numero_rata || 0) - (b.numero_rata || 0));
-    
-    const dovuto = (cells || []).reduce((s, r) => s + parseFloat(r.importo || 0), 0);
-    const pagato = (cells || []).reduce((s, r) => s + parseFloat(r.importo_pagato || 0), 0);
-    const insoluto = dovuto - pagato;
-    
-    const testoLettera = `Dalle nostre scritture contabili relative alla gestione condominiale in corso, risulta che ad oggi per la S.V. non è stato regolarizzato il pagamento delle rate di seguito elencate.
-    
-La invitiamo a verificare il riepilogo finanziario ed a provvedere al saldo delle quote insolute il prima possibile tramite bonifico bancario sul conto corrente del condominio.
-
-Riepilogo quote per l'esercizio:
-- Totale dovuto: ${fmtEuro(dovuto)}
-- Totale versato ad oggi: ${fmtEuro(pagato)}
-- Saldo residuo da versare: ${fmtEuro(insoluto)}`;
-    
-    const splitText = doc.splitTextToSize(testoLettera, 180);
-    doc.text(splitText, 14, y);
-    y += splitText.length * 5 + 6;
-    
-    // Tabella
-    const body = rateSorted.map(r => {
-      const cell = cellMap[r.id];
-      if (!cell) return null;
-      return [
-        r.descrizione || `Rata ${r.numero_rata}`,
-        fmtData(r.data_scadenza),
-        fmtEuro(cell.importo),
-        fmtEuro(cell.importo_pagato),
-        fmtEuro(parseFloat(cell.importo || 0) - parseFloat(cell.importo_pagato || 0)),
-        cell.stato === 'pagata' ? 'Pagata' : cell.stato === 'sovra_pagata' ? 'Sovra-versata' : cell.stato === 'parziale' ? 'Parziale' : 'Scaduta/Non pagata'
-      ];
-    }).filter(Boolean);
-    
-    autoTable(doc, {
-      startY: y,
-      head: [['Rata / Descrizione', 'Scadenza', 'Dovuto', 'Pagato', 'Insoluto', 'Stato']],
-      body,
-      theme: 'grid',
-      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 3, textColor: [20, 20, 20], fillColor: [255, 255, 255], lineColor: LINEA_BORDO },
-      headStyles: { fillColor: BLU, textColor: [255, 255, 255], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: SFONDO_ALT },
-      margin: { left: 14, right: 14 }
+    disegnaLetteraSollecitoPagina(doc, {
+      condominio,
+      esercizio,
+      unita: m.unita,
+      destinatario: m.debitore,
+      morositaUnita: m,
+      livello: m.livelloSuggerito || 1,
+      studioProfile,
+      opzioniOverride,
+      withWatermark
     });
-    
-    const finalY = doc.lastAutoTable.finalY + 12;
-    
-    if (condominio?.iban) {
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...DARK);
-      doc.text('Coordinate per il pagamento (IBAN Condominiale):', 14, finalY);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...BLU);
-      doc.text(condominio.iban, 14, finalY + 5);
-    }
-    
-    aggiungiFooter(doc);
-    applyWatermark(doc, withWatermark);
   });
-  
-  doc.save(`Solleciti_Massivi_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}.pdf`);
+
+  aggiungiFooter(doc);
+  const nomeFile = `Fascicolo_Morosita_${condominio?.nome?.replace(/\s+/g, '_') || 'Condominio'}_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(nomeFile);
+}
+
+// ─── Retrocompatibilità con funzioni preesistenti ──────────
+export async function exportSingolaUnitaRatePdfBytes({ condominio, esercizio, rate, cells, unita, proprietario }, withWatermark = false) {
+  return exportLetteraSollecitoPdfBytes({
+    condominio,
+    esercizio,
+    unita,
+    destinatario: proprietario,
+    morositaUnita: {
+      rateScaduteList: (cells || []).map(c => {
+        const r = (rate || []).find(rt => rt.id === c.rata_id);
+        const imp = parseFloat(c.importo || 0);
+        const pag = parseFloat(c.importo_pagato || 0);
+        return {
+          descrizione: r?.descrizione || 'Rata',
+          dataScadenza: r?.data_scadenza,
+          capitaleInsoluto: imp - pag,
+          giorniRitardo: 0,
+          interesseMaturato: 0,
+          totaleRataConInteressi: imp - pag
+        };
+      })
+    },
+    livello: 1
+  }, withWatermark);
+}
+
+export async function exportSollecitiMassiviPdf({ condominio, esercizio, rate, proposte }, withWatermark = false) {
+  const morosi = proposte.map(p => ({
+    unita: p.unita,
+    debitore: p.destinatario,
+    livelloSuggerito: 1,
+    rateScaduteList: (p.cells || []).map(c => {
+      const r = (rate || []).find(rt => rt.id === c.rata_id);
+      const imp = parseFloat(c.importo || 0);
+      const pag = parseFloat(c.importo_pagato || 0);
+      return {
+        descrizione: r?.descrizione || 'Rata',
+        dataScadenza: r?.data_scadenza,
+        capitaleInsoluto: imp - pag,
+        giorniRitardo: 0,
+        interesseMaturato: 0,
+        totaleRataConInteressi: imp - pag
+      };
+    })
+  }));
+
+  return exportFascicoloMorositaPdf({
+    condominio,
+    esercizio,
+    listaMorosi: morosi
+  }, withWatermark);
 }
 
 // ─── ANAGRAFE: Esportazione Registro Anagrafe Condominiale Ufficiale (Art. 1130 c.c.)

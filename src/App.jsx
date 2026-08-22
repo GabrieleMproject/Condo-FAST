@@ -39,6 +39,7 @@ import RicercaPage from './pages/RicercaPage'
 import ProntoInterventoPage from './pages/ProntoInterventoPage'
 import LiveVoteJoinPage from './pages/LiveVoteApp/LiveVoteJoinPage'
 import LiveVoteAppPage from './pages/LiveVoteApp/LiveVoteAppPage'
+import RegiaAssembleaDirectPage from './pages/RegiaAssembleaDirectPage'
 import { ThemeProvider } from './contexts/ThemeContext'
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/waitlist" element={<WaitlistPage />} />
+            <Route path="/regia-live" element={<RegiaAssembleaDirectPage />} />
             <Route path="/voto/join/:assembleaId" element={<LiveVoteJoinPage />} />
             <Route path="/voto/live/:token" element={<LiveVoteAppPage />} />
             <Route element={<ProtectedRoute />}>

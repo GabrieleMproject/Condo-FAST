@@ -64,7 +64,7 @@ export function useDocumenti(condominioId) {
     }
   }, [condominioId, precacheSignedUrls])
 
-  const upload = useCallback(async (file, tipo, nome, note = '', dataDocumento = null, sinistroId = null) => {
+  const upload = useCallback(async (file, tipo, nome, note = '', dataDocumento = null, sinistroId = null, visibileCondomini = true) => {
     setLoading(true)
     setError(null)
     try {
@@ -106,6 +106,7 @@ export function useDocumenti(condominioId) {
         testo_estratto,
         note,
         data_documento: dataDocumento,
+        visibile_condomini: visibileCondomini
       }
       
       if (sinistroId) {
@@ -197,7 +198,20 @@ export function useDocumenti(condominioId) {
     return data
   }, [])
 
-  return { documenti, loading, error, fetch, upload, remove, getSignedUrl, aggiornaTesto }
+  const toggleVisibilitaCondomini = useCallback(async (docId, currentVal) => {
+    const newVal = currentVal === false ? true : false;
+    const { data, error } = await supabase
+      .from('documenti_condominio')
+      .update({ visibile_condomini: newVal })
+      .eq('id', docId)
+      .select()
+      .single();
+    if (error) throw error;
+    setDocumenti(prev => prev.map(d => d.id === docId ? { ...d, visibile_condomini: newVal } : d));
+    return newVal;
+  }, [])
+
+  return { documenti, loading, error, fetch, upload, remove, getSignedUrl, aggiornaTesto, toggleVisibilitaCondomini }
 }
 
 // Estrae testo da PDF usando FileReader + Gemini API

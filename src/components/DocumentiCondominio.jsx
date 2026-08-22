@@ -45,11 +45,11 @@ const CATEGORIE_LABEL = {
 }
 
 export default function DocumentiCondominio({ condominioId }) {
-  const { documenti, loading, error, fetch, upload, remove, getSignedUrl } = useDocumenti(condominioId)
+  const { documenti, loading, error, fetch, upload, remove, getSignedUrl, toggleVisibilitaCondomini } = useDocumenti(condominioId)
   const [showForm, setShowForm] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
-  const [form, setForm] = useState({ tipo: 'regolamento', nome: '', note: '' })
+  const [form, setForm] = useState({ tipo: 'regolamento', nome: '', note: '', visibile_condomini: true })
   const [selectedFile, setSelectedFile] = useState(null)
   const [filtroTipo, setFiltroTipo] = useState('tutti')
   const [confirmDelete, setConfirmDelete] = useState(null)
@@ -76,9 +76,9 @@ export default function DocumentiCondominio({ condominioId }) {
         : 'Caricamento...'
     )
     try {
-      await upload(selectedFile, form.tipo, form.nome, form.note)
+      await upload(selectedFile, form.tipo, form.nome, form.note, null, null, form.visibile_condomini)
       setShowForm(false)
-      setForm({ tipo: 'regolamento', nome: '', note: '' })
+      setForm({ tipo: 'regolamento', nome: '', note: '', visibile_condomini: true })
       setSelectedFile(null)
       setUploadProgress('')
     } catch (e) {
@@ -245,7 +245,20 @@ export default function DocumentiCondominio({ condominioId }) {
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <button
+                    onClick={() => toggleVisibilitaCondomini(doc.id, doc.visibile_condomini)}
+                    style={{
+                      background: doc.visibile_condomini !== false ? '#d1fae5' : '#f1f5f9',
+                      color: doc.visibile_condomini !== false ? '#047857' : '#64748b',
+                      border: `1px solid ${doc.visibile_condomini !== false ? '#a7f3d0' : '#e2e8f0'}`,
+                      borderRadius: 6, padding: '6px 10px', fontSize: 11, fontWeight: 700,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4
+                    }}
+                    title="Clicca per mostrare o nascondere questo documento nell'App dei Condòmini"
+                  >
+                    {doc.visibile_condomini !== false ? '📲 Visibile in App' : '🔒 Solo Studio'}
+                  </button>
                   <button
                     onClick={() => handleOpen(doc)}
                     style={{
@@ -346,7 +359,7 @@ export default function DocumentiCondominio({ condominioId }) {
                   accept=".pdf,.docx,.xls,.xlsx,.jpg,.png,.webp,.txt" />
               </div>
 
-              <div style={{ marginBottom: 24 }}>
+              <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 13, marginBottom: 6 }}>
                   Note (opzionale)
                 </label>
@@ -361,6 +374,19 @@ export default function DocumentiCondominio({ condominioId }) {
                     fontSize: 14, fontFamily: 'Sora, sans-serif', boxSizing: 'border-box'
                   }}
                 />
+              </div>
+
+              <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  id="visibile_condomini"
+                  checked={form.visibile_condomini}
+                  onChange={e => setForm(f => ({ ...f, visibile_condomini: e.target.checked }))}
+                  style={{ width: 16, height: 16, cursor: 'pointer' }}
+                />
+                <label htmlFor="visibile_condomini" style={{ fontSize: 13, color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500 }}>
+                  Rendi visibile questo documento nell'App dei Condòmini
+                </label>
               </div>
 
               {uploadProgress && (

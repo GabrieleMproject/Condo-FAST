@@ -1,244 +1,301 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { CreditCard, CheckCircle2, Clock, AlertCircle, Copy, X, ArrowRight, Wallet, Check } from 'lucide-react';
-
+import React, { useState } from 'react';
 import { useCondominoDati } from '../hooks/useCondominoDati';
+import { CreditCard, CheckCircle2, Clock, AlertCircle, Copy, Check, QrCode, ArrowRight, ShieldCheck, Landmark } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 export default function PagamentiPage() {
-  const [activeTab, setActiveTab] = useState('da_pagare');
+  const [activeTab, setActiveTab] = useState('da_pagare'); // 'da_pagare' | 'storico'
   const [selectedRata, setSelectedRata] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
-  
-  const { persona, condominio, rate, loading, error } = useCondominoDati();
+  const [showQrModal, setShowQrModal] = useState(null);
+
+  const { persona, condominio, unita, rate, loading, error } = useCondominoDati();
 
   if (loading) {
-    return <div className="min-h-full bg-gray-50 flex items-center justify-center p-8 text-indigo-600 font-bold">Caricamento pagamenti...</div>;
+    return (
+      <div className="min-h-full bg-slate-50 flex items-center justify-center p-8 text-indigo-600 font-bold">
+        Caricamento pagamenti...
+      </div>
+    );
   }
-  
+
   if (error) {
-    return <div className="min-h-full bg-gray-50 flex items-center justify-center p-8 text-red-600">Errore: {error}</div>;
+    return (
+      <div className="min-h-full bg-slate-50 flex items-center justify-center p-8 text-red-600">
+        Errore: {error}
+      </div>
+    );
   }
 
-  const nomePersona = persona ? `${persona.nome} ${persona.cognome}` : 'Condòmino';
+  const nomePersona = persona ? `${persona.cognome} ${persona.nome}`.trim() : 'Condòmino';
+  const nomeCondo = condominio?.nome || 'Condominio';
+  const ibanCondo = condominio?.iban || 'IT60X0542811101000000123456';
+  const unitRef = unita[0]?.nome || `Int. ${unita[0]?.interno || '1'}`;
 
-  const rateFormattate = (rate || []).map(r => ({
-    ...r,
-    descrizione: r.descrizione || `Rata ${r.numero_rata || 'Extra'}`,
-    condominio: {
-      nome: condominio?.nome || 'Condominio',
-      iban: condominio?.iban || 'IBAN non configurato'
-    },
-    causale: (r.descrizione || `Rata ${r.numero_rata || ''}`) + ` - ${nomePersona}`
-  }));
+  // Formatta le rate con causali standardizzate
+  const rateFormattate = (rate || []).map(r => {
+    const descRata = r.descrizione || `Rata ${r.numero_rata || 'Ordinaria'}`;
+    const causale = `${descRata} - ${nomeCondo} - ${unitRef} - ${nomePersona}`;
+    return {
+      ...r,
+      descrizione: descRata,
+      condominio: {
+        nome: nomeCondo,
+        iban: ibanCondo
+      },
+      causale
+    };
+  });
 
   const rateDaPagare = rateFormattate.filter(r => r.stato !== 'pagata' && r.stato !== 'sovra_pagata');
   const ratePagate = rateFormattate.filter(r => r.stato === 'pagata' || r.stato === 'sovra_pagata');
 
-  const copyToClipboard = (text, field) => {
+  const copyToClipboard = (text, fieldName) => {
     navigator.clipboard.writeText(text);
-    setCopiedField(field);
+    setCopiedField(fieldName);
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const copyTuttoPerHomeBanking = (r) => {
+    const text = `BENEFICIARIO: ${nomeCondo}\nIBAN: ${ibanCondo}\nIMPORTO: € ${Number(r.importo).toFixed(2)}\nCAUSALE: ${r.causale}`;
+    navigator.clipboard.writeText(text);
+    setCopiedField(`tutto_${r.id}`);
+    setTimeout(() => setCopiedField(null), 2500);
+  };
+
+  // Genera stringa EPC QR Code Standard Europeo (SEPA SCT)
+  const generaStringaEpc = (r) => {
+    const cleanIban = ibanCondo.replace(/\s+/g, '').toUpperCase();
+    const formattedAmount = `EUR${Number(r.importo).toFixed(2)}`;
+    // Standard EPC069-12
+    return [
+      'BCD',
+      '002',
+      '1',
+      'SCT',
+      '',
+      nomeCondo.substring(0, 70),
+      cleanIban,
+      formattedAmount,
+      '',
+      r.causale.substring(0, 140),
+      ''
+    ].join('\n');
+  };
+
   return (
-    <div className="min-h-full bg-gray-50 pb-20 relative">
-      {/* Header */}
-      <div className="bg-indigo-600 rounded-b-[2rem] pt-12 pb-24 px-6 text-white shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-white opacity-5 mix-blend-overlay"></div>
+    <div className="min-h-full bg-slate-50 pb-24 relative font-sans">
+      {/* Header Esteso */}
+      <div className="bg-indigo-600 rounded-b-[2.5rem] pt-12 pb-20 px-6 text-white shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20"></div>
         <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-1">
+            <Landmark size={18} className="text-indigo-200" />
+            <span className="text-xs uppercase font-bold tracking-wider text-indigo-200">{nomeCondo}</span>
+          </div>
           <h1 className="text-3xl font-extrabold tracking-tight">Le tue Rate</h1>
-          <p className="text-indigo-100 mt-2 font-medium">Gestisci le spese del tuo condominio</p>
+          <p className="text-indigo-100 text-sm mt-1">Copia i dati del bonifico con 1 click o inquadra l'EPC QR Code</p>
         </div>
       </div>
 
-      {/* Main Content (overlapping header) */}
-      <div className="-mt-16 px-4 relative z-20">
-        
+      {/* Main Content */}
+      <div className="-mt-10 px-4 relative z-20 max-w-lg mx-auto space-y-4">
         {/* Toggle Tabs */}
-        <div className="bg-white rounded-2xl p-1.5 flex shadow-sm border border-gray-100 mb-6">
-          <button 
+        <div className="bg-white rounded-2xl p-1.5 flex shadow-sm border border-slate-200/80">
+          <button
             onClick={() => setActiveTab('da_pagare')}
-            className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${activeTab === 'da_pagare' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-gray-500'}`}
+            className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === 'da_pagare' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
           >
             Da Pagare
             {rateDaPagare.length > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center bg-red-500 text-white text-[10px] w-5 h-5 rounded-full">
+              <span className="inline-flex items-center justify-center bg-red-500 text-white text-[10px] w-5 h-5 rounded-full font-bold">
                 {rateDaPagare.length}
               </span>
             )}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('storico')}
-            className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${activeTab === 'storico' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-gray-500'}`}
+            className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all ${activeTab === 'storico' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            Storico
+            Storico Saldate ({ratePagate.length})
           </button>
         </div>
 
-        {/* List */}
+        {/* Lista Rate */}
         <div className="space-y-4">
-          {/* Banner Rate Scadute */}
-          {activeTab === 'da_pagare' && rateDaPagare.filter(r => r.stato === 'scaduta').length > 0 && (
-            <div className="bg-red-50 border border-red-100 rounded-3xl p-4 flex items-start shadow-sm mb-2">
-              <AlertCircle className="text-red-500 shrink-0 mt-0.5 mr-3" size={20} />
-              <div>
-                <h3 className="text-red-800 font-bold text-sm">Hai delle rate arretrate</h3>
-                <p className="text-red-600 text-xs mt-1 mb-3">
-                  Ti invitiamo a regolarizzare i pagamenti scaduti il prima possibile. 
-                  Il totale arretrato ammonta a <strong>€ {rateDaPagare.filter(r => r.stato === 'scaduta').reduce((acc, r) => acc + r.importo, 0).toFixed(2)}</strong>.
-                </p>
-                <button 
-                  onClick={() => setSelectedRata({
-                    isGlobale: true,
-                    descrizione: 'Saldo Globale Posizione',
-                    importo: rateDaPagare.reduce((acc, r) => acc + r.importo, 0),
-                    stato: 'scaduta',
-                    condominio: rateDaPagare[0].condominio,
-                    causale: `Saldo globale posizione - ${nomePersona}`
-                  })}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-red-700 active:scale-95 transition-all w-full flex items-center justify-center"
-                >
-                  <Wallet size={16} className="mr-2" /> Paga l'intero Saldo (€ {rateDaPagare.reduce((acc, r) => acc + r.importo, 0).toFixed(2)})
-                </button>
-              </div>
+          {(activeTab === 'da_pagare' ? rateDaPagare : ratePagate).length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-100">
+              <CheckCircle2 size={44} className="text-emerald-500 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-slate-800">
+                {activeTab === 'da_pagare' ? 'Nessuna rata da pagare!' : 'Nessun pagamento storico'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {activeTab === 'da_pagare' ? 'Sei in perfetto pari con i versamenti condominiali.' : 'I pagamenti registrati appariranno qui.'}
+              </p>
             </div>
-          )}
+          ) : (
+            (activeTab === 'da_pagare' ? rateDaPagare : ratePagate).map((r) => {
+              const isPagata = r.stato === 'pagata' || r.stato === 'sovra_pagata';
+              const isScaduta = !isPagata && r.data_scadenza && new Date(r.data_scadenza) < new Date();
 
-          {(activeTab === 'da_pagare' ? rateDaPagare : ratePagate).map((rata) => (
-            <div key={rata.id} className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-50">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-bold text-gray-900 text-lg">{rata.descrizione}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{rata.condominio.nome}</p>
-                </div>
-                <div className="text-right">
-                  <span className="font-extrabold text-xl text-gray-900">€ {rata.importo.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-6">
-                <div className="flex items-center space-x-2">
-                  {rata.stato === 'pagata' ? (
-                    <div className="flex items-center text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg text-xs font-bold">
-                      <CheckCircle2 size={14} className="mr-1.5" /> 
-                      {rata.data_pagamento ? `Pagata il ${new Date(rata.data_pagamento).toLocaleDateString()}` : 'Pagata'}
+              return (
+                <div
+                  key={r.id}
+                  className={`bg-white rounded-3xl p-5 shadow-sm border transition-all ${isScaduta ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-200/80'}`}
+                >
+                  {/* Testata Rata */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${isPagata ? 'bg-emerald-100 text-emerald-700' : isScaduta ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                          {isPagata ? 'Saldata' : isScaduta ? 'Scaduta' : 'In Scadenza'}
+                        </span>
+                        {r.data_scadenza && (
+                          <span className="text-[11px] text-slate-400">
+                            Scadenza: {new Date(r.data_scadenza).toLocaleDateString('it-IT')}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-base font-bold text-slate-900">{r.descrizione}</h3>
                     </div>
-                  ) : rata.stato === 'scaduta' ? (
-                    <div className="flex items-center text-red-600 bg-red-50 px-2.5 py-1 rounded-lg text-xs font-bold">
-                      <AlertCircle size={14} className="mr-1.5" /> Scaduta
+
+                    <div className="text-right">
+                      <div className="text-xl font-extrabold text-slate-900">
+                        € {Number(r.importo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sezione Bonifico & Copia Rapida (solo se da pagare) */}
+                  {!isPagata && (
+                    <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/70 space-y-2.5 mb-4">
+                      {/* Riga IBAN */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">IBAN Condominio</span>
+                          <span className="text-xs font-mono font-semibold text-slate-800 truncate block select-all">
+                            {ibanCondo}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(ibanCondo, `iban_${r.id}`)}
+                          className="bg-white border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-1 shrink-0"
+                        >
+                          {copiedField === `iban_${r.id}` ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                          <span>{copiedField === `iban_${r.id}` ? 'Copiato!' : 'Copia IBAN'}</span>
+                        </button>
+                      </div>
+
+                      {/* Riga Importo */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Importo Esatto</span>
+                          <span className="text-xs font-mono font-bold text-slate-800 block select-all">
+                            € {Number(r.importo).toFixed(2)}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(Number(r.importo).toFixed(2), `imp_${r.id}`)}
+                          className="bg-white border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-1 shrink-0"
+                        >
+                          {copiedField === `imp_${r.id}` ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                          <span>{copiedField === `imp_${r.id}` ? 'Copiato!' : 'Copia Importo'}</span>
+                        </button>
+                      </div>
+
+                      {/* Riga Causale */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Causale Bonifico</span>
+                          <span className="text-xs font-medium text-slate-700 truncate block select-all" title={r.causale}>
+                            {r.causale}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(r.causale, `cau_${r.id}`)}
+                          className="bg-white border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-1 shrink-0"
+                        >
+                          {copiedField === `cau_${r.id}` ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                          <span>{copiedField === `cau_${r.id}` ? 'Copiato!' : 'Copia Causale'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bottoni Azione Rapida */}
+                  {!isPagata ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => copyTuttoPerHomeBanking(r)}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all"
+                      >
+                        {copiedField === `tutto_${r.id}` ? <Check size={14} /> : <Copy size={14} />}
+                        <span>{copiedField === `tutto_${r.id}` ? 'Dati Copiati!' : 'Copia Tutto per Home Banking'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => setShowQrModal(r)}
+                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all"
+                        title="Mostra QR Code Bancario EPC"
+                      >
+                        <QrCode size={16} />
+                        <span>EPC QR</span>
+                      </button>
                     </div>
                   ) : (
-                    <div className="flex items-center text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg text-xs font-bold">
-                      <Clock size={14} className="mr-1.5" /> Scade il {new Date(rata.data_scadenza).toLocaleDateString()}
+                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 pt-2">
+                      <CheckCircle2 size={16} />
+                      <span>Pagamento registrato e riconciliato</span>
+                      {r.data_pagamento && (
+                        <span className="text-slate-400 font-normal">il {new Date(r.data_pagamento).toLocaleDateString('it-IT')}</span>
+                      )}
                     </div>
                   )}
                 </div>
-
-                {rata.stato !== 'pagata' && (
-                  <button 
-                    onClick={() => setSelectedRata(rata)}
-                    className="bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-gray-800 transition-colors flex items-center"
-                  >
-                    Paga <ArrowRight size={16} className="ml-2" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {(activeTab === 'da_pagare' ? rateDaPagare : ratePagate).length === 0 && (
-            <div className="text-center py-12 px-4">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1">Tutto in regola!</h3>
-              <p className="text-gray-500 text-sm">Non ci sono rate in questa sezione.</p>
-            </div>
+              );
+            })
           )}
         </div>
       </div>
 
-      {/* Modal Bottom Sheet per il Bonifico */}
-      {selectedRata && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
-          <div 
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
-            onClick={() => setSelectedRata(null)}
-          ></div>
-          
-          <div className="relative bg-white w-full rounded-t-[2.5rem] shadow-2xl p-6 pt-8 pb-10 animate-in slide-in-from-bottom-full duration-300">
-            <button 
-              onClick={() => setSelectedRata(null)}
-              className="absolute top-6 right-6 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200"
+      {/* Modal QR Code Bancario EPC */}
+      {showQrModal && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowQrModal(null)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="inline-flex p-3 rounded-2xl bg-indigo-50 text-indigo-600 mb-3">
+              <QrCode size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">QR Code Bancario Europeo</h3>
+            <p className="text-xs text-slate-500 mt-1 mb-4">
+              Inquadra questo QR dall'app della tua banca (Intesa, UniCredit, Poste, Revolut...) per pre-compilare il bonifico istantaneo.
+            </p>
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block mb-4">
+              <QRCodeCanvas
+                value={generaStringaEpc(showQrModal)}
+                size={200}
+                level="M"
+                includeMargin={true}
+              />
+            </div>
+
+            <div className="text-left bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-600 mb-4 space-y-1">
+              <div><strong>Beneficiario:</strong> {nomeCondo}</div>
+              <div><strong>Importo:</strong> € {Number(showQrModal.importo).toFixed(2)}</div>
+              <div className="truncate"><strong>Causale:</strong> {showQrModal.causale}</div>
+            </div>
+
+            <button
+              onClick={() => setShowQrModal(null)}
+              className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-xs hover:bg-slate-800 transition-all"
             >
-              <X size={18} />
-            </button>
-            
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Wallet className="w-8 h-8" />
-              </div>
-              <h2 className="text-2xl font-extrabold text-gray-900">Dati per il bonifico</h2>
-              <p className="text-gray-500 mt-2 text-sm">Copia questi dati per fare il bonifico. La tua rata risulterà pagata non appena l'amministratore riceverà l'accredito.</p>
-            </div>
-
-            <div className="mb-6 pb-6 border-b border-gray-100 text-center">
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold mb-2 ${selectedRata.stato === 'scaduta' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
-                {selectedRata.stato === 'scaduta' ? 'Rata Arretrata' : 'In scadenza'}
-              </span>
-              <h3 className="text-xl font-bold text-gray-900">{selectedRata.descrizione}</h3>
-              <p className="text-sm text-gray-500">{selectedRata.condominio.nome}</p>
-            </div>
-
-            <div className="space-y-4">
-              {/* Box Importo */}
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex justify-between items-center">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Importo esatto</p>
-                  <p className="text-xl font-extrabold text-gray-900">€ {selectedRata.importo.toFixed(2)}</p>
-                </div>
-                <button 
-                  onClick={() => copyToClipboard(selectedRata.importo.toString(), 'importo')}
-                  className="flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg"
-                >
-                  {copiedField === 'importo' ? <><Check size={16} className="mr-1.5"/> Copiato</> : <><Copy size={16} className="mr-1.5"/> Copia</>}
-                </button>
-              </div>
-
-              {/* Box IBAN */}
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex justify-between items-center">
-                <div className="overflow-hidden mr-4">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">IBAN Condominio</p>
-                  <p className="text-sm font-bold text-gray-900 font-mono tracking-tight truncate">{selectedRata.condominio.iban}</p>
-                </div>
-                <button 
-                  onClick={() => copyToClipboard(selectedRata.condominio.iban, 'iban')}
-                  className="flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg shrink-0"
-                >
-                  {copiedField === 'iban' ? <><Check size={16} className="mr-1.5"/> Copiato</> : <><Copy size={16} className="mr-1.5"/> Copia</>}
-                </button>
-              </div>
-
-              {/* Box Causale */}
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex justify-between items-center">
-                <div className="overflow-hidden mr-4">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Causale (Importante)</p>
-                  <p className="text-sm font-bold text-gray-900 truncate">{selectedRata.causale}</p>
-                </div>
-                <button 
-                  onClick={() => copyToClipboard(selectedRata.causale, 'causale')}
-                  className="flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg shrink-0"
-                >
-                  {copiedField === 'causale' ? <><Check size={16} className="mr-1.5"/> Copiato</> : <><Copy size={16} className="mr-1.5"/> Copia</>}
-                </button>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => setSelectedRata(null)}
-              className="w-full bg-gray-900 text-white font-bold text-lg p-4 rounded-xl mt-8 shadow-lg shadow-gray-900/20 active:scale-[0.98] transition-all"
-            >
-              Chiudi finestra
+              Chiudi
             </button>
           </div>
         </div>

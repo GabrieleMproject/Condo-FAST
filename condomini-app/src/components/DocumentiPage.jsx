@@ -1,30 +1,44 @@
 import React, { useState } from 'react';
-import { FileText, Download, File, FolderOpen, ShieldCheck, PieChart, Info, X } from 'lucide-react';
 import { useCondominoDati } from '../hooks/useCondominoDati';
 import { supabase } from '../lib/supabase';
+import {
+  FileText, Download, FileSpreadsheet, FileSignature, ShieldAlert,
+  Award, Landmark, FolderOpen, ExternalLink, X, Loader2, CheckCircle2
+} from 'lucide-react';
 
 export default function DocumentiPage() {
-  const { documenti, loading, error } = useCondominoDati();
+  const { documenti, condominio, loading, error, isDemo } = useCondominoDati();
   const [categoriaAttiva, setCategoriaAttiva] = useState('Tutti');
   const [pdfUrl, setPdfUrl] = useState(null);
+  const [pdfTitle, setPdfTitle] = useState('');
   const [loadingPdf, setLoadingPdf] = useState(false);
 
   if (loading) {
-    return <div className="min-h-full bg-gray-50 flex items-center justify-center p-8 text-indigo-600 font-bold">Caricamento documenti...</div>;
-  }
-  
-  if (error) {
-    return <div className="min-h-full bg-gray-50 flex items-center justify-center p-8 text-red-600">Errore: {error}</div>;
+    return (
+      <div className="min-h-full bg-slate-50 flex items-center justify-center p-8 text-indigo-600 font-bold">
+        Caricamento documenti...
+      </div>
+    );
   }
 
-  // Categorie dinamiche
+  if (error) {
+    return (
+      <div className="min-h-full bg-slate-50 flex items-center justify-center p-8 text-red-600">
+        Errore: {error}
+      </div>
+    );
+  }
+
   const typeMapping = {
-    'bilancio': 'Bilanci',
-    'preventivo': 'Bilanci',
-    'fattura': 'Fatture',
-    'verbale': 'Verbali',
-    'assicurazione': 'Assicurazione',
     'regolamento': 'Regolamento',
+    'tabella_millesimale_doc': 'Millesimi',
+    'verbale': 'Verbali',
+    'consuntivo': 'Bilanci',
+    'preventivo': 'Bilanci',
+    'sinistro': 'Assicurazione',
+    'contratto': 'Contratti',
+    'certificazione': 'Certificazioni',
+    'estratto_conto_archivio': 'Bilanci',
     'altro': 'Altro'
   };
 
@@ -33,152 +47,200 @@ export default function DocumentiPage() {
     categoria: typeMapping[d.tipo] || 'Altro'
   }));
 
-  const categorie = ['Tutti', 'Verbali', 'Bilanci', 'Regolamento', 'Assicurazione', 'Altro'];
+  const categorie = ['Tutti', 'Verbali', 'Bilanci', 'Regolamento', 'Millesimi', 'Assicurazione', 'Contratti', 'Altro'];
 
-  const docFiltrati = categoriaAttiva === 'Tutti' 
-    ? documentiMappati 
+  const docFiltrati = categoriaAttiva === 'Tutti'
+    ? documentiMappati
     : documentiMappati.filter(d => d.categoria === categoriaAttiva);
 
-  const handleOpenPdf = async (doc) => {
-    if (!doc.pdf_url) return;
-    setLoadingPdf(true);
-    try {
-      const { data, error } = await supabase.storage.from('documenti').createSignedUrl(doc.pdf_url, 60 * 60); // 1 ora
-      if (error) throw error;
-      if (data?.signedUrl) {
-        setPdfUrl(data.signedUrl);
-      }
-    } catch (err) {
-      console.error('Errore durante l\'apertura del PDF', err);
-      alert('Non è stato possibile aprire il documento. Riprova più tardi.');
-    } finally {
-      setLoadingPdf(false);
+  const renderIcon = (tipo) => {
+    switch (tipo) {
+      case 'regolamento':
+        return <FileText className="text-blue-500" size={22} />;
+      case 'tabella_millesimale_doc':
+        return <FileSpreadsheet className="text-purple-500" size={22} />;
+      case 'verbale':
+        return <FileSignature className="text-emerald-500" size={22} />;
+      case 'sinistro':
+        return <ShieldAlert className="text-red-500" size={22} />;
+      case 'certificazione':
+        return <Award className="text-cyan-500" size={22} />;
+      default:
+        return <FileText className="text-indigo-500" size={22} />;
     }
   };
 
-  const handleDownload = async (e, doc) => {
-    e.stopPropagation(); // Prevenire apertura visualizzatore
-    if (!doc.pdf_url) return;
+  const handleOpenDoc = async (doc) => {
+    if (isDemo || !doc.url_storage) {
+      setPdfUrl('demo');
+      setPdfTitle(doc.nome);
+      return;
+    }
+
     setLoadingPdf(true);
     try {
-      const { data, error } = await supabase.storage.from('documenti').download(doc.pdf_url);
+      const { data, error } = await supabase.storage.from('documenti-condominio').createSignedUrl(doc.url_storage, 60 * 60);
       if (error) throw error;
-      
-      const blobUrl = URL.createObjectURL(data);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = doc.nome || 'documento.pdf';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
+      if (data?.signedUrl) {
+        setPdfUrl(data.signedUrl);
+        setPdfTitle(doc.nome);
+      }
     } catch (err) {
-      console.error('Errore durante il download del PDF', err);
-      alert('Errore durante il download del documento. Riprova.');
+      console.error('Errore apertura file:', err);
+      alert('Non è stato possibile caricare l\'anteprima. Riprova.');
     } finally {
       setLoadingPdf(false);
     }
   };
 
   return (
-    <div className="min-h-full bg-gray-50 pb-20 relative">
-      {/* Header */}
-      <div className="bg-indigo-600 pt-12 pb-8 px-6 text-white relative">
+    <div className="min-h-full bg-slate-50 pb-24 relative font-sans">
+      {/* Header Esteso */}
+      <div className="bg-indigo-600 rounded-b-[2.5rem] pt-12 pb-20 px-6 text-white shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20"></div>
         <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-1">
+            <FileText size={18} className="text-indigo-200" />
+            <span className="text-xs uppercase font-bold tracking-wider text-indigo-200">{condominio?.nome || 'Condominio'}</span>
+          </div>
           <h1 className="text-3xl font-extrabold tracking-tight">Bacheca Documenti</h1>
-          <p className="text-indigo-100 mt-1 font-medium text-sm">Tutta la documentazione a portata di mano</p>
+          <p className="text-indigo-100 text-sm mt-1">Verbali, regolamento, polizza e bilanci pubblicati dallo studio</p>
         </div>
       </div>
 
-      {/* Tabs Orizzontali Scorrevole */}
-      <div className="px-4 -mt-4 relative z-20 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 overflow-x-auto no-scrollbar flex space-x-2">
+      {/* Main Content */}
+      <div className="-mt-10 px-4 relative z-20 max-w-lg mx-auto space-y-4">
+        {/* Filtri Categoria a Scorrimento */}
+        <div className="bg-white rounded-2xl p-2 shadow-sm border border-slate-200/80 overflow-x-auto no-scrollbar flex space-x-1.5">
           {categorie.map(cat => (
-            <button 
+            <button
               key={cat}
               onClick={() => setCategoriaAttiva(cat)}
-              className={`px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors
-                ${categoriaAttiva === cat ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${categoriaAttiva === cat ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
             >
               {cat}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Lista Documenti */}
-      <div className="px-4 space-y-3">
-        {docFiltrati.map(doc => (
-          <div 
-            key={doc.id} 
-            onClick={() => handleOpenPdf(doc)}
-            className="bg-white rounded-2xl p-4 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-gray-50 flex items-center justify-between cursor-pointer active:scale-[0.99] transition-transform"
-          >
-            <div className="flex items-center flex-1 mr-4 overflow-hidden">
-              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 mr-4">
-                {doc.categoria === 'Verbali' ? <FileText size={20} /> : 
-                 doc.categoria === 'Bilanci' ? <PieChart size={20} /> :
-                 doc.categoria === 'Assicurazione' ? <ShieldCheck size={20} /> :
-                 <File size={20} />}
-              </div>
-              <div className="overflow-hidden">
-                <h3 className="font-bold text-gray-900 text-sm truncate">{doc.nome}</h3>
-                <div className="flex items-center text-xs text-gray-500 mt-1">
-                  <span>{doc.categoria}</span>
-                  {doc.data_documento && (
-                    <>
-                      <span className="mx-2">•</span>
-                      <span>{new Date(doc.data_documento).toLocaleDateString()}</span>
-                    </>
-                  )}
+        {/* Lista Documenti */}
+        <div className="space-y-3">
+          {docFiltrati.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-100">
+              <FolderOpen size={40} className="text-slate-400 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-slate-800">Nessun documento trovato</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Non sono presenti documenti per la categoria selezionata.
+              </p>
+            </div>
+          ) : (
+            docFiltrati.map(doc => (
+              <div
+                key={doc.id}
+                onClick={() => handleOpenDoc(doc)}
+                className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between gap-3 cursor-pointer hover:border-indigo-300 hover:shadow-md transition-all active:scale-99"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                    {renderIcon(doc.tipo)}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md inline-block mb-1">
+                      {doc.categoria}
+                    </span>
+                    <h4 className="font-bold text-sm text-slate-900 truncate" title={doc.nome}>
+                      {doc.nome}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                      {doc.created_at ? new Date(doc.created_at).toLocaleDateString('it-IT') : ''}
+                      {doc.note ? ` • ${doc.note}` : ''}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenDoc(doc);
+                    }}
+                    className="p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 transition-colors"
+                    title="Visualizza documento"
+                  >
+                    <ExternalLink size={16} />
+                  </button>
                 </div>
               </div>
-            </div>
-            
-            <button 
-              onClick={(e) => handleDownload(e, doc)}
-              className="w-10 h-10 bg-gray-50 text-gray-600 rounded-full flex items-center justify-center shrink-0 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
-            >
-              <Download size={18} />
-            </button>
-          </div>
-        ))}
+            ))
+          )}
+        </div>
       </div>
 
-      {docFiltrati.length === 0 && (
-        <div className="text-center py-16 px-4">
-          <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" strokeWidth={1} />
-          <p className="text-gray-500 font-medium">Nessun documento in questa categoria.</p>
-        </div>
-      )}
-
-      {loadingPdf && (
-        <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex justify-center items-center">
-          <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-            <p className="font-bold text-gray-900">Caricamento documento...</p>
-          </div>
-        </div>
-      )}
-
-      {/* PDF Viewer Full Screen Modal */}
+      {/* Modal Anteprima PDF / Visualizzatore */}
       {pdfUrl && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col animate-in fade-in duration-200">
-          <div className="flex justify-between items-center p-4 bg-gray-900 text-white">
-            <h2 className="font-bold text-sm truncate pr-4">Visualizzatore Documento</h2>
-            <button 
+        <div
+          className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setPdfUrl(null)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 leading-tight">{pdfTitle}</h3>
+                  <p className="text-xs text-slate-500">Documento Ufficiale Condominiale</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPdfUrl(null)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center mb-5">
+              <CheckCircle2 size={44} className="text-emerald-500 mx-auto mb-2" />
+              <h4 className="text-sm font-bold text-slate-800">Documento Convalidato dallo Studio</h4>
+              <p className="text-xs text-slate-500 mt-1">
+                Questo documento è certificato e archiviato in modo sicuro per il tuo condominio.
+              </p>
+            </div>
+
+            {pdfUrl !== 'demo' ? (
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all mb-2"
+              >
+                <Download size={15} />
+                <span>Apri e Scarica Documento PDF</span>
+              </a>
+            ) : (
+              <button
+                onClick={() => {
+                  alert(`Apertura documento demo: "${pdfTitle}". In produzione, scarica il PDF originale da Supabase Storage.`);
+                  setPdfUrl(null);
+                }}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all mb-2"
+              >
+                <Download size={15} />
+                <span>Scarica Documento (Demo)</span>
+              </button>
+            )}
+
+            <button
               onClick={() => setPdfUrl(null)}
-              className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors shrink-0"
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition-all"
             >
-              <X size={20} />
+              Chiudi
             </button>
-          </div>
-          <div className="flex-1 w-full bg-gray-100">
-            <iframe 
-              src={`${pdfUrl}#toolbar=0`} 
-              title="PDF Viewer"
-              className="w-full h-full border-0"
-            />
           </div>
         </div>
       )}

@@ -45,16 +45,35 @@ export default function AuthForm({ onLoginDemo }) {
 
       if (data && data.success) {
         setSuccess(`Benvenuto ${data.nome} ${data.cognome}!`);
-        // Se l'utente è stato riconosciuto, aggiorna sessione
+        localStorage.setItem('condomino_session_profile', JSON.stringify({
+          persona_id: data.persona_id,
+          condominio_id: data.condominio_id,
+          condominio_nome: data.condominio_nome,
+          nome: data.nome,
+          cognome: data.cognome,
+          codice_fiscale: codiceFiscale.trim().toUpperCase(),
+          codice_app: codiceCondominio.trim().toUpperCase()
+        }));
         setTimeout(() => {
-          onLoginDemo?.();
-        }, 1000);
+          onLoginDemo?.({
+            user: {
+              email: `${data.persona_id}@condofast.local`,
+              profile: data
+            }
+          });
+        }, 800);
       } else {
-        throw new Error(data?.error || 'Nessuna unità trovata per questo Codice Fiscale.');
+        throw new Error(data?.error || 'Nessuna anagrafica trovata per questo Codice Fiscale nel condominio specificato.');
       }
     } catch (err) {
-      // Fallback demo gentile se in locale
       if (codiceCondominio.toUpperCase() === 'ROSE26' || codiceFiscale.toUpperCase().startsWith('RSS')) {
+        localStorage.setItem('condomino_session_profile', JSON.stringify({
+          persona_id: 'demo-persona-1',
+          condominio_id: 'demo-condo-1',
+          nome: 'Marco',
+          cognome: 'Rossi',
+          isDemo: true
+        }));
         onLoginDemo?.();
         return;
       }

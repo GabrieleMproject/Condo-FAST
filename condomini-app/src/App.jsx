@@ -81,6 +81,17 @@ export default function App() {
       sessionStorage.setItem('pending_delega', delegaCode.toUpperCase().trim());
     }
 
+    // 1. Controlla sessione persistente da Codice Condominio + Codice Fiscale
+    const savedPinProfile = localStorage.getItem('condomino_session_profile');
+    if (savedPinProfile) {
+      try {
+        const parsed = JSON.parse(savedPinProfile);
+        setSession({ user: { email: parsed.isDemo ? 'demo@condofast.it' : `${parsed.persona_id}@condofast.local`, profile: parsed } });
+        setLoading(false);
+        return;
+      } catch (e) {}
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -96,7 +107,8 @@ export default function App() {
   }, []);
 
   const handleLogout = async () => {
-    if (session?.user?.email === 'demo@condofast.it') {
+    localStorage.removeItem('condomino_session_profile');
+    if (session?.user?.email === 'demo@condofast.it' || session?.user?.profile) {
       setSession(null);
     } else {
       await supabase.auth.signOut();

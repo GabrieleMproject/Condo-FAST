@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { useCondominoDati } from '../hooks/useCondominoDati';
 
 export default function HomePage() {
-  const { persona, condominio, unita, rate, assemblee, proposte, isDemo, loading, error } = useCondominoDati();
+  const { persona, condominio, unita, rate, assemblee, proposte, delegheRicevute, isDemo, loading, error } = useCondominoDati();
+  const delegheInAttesa = (delegheRicevute || []).filter(d => d.stato === 'in_attesa_accettazione');
 
   if (loading) {
     return (
@@ -59,6 +60,31 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="-mt-10 px-4 relative z-20 max-w-lg mx-auto space-y-4">
         
+        {/* Banner Notifica Delega Ricevuta */}
+        {delegheInAttesa.length > 0 && (
+          <div className="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-3xl p-5 shadow-xl border-2 border-amber-300 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-md">
+                Delega Ricevuta
+              </span>
+              <span className="text-xs font-bold text-amber-100">Nuova richiesta</span>
+            </div>
+            <h3 className="text-base font-extrabold text-white">
+              {delegheInAttesa[0].delegante_nome} ti ha inviato una delega!
+            </h3>
+            <p className="text-xs text-amber-50">
+              Accedi alla sezione Assemblee per accettare e rappresentare il tuo vicino nella prossima riunione.
+            </p>
+            <Link
+              to="/assemblee"
+              className="bg-white text-amber-900 font-bold px-4 py-2.5 rounded-xl text-xs inline-flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+            >
+              <span>Valuta e Accetta Delega</span>
+              <ChevronRight size={14} />
+            </Link>
+          </div>
+        )}
+
         {/* Banner Assemblea in Corso */}
         {assembleaAttiva && (
           <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-3xl p-5 shadow-xl border border-indigo-500/50 relative overflow-hidden">

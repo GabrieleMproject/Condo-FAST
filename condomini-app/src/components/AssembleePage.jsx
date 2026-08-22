@@ -4,11 +4,26 @@ import { supabase } from '../lib/supabase';
 import {
   Users, Check, X, Minus, MessageSquarePlus, Clock, ChevronDown,
   Video, MapPin, Send, AlertCircle, ShieldCheck, CheckCircle2,
-  Calendar, ArrowRight, Sparkles, Scale, Radio, Zap, UserCheck, KeyRound, Copy, Share2
+  Calendar, ArrowRight, Sparkles, Scale, Radio, Zap, UserCheck, KeyRound, Copy, Share2, Mail, BellRing
 } from 'lucide-react';
 
 export default function AssembleePage() {
-  const { persona, condominio, unita, assemblee, proposte, inviaPropostaOdG, isDemo, loading, error } = useCondominoDati();
+  const {
+    persona,
+    condominio,
+    unita,
+    altriCondomini,
+    delegheRicevute,
+    assemblee,
+    proposte,
+    inviaPropostaOdG,
+    accettaDelegaRicevuta,
+    rifiutaDelegaRicevuta,
+    isDemo,
+    loading,
+    error
+  } = useCondominoDati();
+
   const [activeTab, setActiveTab] = useState('live'); // 'live' | 'deleghe' | 'proposte'
 
   // Stato Realtime Live Sincronizzato con l'Amministratore
@@ -23,9 +38,9 @@ export default function AssembleePage() {
 
   // Stato Deleghe
   const [miaDelegaCreata, setMiaDelegaCreata] = useState(null);
-  const [delegheRiscattate, setDelegheRiscattate] = useState([
-    // Esempio iniziale se riscattata
-  ]);
+  const [destinatarioSelezionato, setDestinatarioSelezionato] = useState('');
+  const [noteDelega, setNoteDelega] = useState('');
+  const [delegheRiscattate, setDelegheRiscattate] = useState([]);
   const [codiceDaRiscattare, setCodiceDaRiscattare] = useState('');
   const [riscattoLoading, setRiscattoLoading] = useState(false);
   const [riscattoSuccess, setRiscattoSuccess] = useState(null);
@@ -44,18 +59,20 @@ export default function AssembleePage() {
   const assembleaAttiva = assemblee?.find(a => a.stato === 'in_corso') || assemblee?.find(a => a.stato === 'convocata') || assemblee?.[0];
   const fallbackOdgList = assembleaAttiva?.odg || [];
 
-  // Calcolo millesimi totali rappresentati (propri + deleghe riscattate)
+  // Calcolo millesimi totali rappresentati
   const mieiMillesimiBase = unita[0]?.millesimi_proprieta || 54.50;
   const millesimiDelegheExtra = delegheRiscattate.reduce((acc, d) => acc + (d.millesimi || 0), 0);
   const totaleMillesimiVotabili = mieiMillesimiBase + millesimiDelegheExtra;
 
-  // Lista OdG effettiva (priorità assoluta allo stato realtime broadcast/SSE)
+  // Lista OdG effettiva
   const currentOdgList = realtimeOdgList || fallbackOdgList;
   const odgInVotazione = currentOdgList.find(o => o.stato_votazione === 'in_corso');
 
-  // MOTORE 1 & 2: Stream SSE Ultra-Rapido + Supabase Realtime
+  // Deleghe pendenti ricevute direttamente da altri vicini
+  const delegheInAttesa = (delegheRicevute || []).filter(d => d.stato === 'in_attesa_accettazione');
+
+  // MOTORE 1 & 2: Stream SSE Ultra-Rapido + Supabase Realtime + Auto-Riscatto 1-Click
   useEffect(() => {
-    // 0. Auto-riscatto se presente parametro delega nell'URL o in sessionStorage
     const pendingCode = sessionStorage.getItem('pending_delega');
     if (pendingCode) {
       sessionStorage.removeItem('pending_delega');
@@ -73,7 +90,7 @@ export default function AssembleePage() {
         return prev;
       });
       setRiscattoSuccess(`🎉 Delega ${pendingCode} accettata! Rappresenti in assemblea ${mockDelegato.delegante_nome}.`);
-      
+
       try {
         fetch('/api/live-sync', {
           method: 'POST',
@@ -143,20 +160,27 @@ export default function AssembleePage() {
     };
   }, []);
 
-  // Gestione Creazione Codice Delega
-  const handleCreaCodiceDelega = async () => {
+  // Gestione Creazione / Invio Delega Diretta
+  const handleCreaCodiceDelega = async (e) => {
+    if (e) e.preventDefault();
     const randomCode = 'DEL-' + Math.floor(1000 + Math.random() * 9000);
+    const destObj = altriCondomini?.find(c => c.id === destinatarioSelezionato);
+
     const newDelega = {
+      id: 'del-' + Date.now(),
       codice: randomCode,
       delegante: persona ? `${persona.nome} ${persona.cognome}` : 'Marco Rossi',
       unita: unita[0]?.nome || 'Int. 4',
+      destinatario_id: destinatarioSelezionato || null,
+      destinatario_nome: destObj ? destObj.nome : 'Condomino Designato',
+      note: noteDelega || null,
       millesimi: mieiMillesimiBase,
+      stato: destinatarioSelezionato ? 'in_attesa_accettazione' : 'creata',
       data_creazione: new Date().toISOString()
     };
 
     setMiaDelegaCreata(newDelega);
 
-    // Invia al backend locale / Supabase se attivo
     try {
       fetch('/api/live-sync', {
         method: 'POST',
@@ -166,7 +190,38 @@ export default function AssembleePage() {
     } catch (e) {}
   };
 
-  // Gestione Riscatto Codice Delega
+  // Accetta Delega Ricevuta Direttamente
+  const handleAccettaDelegaInAttesa = async (delega) => {
+    await accettaDelegaRicevuta(delega.id);
+    const newDelegato = {
+      id: delega.id,
+      codice: delega.codice,
+      delegante_nome: `${delega.delegante_nome} (${delega.delegante_unita || 'Int.'})`,
+      millesimi: delega.millesimi || 54.50,
+      data_riscatto: new Date().toISOString()
+    };
+    setDelegheRiscattate(prev => [...prev, newDelegato]);
+    setRiscattoSuccess(`🎉 Delega di ${delega.delegante_nome} accettata con successo! I suoi voti sono ora associati al tuo account.`);
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'delega_riscattata',
+        payload: {
+          delega: newDelegato,
+          rappresentanteId: persona?.id || 'p-4'
+        }
+      });
+    }
+  };
+
+  const handleRifiutaDelegaInAttesa = async (delega) => {
+    await rifiutaDelegaRicevuta(delega.id);
+    setRiscattoError(`Hai rifiutato la delega di ${delega.delegante_nome}.`);
+    setTimeout(() => setRiscattoError(null), 3000);
+  };
+
+  // Gestione Riscatto Manuale Codice Delega
   const handleRiscattaDelega = async (e) => {
     e.preventDefault();
     setRiscattoError(null);
@@ -180,21 +235,19 @@ export default function AssembleePage() {
     }
 
     try {
-      // Mock / RPC Validation
       if (cleanCode.startsWith('DEL-') || cleanCode.length >= 6) {
         const mockDelegato = {
           id: 'del-' + Date.now(),
           codice: cleanCode,
-          delegante_nome: cleanCode === 'DEL-101' ? 'Giuseppe Verdi' : 'Mario Bianchi (Int. 1)',
+          delegante_nome: cleanCode === 'DEL-101' ? 'Giuseppe Verdi (Int. 3)' : 'Mario Bianchi (Int. 1)',
           millesimi: cleanCode === 'DEL-101' ? 80.50 : 95.00,
           data_riscatto: new Date().toISOString()
         };
 
         setDelegheRiscattate(prev => [...prev, mockDelegato]);
-        setRiscattoSuccess(`Delega ${cleanCode} collegata con successo! Rappresenti anche ${mockDelegato.delegante_nome} (+${mockDelegato.millesimi.toFixed(2)} ‰).`);
+        setRiscattoSuccess(`Delega ${cleanCode} collegata con successo! Rappresenti in assemblea ${mockDelegato.delegante_nome}.`);
         setCodiceDaRiscattare('');
 
-        // Notifica l'amministratore
         if (channelRef.current) {
           channelRef.current.send({
             type: 'broadcast',
@@ -222,7 +275,6 @@ export default function AssembleePage() {
       setVotoInviato(votoStr);
       setTimeout(() => setVotoInviato(null), 3000);
 
-      // Invia voto con totale millesimi accorpati
       const payloadVoto = {
         odgId,
         unitaId: unita[0]?.id || 'u-4',
@@ -322,12 +374,60 @@ export default function AssembleePage() {
             </span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight">Assemblee & Voto Live</h1>
-          <p className="text-indigo-100 text-sm mt-1">Vota in diretta, genera codici delega o proponi argomenti</p>
+          <p className="text-indigo-100 text-sm mt-1">Vota in diretta, gestisci deleghe dirette o proponi argomenti</p>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="-mt-10 px-4 relative z-20 max-w-lg mx-auto space-y-4">
+        
+        {/* BANNER NOTIFICA: RICHIESTA DI DELEGA RICEVUTA DA UN VICINO */}
+        {delegheInAttesa.length > 0 && (
+          <div className="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-3xl p-5 shadow-xl border-2 border-amber-300 space-y-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <Mail size={18} className="text-white" />
+                </div>
+                <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                  Richiesta di Delega Ricevuta
+                </span>
+              </div>
+              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md font-bold">
+                In attesa
+              </span>
+            </div>
+
+            <p className="text-sm font-bold text-amber-50 leading-snug">
+              <strong>{delegheInAttesa[0].delegante_nome}</strong> ({delegheInAttesa[0].delegante_unita || 'Int. 1'}) ti ha designato come suo delegato per la prossima assemblea.
+            </p>
+
+            {delegheInAttesa[0].note && (
+              <p className="text-xs bg-black/15 p-2.5 rounded-xl text-amber-100 italic">
+                "{delegheInAttesa[0].note}"
+              </p>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => handleAccettaDelegaInAttesa(delegheInAttesa[0])}
+                className="flex-1 bg-white hover:bg-amber-50 text-amber-900 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+              >
+                <Check size={15} className="text-emerald-600" />
+                <span>Accetta Delega</span>
+              </button>
+
+              <button
+                onClick={() => handleRifiutaDelegaInAttesa(delegheInAttesa[0])}
+                className="bg-amber-700/60 hover:bg-amber-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              >
+                <X size={15} />
+                <span>Rifiuta</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Toggle Tabs a 3 sezioni */}
         <div className="bg-white rounded-2xl p-1.5 flex shadow-sm border border-slate-200/80">
           <button
@@ -342,7 +442,7 @@ export default function AssembleePage() {
             onClick={() => setActiveTab('deleghe')}
             className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${activeTab === 'deleghe' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            <KeyRound size={13} /> Deleghe ({delegheRiscattate.length})
+            <KeyRound size={13} /> Deleghe ({delegheRiscattate.length + delegheInAttesa.length})
           </button>
 
           <button
@@ -555,7 +655,7 @@ export default function AssembleePage() {
         {/* TAB 2: SEZIONE GESTIONE DELEGHE DIGITALI (Art. 67 disp. att. c.c.) */}
         {activeTab === 'deleghe' && (
           <div className="space-y-4">
-            {/* Box 1: Non puoi partecipare? Crea Codice Delega */}
+            {/* Box 1: Non puoi partecipare? Crea o Invia Delega Diretta */}
             <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
@@ -563,33 +663,72 @@ export default function AssembleePage() {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900">Non puoi partecipare?</h3>
-                  <p className="text-xs text-slate-500">Genera un codice delega per farti rappresentare da un vicino.</p>
+                  <p className="text-xs text-slate-500">Invia la delega direttamente all'app del tuo vicino o genera un link.</p>
                 </div>
               </div>
 
               {!miaDelegaCreata ? (
-                <div>
-                  <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                    Ai sensi dell'<strong>art. 67 disp. att. c.c.</strong>, la delega scritta creata tramite la tua area riservata è legalmente valida e attribuisce i tuoi millesimi ({mieiMillesimiBase.toFixed(2)} ‰) al condomino di tua fiducia.
+                <form onSubmit={handleCreaCodiceDelega} className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">
+                      A chi vuoi inviare la delega?
+                    </label>
+                    <select
+                      value={destinatarioSelezionato}
+                      onChange={(e) => setDestinatarioSelezionato(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 font-medium focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="">-- Seleziona vicino di casa dello stabile --</option>
+                      {(altriCondomini || []).map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.nome} ({c.unita})
+                        </option>
+                      ))}
+                      <option value="link_aperto">🔗 Crea codice / link da condividere liberamente</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">
+                      Eventuali istruzioni di voto (facoltativo)
+                    </label>
+                    <input
+                      type="text"
+                      value={noteDelega}
+                      onChange={(e) => setNoteDelega(e.target.value)}
+                      placeholder="Es. Vota a favore del punto 1 e 3..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Ai sensi dell'<strong>art. 67 disp. att. c.c.</strong>, la delega conferita tramite app autenticata costituisce documento formale scritto.
                   </p>
+
                   <button
-                    onClick={handleCreaCodiceDelega}
+                    type="submit"
                     className="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
                   >
-                    <KeyRound size={15} />
-                    <span>Genera Codice Delega Digitale</span>
+                    <Send size={15} />
+                    <span>
+                      {destinatarioSelezionato && destinatarioSelezionato !== 'link_aperto'
+                        ? 'Invia Richiesta Diretta all\'App del Vicino'
+                        : 'Genera Codice & Link Delega'}
+                    </span>
                   </button>
-                </div>
+                </form>
               ) : (
                 <div className="bg-slate-50 rounded-2xl p-4 border border-indigo-200 text-center space-y-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
-                    Codice Delega Attivo
+                    {miaDelegaCreata.destinatario_nome ? `Inviata a ${miaDelegaCreata.destinatario_nome}` : 'Codice Delega Attivo'}
                   </span>
                   <div className="text-2xl font-mono font-extrabold text-slate-900 tracking-wider">
                     {miaDelegaCreata.codice}
                   </div>
                   <p className="text-xs text-slate-500">
-                    Comunica questo codice al condomino che parteciperà all'assemblea per collegare la tua delega.
+                    {miaDelegaCreata.destinatario_id
+                      ? `La richiesta è visibile direttamente nell'app del vicino. Puoi anche inviargli il link per sicurezza:`
+                      : `Comunica questo codice al condomino che parteciperà all'assemblea.`}
                   </p>
 
                   <div className="flex flex-col gap-2">
@@ -608,7 +747,7 @@ export default function AssembleePage() {
                       </button>
 
                       <a
-                        href={`https://wa.me/?text=${encodeURIComponent(`Ciao! Ti lascio la mia delega per la prossima assemblea di condominio. Clicca su questo link: una volta entrato troverai la mia delega già caricata automaticamente con i miei millesimi: ${window.location.origin}/?delega=${miaDelegaCreata.codice}`)}`}
+                        href={`https://wa.me/?text=${encodeURIComponent(`Ciao! Ti lascio la mia delega per la prossima assemblea di condominio. Clicca su questo link per accedere e trovare la delega già collegata automaticamente: ${window.location.origin}/?delega=${miaDelegaCreata.codice}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm"
@@ -617,9 +756,6 @@ export default function AssembleePage() {
                         <span>Invia su WhatsApp</span>
                       </a>
                     </div>
-                    <span className="text-[10px] text-slate-400">
-                      Al tuo vicino basterà cliccare sul link per trovare i tuoi millesimi già accorpati al suo voto.
-                    </span>
                   </div>
                 </div>
               )}

@@ -20,6 +20,13 @@ const MOCK_DEMO_DATA = {
     iban: 'IT60X0542811101000000123456',
     codice_app: 'ROSE26'
   },
+  altriCondomini: [
+    { id: 'p-1', nome: 'Mario Bianchi', unita: 'Int. 1', piano: '1°' },
+    { id: 'p-2', nome: 'Laura Verdi', unita: 'Int. 2', piano: '1°' },
+    { id: 'p-3', nome: 'Giuseppe Ferrari', unita: 'Int. 3', piano: '2°' },
+    { id: 'p-5', nome: 'Anna Neri', unita: 'Int. 5', piano: '3°' },
+    { id: 'p-6', nome: 'Roberto Galli', unita: 'Int. 6', piano: '3°' },
+  ],
   unita: [
     {
       id: 'demo-unita-1',
@@ -30,6 +37,19 @@ const MOCK_DEMO_DATA = {
       millesimi_proprieta: 54.50
     }
   ],
+  delegheRicevute: [
+    {
+      id: 'del-ricevuta-demo',
+      codice: 'DEL-8492',
+      delegante_nome: 'Mario Bianchi',
+      delegante_unita: 'Int. 1',
+      millesimi: 95.00,
+      stato: 'in_attesa_accettazione',
+      data_invio: new Date().toISOString(),
+      note: 'Ciao Marco, non potrò esserci. Ti affido la mia delega per votare il bilancio!'
+    }
+  ],
+  delegheInviate: [],
   rate: [
     {
       id: 'demo-rata-1',
@@ -169,7 +189,10 @@ export function useCondominoDati() {
     error: null,
     persona: null,
     condominio: null,
+    altriCondomini: [],
     unita: [],
+    delegheRicevute: [],
+    delegheInviate: [],
     rate: [],
     documenti: [],
     assemblee: [],
@@ -205,7 +228,6 @@ export function useCondominoDati() {
 
       if (errPersone) throw errPersone;
       if (!persone || persone.length === 0) {
-        // Fallback su demo se l'utente non ha ancora anagrafica associata
         setData({
           loading: false,
           error: null,
@@ -226,7 +248,20 @@ export function useCondominoDati() {
         .single();
       if (errCondominio) throw errCondominio;
 
-      // 3. Recupera Unità Immobiliari
+      // 3. Recupera altri condomini dello stesso stabile
+      const { data: altriP } = await supabase
+        .from('persone')
+        .select('id, nome, cognome')
+        .eq('condominio_id', condominioId)
+        .neq('id', persona.id);
+
+      const altriCondomini = (altriP || []).map(p => ({
+        id: p.id,
+        nome: `${p.cognome} ${p.nome}`,
+        unita: 'Condòmino'
+      }));
+
+      // 4. Recupera Unità Immobiliari
       const { data: occupazioni, error: errOcc } = await supabase
         .from('occupanti_unita')
         .select('unita:unita(*)')
@@ -240,7 +275,7 @@ export function useCondominoDati() {
       const unitaList = Array.from(unitaMap.values());
       const unitaIds = unitaList.map(u => u.id);
 
-      // 4. Recupera Rate
+      // 5. Recupera Rate
       let rateFinali = [];
       if (unitaIds.length > 0) {
         const { data: rateUnita, error: errRate } = await supabase
@@ -273,7 +308,7 @@ export function useCondominoDati() {
         }));
       }
 
-      // 5. Recupera Assemblee (con odg)
+      // 6. Recupera Assemblee (con odg)
       const { data: assemblee, error: errAss } = await supabase
         .from('assemblee')
         .select('*, odg:assemblee_odg(*)')
@@ -281,7 +316,7 @@ export function useCondominoDati() {
         .order('data_inizio', { ascending: false });
       if (errAss) throw errAss;
 
-      // 6. Recupera Documenti Condominio (solo quelli visibili ai condomini)
+      // 7. Recupera Documenti Condominio
       const { data: documenti, error: errDoc } = await supabase
         .from('documenti_condominio')
         .select('*')
@@ -291,19 +326,33 @@ export function useCondominoDati() {
         .order('created_at', { ascending: false });
       if (errDoc) throw errDoc;
 
-      // 7. Recupera Proposte OdG
+      // 8. Recupera Proposte OdG
       const { data: proposte, error: errProp } = await supabase
         .from('assemblee_proposte_odg')
         .select('*')
         .eq('condominio_id', condominioId)
         .order('created_at', { ascending: false });
 
+      // 9. Recupera Deleghe Dirette Ricevute & Inviate
+      const { data: dRicevute } = await supabase
+        .from('assemblee_deleghe')
+        .select('*')
+        .eq('delegato_persona_id', persona.id);
+
+      const { data: dInviate } = await supabase
+        .from('assemblee_deleghe')
+        .select('*')
+        .eq('delegante_persona_id', persona.id);
+
       setData({
         loading: false,
         error: null,
         persona,
         condominio,
+        altriCondomini,
         unita: unitaList,
+        delegheRicevute: dRicevute || [],
+        delegheInviate: dInviate || [],
         rate: rateFinali,
         assemblee: assemblee || [],
         documenti: documenti || [],
@@ -319,6 +368,34 @@ export function useCondominoDati() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const accettaDelegaRicevuta = async (delegaId) => {
+    setData(prev => ({
+      ...prev,
+      delegheRicevute: prev.delegheRicevute.map(d => d.id === delegaId ? { ...d, stato: 'riscattata' } : d)
+    }));
+
+    if (!data.isDemo) {
+      await supabase
+        .from('assemblee_deleghe')
+        .update({ stato: 'riscattata', riscattata_at: new Date().toISOString() })
+        .eq('id', delegaId);
+    }
+  };
+
+  const rifiutaDelegaRicevuta = async (delegaId) => {
+    setData(prev => ({
+      ...prev,
+      delegheRicevute: prev.delegheRicevute.filter(d => d.id !== delegaId)
+    }));
+
+    if (!data.isDemo) {
+      await supabase
+        .from('assemblee_deleghe')
+        .update({ stato: 'rifiutata' })
+        .eq('id', delegaId);
+    }
+  };
 
   const inviaPropostaOdG = async ({ titolo, descrizione, categoria = 'manutenzione', priorita = 'normale' }) => {
     if (data.isDemo) {
@@ -366,6 +443,8 @@ export function useCondominoDati() {
   return {
     ...data,
     refetch: fetchData,
-    inviaPropostaOdG
+    inviaPropostaOdG,
+    accettaDelegaRicevuta,
+    rifiutaDelegaRicevuta
   };
 }
